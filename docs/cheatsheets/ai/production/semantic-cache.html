@@ -28,7 +28,7 @@
   <a href="#deep-dive-exact-semantic-two-tier"><span class="num">10</span> Deep Dive: Exact + Semantic Two-Tier</a>
   <a href="#deep-dive-multi-tenant"><span class="num">11</span> Deep Dive: Multi-Tenant</a>
   <a href="#production-ops"><span class="num">12</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">13</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">13</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">14</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">15</span> Check yourself</a>
 </nav>
@@ -44,6 +44,7 @@
 <p>Cache LLM responses by embedding similarity, not exact string match. 40–60% hit rates on support bots — but wrong threshold causes confident wrong answers.</p>
 <div class="diagram"><img alt="Semantic Cache architecture" src="../systems/img/semantic-cache-main.png"/></div><p class="diagram-caption">Semantic cache flow: embed incoming query, ANN search cache index, if similarity &gt; threshold return cached response else call LLM and store new entry.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><p>LLM inference is expensive. Many user queries are near-duplicates ('reset password' vs 'how do I reset my password'). Semantic cache cuts cost and latency.</p></div>
@@ -85,15 +86,19 @@ cache.store(query, embedding, response, ttl=3600, metadata={sources})
 </section>
 <section id="deep-dive-multi-tenant">
   <h2>11 &mdash; Deep Dive: Multi-Tenant</h2>
-<div class="card"><p>Namespace cache by org_id. Never return cache entry from different tenant even if similarity high.</p></div>
+<div class="card"><ul><li>Namespace every cache entry by tenant (org_id), and include the user's permission scope when answers depend on it.</li>
+<li>Never return an entry from a different tenant, however similar the question: two companies asking "what is our refund policy?" need different answers.</li>
+<li>Enforce the namespace in the lookup query itself, not as a filter after the nearest-neighbour search.</li>
+<li>Per-tenant TTLs and invalidation, so one tenant's document update purges only its own entries.</li></ul></div>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>12 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Monitor hit rate, false hit rate (thumbs down on cached)</li><li>Cache stampede on cold start — pre-warm top queries</li></ul></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>13 &mdash; Where It Shows Up</h2>
-<div class="card"><ul><li><a href="../rag/rag-pipeline.html">RAG End-to-End</a></li><li><a href="../rag/rag-in-production.html">Chatbot RAG System</a></li><li><a href="../rag/embeddings.html">Embeddings</a></li><li><a href="../rag/vector-search.html">Vector Databases</a></li></ul></div>
+<section id="related-topics">
+  <h2>13 &mdash; Related topics</h2>
+<div class="card"><ul><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a></li><li><a href="../rag/rag-in-production.html">Making RAG good &amp; measuring it</a></li><li><a href="../rag/embeddings.html">Embeddings</a></li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a></li></ul></div>
 </section>
 <section id="common-pitfalls">
   <h2>14 &mdash; Common Pitfalls</h2>

@@ -29,7 +29,7 @@
   <a href="#deep-dive-session-memory"><span class="num">11</span> Deep Dive: Session Memory</a>
   <a href="#deep-dive-agent-tools"><span class="num">12</span> Deep Dive: Agent Tools</a>
   <a href="#making-rag-actually-good"><span class="num">13</span> Making RAG actually good</a>
-  <a href="#the-foundation-levers-from-the-last-chapter"><span class="num">14</span> The foundation levers (from the last chapter)</a>
+  <a href="#the-foundation-levers-from-an-earlier-topic"><span class="num">14</span> The foundation levers (from an earlier topic)</a>
   <a href="#the-advanced-toolbox-mechanism-payoff-and-when-to-reach-for"><span class="num">15</span> The advanced toolbox — mechanism, payoff, and when to reach for each</a>
   <a href="#evaluation-the-harness-that-makes-all-of-this-tunable"><span class="num">16</span> Evaluation: the harness that makes all of this tunable</a>
   <a href="#the-debugging-matrix"><span class="num">17</span> The debugging matrix</a>
@@ -37,7 +37,7 @@
   <a href="#measuring-a-rag-system"><span class="num">19</span> Measuring a RAG system</a>
   <a href="#production-concerns"><span class="num">20</span> Production concerns</a>
   <a href="#production-ops"><span class="num">21</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">22</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">22</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">23</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">24</span> Check yourself</a>
 </nav>
@@ -53,6 +53,7 @@
 <p>Full system design: enterprise chatbot with RAG, conversation memory, semantic cache, agent tools, and HITL. The canonical 45-minute AI system design interview.</p>
 <div class="diagram"><img alt="Chatbot with RAG (System Design) architecture" src="../systems/img/chatbot-rag-system-main.png"/></div><p class="diagram-caption">Chatbot RAG system HLD: client apps → API gateway → chat service (session, memory, cache) → RAG pipeline → optional agent tools → LLM fleet with streaming SSE responses.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><h3>Functional Requirements</h3><ul><li>Multi-turn chat with conversation history</li><li>Answer from private enterprise knowledge base with citations</li><li>Execute actions (create ticket, search CRM) via agent tools</li><li>Stream responses token-by-token</li><li>Admin: ingest docs, view analytics, configure bot persona</li></ul><h3>Non-Functional Requirements</h3><ul><li>10K QPS peak; p99 first token &lt;500ms</li><li>Multi-tenant isolation (org_id, ACL)</li><li>99.9% availability</li><li>GDPR: delete user data within 30 days</li><li>Cost budget: &lt;$0.05 per query average</li></ul></div>
@@ -104,22 +105,23 @@ Cost: cache saves ~40% LLM spend; avg $0.03/query achievable</pre></div>
 </section>
 <section id="deep-dive-rag-integration">
   <h2>10 &mdash; Deep Dive: RAG Integration</h2>
-<div class="card"><p>See <a href="rag-pipeline.html">RAG End-to-End</a>. Hybrid retrieve top-50, rerank top-5, inject numbered passages, generate with [1][2] citations. Refuse if max rerank score below threshold.</p></div>
+<div class="card"><p>See <a href="rag-pipeline.html">The RAG pipeline</a>. Hybrid retrieve top-50, rerank top-5, inject numbered passages, generate with [1][2] citations. Refuse if max rerank score below threshold.</p></div>
 </section>
 <section id="deep-dive-session-memory">
   <h2>11 &mdash; Deep Dive: Session Memory</h2>
-<div class="card"><p>Redis session buffer. Rolling summary over 8K tokens. Long-term vector memory for user prefs (<a href="../agents/memory-context.html">Agent Memory</a>).</p></div>
+<div class="card"><p>Redis session buffer. Rolling summary over 8K tokens. Long-term vector memory for user prefs (<a href="../agents/memory-context.html">Memory &amp; context engineering</a>).</p></div>
 </section>
 <section id="deep-dive-agent-tools">
   <h2>12 &mdash; Deep Dive: Agent Tools</h2>
-<div class="card"><p>Optional agent path for ticket creation, CRM lookup. HITL on writes (<a href="../agents/agent-loop.html">Production Agent</a>). Max 8 tool calls.</p></div>
+<div class="card"><p>Optional agent path for ticket creation, CRM lookup. HITL on writes (<a href="../agents/agent-loop.html">The agent loop</a>). Max 8 tool calls.</p></div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="making-rag-actually-good">
   <h2>13 &mdash; Making RAG actually good</h2>
 <p>Basic RAG is easy; <i>reliable</i> RAG is where the work is. Most failures are retrieval failures.</p>
 </section>
-<section id="the-foundation-levers-from-the-last-chapter">
-  <h2>14 &mdash; The foundation levers (from the last chapter)</h2>
+<section id="the-foundation-levers-from-an-earlier-topic">
+  <h2>14 &mdash; The foundation levers (from an earlier topic)</h2>
 <div class="tile-grid">
 <div class="tile"><h4>Chunking strategy</h4><p>Too big → noisy matches; too small → lost context. Start ~600–1000 tokens with ~15% overlap. Better: split on structure (headings, sections), keep metadata.</p></div>
 <div class="tile"><h4>Reranking</h4><p>Retrieve 30 candidates with vectors (fast, fuzzy), then a <b>cross-encoder reranker</b> scores each (query, chunk) pair precisely and keeps the top 5. Biggest quality lever after chunking.</p></div>
@@ -131,7 +133,7 @@ Cost: cache saves ~40% LLM spend; avg $0.03/query achievable</pre></div>
 </section>
 <section id="the-advanced-toolbox-mechanism-payoff-and-when-to-reach-for">
   <h2>15 &mdash; The advanced toolbox — mechanism, payoff, and when to reach for each</h2>
-<p><b>Parent-child retrieval (small-to-big).</b> <i>Mechanism:</i> index <b>small</b> chunks (150–300 tokens — precise vectors, one idea each), but store on each a pointer to its <b>parent</b> (the full section, 1,500–3,000 tokens). Search over the children; feed the LLM the parents. <i>Why it works:</i> retrieval precision and generation context want opposite chunk sizes; this decouples them. <i>When it pays:</i> structured docs (manuals, contracts, policies) where the answer's evidence is one paragraph but understanding it needs the whole section — like the "see section 7.1" cross-reference from the handbook example last chapter. Cost: ~nothing at query time; slightly bigger index.</p>
+<p><b>Parent-child retrieval (small-to-big).</b> <i>Mechanism:</i> index <b>small</b> chunks (150–300 tokens — precise vectors, one idea each), but store on each a pointer to its <b>parent</b> (the full section, 1,500–3,000 tokens). Search over the children; feed the LLM the parents. <i>Why it works:</i> retrieval precision and generation context want opposite chunk sizes; this decouples them. <i>When it pays:</i> structured docs (manuals, contracts, policies) where the answer's evidence is one paragraph but understanding it needs the whole section — like the "see section 7.1" cross-reference from the handbook example in an earlier topic. Cost: ~nothing at query time; slightly bigger index.</p>
 <div class="code-block"><div class="code-file"><span>parent_child.py — search small, return big</span><span class="code-lang">python</span></div><pre><span class="kw">def</span> <span class="fn">ingest_parent_child</span>(sections, db, embedder, child_tokens=<span class="nr">250</span>):
     <span class="kw">for</span> parent_id, section_text in sections:               <span class="cm"># parent = whole section</span>
         db.put_parent(parent_id, section_text)             <span class="cm"># plain KV store is fine</span>
@@ -150,7 +152,7 @@ Cost: cache saves ~40% LLM spend; avg $0.03/query achievable</pre></div>
             seen.add(pid); parents.append(db.get_parent(pid))
         <span class="kw">if</span> <span class="tp">len</span>(parents) == k: <span class="kw">break</span>
 <span class="kw">return</span> parents</pre></div>
-<p><b>Multi-query retrieval.</b> <i>Mechanism:</i> have an LLM rewrite the user's question into 3–5 variants (paraphrase, decomposition, vocabulary shift), retrieve for all of them in parallel, fuse with RRF (last chapter). <i>Why it works:</i> a single embedding of a vague query is one dart at the board; five phrasings are five darts, and RRF rewards chunks that multiple phrasings agree on. <i>When it pays:</i> messy real-user queries ("it's broken again after the update??") and compound questions; typically worth several points of recall (illustrative) for one cheap LLM call + parallel searches.</p>
+<p><b>Multi-query retrieval.</b> <i>Mechanism:</i> have an LLM rewrite the user's question into 3–5 variants (paraphrase, decomposition, vocabulary shift), retrieve for all of them in parallel, fuse with RRF (in an earlier topic). <i>Why it works:</i> a single embedding of a vague query is one dart at the board; five phrasings are five darts, and RRF rewards chunks that multiple phrasings agree on. <i>When it pays:</i> messy real-user queries ("it's broken again after the update??") and compound questions; typically worth several points of recall (illustrative) for one cheap LLM call + parallel searches.</p>
 <div class="code-block"><div class="code-file"><span>multi_query.py — rewrite, fan out, fuse</span><span class="code-lang">python</span></div><pre><span class="kw">def</span> <span class="fn">multi_query_retrieve</span>(q, llm, db, embedder, n_variants=<span class="nr">4</span>, k=<span class="nr">30</span>):
     prompt = (<span class="st">"</span><span class="st">Rewrite the user question as </span><span class="st">{n}</span><span class="st"> search queries that differ in wording </span><span class="st">"</span>
 <span class="st">"</span><span class="st">and angle. If it contains multiple sub-questions, split them. </span><span class="st">"</span>
@@ -160,7 +162,7 @@ Cost: cache saves ~40% LLM spend; avg $0.03/query achievable</pre></div>
     <span class="kw">for</span> v in variants:                                     <span class="cm"># parallelize in production</span>
         hits = db.search(<span class="st">"</span><span class="st">kb</span><span class="st">"</span>, embedder.embed([v])[<span class="nr">0</span>], limit=k)
         rankings.append([h.id <span class="kw">for</span> h in hits])
-    <span class="kw">return</span> rrf_fuse(rankings)[:k]                          <span class="cm"># rrf_fuse from last chapter</span></pre></div>
+    <span class="kw">return</span> rrf_fuse(rankings)[:k]                          <span class="cm"># rrf_fuse from in an earlier topic</span></pre></div>
 <p><b>HyDE (Hypothetical Document Embeddings).</b> <i>Mechanism:</i> queries and documents live in slightly different regions of embedding space (questions don't look like answers). So: ask an LLM to <i>hallucinate a plausible answer</i>, embed <b>that</b>, and search with it — the fake answer's vector lands near real answer chunks. The hallucination is never shown to anyone; it's only a search probe. <i>When it pays:</i> short/underspecified queries over prose-heavy corpora, and zero-shot domains where you have no click data to tune on. Skip it when queries already resemble the docs (e.g. code search with code queries), and note it adds one LLM call of latency to every query.</p>
 <div class="code-block"><div class="code-file"><span>hyde.py — search with a hallucinated answer</span><span class="code-lang">python</span></div><pre><span class="kw">def</span> <span class="fn">hyde_retrieve</span>(q, llm, db, embedder, k=<span class="nr">30</span>):
     fake = llm(<span class="st">f</span><span class="st">"</span><span class="st">Write a short factual paragraph that would answer:</span><span class="st">\n</span><span class="st">{</span>q<span class="st">}</span><span class="st">"</span>,
@@ -301,13 +303,14 @@ FAITH_PROMPT = <span class="st">"""</span><span class="st">You are grading a RAG
 <li><strong>When not RAG</strong>: structured data questions ("revenue last quarter") need text-to-SQL or an API tool, not chunk search. That's where agents come in.</li>
 </ul>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>21 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Eval harness CI gate on every deploy</li><li>Tracing: cache/RAG/agent/LLM spans</li><li>Moderation on input and output</li><li>Per-org usage billing dashboard</li></ul></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>22 &mdash; Where It Shows Up</h2>
-<div class="card"><ul><li><a href="rag-pipeline.html">RAG End-to-End</a></li><li><a href="../production/semantic-cache.html">Semantic Cache</a></li><li><a href="../agents/agent-loop.html">Production Agent</a></li><li><a href="../systems/../../hld/web-search-engine.html">Web Search Engine HLD</a></li></ul></div>
+<section id="related-topics">
+  <h2>22 &mdash; Related topics</h2>
+<div class="card"><ul><li><a href="rag-pipeline.html">The RAG pipeline</a></li><li><a href="../production/semantic-cache.html">Semantic caching</a></li><li><a href="../agents/agent-loop.html">The agent loop</a></li><li><a href="../systems/../../hld/web-search-engine.html">Web Search Engine HLD</a></li></ul></div>
 </section>
 <section id="common-pitfalls">
   <h2>23 &mdash; Common Pitfalls</h2>

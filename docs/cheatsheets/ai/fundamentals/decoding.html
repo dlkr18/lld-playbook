@@ -42,7 +42,7 @@
 </section>
 <section id="the-four-knobs">
   <h2>03 &mdash; The four knobs</h2>
-<p>Recall from the "What an LLM really is" chapter: at every step the model hands you a probability distribution over its whole vocabulary. Decoding parameters decide how a single token gets drawn from it. There are only four you'll touch routinely:</p>
+<p>Recall from <a href="what-is-an-llm.html">What an LLM is</a>: at every step the model hands you a probability distribution over its whole vocabulary. Decoding parameters decide how a single token gets drawn from it. There are only four you'll touch routinely:</p>
 <table>
 <tr><th>Knob</th><th>What it does</th><th>Use when</th></tr>
 <tr><td><b>temperature</b> (0–~1)</td><td>Randomness. <code>0</code> = always pick the most likely token (deterministic, repeatable). Higher = more varied/creative. Mechanically: logits are divided by T before softmax, so low T sharpens the distribution, high T flattens it.</td><td><code>0</code> for extraction, code, classification, caching · <code>0.7+</code> for brainstorming, writing.</td></tr>
@@ -125,7 +125,7 @@ resp = client.messages.create(
 </table>
 <h3>Mini-scenario: the flaky eval suite</h3>
 <p>Your team ships a prompt change and the eval pass-rate moves from 84% to 79%. Panic, revert, re-run: 83%. Re-run again: 86%. Two hours of archaeology later, the cause: someone left <code>temperature</code> unset in the eval harness (provider default is typically ~1.0), so every run sampled different outputs — the "regression" was sampling noise. The fix is one line (<code>temperature=0</code> in the harness) plus one habit: any number you intend to compare across runs must come from pinned decoding settings. Keep a second eval lane at production temperature if you want to measure real-world variance — but label it as such.</p>
-<div class="callout"><p><strong>The one to remember</strong></p><b>temperature</b>. Set it to <code>0</code> when you want the same answer every time (and to make response-caching valid). Turn it up only when you <i>want</i> variety. If you remember one config habit from this chapter: <b>extraction/classification/evals at 0, creative work at 0.7+, and never tune temperature and top_p at the same time</b> — you won't be able to tell which knob did what.</div>
+<div class="callout"><p><strong>The one to remember</strong></p><b>temperature</b>. Set it to <code>0</code> when you want the same answer every time (and to make response-caching valid). Turn it up only when you <i>want</i> variety. If you remember one config habit from this topic: <b>extraction/classification/evals at 0, creative work at 0.7+, and never tune temperature and top_p at the same time</b> — you won't be able to tell which knob did what.</div>
 <div class="callout warn"><p><strong>Knob gotchas</strong></p><ul>
 <li><b>Unset ≠ zero.</b> Most providers default temperature to ~1.0. If you never set it, your "deterministic" pipeline has been sampling all along.</li>
 <li><b><code>max_tokens</code> is a guillotine, not a request.</b> The model doesn't plan around it; it just stops mid-token-stream. Truncated JSON that <i>almost</i> parses is the classic symptom — always check <code>stop_reason == "max_tokens"</code> before parsing.</li>

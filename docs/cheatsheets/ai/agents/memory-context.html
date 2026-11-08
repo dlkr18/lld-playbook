@@ -37,7 +37,7 @@
   <a href="#the-per-turn-checklist"><span class="num">19</span> The per-turn checklist</a>
   <a href="#context-and-memory-management"><span class="num">20</span> Context and memory management</a>
   <a href="#production-ops"><span class="num">21</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">22</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">22</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">23</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">24</span> Check yourself</a>
 </nav>
@@ -53,6 +53,7 @@
 <p>Short-term scratchpad, long-term vector store, episodic summaries, and consolidation. Agents need memory — but unbounded context is not memory.</p>
 <div class="diagram"><img alt="Agent Memory architecture" src="../systems/img/agent-memory-main.png"/></div><p class="diagram-caption">Agent memory layers: in-context scratchpad (current turn), session buffer (summarized history), long-term vector memory (user facts), episodic log (past task outcomes).</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><p>Agents need prior context across turns and sessions. Memory systems trade recall fidelity vs token cost vs latency.</p></div>
@@ -78,7 +79,11 @@ Query -&gt; Retrieve relevant memories -&gt; Inject into system prompt</pre></di
 </section>
 <section id="deep-dive-scratchpad">
   <h2>07 &mdash; Deep Dive: Scratchpad</h2>
-<div class="card"><p>Working memory: thoughts, tool JSON, observations. Truncate old observations; keep last 3 tool results full.</p></div>
+<div class="card"><p>The scratchpad is the agent's working memory inside the context window: its thoughts, tool calls, tool results and observations for the current task.</p>
+<ul><li>It grows with every step, so it is the first thing to overflow the window.</li>
+<li>Keep the last few tool results in full (often the last three) and truncate or summarize older observations.</li>
+<li>Keep decisions and open items when compacting; drop raw tool output once its conclusion is recorded.</li>
+<li>Cleared when the task ends. Anything worth keeping is written to long-term memory first.</li></ul></div>
 </section>
 <section id="deep-dive-long-term-vector-memory">
   <h2>08 &mdash; Deep Dive: Long-Term Vector Memory</h2>
@@ -86,7 +91,11 @@ Query -&gt; Retrieve relevant memories -&gt; Inject into system prompt</pre></di
 </section>
 <section id="deep-dive-episodic-memory">
   <h2>09 &mdash; Deep Dive: Episodic Memory</h2>
-<div class="card"><p>Log (task, plan, outcome, success). Retrieve similar past tasks when user asks repeat workflow.</p></div>
+<div class="card"><p>Episodic memory records what happened in past runs, so the agent can reuse what worked.</p>
+<ul><li>Each episode stores the task, the plan, the actions taken, the outcome and whether it succeeded.</li>
+<li>It is append-only, which also makes it an audit log you can replay.</li>
+<li>When a new task resembles a past one (by embedding similarity or task type), retrieve the successful episodes and offer their plan as an example.</li>
+<li>Failed episodes are useful too: they tell the agent which approach not to repeat.</li></ul></div>
 </section>
 <section id="deep-dive-consolidation">
   <h2>10 &mdash; Deep Dive: Consolidation</h2>
@@ -96,6 +105,7 @@ Query -&gt; Retrieve relevant memories -&gt; Inject into system prompt</pre></di
   <h2>11 &mdash; Deep Dive: Memory Retrieval</h2>
 <div class="card"><p>At session start: embed user message, search memory top-5, inject as system context. Re-rank by recency × relevance.</p></div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="memory-making-agents-remember">
   <h2>12 &mdash; Memory: making agents remember</h2>
 <p>Models are stateless. "Memory" is a system you build. It exists because the context window is finite — memory decides what to keep and what to reload.</p>
@@ -216,7 +226,7 @@ SYSTEM += <span class="st">"""</span>
 <span class="st">It is your only memory that survives interruptions — write anything you</span>
 <span class="st">cannot afford to re-derive.</span><span class="st">"""</span></pre></div>
 <p>Why this humble pattern outperforms fancier memory for long tasks: the model <i>chooses</i> what's worth writing (it knows what it'll need better than your heuristics do), the file survives compaction and process restarts, and when the run goes sideways you open the file and read the agent's own account of what it thought it was doing. Coding agents in the wild lean heavily on exactly this — a plan/notes markdown file per task. The size cap matters: uncapped scratchpads become a second unbounded context window, re-ingested every turn.</p>
-<p>Semantic memory (facts about the world → RAG, <a href="../rag/index.html">Knowledge &amp; RAG</a>, <a href="tool-calling.html">Tool calling</a>) and procedural memory (instructions that update — really just the profile pattern applied to <i>behavior</i>: "user wants diffs, not full files" ends up as a standing instruction) complete the table; both reuse machinery you've already seen, which is the quiet point of this chapter — memory types differ in <b>policy</b>, barely in mechanism.</p>
+<p>Semantic memory (facts about the world → RAG, <a href="../rag/index.html">Knowledge &amp; RAG</a>, <a href="tool-calling.html">Tool calling</a>) and procedural memory (instructions that update — really just the profile pattern applied to <i>behavior</i>: "user wants diffs, not full files" ends up as a standing instruction) complete the table; both reuse machinery you've already seen, which is the quiet point of this topic — memory types differ in <b>policy</b>, barely in mechanism.</p>
 </section>
 <section id="the-write-policy-what-not-to-store">
   <h2>17 &mdash; The write policy: what NOT to store</h2>
@@ -229,7 +239,7 @@ SYSTEM += <span class="st">"""</span>
 <li><b>Do store:</b> explicit user corrections ("no, staging is eu-west-1"), decisions and their reasons, stable preferences, open commitments ("promised a follow-up on the refund"), and hard-won findings that cost many steps to derive.</li>
 <li><b>Give memory a deletion story.</b> TTLs on event-type memories, a user-visible "what do you know about me" view, and a delete path. This is a compliance requirement in most jurisdictions and a trust feature everywhere.</li>
 </ul>
-<div class="callout warn"><p><strong>Memory failure modes that only show up later</strong></p><b>(1) Poisoning:</b> one wrong stored "fact" (a typo'd hostname, a sarcastic user message taken literally) gets recalled, restated by the model, re-extracted, and re-stored — now it has three copies and citation-like authority. Mitigate: dedupe on write, provenance in payloads ("stated by user 2026-03-14"), and periodic pruning passes. <b>(2) Cross-user leakage:</b> forget the <code>user_id</code> filter once and user A's "prefers aggressive refunds" surfaces in user B's session — always filter at the store layer, never trust the prompt to ignore it. <b>(3) Recall crowding:</b> 30 duplicates of one preference fill all k slots, so nothing else is ever recalled — this looks exactly like "memory stopped working." <b>(4) Summary-then-need:</b> working-memory compression drops the one order ID you need 30 turns later — the preserve-list in the compression prompt (IDs, paths, decisions) is load-bearing, not decoration (next chapter goes deep).</div>
+<div class="callout warn"><p><strong>Memory failure modes that only show up later</strong></p><b>(1) Poisoning:</b> one wrong stored "fact" (a typo'd hostname, a sarcastic user message taken literally) gets recalled, restated by the model, re-extracted, and re-stored — now it has three copies and citation-like authority. Mitigate: dedupe on write, provenance in payloads ("stated by user 2026-03-14"), and periodic pruning passes. <b>(2) Cross-user leakage:</b> forget the <code>user_id</code> filter once and user A's "prefers aggressive refunds" surfaces in user B's session — always filter at the store layer, never trust the prompt to ignore it. <b>(3) Recall crowding:</b> 30 duplicates of one preference fill all k slots, so nothing else is ever recalled — this looks exactly like "memory stopped working." <b>(4) Summary-then-need:</b> working-memory compression drops the one order ID you need 30 turns later — the preserve-list in the compression prompt (IDs, paths, decisions) is load-bearing, not decoration (the next topic goes deep).</div>
 <table>
 <tr><th>Store</th><th>Write trigger</th><th>Read trigger</th><th>Size discipline</th><th>Dies when…</th></tr>
 <tr><td>Conversation buffer</td><td>every turn</td><td>every call (it IS the context)</td><td>token threshold → rolling summary</td><td>trigger fires on count, not tokens</td></tr>
@@ -243,7 +253,7 @@ SYSTEM += <span class="st">"""</span>
 <li>Implement <code>ConversationBuffer</code> and run a scripted 60-turn conversation through it. Verify: compression fires on token count, the last 6 turns stay verbatim, and a fact from turn 3 (an order ID in the preserve-list) survives into the turn-60 view.</li>
 <li>Build <code>EpisodicMemory</code> on any vector store (or a list + cosine in numpy). Write 20 memories including 5 near-duplicates; confirm dedupe stores ~16, and that <code>min_score</code> returns zero hits for an unrelated query instead of the nearest garbage.</li>
 <li>Run the profile extractor over three synthetic sessions where a fact changes (MySQL → "migrating to Postgres" → "fully on Postgres"). Verify the final profile has one stack entry, not three.</li>
-<li>Add the scratchpad tools to your chapter-52 loop and give it a 15-step task. Kill the process at step 8, restart, and confirm the agent resumes from the file rather than starting over.</li>
+<li>Add the scratchpad tools to your <a href="agent-loop.html">The agent loop</a> and give it a 15-step task. Kill the process at step 8, restart, and confirm the agent resumes from the file rather than starting over.</li>
 <li>Write a <code>should_store(text)</code> filter implementing the write policy: rejects secrets (regex for keys/tokens), transient state, and model speculation ("probably", "seems like"). Unit-test it on 15 candidate memories, including 3 adversarial ones.</li>
 </ol></div>
 </section>
@@ -385,10 +395,10 @@ answer = <span class="kw">await</span> llm(SYNTH_PROMPT + <span class="st">"</sp
 <li><b>Log the budget report:</b> if you can't say where your input tokens went last turn, you're not doing context engineering yet.</li>
 </ul>
 <div class="callout"><p><strong>Mini-scenario: the agent that got dumber every hour</strong></p>Your ops agent works great at 9 am and is useless by lunch. Nothing changed — except its context. Each incident investigation appended raw kubectl output (8–20k tokens a pop); by turn 60 the window held 140k tokens, 90% of it stale pod listings. Symptoms: it re-asks answered questions, misses the one relevant line, and each turn costs 6× the morning rate. The fix took an afternoon: truncate tool results to 2k with a "full output at &lt;path&gt;" pointer, compaction at 50k with the pin-verification above, and log <code>bud.report()</code> per turn. Same model, same prompts — the agent "got smarter" purely by carrying less. When quality degrades over a session's lifetime, suspect the context before the model.</div>
-<div class="callout warn"><p><strong>Compaction gotcha</strong></p>A naive summary silently drops the one ID/decision you needed 30 turns later. Always pin "what to preserve," and keep recent turns raw. Related traps: <b>(1)</b> compacting <i>mid tool-exchange</i> — never summarize away an assistant tool_use whose tool_result is still in the tail, or the API rejects the transcript; compact only at turn boundaries. <b>(2)</b> Summarizing the summary: after 3–4 generations of rolling compaction, early facts have been paraphrased four times — pin-verification catches IDs, but decisions blur; re-anchor critical state in external memory (the scratchpad file, previous chapter) instead of letting it live only in summaries. <b>(3)</b> Cache-oblivious compaction: every compaction rewrites the transcript prefix and invalidates your incremental cache — batch compactions (compact rarely, cut deep) rather than trimming a little every turn.</div>
+<div class="callout warn"><p><strong>Compaction gotcha</strong></p>A naive summary silently drops the one ID/decision you needed 30 turns later. Always pin "what to preserve," and keep recent turns raw. Related traps: <b>(1)</b> compacting <i>mid tool-exchange</i> — never summarize away an assistant tool_use whose tool_result is still in the tail, or the API rejects the transcript; compact only at turn boundaries. <b>(2)</b> Summarizing the summary: after 3–4 generations of rolling compaction, early facts have been paraphrased four times — pin-verification catches IDs, but decisions blur; re-anchor critical state in external memory (the scratchpad file, an earlier topic) instead of letting it live only in summaries. <b>(3)</b> Cache-oblivious compaction: every compaction rewrites the transcript prefix and invalidates your incremental cache — batch compactions (compact rarely, cut deep) rather than trimming a little every turn.</div>
 <div class="callout success"><p><strong>Takeaway</strong></p>Context engineering is a budget problem with four levers: <b>allocate</b> (explicit per-component budgets, elastic retrieval last), <b>compress</b> (compaction with preserve-lists and pin checks), <b>reuse</b> (caching: static first, byte-identical, volatile last), and <b>isolate</b> (sub-agents return digests, not transcripts). The teams whose agents feel "smart all day" aren't using secret models — they're just refusing to let junk tokens ride along.</div>
 <div class="callout"><p><strong>Exercises</strong></p><ol>
-<li>Wire <code>ContextBudget</code> into your chapter-52 loop and log <code>report()</code> every step of a 10-step run. Identify the largest component and the step where history overtakes retrieval.</li>
+<li>Wire <code>ContextBudget</code> into your <a href="agent-loop.html">The agent loop</a> and log <code>report()</code> every step of a 10-step run. Identify the largest component and the step where history overtakes retrieval.</li>
 <li>Take a real 30+ turn transcript (or generate one) containing at least 5 identifiers. Run naive <code>compact()</code> and <code>compact_v2()</code>; then ask 5 questions whose answers live in the compacted head. Score both summaries on answers recovered.</li>
 <li>Measure caching empirically: run the same 8-step agent task with and without <code>cache_control</code> markers, and compare billed input tokens from the usage fields. Compute your actual savings ratio and compare to the table's estimate.</li>
 <li>Add a timestamp to your system prompt, rerun exercise 3, and confirm the cache hit rate drops to zero. (Cheap lesson now, expensive lesson later.)</li>
@@ -405,13 +415,14 @@ answer = <span class="kw">await</span> llm(SYNTH_PROMPT + <span class="st">"</sp
 <li>Prompt caching of the stable prefix (system prompt, tool definitions) cuts cost and latency a lot.</li>
 </ul>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>21 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>GDPR delete by user_id across memory stores</li><li>Don't store secrets/PII without encryption</li><li>Memory write audit log</li></ul></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>22 &mdash; Where It Shows Up</h2>
-<div class="card"><ul><li><a href="what-is-an-agent.html">Agent Architectures</a></li><li><a href="agent-loop.html">Production Agent</a></li><li><a href="../rag/vector-search.html">Vector Databases</a></li><li><a href="../production/semantic-cache.html">Semantic Cache</a></li></ul></div>
+<section id="related-topics">
+  <h2>22 &mdash; Related topics</h2>
+<div class="card"><ul><li><a href="what-is-an-agent.html">What an agent is</a></li><li><a href="agent-loop.html">The agent loop</a></li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a></li><li><a href="../production/semantic-cache.html">Semantic caching</a></li></ul></div>
 </section>
 <section id="common-pitfalls">
   <h2>23 &mdash; Common Pitfalls</h2>

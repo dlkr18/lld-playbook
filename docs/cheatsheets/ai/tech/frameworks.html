@@ -47,7 +47,7 @@
 </section>
 <section id="the-framework-landscape">
   <h2>02 &mdash; The framework landscape</h2>
-<p>Frameworks are sugar over the loop from the agent-loop chapter. They add state, memory, multi-agent wiring, and safety. Pick by what you need — and know exactly what each one is hiding from you, because that's what you'll be debugging at 2am.</p>
+<p>Frameworks are sugar over the loop from <a href="../agents/agent-loop.html">The agent loop</a>. They add state, memory, multi-agent wiring, and safety. Pick by what you need — and know exactly what each one is hiding from you, because that's what you'll be debugging at 2am.</p>
 </section>
 <section id="the-core-table">
   <h2>03 &mdash; The core table</h2>
@@ -140,7 +140,7 @@
 <section id="one-agent-five-frameworks">
   <h2>09 &mdash; One agent, five frameworks</h2>
 <p>A tool-using agent in each framework's idiom. Notice they're all the same loop with different ergonomics. The ★ marks each one's distinctive feature. Each example is now a fuller working shape — tools, memory, and the framework's signature move actually exercised — followed by the honest note: what breaks when you outgrow it.</p>
-<p>The task is held constant so the ergonomics are comparable: a small support agent that can look up an order and issue a refund, remembers the conversation, and demonstrates the one thing its framework does that the others don't. Read all five, then flip between tabs — the loop from the agent-loop chapter should shine through every one.</p>
+<p>The task is held constant so the ergonomics are comparable: a small support agent that can look up an order and issue a refund, remembers the conversation, and demonstrates the one thing its framework does that the others don't. Read all five, then flip between tabs — the loop from <a href="../agents/agent-loop.html">The agent loop</a> should shine through every one.</p>
 </section>
 <section id="langgraph">
   <h2>10 &mdash; LangGraph</h2>
@@ -365,7 +365,7 @@ state = <span class="kw">await</span> team.save_state()                    <span
 </section>
 <section id="the-thin-harness-50-lines-that-replace-a-framework">
   <h2>17 &mdash; The thin harness: ~50 lines that replace a framework</h2>
-<p>This is the skeleton the case-study team ended up with. Four pieces: a provider interface (so models are swappable), a tool registry (so tools are data, not wiring), the loop, and a tracing hook (so <a href="../production/index.html">Production &amp; evals</a>'s observability chapter has somewhere to plug in). Everything else — retries, budgets, memory policy — attaches to these seams.</p>
+<p>This is the skeleton the case-study team ended up with. Four pieces: a provider interface (so models are swappable), a tool registry (so tools are data, not wiring), the loop, and a tracing hook (so <a href="../production/observability.html">Observability</a> has somewhere to plug in). Everything else — retries, budgets, memory policy — attaches to these seams.</p>
 <div class="code-block"><div class="code-file"><span>harness.py — provider interface, tool registry, loop, tracing hook</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> json, time, uuid
 <span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass, field
 <span class="kw">from</span> typing <span class="kw">import</span> Protocol, Callable, Any
@@ -421,15 +421,15 @@ state = <span class="kw">await</span> team.save_state()                    <span
             messages.append({<span class="st">"</span><span class="st">role</span><span class="st">"</span>: <span class="st">"</span><span class="st">tool</span><span class="st">"</span>, <span class="st">"</span><span class="st">tool_call_id</span><span class="st">"</span>: call[<span class="st">"</span><span class="st">id</span><span class="st">"</span>], <span class="st">"</span><span class="st">content</span><span class="st">"</span>: out})
     trace(<span class="st">"</span><span class="st">max_iters</span><span class="st">"</span>, run=run_id)
     <span class="kw">return</span> <span class="st">"</span><span class="st">I couldn</span><span class="st">'</span><span class="st">t finish within my step limit; here</span><span class="st">'</span><span class="st">s where I got: ...</span><span class="st">"</span></pre></div>
-<p>Notes on the seams: tool errors are returned to the model as text, not raised — the model often self-corrects (bad args, wrong id) and that's one recovery loop you get for free. The token budget and iteration cap are the two levers that make the harness safe to expose to users. The <code>trace</code> callable is deliberately a bare function: <a href="../production/index.html">Production &amp; evals</a>'s observability chapter replaces <code>null_trace</code> with an OpenTelemetry-shaped one without touching this file.</p>
+<p>Notes on the seams: tool errors are returned to the model as text, not raised — the model often self-corrects (bad args, wrong id) and that's one recovery loop you get for free. The token budget and iteration cap are the two levers that make the harness safe to expose to users. The <code>trace</code> callable is deliberately a bare function: <a href="../production/observability.html">Observability</a> replaces <code>null_trace</code> with an OpenTelemetry-shaped one without touching this file.</p>
 <h3>What you still have to add (the honest bill)</h3>
 <ul>
-<li><b>Retry/backoff and fallback</b> inside each provider's <code>chat()</code> — the reliability chapter's module drops in here.</li>
+<li><b>Retry/backoff and fallback</b> inside each provider's <code>chat()</code> — <a href="../production/reliability.html">Reliability engineering</a>'s module drops in here.</li>
 <li><b>Context management:</b> truncate/summarize <code>messages</code> when they approach the window; the harness above will happily grow forever.</li>
 <li><b>Streaming</b>, if the UX needs it — roughly doubles the provider adapter's size.</li>
 <li><b>Checkpointing</b>, only if you have long jobs or HITL: persist <code>messages</code> + iteration index per run_id; that's a table, not a framework.</li>
 </ul>
-<div class="callout success"><p><strong>What top teams actually do</strong></p>Often a <b>hybrid</b>: a thin custom harness on the raw SDK for the performance-critical core, with a framework for glue and less-critical flows. Because they know the agent-loop chapter loop, they can drop down to raw whenever an abstraction gets in the way. <b>Learn the loop; frameworks become optional.</b> The harness above is that option made concrete — 50 lines you fully own, with seams for everything <a href="../production/index.html">Production &amp; evals</a> adds.</div>
+<div class="callout success"><p><strong>What top teams actually do</strong></p>Often a <b>hybrid</b>: a thin custom harness on the raw SDK for the performance-critical core, with a framework for glue and less-critical flows. Because they know <a href="../agents/agent-loop.html">The agent loop</a>, they can drop down to raw whenever an abstraction gets in the way. <b>Learn the loop; frameworks become optional.</b> The harness above is that option made concrete — 50 lines you fully own, with seams for everything <a href="../production/index.html">Production &amp; evals</a> adds.</div>
 <div class="callout"><p><strong>Exercises</strong></p><ol>
 <li>Implement <code>Provider.chat()</code> for one real vendor SDK (normalize its tool-call format into <code>ModelReply</code>). Run the harness end-to-end with two tools.</li>
 <li>Add a second provider adapter and swap providers with a one-line change. Verify your eval cases pass on both.</li>

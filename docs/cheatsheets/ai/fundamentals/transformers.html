@@ -42,7 +42,7 @@
   <a href="#counting-parameters-and-flops"><span class="num">24</span> Counting parameters and FLOPs</a>
   <a href="#flashattention"><span class="num">25</span> FlashAttention</a>
   <a href="#production-ops"><span class="num">26</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">27</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">27</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">28</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">29</span> Check yourself</a>
   <a href="#build-it"><span class="num">30</span> Build it</a>
@@ -60,9 +60,10 @@
 <div class="diagram"><img alt="Transformers &amp; Attention overview" src="../fundamentals/img/transformers-attention-main.png"/></div><p class="diagram-caption">Decoder-only transformer: embeddings + positional encoding feed stacked blocks of causal self-attention and FFN; output logits drive autoregressive next-token prediction.</p>
 <div class="diagram"><img src="../fundamentals/img/transformers-attention-scaled-zoom.png" alt="Scaled dot-product attention with every shape: project to Q, K, V, multiply Q by K-transpose, divide by the square root of d_k, apply the causal mask and softmax, multiply by V."></div><p class="diagram-caption">Scaled dot-product attention with every shape: project to Q, K, V, multiply Q by K-transpose, divide by the square root of d_k, apply the causal mask and softmax, multiply by V.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
-<div class="card"><p>The <strong>transformer</strong> (Vaswani et al., 2017) replaced recurrence with <strong>self-attention</strong>: each token attends to others in parallel. Modern chat LLMs use <strong>decoder-only</strong> stacks with a <strong>causal mask</strong> so generation stays left-to-right.</p><h3>Functional</h3><ul><li>Map token sequence to next-token logits</li><li>Capture long-range dependencies without RNN vanishing gradients</li><li>Parallelize prefill across prompt tokens on GPU</li></ul><h3>Non-functional</h3><ul><li>Attention cost O(n²) in sequence length n (naive)</li><li>Memory scales with layers × heads × seq_len (KV cache)</li></ul><blockquote>See <a href="what-is-an-llm.html">LLM Fundamentals</a> for the full training→inference story; this sheet is the <strong>mechanism</strong>.</blockquote></div>
+<div class="card"><p>The <strong>transformer</strong> (Vaswani et al., 2017) replaced recurrence with <strong>self-attention</strong>: each token attends to others in parallel. Modern chat LLMs use <strong>decoder-only</strong> stacks with a <strong>causal mask</strong> so generation stays left-to-right.</p><h3>Functional</h3><ul><li>Map token sequence to next-token logits</li><li>Capture long-range dependencies without RNN vanishing gradients</li><li>Parallelize prefill across prompt tokens on GPU</li></ul><h3>Non-functional</h3><ul><li>Attention cost O(n²) in sequence length n (naive)</li><li>Memory scales with layers × heads × seq_len (KV cache)</li></ul><blockquote>See <a href="what-is-an-llm.html">What an LLM is</a> for the full training→inference story; this sheet is the <strong>mechanism</strong>.</blockquote></div>
 </section>
 <section id="core-concepts">
   <h2>03 &mdash; Core Concepts</h2>
@@ -113,11 +114,12 @@ def scaled_dot_product_attention(q, k, v, mask=None):
 </section>
 <section id="deep-dive-complexity-optimizations">
   <h2>11 &mdash; Deep Dive: Complexity &amp; Optimizations</h2>
-<div class="card"><ul><li><strong>Naive attention:</strong> O(n²d) time, O(n²) memory for n tokens</li><li><strong>KV cache:</strong> O(n) memory per layer at decode; see <a href="../inference/inference-internals.html">Context Window &amp; KV Cache</a></li><li><strong>FlashAttention:</strong> tiled computation, recomputes in SRAM</li><li><strong>GQA/MQA:</strong> share K/V heads across Q heads — fewer KV bytes</li></ul></div>
+<div class="card"><ul><li><strong>Naive attention:</strong> O(n²d) time, O(n²) memory for n tokens</li><li><strong>KV cache:</strong> O(n) memory per layer at decode; see <a href="../inference/inference-internals.html">Inference internals</a></li><li><strong>FlashAttention:</strong> tiled computation, recomputes in SRAM</li><li><strong>GQA/MQA:</strong> share K/V heads across Q heads — fewer KV bytes</li></ul></div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="transformer-internals-attention-for-real">
   <h2>12 &mdash; Transformer internals — attention, for real</h2>
-<p><a href="index.html">LLM fundamentals</a> gives the intuition ("attention lets tokens look at each other"). This chapter is the actual mechanism — the one interviews and serving math (<a href="../inference/index.html">Inference &amp; serving</a>) depend on.</p>
+<p><a href="index.html">LLM fundamentals</a> gives the intuition ("attention lets tokens look at each other"). This topic is the actual mechanism — the one interviews and serving math (<a href="../inference/index.html">Inference &amp; serving</a>) depend on.</p>
 </section>
 <section id="tokenization-bpe-in-one-paragraph">
   <h2>13 &mdash; Tokenization: BPE in one paragraph</h2>
@@ -254,7 +256,7 @@ KV cache per sequence ≈ 2 × layers × tokens × kv_heads × head_dim × bytes
 <li><b>Quadratic means asymmetric costs.</b> Doubling context roughly 4×es attention compute at prefill; "just increase max_tokens" is cheap, "just increase context" is not.</li>
 <li><b>Numbers tokenize inconsistently</b> (<code>2049</code> one token, <code>2,049</code> three). Arithmetic reliability varies with formatting — normalize numbers before asking the model to reason over them.</li>
 </ul></div>
-<div class="callout"><p><strong>Build it once</strong></p>The highest-leverage exercise in this entire book: Karpathy's <i>"Let's Build GPT"</i> → implement BPE, causal attention, a block, and train a tiny model on Shakespeare. The two code listings in this chapter are the heart of it — extend <code>attention.py</code> with the FFN, residuals, and norms and you have a block; stack 6 of them and you have a language model. After that, every later chapter (fine-tuning, KV cache, serving) is concrete instead of abstract. Reference: nanoGPT; deep path: Stanford CS336.</div>
+<div class="callout"><p><strong>Build it once</strong></p>The highest-leverage exercise in this entire book: Karpathy's <i>"Let's Build GPT"</i> → implement BPE, causal attention, a block, and train a tiny model on Shakespeare. The two code listings in this topic are the heart of it — extend <code>attention.py</code> with the FFN, residuals, and norms and you have a block; stack 6 of them and you have a language model. After that, later topics (fine-tuning, KV cache, serving) is concrete instead of abstract. Reference: nanoGPT; deep path: Stanford CS336.</div>
 <div class="callout success"><p><strong>Takeaways</strong></p><ul>
 <li>Attention = softmax(QKᵀ/√d_k)·V — compatibility-weighted information routing. The causal mask is what makes the KV cache legal.</li>
 <li>Attention mixes positions; the MLP transforms them (and holds ⅔ of block params); residuals make depth trainable; RoPE injects <i>relative</i> position by rotating Q and K.</li>
@@ -363,13 +365,14 @@ inference FLOPs ≈ 2 · N per generated token</pre>
 <p>Naive attention writes the T × T score matrix to slow HBM, reads it back for softmax, writes again, reads again for × V. At long T that memory traffic dominates.</p>
 <p>FlashAttention tiles Q, K, V into blocks that fit in on-chip SRAM, computes scores block by block, and uses an <strong>online softmax</strong> (keep a running max and running sum, rescale partial outputs when the max changes) so the full matrix never exists. Result is <em>exact</em> attention with O(T) memory and 2–4× speed. In PyTorch: <code>F.scaled_dot_product_attention</code> picks a flash kernel automatically.</p>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>26 &mdash; Production &amp; Ops</h2>
-<div class="card"><ul><li>Serving uses fused kernels (FlashAttention-2, cuDNN)</li><li>Tensor parallel splits heads/layers across GPUs</li><li>Monitor KV cache memory per request in <a href="../inference/serving.html">Model Serving (vLLM)</a></li><li>Quantization (INT4) shrinks weight memory, not attention FLOPs</li></ul></div>
+<div class="card"><ul><li>Serving uses fused kernels (FlashAttention-2, cuDNN)</li><li>Tensor parallel splits heads/layers across GPUs</li><li>Monitor KV cache memory per request in <a href="../inference/serving.html">Serving &amp; scaling</a></li><li>Quantization (INT4) shrinks weight memory, not attention FLOPs</li></ul></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>27 &mdash; Where It Shows Up</h2>
-<div class="card"><ul><li><a href="what-is-an-llm.html">LLM Fundamentals</a> — decoder-only stack overview</li><li><a href="../inference/inference-internals.html">Context Window &amp; KV Cache</a> — KV cache inference memory</li><li><a href="tokens-context-cost.html">Tokenization &amp; Context</a> — tokens fed into embeddings</li><li><a href="how-llms-are-trained.html">Pre-training, SFT &amp; RLHF</a> — training these weights</li><li><a href="../inference/serving.html">Model Serving (vLLM)</a> — PagedAttention serving</li><li><a href="../rag/rag-pipeline.html">RAG End-to-End</a> — attention over retrieved context</li><li><a href="../fundamentals/../../hld/web-search-engine.html">Web Search Engine</a> — ranking + LLM synthesis</li></ul></div>
+<section id="related-topics">
+  <h2>27 &mdash; Related topics</h2>
+<div class="card"><ul><li><a href="what-is-an-llm.html">What an LLM is</a> — decoder-only stack overview</li><li><a href="../inference/inference-internals.html">Inference internals</a> — KV cache inference memory</li><li><a href="tokens-context-cost.html">Tokens, context &amp; cost</a> — tokens fed into embeddings</li><li><a href="how-llms-are-trained.html">How LLMs are trained</a> — training these weights</li><li><a href="../inference/serving.html">Serving &amp; scaling</a> — PagedAttention serving</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — attention over retrieved context</li><li><a href="../fundamentals/../../hld/web-search-engine.html">Web Search Engine</a> — ranking + LLM synthesis</li></ul></div>
 </section>
 <section id="common-pitfalls">
   <h2>28 &mdash; Common Pitfalls</h2>
@@ -388,7 +391,7 @@ inference FLOPs ≈ 2 · N per generated token</pre>
 <details><summary>Where do most parameters live?</summary><div class="answer">FFN layers (~2/3): up/down projections often 4× hidden dim. Attention projections are smaller fraction at scale.</div></details>
 <details><summary>How does attention relate to RAG?</summary><div class="answer">Retrieved chunks become prompt tokens; every layer's attention connects query tokens to chunk tokens. Long irrelevant chunks dilute attention — rerank and trim matter.</div></details>
 <details><summary>Draw one transformer block.</summary><div class="answer">Input → LayerNorm → Multi-Head Causal Self-Attention → add residual → LayerNorm → FFN (up, act, down) → add residual → output to next block.</div></details>
-<details><summary>SDE3: what separates a strong transformers answer?</summary><div class="answer">Derives scaled dot-product, explains causal mask, multi-head split, RoPE vs absolute, O(n²) prefill + KV cache decode, names FlashAttention/GQA, ties to <a href="../inference/serving.html">Model Serving (vLLM)</a> serving constraints.</div></details>
+<details><summary>SDE3: what separates a strong transformers answer?</summary><div class="answer">Derives scaled dot-product, explains causal mask, multi-head split, RoPE vs absolute, O(n²) prefill + KV cache decode, names FlashAttention/GQA, ties to <a href="../inference/serving.html">Serving &amp; scaling</a> serving constraints.</div></details>
 <details><summary>Why divide QKᵀ by √d_k?</summary><div class="answer">Dot-product variance grows with d_k; unscaled scores saturate softmax and gradients vanish.</div></details>
 <details><summary>How does a decoder train on all positions at once but generate one token at a time?</summary><div class="answer">At training the whole target is known and the causal mask blocks the future, so positions compute in parallel. At inference each token depends on the previous sampled one.</div></details>
 <details><summary>KV cache for Llama-2-7B (32 layers, 32 KV heads, 128 dim), 4k context, batch 8, fp16?</summary><div class="answer">2·32·32·128·2 bytes = 0.5 MB/token × 32,768 tokens ≈ 16 GB, more than the weights.</div></details>

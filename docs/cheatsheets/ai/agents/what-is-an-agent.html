@@ -39,10 +39,10 @@
   <a href="#the-arithmetic-same-task-both-ways"><span class="num">21</span> The arithmetic: same task, both ways</a>
   <a href="#signals-you-classified-wrong-and-how-to-walk-it-back"><span class="num">22</span> Signals you classified wrong (and how to walk it back)</a>
   <a href="#a-60-second-classification-checklist"><span class="num">23</span> A 60-second classification checklist</a>
-  <a href="#what-an-agent-is"><span class="num">24</span> What an agent is</a>
+  <a href="#recap"><span class="num">24</span> Recap</a>
   <a href="#workflows-vs-agents-pick-the-least-autonomy-that-works"><span class="num">25</span> Workflows vs agents (pick the least autonomy that works)</a>
   <a href="#production-ops"><span class="num">26</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">27</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">27</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">28</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">29</span> Check yourself</a>
 </nav>
@@ -60,6 +60,7 @@
 <img alt="Agent architectures overview: chain, ReAct, plan-execute, reflexion, multi-agent" src="../systems/img/agent-architectures-main.png"/>
 </div><p class="diagram-caption">Five patterns on one whiteboard: linear chain (1 LLM call), ReAct loop (thought→action→observation), Plan-and-Execute (planner + executor), Reflexion (agent + evaluator + memory), and supervisor multi-agent workflow.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card">
@@ -131,7 +132,7 @@ agent.run("Research competitors and draft a comparison table")</pre>
   allowed_tools: list[str]        # allowlist
   require_approval: list[str]     # ["send_email", "delete_record"]
   termination_tool: str = "finish"  # explicit stop signal</pre>
-<blockquote>See <a href="tool-calling.html">Tool Calling &amp; Functions</a> for JSON schema design, parallel tool calls, and error handling contracts.</blockquote>
+<blockquote>See <a href="tool-calling.html">Tool calling</a> for JSON schema design, parallel tool calls, and error handling contracts.</blockquote>
 </div>
 </section>
 <section id="when-to-use-when-not">
@@ -305,6 +306,7 @@ def should_stop(state) -&gt; bool:
     return False</pre>
 </div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="ai-agents-vs-agentic-ai">
   <h2>12 &mdash; AI agents vs Agentic AI</h2>
 <p>These two terms get used interchangeably, but there's a useful distinction: one is a <b>component</b>, the other is a <b>paradigm</b> built out of those components.</p>
@@ -313,7 +315,7 @@ def should_stop(state) -&gt; bool:
 <section id="clean-definitions">
   <h2>13 &mdash; Clean definitions</h2>
 <div class="tile-grid">
-<div class="tile"><h4>AI Agent (the building block)</h4><p>A discrete entity that perceives → reasons → acts in a loop for a <b>specific</b> goal. One context, a defined toolset, bounded autonomy. This is the agent loop in the next chapters. <i>e.g. a support bot that looks up orders; a coding assistant.</i></p></div>
+<div class="tile"><h4>AI Agent (the building block)</h4><p>A discrete entity that perceives → reasons → acts in a loop for a <b>specific</b> goal. One context, a defined toolset, bounded autonomy. This is the agent loop in the next topics. <i>e.g. a support bot that looks up orders; a coding assistant.</i></p></div>
 <div class="tile"><h4>Agentic AI (the paradigm/system)</h4><p>A higher-order system with agency at the <b>system</b> level: multiple specialized agents collaborating, an orchestrator decomposing goals dynamically, persistent shared memory, emergent coordination. <i>e.g. a deep-research system; an "AI software team" of planner+coder+reviewer.</i></p></div>
 </div>
 <table>
@@ -325,7 +327,7 @@ def should_stop(state) -&gt; bool:
 <tr><td><b>Memory</b></td><td>usually per-session</td><td>often persistent &amp; shared across agents</td></tr>
 <tr><td><b>Coordination</b></td><td>none (it's alone)</td><td>core feature (manager/workers, debate, pipelines)</td></tr>
 <tr><td><b>Failure surface</b></td><td>one loop can stall or hallucinate</td><td>all of that, plus coordination bugs: duplicated work, lost handoffs, agents contradicting each other</td></tr>
-<tr><td><b>Maps to</b></td><td>this Part (the loop)</td><td><a href="multi-agent.html">Multi-agent systems</a> (multi-agent) + <a href="../production/index.html">Production &amp; evals</a> (architectures)</td></tr>
+<tr><td><b>Maps to</b></td><td>the agent loop</td><td><a href="multi-agent.html">Multi-agent systems</a> (multi-agent) + <a href="../production/index.html">Production &amp; evals</a> (architectures)</td></tr>
 </table>
 </section>
 <section id="it-s-a-spectrum-not-a-binary">
@@ -458,12 +460,12 @@ def should_stop(state) -&gt; bool:
 <div class="code-block"><div class="code-file"><span>agent version — the model gathers what it decides it needs</span><span class="code-lang">python</span></div><pre>TOOLS = [run_single_test, read_file, git_log_touching, grep_repo]
 
 <span class="kw">def</span> <span class="fn">diagnose_agent</span>(test_name: <span class="tp">str</span>) -&gt; <span class="tp">str</span>:
-    <span class="kw">return</span> run_agent(                       <span class="cm"># the loop from the next chapter</span>
+    <span class="kw">return</span> run_agent(                       <span class="cm"># the loop from the next topic</span>
         user_msg=<span class="st">f</span><span class="st">"</span><span class="st">Diagnose the root cause of failing test </span><span class="st">{</span>test_name<span class="st">}</span><span class="st">. </span><span class="st">"</span>
 <span class="st">f</span><span class="st">"</span><span class="st">Investigate with the tools, then state cause and fix.</span><span class="st">"</span>,
         tools=schemas(TOOLS), impls=impls(TOOLS), max_steps=<span class="nr">10</span>)</pre></div>
 <p><b>Agent cost, typical run (illustrative trace):</b> step 1 run test (in 1k/out 150) → step 2 read test file (in 4.5k/out 180) → step 3 grep for the fixture (in 8k/out 160) → step 4 read fixture (in 11k/out 140) → step 5 final answer (in 14k/out 700). Note the input <i>grows every step</i> because the whole history rides along: total ≈ 38.5k input, 1.3k output ≈ 38,500×$3/M + 1,330×$15/M ≈ <b>$0.135</b>, latency ≈ 5 round-trips ≈ <b>25–40 s</b>. So: roughly <b>4× the cost and 3–4× the latency</b> of the workflow — in exchange for finding the fixture bug the workflow could never see.</p>
-<div class="callout success"><p><strong>The quadratic tax</strong></p>Agent input tokens grow roughly quadratically with steps (each step re-sends all prior steps), so a 10-step run isn't 2× a 5-step run — it's closer to 4× on input cost. This is why step budgets, tool-result truncation, and prompt caching (this Part's later chapters) aren't optimizations — they're what makes agents affordable at all.</div>
+<div class="callout success"><p><strong>The quadratic tax</strong></p>Agent input tokens grow roughly quadratically with steps (each step re-sends all prior steps), so a 10-step run isn't 2× a 5-step run — it's closer to 4× on input cost. This is why step budgets, tool-result truncation, and prompt caching (later topics) aren't optimizations — they're what makes agents affordable at all.</div>
 <div class="callout"><p><strong>The golden rule from the labs</strong></p><b>Start as simple as possible.</b> One prompt → add RAG if it needs facts → add tools if it must act → add an agent loop <i>only</i> when the path is genuinely unpredictable. Agents buy flexibility by spending latency, cost, and predictability — only pay when you must.</div>
 <div class="callout warn"><p><strong>Where classification goes wrong in practice</strong></p><b>(1) "It might need flexibility someday"</b> — speculative flexibility is how a $0.03 pipeline becomes a $0.15 one with a 40-second p95, months before any input actually needs it. <b>(2) Classifying by demo, not by distribution:</b> the impressive demo case is agent-shaped, but 92% of production traffic is the boring known-path case; route, don't uplift everything. <b>(3) Forgetting the done-condition check:</b> an agent on a task with no verifiable finish ("make this doc better") loops until the budget kills it, then stops arbitrarily — the budget became the done-condition, which means you shipped a random-stopping workflow that costs 10× more. <b>(4) Letting the agent own an irreversible step:</b> autonomy should end one step before money moves, data deletes, or emails send — put that step behind your code or a human.</div>
 </section>
@@ -488,8 +490,8 @@ def should_stop(state) -&gt; bool:
 <li>Find one system you've built or inherited where an LLM call sits inside a loop. Answer honestly: who owns control flow? If the model does, write down its done-condition. If you can't, propose one — or propose demoting it to a workflow.</li>
 </ol></div>
 </section>
-<section id="what-an-agent-is">
-  <h2>24 &mdash; What an agent is</h2>
+<section id="recap">
+  <h2>24 &mdash; Recap</h2>
 <p>An agent is just a loop. What separates a demo from a production agent is bounded autonomy, good tool design, context management, safety, and evaluation of trajectories, not only final answers.</p>
 <p>An LLM that, given a goal, repeatedly decides the next action (call a tool, ask a question, or finish), observes the result, and continues. The ReAct pattern: <em>reason → act → observe → repeat</em>.</p>
 <p>Tool calling (function calling) is the mechanism: you describe tools with a name, description and JSON schema; the model replies with a structured call instead of text; <strong>your code</strong> executes it and appends the result to the conversation. The model never runs anything itself.</p>
@@ -508,6 +510,7 @@ def should_stop(state) -&gt; bool:
 </table>
 <p>Workflows are predictable and cheap; agents are flexible and costly. Saying "I started with an agent, moved most of it to a workflow, and kept the agent only for X" is a strong signal.</p>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>26 &mdash; Production &amp; Ops</h2>
 <div class="card">
@@ -534,16 +537,16 @@ def should_stop(state) -&gt; bool:
 </table>
 </div>
 </section>
-<section id="where-it-shows-up">
-  <h2>27 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>27 &mdash; Related topics</h2>
 <div class="card"><ul>
 <li><a href="../tech/langgraph.html">LangGraph</a> — stateful agent graphs, ReAct prebuilt, Plan-and-Execute patterns, checkpointing</li>
 <li><a href="../tech/crewai.html">CrewAI</a> — multi-agent orchestration with role-based agents and task delegation</li>
-<li><a href="tool-calling.html">Tool Calling &amp; Functions</a> — JSON schema tools, parallel calls, error contracts</li>
-<li><a href="multi-agent.html">Multi-Agent Orchestration</a> — supervisor pattern, handoffs, shared state</li>
-<li><a href="agent-loop.html">Production Agent (HITL)</a> — fallbacks, escalation, audit logs</li>
+<li><a href="tool-calling.html">Tool calling</a> — JSON schema tools, parallel calls, error contracts</li>
+<li><a href="multi-agent.html">Multi-agent systems</a> — supervisor pattern, handoffs, shared state</li>
+<li><a href="agent-loop.html">The agent loop</a> — fallbacks, escalation, audit logs</li>
 <li><a href="../systems/../../hld/job-scheduler.html">Job Scheduler (HLD)</a> — agent tool calls map to async job execution with retries, idempotency, and DLQ</li>
-<li><a href="../rag/rag-pipeline.html">RAG End-to-End</a> — retrieval is often the first tool in an agent's toolkit</li>
+<li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — retrieval is often the first tool in an agent's toolkit</li>
 </ul></div>
 </section>
 <section id="common-pitfalls">

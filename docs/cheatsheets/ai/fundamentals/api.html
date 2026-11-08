@@ -33,7 +33,7 @@
   <a href="#streaming-tokens-as-they-re-generated"><span class="num">15</span> Streaming: tokens as they&#x27;re generated</a>
   <a href="#when-the-call-fails-it-will"><span class="num">16</span> When the call fails (it will)</a>
   <a href="#production-ops"><span class="num">17</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">18</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">18</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">19</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">20</span> Check yourself</a>
 </nav>
@@ -52,10 +52,11 @@
 </div><p class="diagram-caption">Request flow: client → auth + rate limit → chat.completions (stream or JSON) → optional tool loop → response. Typical latency: 200–800 ms TTFT streaming; Batch API ~50% cost discount for offline jobs.</p>
 <div class="diagram"><img src="../tech/img/openai-api-patterns-tools-zoom.png" alt="Function calling: the model returns tool_calls, your code runs the function, and the result goes back as a tool message for the next turn."></div><p class="diagram-caption">Function calling: the model returns tool_calls, your code runs the function, and the result goes back as a tool message for the next turn.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card">
-<p><strong>Problem:</strong> LLM apps need a stable contract for chat, tools, embeddings, and structured data — with streaming UX, cost control, and provider failover. Raw HTTP to OpenAI/Anthropic is the foundation; frameworks like <a href="../tech/langchain.html">LangChain</a> wrap these calls.</p><h3>Functional</h3><ul><li>Multi-turn chat with system/user/assistant/tool messages</li><li>Stream tokens to UI (SSE) for perceived low latency</li><li>Force JSON / Pydantic schema via structured outputs</li><li>Native tool calling loop (model proposes → you execute → feed results back)</li><li>Embeddings for RAG ingest and query (same model both sides)</li><li>Batch API for offline bulk jobs at reduced cost</li></ul><h3>Non-Functional</h3><ul><li><strong>Retries</strong> — exponential backoff on 429/5xx; honor <code>Retry-After</code></li><li><strong>Observability</strong> — log <code>usage</code> tokens, model, latency_ms, trace_id</li><li><strong>Latency</strong> — TTFT &lt;500 ms for gpt-4o-mini class; total time scales with output tokens</li><li><strong>Security</strong> — API keys server-side only; never in browser bundles</li></ul><blockquote><strong>Position in stack:</strong> Below orchestration (<a href="../tech/langgraph.html">LangGraph</a>, <a href="../tech/crewai.html">CrewAI</a>) and above vector storage (<a href="../rag/vector-search.html">Vector Databases</a>). Token and context fundamentals: <a href="what-is-an-llm.html">LLM Fundamentals</a>.</blockquote>
+<p><strong>Problem:</strong> LLM apps need a stable contract for chat, tools, embeddings, and structured data — with streaming UX, cost control, and provider failover. Raw HTTP to OpenAI/Anthropic is the foundation; frameworks like <a href="../tech/langchain.html">LangChain</a> wrap these calls.</p><h3>Functional</h3><ul><li>Multi-turn chat with system/user/assistant/tool messages</li><li>Stream tokens to UI (SSE) for perceived low latency</li><li>Force JSON / Pydantic schema via structured outputs</li><li>Native tool calling loop (model proposes → you execute → feed results back)</li><li>Embeddings for RAG ingest and query (same model both sides)</li><li>Batch API for offline bulk jobs at reduced cost</li></ul><h3>Non-Functional</h3><ul><li><strong>Retries</strong> — exponential backoff on 429/5xx; honor <code>Retry-After</code></li><li><strong>Observability</strong> — log <code>usage</code> tokens, model, latency_ms, trace_id</li><li><strong>Latency</strong> — TTFT &lt;500 ms for gpt-4o-mini class; total time scales with output tokens</li><li><strong>Security</strong> — API keys server-side only; never in browser bundles</li></ul><blockquote><strong>Position in stack:</strong> Below orchestration (<a href="../tech/langgraph.html">LangGraph</a>, <a href="../tech/crewai.html">CrewAI</a>) and above vector storage (<a href="../rag/vector-search.html">Vector search &amp; databases</a>). Token and context fundamentals: <a href="what-is-an-llm.html">What an LLM is</a>.</blockquote>
 </div>
 </section>
 <section id="core-concepts">
@@ -159,7 +160,7 @@ msg = cl.messages.create(
 <div class="step" data-num="1"><span class="label">Validate</span><div class="detail">Sanitize messages; inject system prompt version tag; cap history length.</div></div>
 <div class="step" data-num="2"><span class="label">Call</span><div class="detail">Stream or block; set timeout 60–120s; attach request_id for support.</div></div>
 <div class="step" data-num="3"><span class="label">Tool loop</span><div class="detail">If tool_calls: validate args, execute idempotently, append tool messages, recall (max 5–10 iter).</div></div>
-<div class="step" data-num="4"><span class="label">Log</span><div class="detail">Record usage, model, latency_ms, finish_reason; emit to <a href="../production/observability.html">observability</a> stack.</div></div>
+<div class="step" data-num="4"><span class="label">Log</span><div class="detail">Record usage, model, latency_ms, finish_reason; emit to <a href="../production/observability.html">Observability</a> stack.</div></div>
 </div>
 </div>
 </section>
@@ -254,7 +255,7 @@ while True:
             "role": "tool",
             "tool_call_id": tc.id,
             "content": json.dumps(result),
-        })</pre><p>See <a href="../agents/tool-calling.html">Tool Calling &amp; Functions</a> for schema design, allowlists, and security. For graph-level control use <a href="../tech/langgraph.html">LangGraph</a> <code>ToolNode</code> + HITL interrupts.</p>
+        })</pre><p>See <a href="../agents/tool-calling.html">Tool calling</a> for schema design, allowlists, and security. For graph-level control use <a href="../tech/langgraph.html">LangGraph</a> <code>ToolNode</code> + HITL interrupts.</p>
 </div> <div class="card highlight">
 <h3>Complete runnable tool loop</h3><pre>import json
 from openai import OpenAI
@@ -295,7 +296,7 @@ def run_agent(user_msg: str, max_rounds: int = 8) -&gt; str:
     input=["chunk one", "chunk two"],  # batch in one call
     dimensions=1536,  # optional Matryoshka truncation
 )
-vectors = [d.embedding for d in emb.data]</pre><ul><li><strong>Same model</strong> at ingest and query — never mix vector spaces</li><li>Batch array input to reduce HTTP round trips; respect token limits per request</li><li>Store vectors in <a href="../rag/vector-search.html">vector DB</a>; see <a href="../rag/embedding-models.html">Embedding Models</a> for model selection</li><li>Cache hot query embeddings (TTL 5–60 min) keyed by question hash</li></ul>
+vectors = [d.embedding for d in emb.data]</pre><ul><li><strong>Same model</strong> at ingest and query — never mix vector spaces</li><li>Batch array input to reduce HTTP round trips; respect token limits per request</li><li>Store vectors in <a href="../rag/vector-search.html">Vector search &amp; databases</a>; see <a href="../rag/embedding-models.html">Choosing an embedding model</a> for model selection</li><li>Cache hot query embeddings (TTL 5–60 min) keyed by question hash</li></ul>
 </div>
 </section>
 <section id="deep-dive-batch-api-retries">
@@ -330,6 +331,7 @@ resp = cl.messages.create(
 # Handle resp.content blocks: text vs tool_use vs tool_result</pre>
 </div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="talking-to-a-model-the-api-call">
   <h2>12 &mdash; Talking to a model: the API call</h2>
 <p>Forget the chat UI. Under it is a simple HTTP call. Here's exactly what you send and get back.</p>
@@ -342,7 +344,7 @@ resp = cl.messages.create(
 <li><b>user</b> — what the human says.</li>
 <li><b>assistant</b> — what the model said (you include past ones to give it memory of the conversation).</li>
 </ul>
-<p>Under the SDK it's literally one HTTPS POST: a JSON body with model, messages, and limits, an API-key header, and a JSON response containing the assistant message plus a <code>usage</code> object telling you what you'll be billed. Everything else in this book — RAG, tools, agents — is decoration on this one call.</p>
+<p>Under the SDK it's literally one HTTPS POST: a JSON body with model, messages, and limits, an API-key header, and a JSON response containing the assistant message plus a <code>usage</code> object telling you what you'll be billed. Everything else in this guide — RAG, tools, agents — is decoration on this one call.</p>
 <div class="code-block"><div class="code-file"><span>first_call.py — the complete, runnable Anthropic version</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> anthropic
 
 client = anthropic.Anthropic()                  <span class="cm"># reads ANTHROPIC_API_KEY from env</span>
@@ -494,7 +496,7 @@ stream = openai_client.chat.completions.create(
 <span class="cm"># configure via anthropic.Anthropic(max_retries=…) — but you still need to handle</span>
 <span class="cm"># the final failure and log it.</span></pre></div>
 <h3>Mini-scenario: the demo that died on launch day</h3>
-<p>You build a support-bot demo: one user, works flawlessly. Launch day, 40 concurrent users, and three things happen inside an hour. First, 429s — you never handled them, so users see stack traces (fix: the retry wrapper above, plus a queue). Second, a power user pastes a 300-page PDF; the request dies with the <code>prompt is too long</code> 400 (fix: count tokens before sending, chunk or refuse). Third, finance asks why yesterday cost $60 when your estimate was $5 — you forgot that resending history multiplies input tokens per turn (fix: log <code>resp.usage</code> per call from day one, alert on daily spend). None of these are exotic; all three are visible in this chapter's code before you ever ship.</p>
+<p>You build a support-bot demo: one user, works flawlessly. Launch day, 40 concurrent users, and three things happen inside an hour. First, 429s — you never handled them, so users see stack traces (fix: the retry wrapper above, plus a queue). Second, a power user pastes a 300-page PDF; the request dies with the <code>prompt is too long</code> 400 (fix: count tokens before sending, chunk or refuse). Third, finance asks why yesterday cost $60 when your estimate was $5 — you forgot that resending history multiplies input tokens per turn (fix: log <code>resp.usage</code> per call from day one, alert on daily spend). None of these are exotic; all three are visible in this topic's code before you ever ship.</p>
 <div class="callout warn"><p><strong>Beginner gotchas</strong></p><ul>
 <li><b>Forgot to append history?</b> Total amnesia every call. Forgot to append <i>the assistant's reply</i> (only appending user turns)? Subtler amnesia — the model contradicts what it said a minute ago.</li>
 <li><b>Long conversations cost more every turn</b> (you resend everything). This is exactly why "context management" (<a href="../agents/index.html">Tools &amp; agents</a>) becomes a real engineering problem.</li>
@@ -516,6 +518,7 @@ stream = openai_client.chat.completions.create(
 <li>Write a <code>call_with_retry</code> test double: a fake client that fails with 429 twice then succeeds. Assert your wrapper sleeps twice and returns the third result.</li>
 </ol></div>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>17 &mdash; Production &amp; Ops</h2>
 <div class="card">
@@ -525,15 +528,15 @@ stream = openai_client.chat.completions.create(
 <tr><td>Rate limits</td><td>Per-tenant token bucket; queue overflow; Batch for offline</td></tr>
 <tr><td>Secrets</td><td>Vault / env; rotate keys; never client-side</td></tr>
 <tr><td>Timeouts</td><td>60–120s on completions; shorter on routing calls</td></tr>
-<tr><td>Observability</td><td><a href="../production/observability.html">LLM Observability</a> — trace_id on every call</td></tr>
-<tr><td>Safety</td><td>Content filters; output validation; <a href="../production/security.html">AI Safety</a></td></tr>
+<tr><td>Observability</td><td><a href="../production/observability.html">Observability</a> — trace_id on every call</td></tr>
+<tr><td>Safety</td><td>Content filters; output validation; <a href="../production/security.html">Security &amp; guardrails</a></td></tr>
 </table>
 </div>
 </section>
-<section id="where-it-shows-up">
-  <h2>18 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>18 &mdash; Related topics</h2>
 <div class="card">
-<ul><li><a href="../tech/langchain.html">LangChain</a> — <code>ChatOpenAI</code> wraps chat completions</li><li><a href="../tech/langgraph.html">LangGraph</a> — LLM nodes call same API inside graph</li><li><a href="../rag/rag-in-production.html">Chatbot RAG System</a> — embed + generate calls</li><li><a href="../rag/rag-pipeline.html">RAG End-to-End</a> — retrieval + synthesis</li><li><a href="../rag/embedding-models.html">Embedding Models</a> — model choice and metrics</li><li><a href="../prompting/prompt-techniques.html">Prompt Engineering</a> — message and system prompt design</li><li><a href="../production/cost-performance.html">Cost &amp; Latency Tradeoffs</a> — when to stream vs batch</li></ul>
+<ul><li><a href="../tech/langchain.html">LangChain</a> — <code>ChatOpenAI</code> wraps chat completions</li><li><a href="../tech/langgraph.html">LangGraph</a> — LLM nodes call same API inside graph</li><li><a href="../rag/rag-in-production.html">Making RAG good &amp; measuring it</a> — embed + generate calls</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — retrieval + synthesis</li><li><a href="../rag/embedding-models.html">Choosing an embedding model</a> — model choice and metrics</li><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a> — message and system prompt design</li><li><a href="../production/cost-performance.html">Cost &amp; latency</a> — when to stream vs batch</li></ul>
 </div>
 </section>
 <section id="common-pitfalls">
@@ -546,7 +549,7 @@ stream = openai_client.chat.completions.create(
   <h2>20 &mdash; Check yourself</h2>
 <details>
 <summary>Chat Completions vs Assistants API?</summary>
-<div class="answer">Chat Completions is stateless — you send full message history each call (or manage history yourself). Assistants/Threads store state server-side with built-in file search and code interpreter. Most production RAG/agents use Chat Completions + your own retrieval (<a href="../rag/vector-search.html">vector DB</a>) and <a href="../tech/langgraph.html">LangGraph</a> for durable agent state.</div>
+<div class="answer">Chat Completions is stateless — you send full message history each call (or manage history yourself). Assistants/Threads store state server-side with built-in file search and code interpreter. Most production RAG/agents use Chat Completions + your own retrieval (<a href="../rag/vector-search.html">Vector search &amp; databases</a>) and <a href="../tech/langgraph.html">LangGraph</a> for durable agent state.</div>
 </details>
 <details>
 <summary>How do you implement streaming to a web UI?</summary>
@@ -582,7 +585,7 @@ stream = openai_client.chat.completions.create(
 </details>
 <details>
 <summary>How prevent prompt injection via user content?</summary>
-<div class="answer">Separate system from user; delimit untrusted docs with clear markers; output validation; tool allowlists; never execute model-generated code without sandbox. See <a href="../prompting/prompt-techniques.html">Prompt Engineering</a> and <a href="../production/security.html">AI Safety</a>.</div>
+<div class="answer">Separate system from user; delimit untrusted docs with clear markers; output validation; tool allowlists; never execute model-generated code without sandbox. See <a href="../prompting/prompt-techniques.html">Prompting techniques</a> and <a href="../production/security.html">Security &amp; guardrails</a>.</div>
 </details>
 <details>
 <summary>Embeddings: one string vs array input?</summary>
@@ -590,7 +593,7 @@ stream = openai_client.chat.completions.create(
 </details>
 <details>
 <summary>SDE3: design LLM gateway for 50 microservices.</summary>
-<div class="answer">Central proxy: mTLS auth, rate limits per service, model routing (cheap for classify, premium for generate), retry/fallback across providers, prompt registry with version tags, unified logging to <a href="../production/observability.html">observability</a>, semantic cache for identical embed requests, budget caps and alerts per team. Stateless workers; no API keys in microservices — only gateway holds secrets.</div>
+<div class="answer">Central proxy: mTLS auth, rate limits per service, model routing (cheap for classify, premium for generate), retry/fallback across providers, prompt registry with version tags, unified logging to <a href="../production/observability.html">Observability</a>, semantic cache for identical embed requests, budget caps and alerts per team. Stateless workers; no API keys in microservices — only gateway holds secrets.</div>
 </details>
 </section>
 

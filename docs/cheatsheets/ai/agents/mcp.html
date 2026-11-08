@@ -32,7 +32,7 @@
   <a href="#a-real-server-in-30-lines"><span class="num">14</span> A real server in ~30 lines</a>
   <a href="#what-the-client-does-with-it"><span class="num">15</span> What the client does with it</a>
   <a href="#production-ops"><span class="num">16</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">17</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">17</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">18</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">19</span> Check yourself</a>
 </nav>
@@ -56,6 +56,7 @@
 <img alt="MCP resources and tools discovery zoom" src="../stretch/img/mcp-protocol-resources-zoom.png"/>
 </div><p class="diagram-caption">Resources/tools zoom: host subscribes to <code>resources/list</code>, user @-mentions a resource URI, host prefetches content into context window. Tools require explicit schema match + optional approval gate before <code>tools/call</code>.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card">
@@ -146,7 +147,7 @@ async def main():
 
 if __name__ == "__main__":
     import asyncio; asyncio.run(main())</pre>
-<p>Compare with raw OpenAI tools in <a href="../fundamentals/what-is-an-llm.html">LLM Fundamentals</a> and agent orchestration in <a href="../tech/langgraph.html">LangGraph</a>.</p>
+<p>Compare with raw OpenAI tools in <a href="../fundamentals/what-is-an-llm.html">What an LLM is</a> and agent orchestration in <a href="../tech/langgraph.html">LangGraph</a>.</p>
 </div>
 </section>
 <section id="when-to-use-when-not">
@@ -183,7 +184,7 @@ if __name__ == "__main__":
 <div class="step" data-num="2"><span class="label">Discover capabilities</span><div class="detail"><code>tools/list</code>, <code>resources/list</code> → inject schemas into LLM context</div></div>
 <div class="step" data-num="3"><span class="label">Model requests tool</span><div class="detail">Host validates name + args against schema; optional HITL prompt</div></div>
 <div class="step" data-num="4"><span class="label">Client calls server</span><div class="detail"><code>tools/call</code> → result as TextContent/ImageContent back to model</div></div>
-<div class="step" data-num="5"><span class="label">Loop until done</span><div class="detail">Same pattern as ReAct; see <a href="what-is-an-agent.html">Agent Architectures</a></div></div>
+<div class="step" data-num="5"><span class="label">Loop until done</span><div class="detail">Same pattern as ReAct; see <a href="what-is-an-agent.html">What an agent is</a></div></div>
 </div>
 </section>
 <section id="deep-dive-transport-layer">
@@ -236,7 +237,7 @@ if __name__ == "__main__":
 <ul>
 <li><strong>Trust boundary:</strong> MCP server runs with OS permissions of its process — use least privilege</li>
 <li><strong>Host mediation:</strong> never let model invoke tools without host policy (allowlist, HITL)</li>
-<li><strong>Prompt injection via resources:</strong> malicious file content → sanitize; see <a href="../prompting/prompt-techniques.html">Prompt Engineering</a></li>
+<li><strong>Prompt injection via resources:</strong> malicious file content → sanitize; see <a href="../prompting/prompt-techniques.html">Prompting techniques</a></li>
 <li><strong>Remote SSE:</strong> OAuth2/mTLS; rotate tokens; audit log every <code>tools/call</code></li>
 <li><strong>Argument validation:</strong> SQL tools must use read-only roles + query allowlists</li>
 </ul>
@@ -254,6 +255,7 @@ if __name__ == "__main__":
 <p>Community servers: filesystem, GitHub, Postgres, Slack, Puppeteer browser. Pattern mirrors plugin marketplaces but with a single protocol.</p>
 </div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="mcp-a-standard-plug-for-tools-data">
   <h2>12 &mdash; MCP: a standard plug for tools &amp; data</h2>
 <p>As tools proliferated, every app reinvented how to expose them. The <b>Model Context Protocol (MCP)</b> standardizes it.</p>
@@ -267,11 +269,11 @@ if __name__ == "__main__":
 <div class="tile"><h4>Client / host</h4><p>The agent app that connects to servers and gives the model their tools.</p></div>
 <div class="tile"><h4>Why it matters</h4><p>Write a tool once as an MCP server → every MCP client can use it. Less bespoke integration code.</p></div>
 </div>
-<p>The three primitives a server can expose: <b>tools</b> (model-invoked actions — the function calling you already know), <b>resources</b> (application-read data addressed by URI, like <code>tickets://recent</code> — context the host can load without a tool call), and <b>prompts</b> (server-provided prompt templates the user can invoke). Under the hood it's JSON-RPC 2.0 over a transport — stdio for local servers (the client spawns your process), streamable HTTP for remote ones. Nothing about the model changes: the client translates MCP tool listings into the provider wire format from chapter 4.2.</p>
+<p>The three primitives a server can expose: <b>tools</b> (model-invoked actions — the function calling you already know), <b>resources</b> (application-read data addressed by URI, like <code>tickets://recent</code> — context the host can load without a tool call), and <b>prompts</b> (server-provided prompt templates the user can invoke). Under the hood it's JSON-RPC 2.0 over a transport — stdio for local servers (the client spawns your process), streamable HTTP for remote ones. Nothing about the model changes: the client translates MCP tool listings into the provider wire format from <a href="tool-calling.html">Tool calling</a>.</p>
 </section>
 <section id="a-real-server-in-30-lines">
   <h2>14 &mdash; A real server in ~30 lines</h2>
-<p>Mini-scenario: your team's ticket system has no AI integration. One small MCP server makes it usable from every MCP client your company runs — the IDE, the chat assistant, the internal agent — simultaneously. The Python SDK's <code>FastMCP</code> turns typed functions into protocol-compliant tools (docstrings become descriptions, signatures become schemas — chapter 4.3's advice applies verbatim):</p>
+<p>Mini-scenario: your team's ticket system has no AI integration. One small MCP server makes it usable from every MCP client your company runs — the IDE, the chat assistant, the internal agent — simultaneously. The Python SDK's <code>FastMCP</code> turns typed functions into protocol-compliant tools (docstrings become descriptions, signatures become schemas — <a href="tool-calling.html">Tool calling</a>'s advice applies verbatim):</p>
 <div class="code-block"><div class="code-file"><span>tickets_server.py — one tool + one resource, python mcp SDK</span><span class="code-lang">python</span></div><pre><span class="kw">from</span> mcp.server.fastmcp <span class="kw">import</span> FastMCP
 
 mcp = FastMCP(<span class="st">"tickets"</span>)                      <span class="cm"># server name clients will see</span>
@@ -338,7 +340,7 @@ params = StdioServerParameters(command=<span class="st">"python"</span>, args=[<
 <li><b>Scope credentials per server.</b> The tickets server needs read access to tickets — not your org-wide admin token. If a server is compromised, its token is the blast radius.</li>
 <li><b>Keep a human on destructive paths.</b> Clients surface approval prompts for tool calls; leaving "always allow" on for a server that can write, delete, or spend is how demo videos become incident reports.</li>
 </ul></div>
-<div class="callout"><p><strong>You'll also hear…</strong></p><b>Computer use / browser use</b> — tools that let an agent drive a GUI or browser for systems without APIs (powerful, slower, riskier — a screenshot-act loop can burn 50–100× the tokens of an API call for the same outcome, illustrative). <b>Code execution</b> — a sandboxed "run this code" tool, a huge capability multiplier. All are just tools obeying the wire format from chapter 4.2.</div>
+<div class="callout"><p><strong>You'll also hear…</strong></p><b>Computer use / browser use</b> — tools that let an agent drive a GUI or browser for systems without APIs (powerful, slower, riskier — a screenshot-act loop can burn 50–100× the tokens of an API call for the same outcome, illustrative). <b>Code execution</b> — a sandboxed "run this code" tool, a huge capability multiplier. All are just tools obeying the wire format from <a href="tool-calling.html">Tool calling</a>.</div>
 <div class="callout success"><p><strong>Takeaway</strong></p>MCP doesn't change what tools <i>are</i> — it changes who can reuse them, turning M×N bespoke glue into M+N components with runtime discovery. Write servers like you write tool schemas (few, sharp, capped outputs), and treat every connected server — its code, its descriptions, and its results — as an input-trust boundary.</div>
 <div class="callout"><p><strong>Exercises</strong></p><ol>
 <li>Build <code>tickets_server.py</code> against a SQLite table of 50 fake tickets. Connect it to an MCP-capable client (e.g. a desktop assistant or IDE) and verify the tool appears and answers "any open 2FA tickets?".</li>
@@ -348,6 +350,7 @@ params = StdioServerParameters(command=<span class="st">"python"</span>, args=[<
 <li>Count the adapters in your org: agent-capable apps (M) × systems they should reach (N). Compute M×N vs M+N and identify the single server that would delete the most glue code.</li>
 </ol></div>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>16 &mdash; Production &amp; Ops</h2>
 <div class="card"><h3>Observability</h3>
@@ -371,14 +374,14 @@ params = StdioServerParameters(command=<span class="st">"python"</span>, args=[<
 </ul>
 </div>
 </section>
-<section id="where-it-shows-up">
-  <h2>17 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>17 &mdash; Related topics</h2>
 <div class="card">
 <ul>
 <li><a href="../tech/langgraph.html">LangGraph</a> — MCP client as a tool node in agent graphs</li>
-<li><a href="what-is-an-agent.html">Agent Architectures</a> — ReAct loop with standardized tool backends</li>
-<li><a href="../fundamentals/what-is-an-llm.html">LLM Fundamentals</a> — function calling primitives underneath</li>
-<li><a href="../prompting/prompt-techniques.html">Prompt Engineering</a> — injection risks from tool/resource content</li>
+<li><a href="what-is-an-agent.html">What an agent is</a> — ReAct loop with standardized tool backends</li>
+<li><a href="../fundamentals/what-is-an-llm.html">What an LLM is</a> — function calling primitives underneath</li>
+<li><a href="../prompting/prompt-techniques.html">Prompting techniques</a> — injection risks from tool/resource content</li>
 <li><a href="../stretch/../../hld/distributed-message-queue.html">Distributed Message Queue HLD</a> — async tool fan-out at scale (Kafka workers vs sync MCP)</li>
 <li><a href="../stretch/../../hld/notification-system.html">Notification System HLD</a> — push tool results to users asynchronously</li>
 </ul>
@@ -393,7 +396,7 @@ params = StdioServerParameters(command=<span class="st">"python"</span>, args=[<
 <li><strong>Trusting tool output:</strong> treat as untrusted user input; re-validate before side effects</li>
 <li><strong>Huge resource payloads:</strong> blows context window — paginate or summarize</li>
 <li><strong>No HITL on writes:</strong> agent deletes prod data — require confirmation for mutating tools</li>
-<li><strong>Confusing MCP with RAG:</strong> resources ≠ vector search; pair with <a href="../rag/rag-pipeline.html">RAG</a> when semantic retrieval needed</li>
+<li><strong>Confusing MCP with RAG:</strong> resources ≠ vector search; pair with <a href="../rag/rag-pipeline.html">The RAG pipeline</a> when semantic retrieval needed</li>
 </ul>
 </div>
 </section>
@@ -445,7 +448,7 @@ params = StdioServerParameters(command=<span class="st">"python"</span>, args=[<
 </details>
 <details>
 <summary>SDE3 answer: design MCP tooling for an enterprise coding agent.</summary>
-<div class="answer">Split servers: filesystem (scoped roots), GitHub (read PRs), internal docs (resources), CI (trigger read-only status). stdio locally, SSE in cloud with OAuth. Host policy: auto-approve reads, HITL for writes. Observability on every call. Cap agent at 15 tool steps. Integrate with <a href="what-is-an-agent.html">agent graph</a> and semantic code search via separate RAG, not MCP alone.</div>
+<div class="answer">Split servers: filesystem (scoped roots), GitHub (read PRs), internal docs (resources), CI (trigger read-only status). stdio locally, SSE in cloud with OAuth. Host policy: auto-approve reads, HITL for writes. Observability on every call. Cap agent at 15 tool steps. Integrate with <a href="what-is-an-agent.html">What an agent is</a> and semantic code search via separate RAG, not MCP alone.</div>
 </details>
 </section>
 

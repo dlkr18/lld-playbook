@@ -45,7 +45,7 @@
   <a href="#from-adapter-to-production"><span class="num">27</span> From adapter to production</a>
   <a href="#other-peft-methods"><span class="num">28</span> Other PEFT methods</a>
   <a href="#production-ops"><span class="num">29</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">30</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">30</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">31</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">32</span> Check yourself</a>
   <a href="#build-it"><span class="num">33</span> Build it</a>
@@ -64,6 +64,7 @@
 <img alt="Fine-tuning pipeline overview: data prep, LoRA training, eval, deploy" src="../systems/img/fine-tuning-lora-main.png"/>
 </div><p class="diagram-caption">End-to-end fine-tuning pipeline: raw data → JSONL prep → frozen base model + LoRA adapters → eval harness gate → merge or vLLM LoRA slots for production serving.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><h3>Problem</h3>
@@ -87,7 +88,7 @@
 <li><strong>Safety:</strong> eval for hallucination regression, PII leakage, jailbreak resistance</li>
 </ul>
 </div>
-<blockquote><strong>Position in the stack:</strong> Fine-tuning sits <em>after</em> <a class="link" href="../fundamentals/how-llms-are-trained.html">pre-training &amp; SFT</a> and <em>alongside</em> <a class="link" href="../rag/rag-pipeline.html">RAG</a>. Most production systems use RAG for knowledge + a small LoRA adapter for style/format. See <a class="link" href="../fundamentals/how-llms-are-trained.html">pretraining-sft-rlhf</a> for where SFT fits in the alignment stack.</blockquote>
+<blockquote><strong>Position in the stack:</strong> Fine-tuning sits <em>after</em> <a class="link" href="../fundamentals/how-llms-are-trained.html">How LLMs are trained</a> and <em>alongside</em> <a class="link" href="../rag/rag-pipeline.html">The RAG pipeline</a>. Most production systems use RAG for knowledge + a small LoRA adapter for style/format. See <a class="link" href="../fundamentals/how-llms-are-trained.html">How LLMs are trained</a> for where SFT fits in the alignment stack.</blockquote>
 </section>
 <section id="core-concepts">
   <h2>03 &mdash; Core Concepts</h2>
@@ -101,7 +102,7 @@
 <tr><td><strong>Target modules</strong></td><td>Which layers get adapters: typically <code>q_proj, k_proj, v_proj, o_proj</code> in attention + MLP.</td><td>More modules = more params but diminishing returns beyond attention layers.</td></tr>
 <tr><td><strong>Adapter merge</strong></td><td>Bake LoRA weights into base: W_merged = W + BA. Single checkpoint, no runtime overhead.</td><td>Cannot hot-swap adapters after merge; need separate checkpoints per variant.</td></tr>
 <tr><td><strong>Dynamic LoRA</strong></td><td>vLLM/TGI serves base + multiple adapter slots loaded at runtime.</td><td>Memory: each slot ~50–200 MB; limit 4–8 concurrent adapters per GPU.</td></tr>
-<tr><td><strong>SFT</strong></td><td>Supervised Fine-Tuning on instruction/response pairs. LoRA is the efficient implementation of SFT.</td><td>Don't confuse with RLHF/DPO — those need preference pairs. See <a class="link" href="../fundamentals/how-llms-are-trained.html">pretraining-sft-rlhf</a>.</td></tr>
+<tr><td><strong>SFT</strong></td><td>Supervised Fine-Tuning on instruction/response pairs. LoRA is the efficient implementation of SFT.</td><td>Don't confuse with RLHF/DPO — those need preference pairs. See <a class="link" href="../fundamentals/how-llms-are-trained.html">How LLMs are trained</a>.</td></tr>
 <tr><td><strong>Catastrophic forgetting</strong></td><td>Full FT destroys general capabilities. LoRA mitigates by keeping base frozen.</td><td>Still possible with high LR or too many epochs — always eval general tasks.</td></tr>
 <tr><td><strong>Training/serving skew</strong></td><td>Train format differs from inference prompt template.</td><td>#1 production bug: use identical chat template (ChatML, Llama-3) in train and serve.</td></tr>
 </table>
@@ -185,7 +186,7 @@ llm = LLM(
     max_loras=4,
 )
 # Load adapter at request time via lora_request param</pre>
-<blockquote>Full serving patterns (batching, KV cache, multi-LoRA slots) in <a class="link" href="../inference/serving.html">model-serving-vllm</a>.</blockquote>
+<blockquote>Full serving patterns (batching, KV cache, multi-LoRA slots) in <a class="link" href="../inference/serving.html">Serving &amp; scaling</a>.</blockquote>
 </div>
 </section>
 <section id="when-to-use-when-not">
@@ -415,6 +416,7 @@ def run_golden_eval(model, tokenizer, golden_path: str, threshold: float = 0.90)
 # if not run_golden_eval(model, tok, "eval/golden.jsonl"): sys.exit(1)</pre>
 </div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="fine-tuning-in-practice-sft-lora-qlora">
   <h2>12 &mdash; Fine-tuning in practice: SFT, LoRA, QLoRA</h2>
 <p>You've exhausted prompting and RAG, and you need consistent <i>behavior</i> — a format, a style, a narrow skill — baked in. Now, and only now, you fine-tune.</p>
@@ -426,7 +428,7 @@ def run_golden_eval(model, tokenizer, golden_path: str, threshold: float = 0.90)
 3. FINE-TUNING   consistent behavior/format/skill,   — when evals prove 1–2 insufficient,
                  or shrinking a huge prompt             or for latency/cost at scale</pre>
 <p>The ladder exists because each rung down costs roughly 10× more engineering. A prompt change ships in an hour. A RAG index change ships in a day. A fine-tune needs data curation, a training run, before/after evals, a regression suite, and a serving story — a week if you've done it before, a month if you haven't. Worse, a fine-tune is <i>opaque</i>: when a prompt misbehaves you read it; when an adapter misbehaves you re-train it. So the honest trigger for fine-tuning is a written eval showing prompting plateaued, plus one of: (a) you need a strict output format at very high reliability, (b) you're pasting a 6K-token instruction block into every call and want it amortized into weights, (c) you need a small cheap model to imitate a big one's behavior on a narrow task.</p>
-<div class="callout"><p><strong>A mini-scenario to keep in mind</strong></p>You're building a support-ticket triage system. The model must emit strict JSON: <code>{"queue": …, "severity": …, "summary": …}</code> with a fixed taxonomy of 40 queues. Prompting with few-shot examples gets you 91% valid-and-correct; the remaining 9% is format drift and taxonomy confusion, and your 3K-token prompt costs real money at 500K tickets/month. This is the textbook fine-tune: consistent behavior + format + prompt-shrink, no new facts needed. We'll use it throughout this chapter.</div>
+<div class="callout"><p><strong>A mini-scenario to keep in mind</strong></p>You're building a support-ticket triage system. The model must emit strict JSON: <code>{"queue": …, "severity": …, "summary": …}</code> with a fixed taxonomy of 40 queues. Prompting with few-shot examples gets you 91% valid-and-correct; the remaining 9% is format drift and taxonomy confusion, and your 3K-token prompt costs real money at 500K tickets/month. This is the textbook fine-tune: consistent behavior + format + prompt-shrink, no new facts needed. We'll use it throughout this topic.</div>
 </section>
 <section id="the-methods">
   <h2>14 &mdash; The methods</h2>
@@ -747,6 +749,7 @@ trainer.save_model(<span class="st">"</span><span class="st">adapter</span><span
   <h2>28 &mdash; Other PEFT methods</h2>
 <p><strong>Prefix/prompt tuning</strong>: learn virtual tokens prepended to the input; tiny, weaker on small models. <strong>Adapters</strong> (Houlsby): small bottleneck MLPs inserted in each block; add latency. <strong>IA³</strong>: learn per-channel scaling vectors. LoRA dominates because it merges away at inference.</p>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>29 &mdash; Production &amp; Ops</h2>
 <div class="card">
@@ -772,18 +775,18 @@ trainer.save_model(<span class="st">"</span><span class="st">adapter</span><span
 </ul>
 </div>
 </section>
-<section id="where-it-shows-up">
-  <h2>30 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>30 &mdash; Related topics</h2>
 <div class="card">
 <table>
 <tr><th>Related Sheet</th><th>Connection</th></tr>
-<tr><td><a class="link" href="../fundamentals/how-llms-are-trained.html">Pre-training, SFT &amp; RLHF</a></td><td>LoRA is the efficient way to do SFT; RLHF/DPO is the next alignment step after task-specific LoRA</td></tr>
-<tr><td><a class="link" href="../rag/rag-pipeline.html">RAG End-to-End</a></td><td>Hybrid pattern: RAG for knowledge retrieval + LoRA adapter for response format and domain tone</td></tr>
-<tr><td><a class="link" href="../inference/serving.html">Model Serving (vLLM)</a></td><td>Dynamic LoRA slots, merge-and-serve, batching fine-tuned models in production</td></tr>
-<tr><td><a class="link" href="../production/evals.html">Eval Harness &amp; Golden Sets</a></td><td>Eval gate architecture, CI integration, regression testing before adapter promotion</td></tr>
-<tr><td><a class="link" href="rlhf.html">RLHF &amp; DPO Pipeline</a></td><td>When LoRA-SFT isn't enough — preference optimization for alignment beyond task adaptation</td></tr>
-<tr><td><a class="link" href="../rag/rag-in-production.html">Chatbot with RAG (System Design)</a></td><td>Full system design combining RAG + fine-tuned adapter in enterprise chatbot</td></tr>
-<tr><td><a class="link" href="../production/eval-metrics.html">Evaluation Metrics</a></td><td>BLEU, ROUGE, semantic similarity, LLM-as-judge for fine-tune eval</td></tr>
+<tr><td><a class="link" href="../fundamentals/how-llms-are-trained.html">How LLMs are trained</a></td><td>LoRA is the efficient way to do SFT; RLHF/DPO is the next alignment step after task-specific LoRA</td></tr>
+<tr><td><a class="link" href="../rag/rag-pipeline.html">The RAG pipeline</a></td><td>Hybrid pattern: RAG for knowledge retrieval + LoRA adapter for response format and domain tone</td></tr>
+<tr><td><a class="link" href="../inference/serving.html">Serving &amp; scaling</a></td><td>Dynamic LoRA slots, merge-and-serve, batching fine-tuned models in production</td></tr>
+<tr><td><a class="link" href="../production/evals.html">Evaluating LLM features</a></td><td>Eval gate architecture, CI integration, regression testing before adapter promotion</td></tr>
+<tr><td><a class="link" href="rlhf.html">RLHF &amp; reward models</a></td><td>When LoRA-SFT isn't enough — preference optimization for alignment beyond task adaptation</td></tr>
+<tr><td><a class="link" href="../rag/rag-in-production.html">Making RAG good &amp; measuring it</a></td><td>Full system design combining RAG + fine-tuned adapter in enterprise chatbot</td></tr>
+<tr><td><a class="link" href="../production/eval-metrics.html">Evaluation metrics</a></td><td>BLEU, ROUGE, semantic similarity, LLM-as-judge for fine-tune eval</td></tr>
 </table>
 </div>
 </section>
@@ -863,7 +866,7 @@ trainer.save_model(<span class="st">"</span><span class="st">adapter</span><span
 <div class="callout success">QLoRA-tune Qwen2.5-1.5B or Llama-3.2-1B on a narrow task (text-to-SQL, structured JSON extraction) on a free T4. Report base vs tuned on 200 held-out examples, push the adapter to the Hub.</div>
 </section>
 
-<div class="sheet-pager"><a class="prev" href="../agents/agent-evals.html"><span>Previous</span>Evaluating agents</a><a class="next" href="rlhf.html"><span>Next</span>RLHF &amp; reward models</a></div>
+<div class="sheet-pager"><a class="prev" href="../agents/multi-agent.html"><span>Previous</span>Multi-agent systems</a><a class="next" href="rlhf.html"><span>Next</span>RLHF &amp; reward models</a></div>
 </div>
 <div id="lightbox" role="dialog" aria-hidden="true">
   <span class="lb-close" aria-label="Close">&times;</span>

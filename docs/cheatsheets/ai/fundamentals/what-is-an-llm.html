@@ -36,7 +36,7 @@
   <a href="#encoder-decoder-encoder-decoder"><span class="num">18</span> Encoder, decoder, encoder–decoder</a>
   <a href="#scaling-laws"><span class="num">19</span> Scaling laws</a>
   <a href="#production-ops"><span class="num">20</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">21</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">21</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">22</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">23</span> Check yourself</a>
 </nav>
@@ -54,6 +54,7 @@
 <img alt="LLM fundamentals: training stack to inference API" src="../fundamentals/img/llm-fundamentals-main.png"/>
 </div><p class="diagram-caption">Whiteboard overview: pre-training on internet-scale text learns next-token prediction; alignment (SFT/RLHF) shapes behavior; inference serves autoregressive decoding behind an API gateway with token billing, KV cache, and sampling controls.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><h3>What is an LLM?</h3>
@@ -315,6 +316,7 @@ def sample_token(logits: list[float], temperature: float = 0.7) -&gt; int:
     return len(probs) - 1</pre>
 </div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="what-an-llm-really-is">
   <h2>12 &mdash; What an LLM really is</h2>
 <p>Let's open the box — gently. No math required, but by the end you'll know what's actually happening when you "talk to AI."</p>
@@ -381,7 +383,7 @@ show(<span class="st">"</span><span class="st">3.14159265358979</span><span clas
 </table>
 <p>Say it picks <code>' Paris'</code>. The sequence is now <code>"The capital of France is Paris"</code>, and the whole process repeats: next distribution probably puts most mass on <code>'.'</code> and <code>','</code>. Generation stops when the model emits a special <b>end-of-sequence token</b> or hits your <code>max_tokens</code> cap. That's it. Every essay, every code file, every "reasoned argument" you've seen an LLM produce was built this way: one token, then another, each a draw from a probability distribution over the vocabulary.</p>
 <h3>How the pick happens: temperature on a real distribution</h3>
-<p>The model gives you probabilities; <i>you</i> decide how to sample from them (chapter on decoding knobs coming next — this is the preview). <b>Temperature</b> rescales the distribution before sampling. Concretely, with our distribution above:</p>
+<p>The model gives you probabilities; <i>you</i> decide how to sample from them (<a href="decoding.html">Decoding & sampling</a> coming next — this is the preview). <b>Temperature</b> rescales the distribution before sampling. Concretely, with our distribution above:</p>
 <table>
 <tr><th>Token</th><th>T = 0 (greedy)</th><th>T = 0.7</th><th>T = 1.0</th><th>T = 1.5</th></tr>
 <tr><td><code>' Paris'</code></td><td><b>always picked</b></td><td>0.97</td><td>0.91</td><td>0.78</td></tr>
@@ -432,7 +434,7 @@ draws = random.choices(tokens, weights=weights, k=<span class="nr">1000</span>)
 <section id="why-it-feels-intelligent">
   <h2>16 &mdash; Why it feels intelligent</h2>
 <p>To predict the next token <i>well</i> across the entire internet, the model is forced to learn grammar, facts, reasoning patterns, code, and style. Think about what "predict the next token" requires at the limit: to continue <code>"The verdict, given the evidence presented in section 3, must be"</code> you need to have <i>understood section 3</i>. To continue a half-written Python function you need to know Python, the libraries it imports, and the author's intent. Compression of the world's text into weights forces the model to build internal machinery that behaves like knowledge and reasoning. Intelligence is a side effect of being an excellent predictor.</p>
-<p>But — crucially — it predicts what is <b>plausible</b>, not what is <b>true</b>. Ask about a paper that doesn't exist and the model will happily generate a plausible-sounding title, authors, and abstract, because that's what text about papers looks like. That gap is the source of <b>hallucination</b> (chapter 1.6).</p>
+<p>But — crucially — it predicts what is <b>plausible</b>, not what is <b>true</b>. Ask about a paper that doesn't exist and the model will happily generate a plausible-sounding title, authors, and abstract, because that's what text about papers looks like. That gap is the source of <b>hallucination</b> (<a href="limits.html">Limits & hallucination</a>).</p>
 <h3>Mini-scenario: the invoice extractor that "couldn't count"</h3>
 <p>You're building an invoice-processing tool. It works beautifully in demos, then a customer reports that totals are wrong on maybe 1 invoice in 20. You dig in: the model is <i>re-typing</i> the line-item amounts (fine — they're in the context) but <i>summing</i> them itself (bad — "$1,247.50" tokenizes as something like <code>['$','1',',','247','.','50']</code>, and arithmetic over token fragments is pattern-matching, not math). One invoice sums to $12,940; the model outputs $12,840 — plausible, fluent, wrong, and formatted perfectly so nothing downstream flags it. The fix is architectural, not prompt-level: have the model <b>extract</b> the line items into JSON (a language task — its strength), then compute the sum in Python (a math task — your strength). This division of labor — model for language, code for computation — recurs through the whole book.</p>
 <div class="callout warn"><p><strong>Gotchas the token view predicts</strong></p><ul>
@@ -480,6 +482,7 @@ loss = −(1/T) Σ_t log p(x_t | x_{&lt;t})          # cross-entropy per token</
 <p>Loss falls as a smooth power law in parameters N, data D and compute C. <strong>Chinchilla</strong> (2022): for a fixed compute budget, the loss-optimal split is roughly <strong>20 tokens per parameter</strong>, so earlier models (GPT-3: 175B on 300B tokens) were undertrained.</p>
 <p>Modern practice trains far past Chinchilla-optimal (Llama 3 8B saw ~15T tokens, ~1900 tokens/param) because a smaller model trained longer is cheaper to <em>serve</em>. Inference cost, not training cost, dominates the lifetime bill.</p>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>20 &mdash; Production &amp; Ops</h2>
 <div class="card"><h3>Observability</h3>
@@ -512,20 +515,20 @@ loss = −(1/T) Σ_t log p(x_t | x_{&lt;t})          # cross-entropy per token</
 </ul>
 </div>
 </section>
-<section id="where-it-shows-up">
-  <h2>21 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>21 &mdash; Related topics</h2>
 <div class="card"><h3>AI vertical (related sheets)</h3>
 <ul>
-<li><a href="transformers.html">Transformers &amp; Attention</a> — mechanism inside this primer</li>
-<li><a href="tokens-context-cost.html">Tokenization &amp; Context Window</a> — BPE, counting, truncation</li>
-<li><a href="how-llms-are-trained.html">Pre-training, SFT &amp; RLHF</a> — alignment pipeline detail</li>
-<li><a href="../prompting/prompt-techniques.html">Prompt Engineering</a> — practical control of decoder output</li>
-<li><a href="../inference/inference-internals.html">Context Window &amp; KV Cache</a> — inference memory deep dive</li>
-<li><a href="api.html">OpenAI / Anthropic API Patterns</a> — production API idioms</li>
-<li><a href="../inference/serving.html">Model Serving (vLLM)</a> — GPU inference stack</li>
-<li><a href="../production/observability.html">LLM Observability</a> — tracing and eval in prod</li>
-<li><a href="../rag/rag-pipeline.html">RAG End-to-End</a> — grounding LLM outputs</li>
-<li><a href="../agents/what-is-an-agent.html">Agent Architectures</a> — tool loops around the LM</li>
+<li><a href="transformers.html">Transformers &amp; attention</a> — mechanism inside this primer</li>
+<li><a href="tokens-context-cost.html">Tokens, context &amp; cost</a> — BPE, counting, truncation</li>
+<li><a href="how-llms-are-trained.html">How LLMs are trained</a> — alignment pipeline detail</li>
+<li><a href="../prompting/prompt-techniques.html">Prompting techniques</a> — practical control of decoder output</li>
+<li><a href="../inference/inference-internals.html">Inference internals</a> — inference memory deep dive</li>
+<li><a href="api.html">Calling a model</a> — production API idioms</li>
+<li><a href="../inference/serving.html">Serving &amp; scaling</a> — GPU inference stack</li>
+<li><a href="../production/observability.html">Observability</a> — tracing and eval in prod</li>
+<li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — grounding LLM outputs</li>
+<li><a href="../agents/what-is-an-agent.html">What an agent is</a> — tool loops around the LM</li>
 </ul>
 </div>
 <div class="card"><h3>HLD systems (LLM as a component)</h3>

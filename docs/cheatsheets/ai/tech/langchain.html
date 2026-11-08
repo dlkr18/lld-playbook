@@ -28,7 +28,7 @@
   <a href="#deep-dive-memory"><span class="num">10</span> Deep Dive: Memory</a>
   <a href="#deep-dive-callbacks"><span class="num">11</span> Deep Dive: Callbacks</a>
   <a href="#production-ops"><span class="num">12</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">13</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">13</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">14</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">15</span> Check yourself</a>
 </nav>
@@ -44,13 +44,14 @@
 <p>Composable LLM framework: runnables (LCEL pipe), prompts, retrievers, tools, memory, and callbacks. The component layer most orchestrators (LangGraph, LlamaIndex integrations) build on.</p>
 <div class="diagram">
 <img alt="LangChain architecture overview" src="../tech/img/langchain-main.png"/>
-</div><p class="diagram-caption">LangChain stack: Prompt | ChatModel | OutputParser as LCEL chain; retriever feeds context from <a href="../rag/vector-search.html">vector DB</a>; tools bound via <code>bind_tools</code>; callbacks → LangSmith traces.</p>
-<div class="diagram"><img src="../tech/img/langchain-rag-zoom.png" alt="A LangChain RAG chain: a retriever over the vector store, format the documents, fill the prompt template, call the LLM."></div><p class="diagram-caption">A LangChain RAG chain: a retriever over the vector store, format the documents, fill the prompt template, call the LLM.</p>
+</div><p class="diagram-caption">LangChain stack: Prompt | ChatModel | OutputParser as LCEL chain; retriever feeds context from <a href="../rag/vector-search.html">Vector search &amp; databases</a>; tools bound via <code>bind_tools</code>; callbacks → LangSmith traces.</p>
+<div class="diagram"><img alt="A LangChain RAG chain: a retriever over the vector store, format the documents, fill the prompt template, call the LLM." src="../tech/img/langchain-rag-zoom.png"/></div><p class="diagram-caption">A LangChain RAG chain: a retriever over the vector store, format the documents, fill the prompt template, call the LLM.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card">
-<p><strong>Problem:</strong> LLM apps repeat the same glue: prompt templates, model wrappers, output parsers, retriever wiring, tool schemas, and tracing hooks. LangChain standardizes these as composable <code>Runnable</code> objects.</p><h3>Functional</h3><ul><li>Compose prompts, models, parsers with LCEL pipe operator</li><li>Integrate vector stores as retrievers for RAG pipelines</li><li>Bind tools to chat models; feed into LangGraph ToolNode</li><li>Stream, batch, and async invoke uniformly across steps</li></ul><h3>Non-Functional</h3><ul><li><strong>Modularity</strong> — swap OpenAI for Anthropic by changing one Runnable</li><li><strong>Observability</strong> — callbacks + LangSmith tracing</li><li><strong>Maintainability</strong> — explicit chains beat opaque agent helpers</li><li><strong>Version risk</strong> — pin packages; test on upgrade</li></ul><blockquote><strong>Position in stack:</strong> LangChain = components. <a href="langgraph.html">LangGraph</a> = orchestration with cycles and checkpointing. <a href="llamaindex.html">LlamaIndex</a> overlaps on RAG indexing. API layer: <a href="../fundamentals/api.html">OpenAI API Patterns</a>.</blockquote>
+<p><strong>Problem:</strong> LLM apps repeat the same glue: prompt templates, model wrappers, output parsers, retriever wiring, tool schemas, and tracing hooks. LangChain standardizes these as composable <code>Runnable</code> objects.</p><h3>Functional</h3><ul><li>Compose prompts, models, parsers with LCEL pipe operator</li><li>Integrate vector stores as retrievers for RAG pipelines</li><li>Bind tools to chat models; feed into LangGraph ToolNode</li><li>Stream, batch, and async invoke uniformly across steps</li></ul><h3>Non-Functional</h3><ul><li><strong>Modularity</strong> — swap OpenAI for Anthropic by changing one Runnable</li><li><strong>Observability</strong> — callbacks + LangSmith tracing</li><li><strong>Maintainability</strong> — explicit chains beat opaque agent helpers</li><li><strong>Version risk</strong> — pin packages; test on upgrade</li></ul><blockquote><strong>Position in stack:</strong> LangChain = components. <a href="langgraph.html">LangGraph</a> = orchestration with cycles and checkpointing. <a href="llamaindex.html">LlamaIndex</a> overlaps on RAG indexing. API layer: <a href="../fundamentals/api.html">Calling a model</a>.</blockquote>
 </div>
 </section>
 <section id="core-concepts">
@@ -113,7 +114,7 @@ answer = rag_chain.invoke("What is our refund policy?")</pre> <table>
 <tr><td>Simple RAG chain (retrieve → generate)</td><td><strong>Yes</strong></td><td><a href="llamaindex.html">LlamaIndex</a> QueryEngine</td></tr>
 <tr><td>ReAct agent with tool loop</td><td><strong>Maybe</strong></td><td><a href="langgraph.html">LangGraph</a> for control + HITL</td></tr>
 <tr><td>Role-based multi-agent crew</td><td><strong>Maybe</strong></td><td><a href="crewai.html">CrewAI</a></td></tr>
-<tr><td>One-shot completion, no retrieval</td><td><strong>Maybe</strong></td><td><a href="../fundamentals/api.html">Direct API</a> simpler</td></tr>
+<tr><td>One-shot completion, no retrieval</td><td><strong>Maybe</strong></td><td><a href="../fundamentals/api.html">Calling a model</a> simpler</td></tr>
 <tr><td>Complex ingestion + citations</td><td><strong>Maybe</strong></td><td>LlamaIndex indexing focus</td></tr>
 </table>
 </div>
@@ -137,8 +138,8 @@ answer = rag_chain.invoke("What is our refund policy?")</pre> <table>
   langchain-chroma  Chroma vector store integration
   langgraph         Stateful graphs (separate package)
   langsmith         Tracing UI (SaaS)</pre> <div class="flow">
-<div class="step" data-num="1"><span class="label">Ingest (offline)</span><div class="detail">Load docs → chunk → embed → VectorStore. See <a href="../rag/document-ingestion.html">Document Ingestion</a>.</div></div>
-<div class="step" data-num="2"><span class="label">Retrieve</span><div class="detail">Retriever returns top-k chunks; optional reranker (<a href="../rag/reranking.html">Rerankers</a>).</div></div>
+<div class="step" data-num="1"><span class="label">Ingest (offline)</span><div class="detail">Load docs → chunk → embed → VectorStore. See <a href="../rag/document-ingestion.html">Document ingestion</a>.</div></div>
+<div class="step" data-num="2"><span class="label">Retrieve</span><div class="detail">Retriever returns top-k chunks; optional reranker (<a href="../rag/reranking.html">Reranking</a>).</div></div>
 <div class="step" data-num="3"><span class="label">Generate</span><div class="detail">Prompt + LLM + parser; stream if needed.</div></div>
 <div class="step" data-num="4"><span class="label">Observe</span><div class="detail">Callbacks → LangSmith; log latency and token usage.</div></div>
 </div>
@@ -189,7 +190,7 @@ chain = (
     {"context": retriever | format_docs, "question": RunnablePassthrough()}
     | prompt | ChatOpenAI(model="gpt-4o-mini") | StrOutputParser()
 )
-print(chain.invoke("Refund policy for EU?"))</pre><p>Swap Chroma for <a href="../rag/vector-search.html">Pinecone/pgvector</a> in production. Add <a href="../rag/reranking.html">reranker</a> between retriever and prompt for better precision.</p>
+print(chain.invoke("Refund policy for EU?"))</pre><p>Swap Chroma for <a href="../rag/vector-search.html">Vector search &amp; databases</a> in production. Add <a href="../rag/reranking.html">Reranking</a> between retriever and prompt for better precision.</p>
 </div>
 </section>
 <section id="deep-dive-retrievers">
@@ -206,7 +207,7 @@ vectorstore = Chroma.from_documents(
 retriever = vectorstore.as_retriever(
     search_type="mmr",
     search_kwargs={"k": 20, "fetch_k": 50},
-)</pre><h3>Retriever wrappers</h3><ul><li><strong>MultiQueryRetriever</strong> — LLM expands query variants; improves recall</li><li><strong>ContextualCompressionRetriever</strong> — rerank/filter chunks before prompt</li><li><strong>EnsembleRetriever</strong> — BM25 + vector fusion</li></ul><p>Production: external <a href="../rag/vector-search.html">vector DB</a> (Pinecone, pgvector), not in-process Chroma. Hybrid patterns: <a href="../rag/hybrid-search.html">Hybrid Search</a>.</p><pre>from langchain.retrievers import EnsembleRetriever
+)</pre><h3>Retriever wrappers</h3><ul><li><strong>MultiQueryRetriever</strong> — LLM expands query variants; improves recall</li><li><strong>ContextualCompressionRetriever</strong> — rerank/filter chunks before prompt</li><li><strong>EnsembleRetriever</strong> — BM25 + vector fusion</li></ul><p>Production: external <a href="../rag/vector-search.html">Vector search &amp; databases</a> (Pinecone, pgvector), not in-process Chroma. Hybrid patterns: <a href="../rag/hybrid-search.html">Hybrid search &amp; query understanding</a>.</p><pre>from langchain.retrievers import EnsembleRetriever
 from langchain_community.retrievers import BM25Retriever
 
 bm25 = BM25Retriever.from_documents(chunks)
@@ -238,7 +239,7 @@ llm_with_tools = ChatOpenAI(model="gpt-4o-mini").bind_tools([search_kb])
 
 # In LangGraph:
 from langgraph.prebuilt import ToolNode
-tool_node = ToolNode([search_kb])</pre><p>Tool descriptions are part of the prompt the model sees — write them like API docs. Validate args before side effects. See <a href="../agents/tool-calling.html">Tool Calling &amp; Functions</a>.</p>
+tool_node = ToolNode([search_kb])</pre><p>Tool descriptions are part of the prompt the model sees — write them like API docs. Validate args before side effects. See <a href="../agents/tool-calling.html">Tool calling</a>.</p>
 </div>
 </section>
 <section id="deep-dive-memory">
@@ -249,7 +250,7 @@ history = load_messages_from_postgres(session_id)
 chain.invoke(
     {"question": q, "chat_history": history},
     config={"configurable": {"session_id": session_id}},
-)</pre><ul><li>Pass message list explicitly in invoke input or LangGraph state</li><li>Trim history to last N turns or token budget (<a href="../inference/inference-internals.html">Context Window</a>)</li><li>Agent memory patterns: <a href="../agents/memory-context.html">Agent Memory</a></li></ul>
+)</pre><ul><li>Pass message list explicitly in invoke input or LangGraph state</li><li>Trim history to last N turns or token budget (<a href="../inference/inference-internals.html">Inference internals</a>)</li><li>Agent memory patterns: <a href="../agents/memory-context.html">Memory &amp; context engineering</a></li></ul>
 </div>
 </section>
 <section id="deep-dive-callbacks">
@@ -260,7 +261,7 @@ chain.invoke(
 # LANGCHAIN_API_KEY=...
 # LANGCHAIN_PROJECT=prod-rag
 
-chain.invoke(input, config={"tags": ["prod", "rag-v2"], "metadata": {"tenant": "acme"}})</pre><p>Custom <code>BaseCallbackHandler</code> for token counts, latency histograms, and PII redaction in logs. Integrates with <a href="../production/observability.html">LLM Observability</a> stacks.</p><pre>from langchain_core.callbacks import BaseCallbackHandler
+chain.invoke(input, config={"tags": ["prod", "rag-v2"], "metadata": {"tenant": "acme"}})</pre><p>Custom <code>BaseCallbackHandler</code> for token counts, latency histograms, and PII redaction in logs. Integrates with <a href="../production/observability.html">Observability</a> stacks.</p><pre>from langchain_core.callbacks import BaseCallbackHandler
 import time
 
 class MetricsHandler(BaseCallbackHandler):
@@ -276,6 +277,7 @@ class MetricsHandler(BaseCallbackHandler):
 chain.invoke(input, config={"callbacks": [MetricsHandler()]})</pre>
 </div>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>12 &mdash; Production &amp; Ops</h2>
 <div class="card">
@@ -291,10 +293,10 @@ chain.invoke(input, config={"callbacks": [MetricsHandler()]})</pre>
 </table><h3>Upgrade checklist</h3><ol><li>Run golden prompt eval before/after bump</li><li>Check import path changes in changelog</li><li>Verify async paths still use ainvoke</li><li>Re-run LangSmith comparison on sample production traces</li></ol>
 </div>
 </section>
-<section id="where-it-shows-up">
-  <h2>13 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>13 &mdash; Related topics</h2>
 <div class="card">
-<ul><li><a href="langgraph.html">LangGraph</a> — nodes call LC runnables and ToolNode</li><li><a href="llamaindex.html">LlamaIndex</a> — overlapping RAG scope; can interop</li><li><a href="crewai.html">CrewAI</a> — uses LangChain LLM/tool wrappers</li><li><a href="../rag/rag-pipeline.html">RAG End-to-End</a> — reference architecture</li><li><a href="../rag/rag-in-production.html">Chatbot RAG System</a> — production chat patterns</li><li><a href="../fundamentals/api.html">OpenAI API Patterns</a> — underlying chat API</li><li><a href="../prompting/prompt-techniques.html">Prompt Engineering</a> — template design</li><li><a href="../rag/embeddings.html">Embeddings &amp; Semantic Search</a> — retriever theory</li><li><a href="../production/evals.html">Eval Harness</a> — regression on chain changes</li></ul>
+<ul><li><a href="langgraph.html">LangGraph</a> — nodes call LC runnables and ToolNode</li><li><a href="llamaindex.html">LlamaIndex</a> — overlapping RAG scope; can interop</li><li><a href="crewai.html">CrewAI</a> — uses LangChain LLM/tool wrappers</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — reference architecture</li><li><a href="../rag/rag-in-production.html">Making RAG good &amp; measuring it</a> — production chat patterns</li><li><a href="../fundamentals/api.html">Calling a model</a> — underlying chat API</li><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a> — template design</li><li><a href="../rag/embeddings.html">Embeddings</a> — retriever theory</li><li><a href="../production/evals.html">Evaluating LLM features</a> — regression on chain changes</li></ul>
 </div>
 </section>
 <section id="common-pitfalls">
@@ -308,7 +310,7 @@ chain.invoke(input, config={"callbacks": [MetricsHandler()]})</pre>
 <tr><td>Citation-first indexing</td><td><a href="llamaindex.html">LlamaIndex</a></td></tr>
 <tr><td>Agent loop + HITL</td><td><a href="langgraph.html">LangGraph</a></td></tr>
 <tr><td>Role-based crew demo</td><td><a href="crewai.html">CrewAI</a></td></tr>
-<tr><td>Minimal deps</td><td><a href="../fundamentals/api.html">Direct API</a></td></tr>
+<tr><td>Minimal deps</td><td><a href="../fundamentals/api.html">Calling a model</a></td></tr>
 </table>
 </div>
 </section>
@@ -324,7 +326,7 @@ chain.invoke(input, config={"callbacks": [MetricsHandler()]})</pre>
 </details>
 <details>
 <summary>How wire a vector DB retriever?</summary>
-<div class="answer"><code>VectorStore.from_documents</code> + <code>as_retriever(search_kwargs={"k": 20})</code>. In chain: <code>{"context": retriever | format_docs, "question": RunnablePassthrough()}</code>. Backing store: <a href="../rag/vector-search.html">Vector Databases</a>.</div>
+<div class="answer"><code>VectorStore.from_documents</code> + <code>as_retriever(search_kwargs={"k": 20})</code>. In chain: <code>{"context": retriever | format_docs, "question": RunnablePassthrough()}</code>. Backing store: <a href="../rag/vector-search.html">Vector search &amp; databases</a>.</div>
 </details>
 <details>
 <summary>What are callbacks for?</summary>
@@ -360,7 +362,7 @@ chain.invoke(input, config={"callbacks": [MetricsHandler()]})</pre>
 </details>
 <details>
 <summary>SDE3: standardize LangChain across 10 teams?</summary>
-<div class="answer">Internal template repo: LCEL RAG chain, LangGraph agent skeleton, shared retriever factory pointing to central <a href="../rag/vector-search.html">vector DB</a>, LangSmith project per env, banned patterns list (deprecated agents, in-process memory), golden eval suite in CI, and documented upgrade playbook.</div>
+<div class="answer">Internal template repo: LCEL RAG chain, LangGraph agent skeleton, shared retriever factory pointing to central <a href="../rag/vector-search.html">Vector search &amp; databases</a>, LangSmith project per env, banned patterns list (deprecated agents, in-process memory), golden eval suite in CI, and documented upgrade playbook.</div>
 </details>
 </section>
 

@@ -43,7 +43,7 @@
   <a href="#tool-choice-the-agency-dial-demonstrated"><span class="num">25</span> tool_choice — the agency dial, demonstrated</a>
   <a href="#designing-tools-the-model-can-use-well"><span class="num">26</span> Designing tools the model can use well</a>
   <a href="#production-ops"><span class="num">27</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">28</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">28</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">29</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">30</span> Check yourself</a>
 </nav>
@@ -59,6 +59,7 @@
 <p>LLM function calling: JSON schema design, tool registry, execution sandbox, parallel calls, error recovery. The bridge between reasoning and the real world.</p>
 <div class="diagram"><img alt="Tool Calling &amp; Functions architecture" src="../systems/img/tool-calling-functions-main.png"/></div><p class="diagram-caption">Tool calling loop: LLM receives tool schemas, emits tool_calls JSON, executor runs in sandbox, results appended to messages, loop until final answer.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><p>Tools let LLMs query databases, call APIs, run code. Schema is the contract; executor is the trust boundary.</p></div>
@@ -106,6 +107,7 @@ response = client.chat.completions.create(model="gpt-4o", messages=msgs, tools=t
   <h2>11 &mdash; Deep Dive: Parallel Tools</h2>
 <div class="diagram"><img alt="LLM emits parallel tool_calls; executor runs concurrently; results merged" src="../systems/img/tool-calling-functions-loop-zoom.png"/></div><p class="diagram-caption">LLM emits parallel tool_calls; executor runs concurrently; results merged</p><div class="card"><p>OpenAI parallel tool_calls. asyncio.gather for independent searches. Sequential when tool B needs tool A output.</p></div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="letting-the-model-act-tools">
   <h2>12 &mdash; Letting the model act: tools</h2>
 <p>So far the model can only emit text. <b>Tools</b> (a.k.a. function calling) let it <i>do things</i> — query a DB, hit an API, run code, search the web. This is the leap from "chatbot" to "system that acts."</p>
@@ -151,7 +153,7 @@ LLM continues: "It's 18°C and sunny in Paris."  ◄──  result: {temp:18, sk
         <span class="st">"attendees"</span>: {<span class="st">"type"</span>: <span class="st">"array"</span>, <span class="st">"items"</span>: {<span class="st">"type"</span>: <span class="st">"string"</span>}}},
      <span class="st">"required"</span>: [<span class="st">"title"</span>, <span class="st">"start_iso"</span>]}},
 ]</pre></div>
-<p>Notice the descriptions carry behavior ("confirm before calling", "use for ANY math") — that's not decoration, it's the API surface, and chapter 4.3 is entirely about writing it well.</p>
+<p>Notice the descriptions carry behavior ("confirm before calling", "use for ANY math") — that's not decoration, it's the API surface, and <a href="tool-calling.html">Tool calling</a> is entirely about writing it well.</p>
 </section>
 <section id="the-full-cycle-request-execute-return">
   <h2>15 &mdash; The full cycle: request → execute → return</h2>
@@ -202,7 +204,7 @@ client = anthropic.Anthropic()
 
 <span class="kw">if</span> __name__ == <span class="st">"__main__"</span>:
     print(run(<span class="st">"Where's order X-92? If late, what's 15% off the $84 I paid?"</span>))</pre></div>
-<p>Trace what actually happens on that question. <b>Round 1:</b> the model emits a <code>tool_use</code> for <code>get_order(order_id="X-92")</code>; your code queries the DB and returns <code>{"status":"delayed","paid":84.00}</code>. <b>Round 2:</b> seeing "delayed", the model requests <code>calculate(expression="84 * 0.85")</code>; your code returns <code>71.4</code>. <b>Round 3:</b> <code>stop_reason</code> is <code>end_turn</code> and the text is the final answer: "X-92 is delayed… with 15% off you'd pay $71.40." Three API calls, two tool executions, one user-visible answer. That inner <code>for</code> pass over blocks matters: one assistant turn can carry several <code>tool_use</code> blocks at once (the model batching independent lookups), and each needs its own paired result — chapter 4.2 shows the exact wire format.</p>
+<p>Trace what actually happens on that question. <b>Round 1:</b> the model emits a <code>tool_use</code> for <code>get_order(order_id="X-92")</code>; your code queries the DB and returns <code>{"status":"delayed","paid":84.00}</code>. <b>Round 2:</b> seeing "delayed", the model requests <code>calculate(expression="84 * 0.85")</code>; your code returns <code>71.4</code>. <b>Round 3:</b> <code>stop_reason</code> is <code>end_turn</code> and the text is the final answer: "X-92 is delayed… with 15% off you'd pay $71.40." Three API calls, two tool executions, one user-visible answer. That inner <code>for</code> pass over blocks matters: one assistant turn can carry several <code>tool_use</code> blocks at once (the model batching independent lookups), and each needs its own paired result — <a href="tool-calling.html">Tool calling</a> shows the exact wire format.</p>
 </section>
 <section id="what-the-loop-costs">
   <h2>16 &mdash; What the loop costs</h2>
@@ -346,7 +348,7 @@ client = anthropic.Anthropic()
 <tr><td>Error signaling</td><td><code>is_error: true</code> flag</td><td>no flag — convention in <code>content</code> (e.g. "ERROR: …")</td></tr>
 <tr><td>Schema wrapper</td><td><code>input_schema</code> on the tool</td><td><code>function.parameters</code>, under <code>{"type":"function"}</code></td></tr>
 </table>
-<p>Learn one wire format and the other is a field-renaming exercise — which is exactly what every cross-provider framework (and MCP, chapter 4.4) does under the hood. The genuinely different bits are just three: where results live (user turn vs tool role), arguments as object vs string, and the presence/absence of a first-class error flag.</p>
+<p>Learn one wire format and the other is a field-renaming exercise — which is exactly what every cross-provider framework (and MCP, <a href="mcp.html">MCP</a>) does under the hood. The genuinely different bits are just three: where results live (user turn vs tool role), arguments as object vs string, and the presence/absence of a first-class error flag.</p>
 <div class="callout warn"><p><strong>The rules that trip everyone up</strong></p><ul>
 <li>Append the <b>assistant turn (with the tool_use)</b> before the tool_result, or the API errors — the request must precede its answer in history. This is the #1 first-week 400 error.</li>
 <li>One turn can contain <b>several tool_use blocks</b> (parallel calls) — return a tool_result for <b>each</b>, in the single next user turn. A missing id → 400; results for all-but-one → 400.</li>
@@ -472,7 +474,7 @@ client = anthropic.Anthropic()
     <span class="kw">assert</span> err <span class="kw">and</span> <span class="st">"Invalid arguments"</span> <span class="kw">in</span> out       <span class="cm"># bad pattern → described error</span>
     out, err = dispatch(<span class="st">"nope"</span>, {})
     <span class="kw">assert</span> err <span class="kw">and</span> <span class="st">"Unknown tool"</span> <span class="kw">in</span> out</pre></div>
-<p>Three properties earn this module its ~45 lines. The API-facing schema is <i>generated</i> from the same pydantic model that validates at runtime, so they cannot disagree. <code>dispatch</code> never raises — every failure becomes an <code>is_error</code> string the model can read and correct (the loop from chapter 4.1 plugs straight in: <code>out, err = dispatch(block.name, block.input)</code>). And business limits live in the schema itself — <code>le=50_000</code> means an over-limit refund is rejected <i>before</i> your function runs, and the validation error the model sees ("less than or equal to 50000") tells it exactly what to fix. Note the pattern-constraint caveat from <a href="../prompting/index.html">Prompting</a> still applies: not every provider enforces <code>pattern</code> server-side, which is exactly why the dispatcher re-validates — defense in depth, not redundancy.</p>
+<p>Three properties earn this module its ~45 lines. The API-facing schema is <i>generated</i> from the same pydantic model that validates at runtime, so they cannot disagree. <code>dispatch</code> never raises — every failure becomes an <code>is_error</code> string the model can read and correct (the loop from <a href="tool-calling.html">Tool calling</a> plugs straight in: <code>out, err = dispatch(block.name, block.input)</code>). And business limits live in the schema itself — <code>le=50_000</code> means an over-limit refund is rejected <i>before</i> your function runs, and the validation error the model sees ("less than or equal to 50000") tells it exactly what to fix. Note the pattern-constraint caveat from <a href="../prompting/index.html">Prompting</a> still applies: not every provider enforces <code>pattern</code> server-side, which is exactly why the dispatcher re-validates — defense in depth, not redundancy.</p>
 <div class="tile-grid">
 <div class="tile"><h4>Good tool design</h4><p>Few, powerful tools · human-readable names · descriptions saying <i>when to use / not</i> · typed, constrained params · examples in the description · <b>actionable error strings</b> · results truncated/paginated at the source.</p></div>
 <div class="tile"><h4>What breaks agents</h4><p>20 overlapping micro-tools · vague descriptions · free-form string params · throwing instead of returning errors · returning huge blobs that flood the context window · limits enforced only in prose, never in the schema.</p></div>
@@ -520,7 +522,7 @@ r = client.messages.create(**common, tool_choice={<span class="st">"type"</span>
 <li><b>Renaming a tool resets its cache line and its behavior.</b> Names are semantic: <code>get_order</code> → <code>fetch_order_v2</code> changes selection behavior. Treat tool definitions as versioned prompt assets (<a href="../prompting/index.html">Prompting</a> versioning applies verbatim).</li>
 </ul></div>
 <div class="callout"><p><strong>Exercises</strong></p><ol>
-<li>Build the registry above with three real tools of your own. Confirm <code>tool_defs()</code> output validates against your provider's tool format, then wire it into the chapter 4.1 loop.</li>
+<li>Build the registry above with three real tools of your own. Confirm <code>tool_defs()</code> output validates against your provider's tool format, then wire it into the <a href="tool-calling.html">Tool calling</a> loop.</li>
 <li>Run a 30-question routing eval against the "before" and "after" kb/tickets descriptions. Report wrong-tool rate for each; then delete just the "Do NOT use for…" sentences and measure how much of the gain they carried.</li>
 <li>Send <code>{"order_id": "banana"}</code> through <code>dispatch</code> and paste the returned error into a follow-up turn. Count rounds until the model asks the user for a valid ID instead of retrying blindly.</li>
 <li>Demonstrate the <code>any</code>-mode failure: with tool_choice <code>any</code> and only <code>get_order</code> registered, send "What's your refund policy?" and inspect the invented order_id. Fix it by adding an escape tool (<code>no_tool_applies(reason)</code>) and re-run.</li>
@@ -537,13 +539,14 @@ r = client.messages.create(**common, tool_choice={<span class="st">"type"</span>
 <li><strong>MCP</strong> (Model Context Protocol): an open standard for exposing tools, resources and prompts to any LLM app through a server, so integrations are reusable across clients.</li>
 </ul>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>27 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Log every tool call: name, args, latency, success</li><li>PII scrubbing on args before log</li><li>Rate limit per tool per user</li></ul></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>28 &mdash; Where It Shows Up</h2>
-<div class="card"><ul><li><a href="what-is-an-agent.html">Agent Architectures</a></li><li><a href="agent-loop.html">Production Agent</a></li><li><a href="../tech/langgraph.html">LangGraph</a></li><li><a href="../prompting/prompt-techniques.html">Prompt Engineering</a></li></ul></div>
+<section id="related-topics">
+  <h2>28 &mdash; Related topics</h2>
+<div class="card"><ul><li><a href="what-is-an-agent.html">What an agent is</a></li><li><a href="agent-loop.html">The agent loop</a></li><li><a href="../tech/langgraph.html">LangGraph</a></li><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a></li></ul></div>
 </section>
 <section id="common-pitfalls">
   <h2>29 &mdash; Common Pitfalls</h2>

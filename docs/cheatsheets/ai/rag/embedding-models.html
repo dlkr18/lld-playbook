@@ -29,7 +29,7 @@
   <a href="#eval-before-you-index"><span class="num">11</span> Eval Before You Index</a>
   <a href="#full-pipeline-example"><span class="num">12</span> Full Pipeline Example</a>
   <a href="#production-ops"><span class="num">13</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">14</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">14</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">15</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">16</span> Check yourself</a>
 </nav>
@@ -43,11 +43,12 @@
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
 <p>Choose and deploy text embedding models for RAG: OpenAI text-embedding-3, Cohere embed-v3, open-source BGE/E5, Matryoshka dimension truncation, cosine vs dot-product metrics, and golden-set eval before you commit to an index in your vector database.</p>
-<div class="diagram"><img alt="Embedding Models architecture" src="../tech/img/embedding-models-main.png"/></div><p class="diagram-caption">Embedding pipeline: text → tokenizer → bi-encoder transformer → L2-normalized vector (384–3072 dim) → cosine similarity in <a href="vector-search.html">vector DB</a>. Same model at ingest and query; version tag in index namespace.</p>
+<div class="diagram"><img alt="Embedding Models architecture" src="../tech/img/embedding-models-main.png"/></div><p class="diagram-caption">Embedding pipeline: text → tokenizer → bi-encoder transformer → L2-normalized vector (384–3072 dim) → cosine similarity in <a href="vector-search.html">Vector search &amp; databases</a>. Same model at ingest and query; version tag in index namespace.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
-<div class="card"><p><strong>Embedding models</strong> convert text into dense vectors so semantic similarity becomes geometry: nearby vectors = related meaning. In <a href="rag-pipeline.html">RAG end-to-end</a> pipelines, the embedding model sets the <em>recall ceiling</em> before chunking tuning, hybrid search, or <a href="reranking.html">rerankers</a> can help. Wrong model, wrong metric, or mismatched ingest/query models waste all downstream work.</p>
+<div class="card"><p><strong>Embedding models</strong> convert text into dense vectors so semantic similarity becomes geometry: nearby vectors = related meaning. In <a href="rag-pipeline.html">The RAG pipeline</a> pipelines, the embedding model sets the <em>recall ceiling</em> before chunking tuning, hybrid search, or <a href="reranking.html">Reranking</a> can help. Wrong model, wrong metric, or mismatched ingest/query models waste all downstream work.</p>
 <h3>Functional requirements</h3>
 <ul>
 <li>Embed document chunks at ingest with stable IDs and model version metadata</li>
@@ -64,14 +65,14 @@
 <li><strong>Consistency:</strong> L2 normalization pipeline matches vector DB distance ops</li>
 <li><strong>Compliance:</strong> air-gap option (BGE/E5 on TEI) when data cannot leave VPC</li>
 </ul>
-<blockquote><strong>Prerequisite:</strong> <a href="embeddings.html">Embeddings &amp; Semantic Search</a> fundamentals. Vectors land in <a href="vector-search.html">Vector Databases</a> — pick model first, index second.</blockquote></div>
+<blockquote><strong>Prerequisite:</strong> <a href="embeddings.html">Embeddings</a> fundamentals. Vectors land in <a href="vector-search.html">Vector search &amp; databases</a> — pick model first, index second.</blockquote></div>
 </section>
 <section id="core-concepts">
   <h2>03 &mdash; Core Concepts</h2>
 <div class="card"><table>
 <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
 <tr><td><strong>Bi-encoder</strong></td><td>Single forward pass embeds query and doc independently</td><td>Fast ANN retrieval; not a reranker</td></tr>
-<tr><td><strong>Cross-encoder</strong></td><td>Joint model on [query, passage] pair</td><td>Accurate but O(pairs) — see <a href="reranking.html">Rerankers</a></td></tr>
+<tr><td><strong>Cross-encoder</strong></td><td>Joint model on [query, passage] pair</td><td>Accurate but O(pairs) — see <a href="reranking.html">Reranking</a></td></tr>
 <tr><td><strong>MTEB</strong></td><td>Massive Text Embedding Benchmark leaderboard</td><td>Your legal/medical domain may differ wildly</td></tr>
 <tr><td><strong>Matryoshka</strong></td><td>Embeddings trained so first k dims stay useful when truncated</td><td>OpenAI v3 <code>dimensions=512</code> param</td></tr>
 <tr><td><strong>L2 normalization</strong></td><td>Scale vector to unit length</td><td>Dot product = cosine when normalized</td></tr>
@@ -148,7 +149,7 @@ vecs = model.encode(texts, normalize_embeddings=True, batch_size=64)</pre>
                     +------------------+
                     |  Query path      |
                     |  hash(q)-&gt;vec TTL|
-                    +------------------+</pre><div class="flow"><div class="step" data-num="1"><span class="label">Pick model</span><div class="detail">Golden-set recall@5 on 3 candidates; lock model + dim + metric</div></div><div class="step" data-num="2"><span class="label">Ingest</span><div class="detail">Chunk docs → embed with search_document → upsert to <a href="vector-search.html">vector DB</a> with metadata</div></div><div class="step" data-num="3"><span class="label">Query</span><div class="detail">Embed question (search_query) → ANN top_k → optional <a href="reranking.html">rerank</a></div></div><div class="step" data-num="4"><span class="label">Cache</span><div class="detail">TTL cache query vectors by hash(question); invalidate on model change</div></div><div class="step" data-num="5"><span class="label">Migrate</span><div class="detail">New namespace or table per model version; dual-write then cutover</div></div></div></div>
+                    +------------------+</pre><div class="flow"><div class="step" data-num="1"><span class="label">Pick model</span><div class="detail">Golden-set recall@5 on 3 candidates; lock model + dim + metric</div></div><div class="step" data-num="2"><span class="label">Ingest</span><div class="detail">Chunk docs → embed with search_document → upsert to <a href="vector-search.html">Vector search &amp; databases</a> with metadata</div></div><div class="step" data-num="3"><span class="label">Query</span><div class="detail">Embed question (search_query) → ANN top_k → optional <a href="reranking.html">Reranking</a></div></div><div class="step" data-num="4"><span class="label">Cache</span><div class="detail">TTL cache query vectors by hash(question); invalidate on model change</div></div><div class="step" data-num="5"><span class="label">Migrate</span><div class="detail">New namespace or table per model version; dual-write then cutover</div></div></div></div>
 </section>
 <section id="model-comparison">
   <h2>07 &mdash; Model Comparison</h2>
@@ -175,7 +176,7 @@ vecs = model.encode(texts, normalize_embeddings=True, batch_size=64)</pre>
 import numpy as np
 v = model.encode(text, normalize_embeddings=True)
 # OR manually: v = v / np.linalg.norm(v)</pre>
-<p>Mismatch (cosine index + unnormalized vectors) silently degrades recall. Log embed pipeline hash in <a href="../production/observability.html">LLM observability</a> traces for debugging.</p></div>
+<p>Mismatch (cosine index + unnormalized vectors) silently degrades recall. Log embed pipeline hash in <a href="../production/observability.html">Observability</a> traces for debugging.</p></div>
 </section>
 <section id="matryoshka-representation-learning">
   <h2>09 &mdash; Matryoshka Representation Learning</h2>
@@ -194,7 +195,7 @@ v = model.encode(text, normalize_embeddings=True)
 </section>
 <section id="open-source-self-host">
   <h2>10 &mdash; Open Source &amp; Self-Host</h2>
-<div class="card"><p>Deploy BGE, E5, GTE via <strong>Text Embeddings Inference (TEI)</strong> on GPU — not vLLM (LLM-only). See <a href="../inference/serving.html">Model Serving</a> for LLM stack; TEI is the embed analogue.</p>
+<div class="card"><p>Deploy BGE, E5, GTE via <strong>Text Embeddings Inference (TEI)</strong> on GPU — not vLLM (LLM-only). See <a href="../inference/serving.html">Serving &amp; scaling</a> for LLM stack; TEI is the embed analogue.</p>
 <pre># TEI Docker — batch embed server
 docker run --gpus all -p 8080:80 \
   ghcr.io/huggingface/text-embeddings-inference:latest \
@@ -210,7 +211,7 @@ curl http://localhost:8080/embed -d '{"inputs": ["hello world"]}'</pre>
 </section>
 <section id="eval-before-you-index">
   <h2>11 &mdash; Eval Before You Index</h2>
-<div class="card"><p>Compare 2–3 embedding models on the same chunk set and golden queries before full re-index. Tie to <a href="../production/evals.html">Eval Harness</a> CI and <a href="../production/observability.html">LangSmith eval datasets</a>.</p>
+<div class="card"><p>Compare 2–3 embedding models on the same chunk set and golden queries before full re-index. Tie to <a href="../production/evals.html">Evaluating LLM features</a> CI and <a href="../production/observability.html">Observability</a>.</p>
 <pre># Pseudo-eval loop
 for model in ["text-embedding-3-small", "bge-small-en-v1.5"]:
     index_golden_corpus(model)
@@ -225,7 +226,7 @@ for model in ["text-embedding-3-small", "bge-small-en-v1.5"]:
 </section>
 <section id="full-pipeline-example">
   <h2>12 &mdash; Full Pipeline Example</h2>
-<div class="card highlight"><p>End-to-end embed + upsert + query against a vector store. Swap Pinecone for <a href="vector-search.html">pgvector</a> with the same vectors.</p></div><div class="card"><pre>from openai import OpenAI
+<div class="card highlight"><p>End-to-end embed + upsert + query against a vector store. Swap Pinecone for <a href="vector-search.html">Vector search &amp; databases</a> with the same vectors.</p></div><div class="card"><pre>from openai import OpenAI
 import hashlib
 
 client = OpenAI()
@@ -280,8 +281,9 @@ for q, gold_id in golden:
     hits = search(q, top_k=5)
     ids = [h.id for h in hits]
     print(q, gold_id in ids, ids[:3])</pre>
-<p>Log every search in <a href="../production/observability.html">LangSmith</a> with <code>embed_model</code>, <code>namespace</code>, and hit IDs. Run reranker on hits before LLM per <a href="reranking.html">Rerankers</a> sheet.</p></div>
+<p>Log every search in <a href="../production/observability.html">Observability</a> with <code>embed_model</code>, <code>namespace</code>, and hit IDs. Run reranker on hits before LLM per <a href="reranking.html">Reranking</a> sheet.</p></div>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>13 &mdash; Production &amp; Ops</h2>
 <div class="card"><table>
@@ -291,17 +293,17 @@ for q, gold_id in golden:
 <tr><td>Batching</td><td>64–256 texts per GPU batch (TEI); 2048 inputs/OpenAI call max</td></tr>
 <tr><td>Cache</td><td>Query embed cache 5–60 min TTL; key = hash(normalized question + model)</td></tr>
 <tr><td>Migration</td><td>Blue/green namespace; re-embed async; flip router when recall validated</td></tr>
-<tr><td>Cost</td><td>Track tokens per tenant in <a href="../production/observability.html">observability</a> dashboard</td></tr>
+<tr><td>Cost</td><td>Track tokens per tenant in <a href="../production/observability.html">Observability</a> dashboard</td></tr>
 </table></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>14 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>14 &mdash; Related topics</h2>
 <div class="card"><ul>
-<li><a href="vector-search.html">Vector Databases</a> — ANN index stores embed output; metric must match</li>
-<li><a href="rag-pipeline.html">RAG End-to-End</a> — ingest embed + query embed are bookends of retrieval</li>
-<li><a href="reranking.html">Rerankers</a> — fix embed recall first; rerank adds precision on top</li>
-<li><a href="../fundamentals/api.html">OpenAI API Patterns</a> — batching, retries, <code>dimensions</code> param</li>
-<li><a href="../production/observability.html">LLM Observability</a> — LangSmith traces embed latency and model version per request</li>
+<li><a href="vector-search.html">Vector search &amp; databases</a> — ANN index stores embed output; metric must match</li>
+<li><a href="rag-pipeline.html">The RAG pipeline</a> — ingest embed + query embed are bookends of retrieval</li>
+<li><a href="reranking.html">Reranking</a> — fix embed recall first; rerank adds precision on top</li>
+<li><a href="../fundamentals/api.html">Calling a model</a> — batching, retries, <code>dimensions</code> param</li>
+<li><a href="../production/observability.html">Observability</a> — LangSmith traces embed latency and model version per request</li>
 </ul></div>
 </section>
 <section id="common-pitfalls">
@@ -309,7 +311,7 @@ for q, gold_id in golden:
 <div class="card"><ul>
 <li><strong>Cohere input_type mismatch</strong> — <code>search_document</code> at ingest, <code>search_query</code> at query; swapping kills recall</li>
 <li><strong>Skip normalization on OSS</strong> — upsert raw BGE vectors into cosine index</li>
-<li><strong>Embed whole documents</strong> — exceed 512–8K token limit; chunk first per <a href="rag-pipeline.html">RAG</a> guide</li>
+<li><strong>Embed whole documents</strong> — exceed 512–8K token limit; chunk first per <a href="rag-pipeline.html">The RAG pipeline</a> guide</li>
 <li><strong>Re-rank before fixing embed</strong> — reranker cannot recover missing gold doc from ANN</li>
 <li><strong>Mix model versions in one index</strong> — query with v3, docs embedded with ada-002</li>
 <li><strong>Trust MTEB only</strong> — legal/medical/domain jargon needs custom golden set</li>
@@ -364,7 +366,7 @@ for q, gold_id in golden:
 </details>
 <details>
 <summary>SDE3: Design a company-wide embedding platform.</summary>
-<div class="answer">Central embed API (OpenAI + TEI backends); model registry with approved versions; batch GPU workers for ingest; versioned Pinecone/pgvector namespaces; automatic re-index job on model bump; per-team cost allocation; golden eval gate in CI; query cache layer; <a href="../production/observability.html">LangSmith</a> traces on every call. Consumers never pick models ad hoc.</div>
+<div class="answer">Central embed API (OpenAI + TEI backends); model registry with approved versions; batch GPU workers for ingest; versioned Pinecone/pgvector namespaces; automatic re-index job on model bump; per-team cost allocation; golden eval gate in CI; query cache layer; <a href="../production/observability.html">Observability</a> traces on every call. Consumers never pick models ad hoc.</div>
 </details>
 </section>
 

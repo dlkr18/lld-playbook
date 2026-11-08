@@ -34,7 +34,7 @@
   <a href="#metrics-definitions-and-alert-thresholds"><span class="num">16</span> Metrics: definitions and alert thresholds</a>
   <a href="#sampling-and-privacy-trace-everything-keep-less"><span class="num">17</span> Sampling and privacy: trace everything, keep less</a>
   <a href="#production-ops"><span class="num">18</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">19</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">19</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">20</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">21</span> Check yourself</a>
 </nav>
@@ -48,11 +48,12 @@
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
 <p>Trace, evaluate, and debug LLM applications: LangSmith tracing patterns, Langfuse, OpenTelemetry GenAI spans, token and cost tracking, golden-set eval CI, online feedback loops, and production dashboards for RAG and agents.</p>
-<div class="diagram"><img alt="LLM Observability architecture" src="../tech/img/llm-observability-main.png"/></div><p class="diagram-caption">Observability stack: SDK wraps LLM / retriever / tool calls → trace spans (latency, tokens, I/O) → dashboard + alerts → <a href="evals.html">eval harness</a> regression gate on every deploy.</p>
+<div class="diagram"><img alt="LLM Observability architecture" src="../tech/img/llm-observability-main.png"/></div><p class="diagram-caption">Observability stack: SDK wraps LLM / retriever / tool calls → trace spans (latency, tokens, I/O) → dashboard + alerts → <a href="evals.html">Evaluating LLM features</a> regression gate on every deploy.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
-<div class="card"><p>LLM apps fail <strong>silently</strong>: wrong retrieval, prompt drift, tool loops, partial answers that look fine. Traditional APM misses prompt inputs, chunk IDs, and token costs. <strong>LLM observability</strong> = traces (what happened step-by-step), evals (is quality still good), metrics (cost/latency per tenant). Required before any prod <a href="../rag/rag-pipeline.html">RAG</a> or <a href="../tech/langgraph.html">LangGraph</a> agent launch.</p>
+<div class="card"><p>LLM apps fail <strong>silently</strong>: wrong retrieval, prompt drift, tool loops, partial answers that look fine. Traditional APM misses prompt inputs, chunk IDs, and token costs. <strong>LLM observability</strong> = traces (what happened step-by-step), evals (is quality still good), metrics (cost/latency per tenant). Required before any prod <a href="../rag/rag-pipeline.html">The RAG pipeline</a> or <a href="../tech/langgraph.html">LangGraph</a> agent launch.</p>
 <h3>Functional requirements</h3>
 <ul>
 <li>Trace tree per user request: embed, retrieve, rerank, LLM, tools</li>
@@ -192,7 +193,7 @@ span.set_attribute("tenant_id", tenant)</pre>
 </section>
 <section id="eval-harness-integration">
   <h2>09 &mdash; Eval Harness Integration</h2>
-<div class="card"><p>Connect live traces to offline eval. See <a href="evals.html">Eval Harness</a> for full CI design.</p>
+<div class="card"><p>Connect live traces to offline eval. See <a href="evals.html">Evaluating LLM features</a> for full CI design.</p>
 <ul>
 <li><strong>Golden 50–100 questions</strong> with reference answers and gold doc IDs</li>
 <li><strong>Blocking CI:</strong> deploy fails if recall@5 or correctness drops &gt;5%</li>
@@ -265,8 +266,9 @@ def rag_answer(query: str, tenant_id: str) -&gt; dict:
 
 # CI eval (blocking deploy)
 # evaluate(rag_answer, data="golden-rag-v3", evaluators=[correctness])</pre>
-<p>Store <code>trace_id</code> on every API response. Support tickets link directly to LangSmith run replay. Feed thumbs-down into golden dataset per <a href="evals.html">Eval Harness</a>.</p></div>
+<p>Store <code>trace_id</code> on every API response. Support tickets link directly to LangSmith run replay. Feed thumbs-down into golden dataset per <a href="evals.html">Evaluating LLM features</a>.</p></div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="observability-seeing-inside-a-12-step-agent">
   <h2>13 &mdash; Observability: seeing inside a 12-step agent</h2>
 <p>You cannot debug a non-deterministic, multi-step, tool-calling system from print statements. Trace everything — with OpenTelemetry-shaped spans so the data outlives your current vendor — then aggregate the spans into metrics with alert thresholds you've actually chosen.</p>
@@ -282,7 +284,7 @@ def rag_answer(query: str, tenant_id: str) -&gt; dict:
 </section>
 <section id="the-tracing-decorator-otel-genai-conventions-60-lines">
   <h2>14 &mdash; The tracing decorator: OTel GenAI conventions, ~60 lines</h2>
-<p>Two decorators — one for LLM calls, one for tools — plus a root span per request. Attribute names follow the OpenTelemetry GenAI semantic conventions (<code>gen_ai.*</code>), so LangSmith, Langfuse, Phoenix, or a bare OTLP collector all ingest it. This is the <code>trace</code> hook the thin-harness chapter left as <code>null_trace</code>, grown up.</p>
+<p>Two decorators — one for LLM calls, one for tools — plus a root span per request. Attribute names follow the OpenTelemetry GenAI semantic conventions (<code>gen_ai.*</code>), so LangSmith, Langfuse, Phoenix, or a bare OTLP collector all ingest it. This is the <code>trace</code> hook <a href="../tech/frameworks.html">Choosing an agent framework</a> left as <code>null_trace</code>, grown up.</p>
 <div class="code-block"><div class="code-file"><span>tracing.py — spans for LLM + tool calls, vendor-neutral</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> functools, json, time
 <span class="kw">from</span> opentelemetry <span class="kw">import</span> trace <span class="kw">as</span> ot
 <span class="kw">from</span> opentelemetry.trace <span class="kw">import</span> StatusCode
@@ -359,7 +361,7 @@ PRICES = {<span class="st">"</span><span class="st">claude-sonnet-4-5</span><spa
  │    in=7,631 tok  out=214 tok  $0.026  → final answer (apologizes, offers escalation)
  └─ memory.save + trace.flush                                       [  40ms]
  totals: 3 llm calls · 21,748 in / 363 out tok · $0.071 · 3 tool events (1 error)</pre>
-<p>Read the diagnosis straight off the tree: iteration 1 called <code>refund</code> on a status question — a prompt bug (an over-eager instruction added in <code>support_v14</code>), caught because the span records <i>which prompt version</i> ran. The guardrailed tool correctly refused. This request now becomes a trajectory eval case (evals chapter): <code>forbidden_tools: ["refund"]</code> for status intents.</p>
+<p>Read the diagnosis straight off the tree: iteration 1 called <code>refund</code> on a status question — a prompt bug (an over-eager instruction added in <code>support_v14</code>), caught because the span records <i>which prompt version</i> ran. The guardrailed tool correctly refused. This request now becomes a trajectory eval case (<a href="evals.html">Evaluating LLM features</a>): <code>forbidden_tools: ["refund"]</code> for status intents.</p>
 </section>
 <section id="metrics-definitions-and-alert-thresholds">
   <h2>16 &mdash; Metrics: definitions and alert thresholds</h2>
@@ -422,9 +424,10 @@ PATTERNS = [
 <li>Render one of your traces as an ASCII tree like the one above (a 30-line script over exported spans). Practice reading three traces shape-first, payloads second.</li>
 <li>Build two dashboard panels from span data alone: cost per hour and iterations p95. Set the warn thresholds from the table, then replay a retry storm (429-ing stub) and verify the cost alert fires before the error-rate alert.</li>
 <li>Test the redactor: write 10 strings containing emails, card numbers, and phone numbers in awkward formats; measure recall. Add one NER-based pass and re-measure.</li>
-<li>Close the loop: take your worst trace from exercise 1 and convert it into a trajectory eval case in the evals chapter's JSONL format, including the <code>source</code> field pointing at the trace id.</li>
+<li>Close the loop: take your worst trace from exercise 1 and convert it into a trajectory eval case in <a href="evals.html">Evaluating LLM features</a>'s JSONL format, including the <code>source</code> field pointing at the trace id.</li>
 </ol></div>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>18 &mdash; Production &amp; Ops</h2>
 <div class="card"><table>
@@ -436,15 +439,15 @@ PATTERNS = [
 <tr><td>Incident</td><td>trace_id in tickets; rollback on eval gate failure</td></tr>
 </table></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>19 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>19 &mdash; Related topics</h2>
 <div class="card"><ul>
-<li><a href="../rag/rag-pipeline.html">RAG End-to-End</a> — trace every retrieve → rerank → generate stage</li>
-<li><a href="../rag/vector-search.html">Vector Databases</a> — log chunk IDs + ANN scores in retrieval span</li>
+<li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — trace every retrieve → rerank → generate stage</li>
+<li><a href="../rag/vector-search.html">Vector search &amp; databases</a> — log chunk IDs + ANN scores in retrieval span</li>
 <li><a href="../tech/langgraph.html">LangGraph</a> — per-node spans + checkpoint metadata</li>
-<li><a href="../fundamentals/api.html">OpenAI API Patterns</a> — token usage + retry logging</li>
-<li><a href="evals.html">Eval Harness</a> — CI golden set fed from prod failures</li>
-<li><a href="../agents/agent-loop.html">Production Agent</a> — tool loop detection, HITL audit trail</li>
+<li><a href="../fundamentals/api.html">Calling a model</a> — token usage + retry logging</li>
+<li><a href="evals.html">Evaluating LLM features</a> — CI golden set fed from prod failures</li>
+<li><a href="../agents/agent-loop.html">The agent loop</a> — tool loop detection, HITL audit trail</li>
 </ul></div>
 </section>
 <section id="common-pitfalls">
@@ -506,7 +509,7 @@ PATTERNS = [
 </details>
 <details>
 <summary>SDE3: company AI observability platform?</summary>
-<div class="answer">Unified OTel schema; Langfuse self-host for traces; LangSmith for LC eval datasets; golden CI gate blocking deploy; cost chargeback dashboard per tenant; feedback→dataset pipeline; PII scrub tier; on-call runbook linking trace_id to rollback; integrate with <a href="../rag/rag-pipeline.html">RAG</a> and agent SLOs.</div>
+<div class="answer">Unified OTel schema; Langfuse self-host for traces; LangSmith for LC eval datasets; golden CI gate blocking deploy; cost chargeback dashboard per tenant; feedback→dataset pipeline; PII scrub tier; on-call runbook linking trace_id to rollback; integrate with <a href="../rag/rag-pipeline.html">The RAG pipeline</a> and agent SLOs.</div>
 </details>
 </section>
 

@@ -28,7 +28,7 @@
   <a href="#deep-dive-human-evaluation"><span class="num">10</span> Deep Dive: Human Evaluation</a>
   <a href="#deep-dive-production-metrics"><span class="num">11</span> Deep Dive: Production Metrics</a>
   <a href="#production-ops"><span class="num">12</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">13</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">13</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">14</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">15</span> Check yourself</a>
 </nav>
@@ -46,9 +46,10 @@
 <div class="diagram"><img src="../fundamentals/img/evaluation-metrics-auto-zoom.png" alt="BLEU, ROUGE and BERTScore side by side: what each measures, how it works, and where it misleads."></div><p class="diagram-caption">BLEU, ROUGE and BERTScore side by side: what each measures, how it works, and where it misleads.</p>
 <div class="diagram"><img src="../fundamentals/img/evaluation-metrics-judge-zoom.png" alt="LLM-as-judge: a rubric prompt, a structured score, and calibration against human labels before you trust it."></div><p class="diagram-caption">LLM-as-judge: a rubric prompt, a structured score, and calibration against human labels before you trust it.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
-<div class="card"><p>LLM output is high-dimensional. You need <strong>task-specific metrics</strong>, held-out golden sets, and human calibration. Wrong metrics optimize for benchmarks, not users.</p><blockquote>Production eval harness: <a href="evals.html">Eval Harness</a>.</blockquote></div>
+<div class="card"><p>LLM output is high-dimensional. You need <strong>task-specific metrics</strong>, held-out golden sets, and human calibration. Wrong metrics optimize for benchmarks, not users.</p><blockquote>Production eval harness: <a href="evals.html">Evaluating LLM features</a>.</blockquote></div>
 </section>
 <section id="core-concepts">
   <h2>03 &mdash; Core Concepts</h2>
@@ -87,8 +88,14 @@ judge_prompt = """Rate faithfulness 1-5. Context: {ctx}\nAnswer: {ans}"""</pre><
 </section>
 <section id="deep-dive-human-evaluation">
   <h2>10 &mdash; Deep Dive: Human Evaluation</h2>
-<div class="card"><p>Side-by-side preference (ELO). Task-specific rubrics. 50–200 prompts minimum for model comparison. Gold standard for high-stakes.</p></div>
+<div class="card"><p>Humans are the ground truth every automatic metric and LLM judge is calibrated against.</p>
+<ul><li><strong>Pairwise preference</strong>: show two outputs side by side, ask which is better. More reliable than absolute scores; aggregate into an Elo or win rate.</li>
+<li><strong>Rubrics</strong>: task-specific criteria (correct, complete, grounded, tone) scored on a short scale, with written guidelines and examples of each score.</li>
+<li><strong>Sample size</strong>: 50 to 200 prompts for a model comparison; report confidence intervals, not a single number.</li>
+<li><strong>Agreement</strong>: have two raters label an overlap set and measure agreement (Cohen's kappa). Low agreement means the rubric is unclear, not that raters are bad.</li></ul>
+<p>Expensive and slow, so use it to calibrate judges and to decide releases, not on every commit.</p></div>
 </section>
+<p class="part-divider">In production</p>
 <section id="deep-dive-production-metrics">
   <h2>11 &mdash; Deep Dive: Production Metrics</h2>
 <div class="card"><ul><li>User thumbs up/down rate</li><li>Escalation to human support</li><li>Faithfulness on sampled RAG traces</li><li>Hallucination report rate</li></ul></div>
@@ -97,9 +104,9 @@ judge_prompt = """Rate faithfulness 1-5. Context: {ctx}\nAnswer: {ans}"""</pre><
   <h2>12 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Nightly eval on golden set in CI</li><li>Alert on score regression &gt;2%</li><li>Store prompt/response for audit</li><li>A/B new prompt versions</li></ul></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>13 &mdash; Where It Shows Up</h2>
-<div class="card"><ul><li><a href="evals.html">Eval Harness</a></li><li><a href="../fundamentals/limits.html">Hallucination &amp; Grounding</a></li><li><a href="../rag/rag-pipeline.html">RAG End-to-End</a></li><li><a href="../prompting/prompt-techniques.html">Prompt Engineering</a></li><li><a href="../fundamentals/how-llms-are-trained.html">Pre-training, SFT &amp; RLHF</a></li></ul></div>
+<section id="related-topics">
+  <h2>13 &mdash; Related topics</h2>
+<div class="card"><ul><li><a href="evals.html">Evaluating LLM features</a></li><li><a href="../fundamentals/limits.html">Limits &amp; hallucination</a></li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a></li><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a></li><li><a href="../fundamentals/how-llms-are-trained.html">How LLMs are trained</a></li></ul></div>
 </section>
 <section id="common-pitfalls">
   <h2>14 &mdash; Common Pitfalls</h2>
@@ -118,7 +125,7 @@ judge_prompt = """Rate faithfulness 1-5. Context: {ctx}\nAnswer: {ans}"""</pre><
 <details><summary>Compare two prompt versions?</summary><div class="answer">Same golden set, paired outputs, LLM judge + human sample, statistical significance on win rate.</div></details>
 <details><summary>RAG eval metrics?</summary><div class="answer">Context precision/recall, answer faithfulness, answer relevance (RAGAS framework).</div></details>
 <details><summary>CI gate example?</summary><div class="answer">Block deploy if faithfulness &lt;0.85 or JSON parse rate &lt;99% on golden set.</div></details>
-<details><summary>SDE3: eval strategy for RAG bot?</summary><div class="answer">200-query golden set with labeled passages; nightly RAGAS + human spot check; LLM judge calibrated monthly; production sample 1% for audit; tie to <a href="../fundamentals/limits.html">Hallucination &amp; Grounding</a> abstention thresholds.</div></details>
+<details><summary>SDE3: eval strategy for RAG bot?</summary><div class="answer">200-query golden set with labeled passages; nightly RAGAS + human spot check; LLM judge calibrated monthly; production sample 1% for audit; tie to <a href="../fundamentals/limits.html">Limits &amp; hallucination</a> abstention thresholds.</div></details>
 </section>
 
 <div class="sheet-pager"><a class="prev" href="reliability.html"><span>Previous</span>Reliability engineering</a><a class="next" href="evals.html"><span>Next</span>Evaluating LLM features</a></div>

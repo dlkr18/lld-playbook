@@ -30,7 +30,7 @@
   <a href="#query-understanding"><span class="num">12</span> Query understanding</a>
   <a href="#hybrid-search-and-reciprocal-rank-fusion"><span class="num">13</span> Hybrid search and reciprocal rank fusion</a>
   <a href="#production-ops"><span class="num">14</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">15</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">15</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">16</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">17</span> Check yourself</a>
 </nav>
@@ -46,6 +46,7 @@
 <p>Combine dense vector search with sparse BM25: parallel retrieval, RRF fusion, metadata pre-filter, and cross-encoder rerank. Neither alone covers enterprise queries.</p>
 <div class="diagram"><img alt="Hybrid Search architecture" src="../systems/img/hybrid-search-main.png"/></div><p class="diagram-caption">Hybrid retrieval architecture: query embed + BM25 tokenize in parallel, RRF merge top-50, cross-encoder rerank to top-5, metadata pre-filter before ANN.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><p>Dense finds paraphrases; sparse finds exact tokens (SKUs, error codes). Enterprise RAG needs both.</p><h3>NFR</h3><ul><li>Recall@5 &gt;95% on golden set</li><li>Retrieve stage &lt;50ms p99</li><li>Pre-filter by org_id/ACL before ANN</li></ul></div>
@@ -91,8 +92,13 @@ rerank.scorePairs(q, chunks) -&gt; top 5</pre></div>
 </section>
 <section id="deep-dive-query-routing">
   <h2>11 &mdash; Deep Dive: Query Routing</h2>
-<div class="card"><p>Classifier routes SKU-like queries to sparse-heavy (α=0.3). Conversational to dense-heavy. Saves sparse load on chit-chat.</p></div>
+<div class="card"><p>Not every query needs the same blend of keyword and vector search.</p>
+<ul><li>A small classifier or rules spot exact-token queries (SKUs, error codes, IDs) and send them to a sparse-heavy blend (α around 0.3).</li>
+<li>Conversational, paraphrased questions go dense-heavy.</li>
+<li>Routing saves load on whichever index a query does not need, and often improves recall on both kinds.</li>
+<li>Tune the routing threshold on the golden set, like any other knob.</li></ul></div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="query-understanding">
   <h2>12 &mdash; Query understanding</h2>
 <ul>
@@ -118,13 +124,14 @@ SELECT id, SUM(1.0 / (60 + r)) AS score
 FROM (SELECT * FROM v UNION ALL SELECT * FROM k) u
 GROUP BY id ORDER BY score DESC LIMIT 20;</pre>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>14 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Trace dense_ms, sparse_ms, fusion_ms separately</li><li>A/B dense-only vs hybrid on Recall@5</li><li>Cache frequent query embeddings</li></ul></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>15 &mdash; Where It Shows Up</h2>
-<div class="card"><ul><li><a href="rag-pipeline.html">RAG End-to-End</a></li><li><a href="vector-search.html">Vector Databases</a></li><li><a href="embeddings.html">Embeddings</a></li><li><a href="../systems/../../hld/web-search-engine.html">Web Search Engine HLD</a></li></ul></div>
+<section id="related-topics">
+  <h2>15 &mdash; Related topics</h2>
+<div class="card"><ul><li><a href="rag-pipeline.html">The RAG pipeline</a></li><li><a href="vector-search.html">Vector search &amp; databases</a></li><li><a href="embeddings.html">Embeddings</a></li><li><a href="../systems/../../hld/web-search-engine.html">Web Search Engine HLD</a></li></ul></div>
 </section>
 <section id="common-pitfalls">
   <h2>16 &mdash; Common Pitfalls</h2>

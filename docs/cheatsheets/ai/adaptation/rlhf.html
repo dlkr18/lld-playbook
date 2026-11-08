@@ -38,7 +38,7 @@
   <a href="#variants-you-ll-hear"><span class="num">20</span> Variants you&#x27;ll hear</a>
   <a href="#rlhf"><span class="num">21</span> RLHF</a>
   <a href="#production-ops"><span class="num">22</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">23</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">23</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">24</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">25</span> Check yourself</a>
 </nav>
@@ -54,6 +54,7 @@
 <p>Align LLMs with human preferences: SFT baseline, reward modeling, PPO/RLHF, DPO direct preference optimization. Know when alignment training beats prompt engineering.</p>
 <div class="diagram"><img alt="RLHF &amp; DPO Pipeline architecture" src="../systems/img/rlhf-dpo-pipeline-main.png"/></div><p class="diagram-caption">Alignment pipeline: base model → SFT on demonstrations → preference pair collection → DPO or RLHF (reward model + PPO) → aligned model → eval harness gate.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card"><p>Base LLMs optimize next-token prediction, not helpfulness or safety. Alignment training steers behavior toward human preferences.</p></div>
@@ -81,7 +82,11 @@ trainer.train()</pre></div>
 </section>
 <section id="deep-dive-sft-baseline">
   <h2>07 &mdash; Deep Dive: SFT Baseline</h2>
-<div class="card"><p>10K–100K high-quality (prompt, response) pairs. Must precede DPO. Teaches format and domain vocabulary.</p></div>
+<div class="card"><p>Supervised fine-tuning comes before any preference training.</p>
+<ul><li>Train on roughly 10K to 100K high-quality (prompt, response) pairs written or vetted by people.</li>
+<li>It teaches the format (follow instructions, use the chat template) and the domain vocabulary.</li>
+<li>DPO and RLHF then adjust preferences between responses the model can already produce. Starting them from a base model that cannot follow instructions wastes the preference data.</li>
+<li>The SFT model is also the reference policy that the KL penalty keeps the aligned model close to.</li></ul></div>
 </section>
 <section id="deep-dive-reward-model">
   <h2>08 &mdash; Deep Dive: Reward Model</h2>
@@ -99,6 +104,7 @@ trainer.train()</pre></div>
   <h2>11 &mdash; Deep Dive: Alignment Eval</h2>
 <div class="card"><p>Win-rate vs baseline on held-out prefs. Safety red-team set. Capability eval (don't degrade MMLU). MT-Bench / Arena Elo.</p></div>
 </section>
+<p class="part-divider">The full explanation</p>
 <section id="rlhf-reward-modeling-teaching-taste">
   <h2>12 &mdash; RLHF &amp; reward modeling — teaching taste</h2>
 <p>SFT teaches <i>format</i> ("answer the request"). It cannot teach <i>"of these two valid answers, this one is better."</i> Preference optimization does — it's why chat models feel helpful rather than merely fluent.</p>
@@ -207,7 +213,7 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 <tr><td><b>β large</b></td><td>KL term dominates</td><td>policy barely moves; you've spent a week of GPU time reproducing your SFT model</td></tr>
 <tr><td><b>β → ∞</b></td><td>KL only</td><td>π = π_ref exactly; the objective's fixed point is "change nothing"</td></tr>
 </table>
-<p>The deeper reading: the KL term makes the objective's optimum a <i>softmax-weighted reshaping</i> of the reference model — π*(y|x) ∝ π_ref(y|x)·exp(r(x,y)/β). That closed form is exactly the observation DPO starts from (next chapter). β is the temperature of trust: how much you believe the RM relative to the SFT prior.</p>
+<p>The deeper reading: the KL term makes the objective's optimum a <i>softmax-weighted reshaping</i> of the reference model — π*(y|x) ∝ π_ref(y|x)·exp(r(x,y)/β). That closed form is exactly the observation DPO starts from (the next topic). β is the temperature of trust: how much you believe the RM relative to the SFT prior.</p>
 </section>
 <section id="why-the-kl-leash-and-why-it-still-breaks">
   <h2>18 &mdash; Why the KL leash and why it still breaks</h2>
@@ -228,7 +234,7 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 <li>Rollouts are generation — the training loop is bottlenecked on inference (this is why modern RLHF stacks embed vLLM in the trainer).</li>
 <li>Preference data is expensive; annotator disagreement is real signal, not noise to average away.</li>
 </ul>
-<p>These pains are exactly why DPO (next chapter) took over most open-model alignment — and why PPO-style RL survives mainly where rewards are <i>verifiable</i> (RLVR) and worth the machinery.</p>
+<p>These pains are exactly why DPO (the next topic) took over most open-model alignment — and why PPO-style RL survives mainly where rewards are <i>verifiable</i> (RLVR) and worth the machinery.</p>
 <div class="callout"><p><strong>Mini-scenario: the support-bot that learned to grovel</strong></p>You run RLHF on a support assistant using thumbs-up/down from real users as preference signal. Three weeks post-launch, resolution rate is flat but thumbs-up is way up. Reading transcripts, the model has learned that apologizing profusely and promising escalation earns 👍 regardless of whether the problem got solved — users reward <i>feeling heard</i>. Your reward was a proxy (thumbs) for the target (resolution); the model optimized the proxy. Fix: make the reward the verifiable thing (ticket closed without reopen within 7 days), and use thumbs only as a tiebreaker. Every RLHF war story is this story with different nouns.</div>
 </section>
 <section id="variants-you-ll-hear">
@@ -243,11 +249,11 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 <div class="callout success"><p><strong>The transferable skeleton</strong></p>Every feedback-driven improvement loop — RLHF, bandits, a ranker retrained on CTR — is the same shape: <b>capture signal → define reward → update policy → guard against proxy-gaming → gate with eval → roll out safely.</b> If you've built any of them, you understand the hard parts of all of them; only the middle machinery differs.</div>
 <div class="callout"><p><strong>Resources</strong></p>InstructGPT paper (arXiv 2203.02155) — <i>the</i> reference · Nathan Lambert's RLHF book (rlhfbook.com) · TRL RewardTrainer/PPOTrainer docs · Constitutional AI paper (arXiv 2212.08073).</div>
 <div class="callout"><p><strong>Exercises</strong></p><ol>
-<li>Implement <code>bt_loss</code> from this chapter on a public preference dataset (e.g. a slice of Anthropic HH) with a small model. Report held-out pair accuracy. Then double-label 50 pairs yourself and compute your own agreement with the dataset — is your RM above or below human-human agreement?</li>
+<li>Implement <code>bt_loss</code> from this topic on a public preference dataset (e.g. a slice of Anthropic HH) with a small model. Report held-out pair accuracy. Then double-label 50 pairs yourself and compute your own agreement with the dataset — is your RM above or below human-human agreement?</li>
 <li>Measure length bias in your trained RM: score 200 held-out answers, compute Spearman correlation between score and token count. Then rebuild the training pairs length-balanced (|len(chosen) − len(rejected)| &lt; 20%) and re-measure.</li>
 <li>Write a rater rubric (one page) for a task you know well. Have two people label the same 30 pairs against it. Compute agreement, read every disagreement, revise the rubric once, and re-measure on 30 fresh pairs.</li>
-<li>Derive what happens at β → ∞ from the objective E[r] − β·KL(π‖π_ref): show the maximizer is π = π_ref. Then verify the closed form π*(y|x) ∝ π_ref(y|x)·exp(r/β) by taking the functional derivative (this is DPO's starting point — do it before reading the next chapter).</li>
-<li>Build a sycophancy probe: 20 questions asked twice with opposite user-stated opinions. Run it against any chat model and report the flip rate. Which of this chapter's reward hacks would produce that behavior?</li>
+<li>Derive what happens at β → ∞ from the objective E[r] − β·KL(π‖π_ref): show the maximizer is π = π_ref. Then verify the closed form π*(y|x) ∝ π_ref(y|x)·exp(r/β) by taking the functional derivative (this is DPO's starting point — do it before reading the next topic).</li>
+<li>Build a sycophancy probe: 20 questions asked twice with opposite user-stated opinions. Run it against any chat model and report the flip rate. Which of this topic's reward hacks would produce that behavior?</li>
 </ol></div>
 </section>
 <section id="rlhf">
@@ -259,13 +265,14 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 </ol>
 <p>Powerful but heavy: four models in memory (policy, reference, reward, value), unstable hyperparameters.</p>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>22 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Version alignment dataset with model</li><li>A/B aligned vs base in shadow</li><li>Monitor refusal rate and user thumbs</li></ul></div>
 </section>
-<section id="where-it-shows-up">
-  <h2>23 &mdash; Where It Shows Up</h2>
-<div class="card"><ul><li><a href="fine-tuning.html">Fine-Tuning LoRA</a></li><li><a href="../production/evals.html">Eval Harness</a></li><li><a href="../fundamentals/what-is-an-llm.html">LLM Fundamentals</a></li><li><a href="../agents/agent-loop.html">Production Agent</a></li></ul></div>
+<section id="related-topics">
+  <h2>23 &mdash; Related topics</h2>
+<div class="card"><ul><li><a href="fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a></li><li><a href="../production/evals.html">Evaluating LLM features</a></li><li><a href="../fundamentals/what-is-an-llm.html">What an LLM is</a></li><li><a href="../agents/agent-loop.html">The agent loop</a></li></ul></div>
 </section>
 <section id="common-pitfalls">
   <h2>24 &mdash; Common Pitfalls</h2>

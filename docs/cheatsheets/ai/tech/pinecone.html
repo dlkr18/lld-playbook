@@ -28,7 +28,7 @@
   <a href="#index-lifecycle"><span class="num">10</span> Index Lifecycle</a>
   <a href="#pinecone-vs-pgvector-vs-weaviate-vs-chroma"><span class="num">11</span> Pinecone vs pgvector vs Weaviate vs Chroma</a>
   <a href="#production-ops"><span class="num">12</span> Production &amp; Ops</a>
-  <a href="#where-it-shows-up"><span class="num">13</span> Where It Shows Up</a>
+  <a href="#related-topics"><span class="num">13</span> Related topics</a>
   <a href="#common-pitfalls"><span class="num">14</span> Common Pitfalls</a>
   <a href="#check-yourself"><span class="num">15</span> Check yourself</a>
 </nav>
@@ -41,17 +41,18 @@
 
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
-<p>Fully managed vector database: serverless indexes, namespaces, metadata pre-filtering, sparse-dense hybrid, and upsert/query at scale without operating HNSW yourself. Part of the vector DB family covered in <a href="../rag/vector-search.html">Vector Databases (overview)</a> — compare with <a href="pgvector.html">pgvector</a>, <a href="weaviate.html">Weaviate</a>, and <a href="chroma.html">Chroma</a>.</p>
+<p>Fully managed vector database: serverless indexes, namespaces, metadata pre-filtering, sparse-dense hybrid, and upsert/query at scale without operating HNSW yourself. Part of the vector DB family covered in <a href="../rag/vector-search.html">Vector search &amp; databases</a> — compare with <a href="pgvector.html">pgvector</a>, <a href="weaviate.html">Weaviate</a>, and <a href="chroma.html">Chroma</a>.</p>
 <div class="diagram">
 <img alt="Pinecone serverless RAG architecture overview" src="../tech/img/pinecone-main.png"/>
 </div><p class="diagram-caption">Pinecone architecture: client upsert/query → serverless index (S3-backed segments + compute cache) → HNSW ANN → metadata pre-filter → filtered top-k. Typical p99 query ~20–40 ms at millions of vectors.</p>
-<div class="diagram"><img src="../tech/img/pinecone-pods-zoom.png" alt="Pod-based vs serverless Pinecone: dedicated capacity with predictable cost and latency, or pay-per-use autoscaling."></div><p class="diagram-caption">Pod-based vs serverless Pinecone: dedicated capacity with predictable cost and latency, or pay-per-use autoscaling.</p>
-<div class="diagram"><img src="../tech/img/pinecone-upsert-zoom.png" alt="Batch-upsert vectors with metadata, then query with a metadata filter for the top-k matches."></div><p class="diagram-caption">Batch-upsert vectors with metadata, then query with a metadata filter for the top-k matches.</p>
+<div class="diagram"><img alt="Pod-based vs serverless Pinecone: dedicated capacity with predictable cost and latency, or pay-per-use autoscaling." src="../tech/img/pinecone-pods-zoom.png"/></div><p class="diagram-caption">Pod-based vs serverless Pinecone: dedicated capacity with predictable cost and latency, or pay-per-use autoscaling.</p>
+<div class="diagram"><img alt="Batch-upsert vectors with metadata, then query with a metadata filter for the top-k matches." src="../tech/img/pinecone-upsert-zoom.png"/></div><p class="diagram-caption">Batch-upsert vectors with metadata, then query with a metadata filter for the top-k matches.</p>
 </section>
+<p class="part-divider">Quick reference</p>
 <section id="what-why">
   <h2>02 &mdash; What &amp; Why</h2>
 <div class="card">
-<p><strong>Pinecone</strong> is a fully managed vector database SaaS. You send embeddings + metadata; Pinecone runs HNSW indexing, sharding, replication, and scaling. It is the “no platform team” choice for multi-tenant SaaS RAG at 10M+ vectors when you do not want to operate <a href="../rag/vector-search.html">HNSW</a> graphs yourself.</p>
+<p><strong>Pinecone</strong> is a fully managed vector database SaaS. You send embeddings + metadata; Pinecone runs HNSW indexing, sharding, replication, and scaling. It is the “no platform team” choice for multi-tenant SaaS RAG at 10M+ vectors when you do not want to operate <a href="../rag/vector-search.html">Vector search &amp; databases</a> graphs yourself.</p>
 <h3>Functional requirements</h3>
 <ul>
 <li><strong>Upsert</strong> vectors with stable IDs, metadata JSON, and namespace isolation</li>
@@ -68,7 +69,7 @@
 <li><strong>Cost:</strong> storage + read units + write units; monitor namespace sprawl</li>
 <li><strong>Security:</strong> API key auth; metadata ACL pre-filter; never expose keys client-side</li>
 </ul>
-<blockquote><strong>Prerequisite:</strong> understand <a href="../rag/vector-search.html">vector DB fundamentals</a> and <a href="../rag/embedding-models.html">embedding models</a> — dimension is fixed at index creation; model change = new namespace.</blockquote>
+<blockquote><strong>Prerequisite:</strong> understand <a href="../rag/vector-search.html">Vector search &amp; databases</a> and <a href="../rag/embedding-models.html">Choosing an embedding model</a> — dimension is fixed at index creation; model change = new namespace.</blockquote>
 </div>
 </section>
 <section id="core-concepts">
@@ -207,7 +208,7 @@ for match in results["matches"]:
 <tr><td><code>$gte</code> / <code>$lte</code></td><td>date / numeric ranges</td><td>Time-bounded search</td></tr>
 <tr><td><code>$and</code> / <code>$or</code></td><td>compound predicates</td><td>Complex ACL rules</td></tr>
 </table>
-<blockquote><strong>Post-filter trap:</strong> retrieving top-k globally then filtering in app code yields 0–2 results when filters are selective. Use metadata pre-filter or namespace-per-tenant. See <a href="../rag/vector-search.html">metadata filtering overview</a>.</blockquote>
+<blockquote><strong>Post-filter trap:</strong> retrieving top-k globally then filtering in app code yields 0–2 results when filters are selective. Use metadata pre-filter or namespace-per-tenant. See <a href="../rag/vector-search.html">Vector search &amp; databases</a>.</blockquote>
 </div>
 <div class="diagram">
 <img alt="Metadata pre-filter DSL before ANN search vs post-filter starvation" src="../tech/img/pinecone-metadata-zoom.png"/>
@@ -226,8 +227,8 @@ for match in results["matches"]:
 </table>
 <ul>
 <li><a href="weaviate.html">Weaviate</a> ships native BM25+vector hybrid in one GraphQL call — compare DX if hybrid is core.</li>
-<li>See <a href="../rag/hybrid-search.html">Hybrid Search</a> for RRF fusion math and alpha tuning.</li>
-<li>Always add <a href="../rag/reranking.html">reranker</a> stage after hybrid top-20 (+30–80 ms).</li>
+<li>See <a href="../rag/hybrid-search.html">Hybrid search &amp; query understanding</a> for RRF fusion math and alpha tuning.</li>
+<li>Always add <a href="../rag/reranking.html">Reranking</a> stage after hybrid top-20 (+30–80 ms).</li>
 </ul>
 </div>
 </section>
@@ -263,9 +264,10 @@ for match in results["matches"]:
 <tr><td><strong>Multi-tenant</strong></td><td>Namespaces + metadata</td><td>SQL WHERE + partitions</td><td>Tenant shards per class</td><td>Collections (weak isolation)</td></tr>
 <tr><td><strong>Best scale</strong></td><td>10M–billions</td><td>&lt;1–10M per instance</td><td>1M–100M+</td><td>&lt;500K dev</td></tr>
 </table>
-<blockquote>Full comparison matrix: <a href="../rag/vector-search.html">Vector Databases section 08</a>.</blockquote>
+<blockquote>Full comparison matrix: <a href="../rag/vector-search.html">Vector search &amp; databases</a>.</blockquote>
 </div>
 </section>
+<p class="part-divider">In production</p>
 <section id="production-ops">
   <h2>12 &mdash; Production &amp; Ops</h2>
 <div class="card"><table>
@@ -284,16 +286,16 @@ def upsert_batch(index, namespace, rows, batch_size=200):
         retry_with_backoff(lambda: index.upsert(vectors=batch, namespace=namespace))</pre>
 </div>
 </section>
-<section id="where-it-shows-up">
-  <h2>13 &mdash; Where It Shows Up</h2>
+<section id="related-topics">
+  <h2>13 &mdash; Related topics</h2>
 <div class="card"><ul>
-<li><a href="../rag/vector-search.html">Vector Databases (overview)</a> — HNSW, metadata, hybrid concepts</li>
+<li><a href="../rag/vector-search.html">Vector search &amp; databases</a> — HNSW, metadata, hybrid concepts</li>
 <li><a href="pgvector.html">pgvector</a> · <a href="weaviate.html">Weaviate</a> · <a href="chroma.html">Chroma</a> — sibling deep dives</li>
-<li><a href="../rag/rag-pipeline.html">RAG End-to-End</a> — retrieval stage in full pipeline</li>
-<li><a href="../rag/embedding-models.html">Embedding Models</a> — dimension and metric choice</li>
-<li><a href="../rag/reranking.html">Rerankers</a> — stage after Pinecone top-k</li>
+<li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — retrieval stage in full pipeline</li>
+<li><a href="../rag/embedding-models.html">Choosing an embedding model</a> — dimension and metric choice</li>
+<li><a href="../rag/reranking.html">Reranking</a> — stage after Pinecone top-k</li>
 <li><a href="langchain.html">LangChain</a> / <a href="llamaindex.html">LlamaIndex</a> — VectorStore integrations</li>
-<li><a href="../rag/chunking.html">Chunking Strategies</a> — garbage chunks → garbage neighbors</li>
+<li><a href="../rag/chunking.html">Chunking</a> — garbage chunks → garbage neighbors</li>
 </ul></div>
 </section>
 <section id="common-pitfalls">
@@ -353,11 +355,11 @@ def upsert_batch(index, namespace, rows, batch_size=200):
 </details>
 <details>
 <summary>Pinecone vs Weaviate in a system design round?</summary>
-<div class="answer"><strong>Pinecone:</strong> simplest managed path, less ops. <strong>Weaviate:</strong> native BM25+vector hybrid GraphQL, self-host option, modular vectorizers. State hybrid requirement, team K8s skill, and scale. See <a href="../rag/vector-search.html">comparison table</a>.</div>
+<div class="answer"><strong>Pinecone:</strong> simplest managed path, less ops. <strong>Weaviate:</strong> native BM25+vector hybrid GraphQL, self-host option, modular vectorizers. State hybrid requirement, team K8s skill, and scale. See <a href="../rag/vector-search.html">Vector search &amp; databases</a>.</div>
 </details>
 <details>
 <summary>SDE3: design multi-tenant RAG for 10K customers and 100M chunks on Pinecone.</summary>
-<div class="answer">Namespace per tenant OR strict metadata pre-filter; shared embed service with fair queue; serverless index with regional replicas; ingest workers batch upsert; reranker microservice; per-tenant recall@k dashboards; blue/green namespaces for model upgrades; never store full doc text only in Pinecone — S3/Postgres source of truth. Link <a href="../rag/rag-pipeline.html">RAG end-to-end</a>.</div>
+<div class="answer">Namespace per tenant OR strict metadata pre-filter; shared embed service with fair queue; serverless index with regional replicas; ingest workers batch upsert; reranker microservice; per-tenant recall@k dashboards; blue/green namespaces for model upgrades; never store full doc text only in Pinecone — S3/Postgres source of truth. Link <a href="../rag/rag-pipeline.html">The RAG pipeline</a>.</div>
 </details>
 </section>
 

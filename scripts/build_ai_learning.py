@@ -69,7 +69,12 @@ def esc(text):
 def page(*, title, h1, qualifier, lead, tags, sections, back, pager, scripts=()):
     nav = [f'  <h2>{esc(h1)}</h2>', f'  <a href="{back[0]}">&larr; {esc(back[1])}</a>']
     body = []
-    for n, (sid, label, inner) in enumerate(sections, 1):
+    n = 0
+    for sid, label, inner in sections:
+        if sid is None:                       # part divider: names the next block of sections
+            body.append(f'<p class="part-divider">{esc(label)}</p>')
+            continue
+        n += 1
         nav.append(f'  <a href="#{sid}"><span class="num">{n:02d}</span> {esc(label)}</a>')
         body.append(f'<section id="{sid}">\n  <h2>{n:02d} &mdash; {esc(label)}</h2>\n{inner}\n</section>')
     tag_html = "".join(f'<span class="tag">{esc(t)}</span>' for t in tags)
@@ -456,10 +461,114 @@ def relink(soup, root, source):
             node.replace_with(BeautifulSoup(new, "html.parser") if not in_code else NavigableString(new))
 
 
+# The handbook's prose numbers its parts one lower than its contents page
+# ("chapter 2.3" = contents 3.3, Structured output).
+CHAPTER_REF = re.compile(r"\b[Cc]hapters? (\d+)\.(\d+)(?: of this part)?")
+BOOK_WORDS = [
+    (re.compile(r"\bstart at chapter 1\b"), "start at the first stage"),
+    (re.compile(r"\b(?:the )?next chapter\b"), "the next topic"),
+    (re.compile(r"\b(?:the )?previous chapter(?:'s)?\b"), "an earlier topic"),
+    (re.compile(r"\b(?:the )?last chapter\b"), "in an earlier topic"),
+    (re.compile(r"\b(?:the )?previous chapters\b"), "earlier topics"),
+    (re.compile(r"\b(?:the )?next chapters\b"), "the next topics"),
+    (re.compile(r"\b(?:the )?earlier chapters\b"), "earlier topics"),
+    (re.compile(r"\b(?:every )?later chapters?\b"), "later topics"),
+    (re.compile(r"\bthis chapter\b"), "this topic"),
+    (re.compile(r"\bThis chapter\b"), "This topic"),
+    (re.compile(r"\bthis book\b"), "this guide"),
+    (re.compile(r"\bthe book\b"), "this guide"),
+    (re.compile(r"\bthis part\b"), "this stage"),
+]
+
+
+# The book's prose names chapters by nickname. Each nickname -> the topic that
+# now holds that material ("stage/slug"). Possessive/part prefixes are eaten.
+# text is HTML-escaped by the time it is matched, so quotes may be entities
+APOS = r"(?:'|&#x27;|’)"
+QUOT = r"(?:\"|&quot;|“|”)"
+PFX = r"(?:(?:this Part" + APOS + r"s |Part \d+" + APOS + r"s |this |the )?)"
+NICKS = [(re.compile(PFX + r + r"\b", re.I), key) for r, key in [
+    (r"API chapter", "fundamentals/api"),
+    (r"(?:tokens|context) chapter", "fundamentals/tokens-context-cost"),
+    (r"chapter on decoding knobs", "fundamentals/decoding"),
+    (QUOT + r"What an LLM really is" + QUOT + r" chapter", "fundamentals/what-is-an-llm"),
+    (r"memory chapter", "agents/memory-context"),
+    (r"agent-loop chapter(?: loop)?", "agents/agent-loop"),
+    (r"chapter-52 loop", "agents/agent-loop"),
+    (r"(?:production-)?debate chapter", "agents/multi-agent"),
+    (r"first chapter", "agents/multi-agent"),
+    (r"internals chapter", "inference/inference-internals"),
+    (r"caching chapter", "production/cost-performance"),
+    (r"(?:tracing|observability) chapter", "production/observability"),
+    (r"drift chapter", "production/mlops-drift"),
+    (r"security chapter", "production/security"),
+    (r"reliability chapter", "production/reliability"),
+    (r"evals chapter", "production/evals"),
+    (r"(?:thin-harness|build-vs-buy) chapter", "tech/frameworks"),
+    (r"gotchas chapter", "prompting/prompt-pitfalls"),
+    (r"RAG pipeline chapter", "rag/rag-pipeline"),
+    (r"SFT chapter", "adaptation/fine-tuning"),
+    (r"chapter-9 concepts", "inference/index"),
+]]
+GENERIC = [
+    (re.compile(r"\bthe chapter(?=" + APOS + r"s\b)"), "this topic"),
+    (re.compile(r"\bfrom the chapter\b"), "from this topic"),
+    (re.compile(r"\bthe whole chapter\b"), "the whole topic"),
+    (re.compile(r"\bciting the chapter\b"), "citing the topic"),
+    (re.compile(r"\bthis Part" + APOS + r"s later (?:topics|chapters)\b", re.I), "later topics"),
+    (re.compile(r",? later this Part,?", re.I), ", covered later,"),
+    (re.compile(r"\bthis Part \(the loop\)"), "the agent loop"),
+    (re.compile(r"\bfrom this Part\b"), "from this stage"),
+    (re.compile(r"\bThis part covers\b"), "This topic covers"),
+    (re.compile(r"\bThis part builds\b"), "This build creates"),
+    (re.compile(r"\bjump around with the sidebar\b"), "jump to any stage from the map"),
+    (re.compile(r"\(from (?:the )?last chapter\)"), "(from an earlier topic)"),
+]
+
+
+def nick_words(text, link=True):
+    """Rewrite chapter nicknames in plain text. link=True emits <a> placeholders
+    (text must already be HTML-escaped); link=False emits the topic title."""
+    for r, w in GENERIC:
+        text = r.sub(w, text)
+    for r, key in NICKS:
+        text = r.sub((f'<a href="@@{key}@@">@@TT:{key}@@</a>' if link else f"@@TT:{key}@@"), text)
+    return text
+
+
+def book_words(root):
+    """Re-word references to the book's structure, and turn numbered chapter
+    references into links (resolved to topic pages in build())."""
+    for node in list(root.find_all(string=True)):
+        t = str(node)
+        if not (CHAPTER_REF.search(t) or any(r.search(t) for r, _ in BOOK_WORDS) or
+                any(r.search(t) for r, _ in NICKS) or any(r.search(t) for r, _ in GENERIC)):
+            continue
+        in_code = node.find_parent(["pre", "code"]) is not None or node.find_parent("a") is not None
+        new = nick_words(t if in_code else esc(t), link=not in_code)
+        for r, w in BOOK_WORDS:
+            new = r.sub(w, new)
+
+        def sub(m):
+            cid = HB_NUM.get((int(m.group(1)) + 1, int(m.group(2))))
+            if not cid:
+                return m.group(0)
+            return f"@@T:{cid}@@" if in_code else f'<a href="@@hb:{cid}@@">@@T:{cid}@@</a>'
+        new = CHAPTER_REF.sub(sub, new)
+        if in_code:
+            node.replace_with(NavigableString(html.unescape(new)))
+        elif new != esc(t):
+            node.replace_with(BeautifulSoup(new, "html.parser"))
+
+
 def relinked(fragment, source):
     frag = BeautifulSoup(fragment, "html.parser")
+    book_words(frag)
     relink(frag, frag, source)
     return str(frag)
+
+
+HB_NUM = {}            # (part, index) as in the contents page -> chapter id
 
 
 def handbook_units(src):
@@ -468,10 +577,19 @@ def handbook_units(src):
     gloss, check = js_array(script, "G"), js_array(script, "CK")
     soup = BeautifulSoup(raw, "html.parser")
     units = {}
+    counts = {}
+    for sec in soup.select("section.page"):
+        m = re.match(r"(\d+)", html.unescape(sec["data-part"]))
+        if m:
+            part = int(m.group(1))
+            counts[part] = counts.get(part, 0) + 1
+            HB_NUM[(part, counts[part])] = sec["id"]
     for sec in soup.select("section.page"):
         cid = sec["id"]
         h1 = sec.select_one("h1.ch")
         title = clean(h1.get_text()) if h1 else html.unescape(sec["data-title"])
+        if cid == "c00":
+            title = "How to use this guide"
         lead = sec.select_one("p.lead")
         lead = lead.decode_contents().strip() if lead else ""
         if cid == "c91":
@@ -496,7 +614,7 @@ def handbook_units(src):
                 sections[0] = (title, f"<p>{lead}</p>\n{sections[0][1]}" if lead else sections[0][1])
             elif lead:
                 sections.insert(0, (title, f"<p>{lead}</p>"))
-        units[f"hb:{cid}"] = [(lab, relinked(inner, "hb")) for lab, inner in sections]
+        units[f"hb:{cid}"] = [(nick_words(lab, link=False), relinked(inner, "hb")) for lab, inner in sections]
     return units
 
 
@@ -547,7 +665,7 @@ def course_units(src, source):
 
 SHEET_SRC = ROOT / "scripts" / "ai_sheet_sources"
 QA_LABEL = re.compile(r"interview|q\s*&\s*a", re.I)
-WRAP_UP = re.compile(r"production|pitfall|where it shows up|shows up|in practice", re.I)
+WRAP_UP = re.compile(r"production|pitfall|where it shows up|shows up|in practice|related topics", re.I)
 
 
 def sheet_unit(key, topic_of):
@@ -564,7 +682,11 @@ def sheet_unit(key, topic_of):
         if re.match(r"(https?:|mailto:|#|/)", h):
             continue
         target = os.path.normpath(os.path.join(tier, h.split("#")[0])).replace(".html", "")
-        a["href"] = f"@@{topic_of[target]}@@" if target in topic_of else f"../{tier}/{h}"
+        if target in topic_of:
+            a["href"] = f"@@{topic_of[target]}@@"
+            a["data-retitle"] = topic_of[target]
+        else:
+            a["href"] = f"../{tier}/{h}"
     glance = []
     hero = main.find("div", class_="hero")
     if hero and hero.find("p"):
@@ -585,6 +707,8 @@ def sheet_unit(key, topic_of):
             if BeautifulSoup(rest, "html.parser").get_text().strip():
                 qa.insert(0, rest)           # notes that sat beside the questions
             continue
+        if re.search(r"where it shows up", label, re.I):
+            label = "Related topics"
         sections.append((label, sec.decode_contents().strip()))
     return {"glance": glance, "sections": sections, "qa": qa}
 
@@ -668,14 +792,13 @@ STAGES = [
          ["ts:stretch/mcp-protocol", "hb:c44"]),
         ("what-is-an-agent", "What an agent is", "Agents vs agentic AI, what makes something an agent, workflows vs agents, and agent architectures.",
          ["ts:systems/agent-architectures", "hb:c50", "hb:c51", "q3-def", "q3-wf"]),
-        ("agent-loop", "The agent loop", "The loop in depth and in code: budgets, errors, human approval, reliability and safety.",
-         ["ts:systems/production-agent", "hb:c52", "q3-loop", "q3-safe"]),
+        ("agent-loop", "The agent loop", "The loop in depth and in code: budgets, errors, human approval, reliability, safety, and how to evaluate an agent.",
+         ["ts:systems/production-agent", "wb:agent-evals", "hb:c52", "q3-loop", "q3-safe", "q3-eval", "qa:q3", "build:q3"]),
         ("reasoning", "Reasoning patterns", "ReAct, plan-and-execute, reflection and the other ways agents think.", ["wb:reasoning", "hb:c53"]),
         ("memory-context", "Memory & context engineering", "Short- and long-term memory, compaction, and context engineering, the real production skill.",
          ["ts:systems/agent-memory", "hb:c54", "hb:c55", "q3-ctx"]),
         ("multi-agent", "Multi-agent systems", "When to go multi-agent, topologies, handoffs and state, orchestration, and the production debate.",
          ["ts:systems/multi-agent-orchestration", "hb:c61", "hb:c62", "hb:c63", "hb:c64", "q3-multi"]),
-        ("agent-evals", "Evaluating agents", "Task success, consistency, trajectories and safety cases.", ["wb:agent-evals", "q3-eval", "qa:q3", "build:q3"]),
     ]),
     ("adaptation", "Fine-tuning & alignment", "SFT, LoRA and QLoRA, reward models and RLHF, DPO and its successors, red-teaming.", [
         ("fine-tuning", "Fine-tuning, LoRA & QLoRA", "When to fine-tune, the LoRA math, a working QLoRA recipe, data, hyperparameters, evaluation and serving.",
@@ -795,9 +918,19 @@ def build(units, labs):
     cards = json.loads((ROOT / "scripts" / "ai_topic_cards.json").read_text(encoding="utf-8"))
     used, order, moved = set(), [], {}
     topic_of = {}
+    unit_topic, unit_title = {}, {}        # handbook chapter id -> "stage/slug", topic title
+    for folder, stitle, _, tlist in STAGES:
+        for t in tlist:
+            for u in t[3]:
+                if u.startswith("hb:"):
+                    unit_topic[u[3:]] = f"{folder}/{t[0]}"
+                    unit_title[u[3:]] = t[1]
+    title_of = {}
+    stage_title = {f: t for f, t, _, _ in STAGES}
     for folder, stitle, _, tlist in STAGES:
         for t in tlist:
             order.append((folder, stitle) + t)
+            title_of[f"{folder}/{t[0]}"] = t[1]
             for u in t[3]:
                 if u.startswith("ts:"):
                     topic_of[u[3:]] = f"{folder}/{t[0]}"
@@ -840,7 +973,7 @@ def build(units, labs):
                         builds.append(units[uid])
                 else:
                     for lab, inner in units[uid]:
-                        add(body, lab, inner)
+                        add(body, "Recap" if lab.strip().lower() == title.lower() else lab, inner)
 
         for img, cap in EXTRA_DIAGRAMS.get(slug, []):
             assert (AI / img).exists(), img
@@ -849,17 +982,58 @@ def build(units, labs):
         sections = []
         if glance:
             sections.append(("at-a-glance", "At a glance", "\n".join(glance)))
-        # overview and concepts, then the long-form depth, then production notes and pitfalls
-        sections += ref + body + tail
+        # overview and concepts, then the long-form depth, then production notes and pitfalls;
+        # a divider names each block once the page has more than one
+        blocks = [(b, lab) for b, lab in ((ref, "Quick reference"), (body, "The full explanation"),
+                                          (tail, "In production")) if b]
+        for b, lab in blocks:
+            if len(blocks) > 1:
+                sections.append((None, lab, None))
+            sections += b
         if qa:
             sections.append(("check-yourself", "Check yourself", "\n".join(qa)))
         if builds:
             sections.append(("build-it", "Build it", "".join(f'<div class="callout success">{b}</div>' for b in builds)))
 
-        def resolve(h, here=folder):
-            return re.sub(r'href="@@([^/@]+)/([^@]+)@@"',
-                          lambda m: f'href="{m.group(2) if m.group(1) == here else "../" + m.group(1) + "/" + m.group(2)}.html"', h)
-        sections = [(sid, lab, resolve(inner)) for sid, lab, inner in sections]
+        def resolve(h, here=folder, me=slug):
+            h = re.sub(r"@@T:(\w+)@@", lambda m: unit_title[m.group(1)], h)
+            h = re.sub(r"@@TT:([\w-]+/[\w-]+)@@", lambda m: title_of.get(m.group(1), stage_title.get(m.group(1).split("/")[0], "")), h)
+            h = re.sub(r'href="@@hb:(\w+)@@"', lambda m: f'href="@@{unit_topic[m.group(1)]}@@"', h)
+            h = re.sub(r'href="@@([^/@]+)/([^@]+)@@"',
+                       lambda m: f'href="{m.group(2) if m.group(1) == here else "../" + m.group(1) + "/" + m.group(2)}.html"', h)
+            return h
+        sections = [(sid, resolve(lab), resolve(inner) if inner else inner) for sid, lab, inner in sections]
+        # related-topic lists: current titles, no self-links, no duplicates
+        fixed = []
+        for sid, lab, inner in sections:
+            if sid is None:
+                fixed.append((sid, lab, inner))
+                continue
+            if "data-retitle" in inner:
+                frag = BeautifulSoup(inner, "html.parser")
+                for a in frag.find_all("a", attrs={"data-retitle": True}):
+                    key = a["data-retitle"]
+                    if key in title_of and a.get_text(strip=True):
+                        a.string = title_of[key]
+                    del a["data-retitle"]
+                inner = str(frag)
+            if lab.endswith("Related topics"):
+                frag = BeautifulSoup(inner, "html.parser")
+                seen_h = set()
+                for a in frag.find_all("a", href=True):
+                    h = a["href"].split("#")[0]
+                    tgt = (h[:-5] if "/" not in h else h.split("/")[-2] + "/" + h.split("/")[-1][:-5]) if h.endswith(".html") else None
+                    key = tgt if tgt and "/" in tgt else (f"{folder}/{tgt}" if tgt else None)
+                    li = a.find_parent("li") or a
+                    if key == f"{folder}/{slug}" or key in seen_h:
+                        li.decompose()
+                        continue
+                    seen_h.add(key)
+                    if key in title_of:
+                        a.string = title_of[key]
+                inner = str(frag)
+            fixed.append((sid, lab, inner))
+        sections = fixed
         prev = order[i - 1] if i else None
         nxt = order[i + 1] if i + 1 < len(order) else None
         rel = lambda t: (f"../{t[0]}/{t[2]}.html" if t[0] != folder else f"{t[2]}.html", t[3])
