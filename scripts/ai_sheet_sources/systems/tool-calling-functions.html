@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tool Calling & Functions -- AI Systems Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../sheet-shell.css">
+<script src="../../sheet-shell.js" defer></script>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Tool Calling</h2>
+  <a href="../agents/index.html">&larr; Tools &amp; agents</a>
+  <a href="#whatwhy"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#whento"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#schema"><span class="num">04</span> Schema Design</a><a href="#registry"><span class="num">05</span> Tool Registry</a><a href="#sandbox"><span class="num">06</span> Execution Sandbox</a><a href="#errors"><span class="num">07</span> Error Handling</a><a href="#parallel"><span class="num">08</span> Parallel Tools</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#shows-up"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Tool Calling & Functions <span>// Systems</span></h1>
+  <p>LLM function calling: JSON schema design, tool registry, execution sandbox, parallel calls, error recovery. The bridge between reasoning and the real world.</p>
+  <div class="tags"><span class="tag">JSON Schema</span><span class="tag orange">Sandbox</span><span class="tag green">Parallel</span><span class="tag pink">Validation</span><span class="tag blue">OpenAI</span></div>
+</div>
+<div class="diagram"><img src="img/tool-calling-functions-main.png" alt="Tool Calling & Functions architecture"></div>
+<p class="diagram-caption">Tool calling loop: LLM receives tool schemas, emits tool_calls JSON, executor runs in sandbox, results appended to messages, loop until final answer.</p>
+<section id="whatwhy"><h2>01 &mdash; What & Why</h2><div class="card"><p>Tools let LLMs query databases, call APIs, run code. Schema is the contract; executor is the trust boundary.</p></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Tool schema</td><td>JSON Schema describing params</td><td>Vague descriptions = bad args</td></tr><tr><td>tool_calls</td><td>LLM output requesting function execution</td><td>Validate before execute</td></tr><tr><td>tool_choice</td><td>auto | required | none</td><td>required forces tool even when unnecessary</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre>tools=[{"type":"function","function":{
+  "name":"search_docs",
+  "description":"Search internal KB",
+  "parameters":{"type":"object","properties":{
+    "query":{"type":"string","description":"Search query"}
+  },"required":["query"]}
+}}]
+response = client.chat.completions.create(model="gpt-4o", messages=msgs, tools=tools)</pre></div></section><section id="whento"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Approach</th><th>Use When</th><th>Skip When</th></tr><tr><td>Function calling</td><td>Structured API/DB access</td><td>Answer in context already</td></tr><tr><td>Code interpreter</td><td>Data analysis, plotting</td><td>Untrusted user input without sandbox</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card"><pre>LLM -> tool_calls[] -> Validator -> Executor (sandbox) -> tool results -> LLM loop</pre></div></section><section id="schema"><h2>04 &mdash; Deep Dive: Schema Design</h2><div class="diagram"><img src="img/tool-calling-functions-schema-zoom.png" alt="JSON schema fields: name, description, parameters with types and enums"></div><p class="diagram-caption">JSON schema fields: name, description, parameters with types and enums</p><div class="card"><p>Descriptions are prompts. Use enums for finite choices. Required fields only. Example values in description.</p></div></section><section id="registry"><h2>05 &mdash; Deep Dive: Tool Registry</h2><div class="card"><p>Central registry maps name → handler + schema + ACL. Dynamic registration per tenant. Max 20 tools per call — prune by relevance classifier.</p></div></section><section id="sandbox"><h2>06 &mdash; Deep Dive: Execution Sandbox</h2><div class="card"><p>Network egress allowlist. Read-only DB creds. Timeout 30s. No filesystem write except /tmp. Firecracker/gVisor for code execution.</p></div></section><section id="errors"><h2>07 &mdash; Deep Dive: Error Handling</h2><div class="card"><p>Return structured errors to LLM: {error, retry_hint}. Max 3 retries per tool. Circuit breaker on downstream failures.</p></div></section><section id="parallel"><h2>08 &mdash; Deep Dive: Parallel Tools</h2><div class="diagram"><img src="img/tool-calling-functions-loop-zoom.png" alt="LLM emits parallel tool_calls; executor runs concurrently; results merged"></div><p class="diagram-caption">LLM emits parallel tool_calls; executor runs concurrently; results merged</p><div class="card"><p>OpenAI parallel tool_calls. asyncio.gather for independent searches. Sequential when tool B needs tool A output.</p></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Log every tool call: name, args, latency, success</li><li>PII scrubbing on args before log</li><li>Rate limit per tool per user</li></ul></div></section><section id="shows-up"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="agent-architectures.html">Agent Architectures</a></li><li><a href="production-agent.html">Production Agent</a></li><li><a href="../tech/langgraph.html">LangGraph</a></li><li><a href="../fundamentals/prompt-engineering.html">Prompt Engineering</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Common Pitfalls</h2><div class="card"><ul><li>20+ tools confuses model — use retrieval over tools</li><li>Executing unvalidated args (SQL injection)</li><li>No timeout on tool execution</li><li>Returning huge raw JSON to context</li></ul></div></section>
+<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>How design a good tool schema?</summary><div class="answer">Clear name, action-oriented description, typed params with descriptions, enums for choices, minimal required fields, example in description.</div></details><details><summary>tool_choice auto vs required?</summary><div class="answer">auto: model decides. required: forces tool call every turn — use when always need retrieval. none: disable tools.</div></details><details><summary>How prevent SQL injection from tool args?</summary><div class="answer">Parameterized queries only. Validate args against schema. Read-only DB user. Never string-concat SQL from LLM output.</div></details><details><summary>Parallel vs sequential tool calls?</summary><div class="answer">Parallel when independent (search 3 sources). Sequential when dependent (get_user then get_orders).</div></details><details><summary>What return on tool failure?</summary><div class="answer">Structured error JSON with retry_hint. Let LLM recover. Don't throw opaque 500 to model.</div></details><details><summary>How limit tool count?</summary><div class="answer">Dynamic tool retrieval: embed query, select top-5 relevant tools from registry of 100+.</div></details><details><summary>Sandbox requirements for code exec?</summary><div class="answer">No network by default, CPU/memory limits, timeout, ephemeral filesystem, audit log.</div></details><details><summary>Anthropic vs OpenAI tool format?</summary><div class="answer">Both JSON schema; Anthropic tool_use blocks vs OpenAI tool_calls. Normalize in adapter layer.</div></details><details><summary>How test tools?</summary><div class="answer">Unit test handlers. Integration test full loop with mocked LLM. Golden trajectories for agent regressions.</div></details><details><summary>Idempotent tools?</summary><div class="answer">Design GET-like tools idempotent. Write tools need confirmation/HITL and idempotency keys.</div></details><details><summary>Tool result size limits?</summary><div class="answer">Truncate/summarize large results before appending to messages. Store full result externally; pass reference.</div></details><details><summary>SDE3: tool platform for 200 internal APIs?</summary><div class="answer">Registry with OpenAPI import, auto-schema, per-team ACL, sandbox executor, unified tracing, HITL gate on write tools.</div></details></section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+<!-- ===== diagram lightbox (from job-scheduler.html) ===== -->
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+
+</body>
+</html>
+
+</body>
+</html>

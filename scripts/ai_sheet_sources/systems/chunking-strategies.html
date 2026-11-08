@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chunking Strategies -- AI Systems Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../sheet-shell.css">
+<script src="../../sheet-shell.js" defer></script>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Chunking</h2>
+  <a href="../rag/index.html">&larr; Knowledge &amp; RAG</a>
+  <a href="#whatwhy"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#whento"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#fixed"><span class="num">04</span> Fixed & Recursive</a><a href="#semantic"><span class="num">05</span> Semantic</a><a href="#docaware"><span class="num">06</span> Document-Aware</a><a href="#parentchild"><span class="num">07</span> Parent-Child</a><a href="#tuning"><span class="num">08</span> Overlap Tuning</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#shows-up"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Chunking Strategies <span>// Systems</span></h1>
+  <p>How to split documents for RAG: fixed-size, recursive, semantic, document-aware, and parent-child indexing. Chunking is the silent killer of retrieval quality — tune it before the reranker.</p>
+  <div class="tags"><span class="tag">512 tok</span><span class="tag orange">Overlap</span><span class="tag green">Parent-Child</span><span class="tag pink">Semantic</span><span class="tag blue">Recall@5</span></div>
+</div>
+<div class="diagram"><img src="img/chunking-strategies-main.png" alt="Chunking Strategies architecture"></div>
+<p class="diagram-caption">Five chunking strategies: fixed-size, recursive, semantic, document-aware, and parent-child. Parser routes by mime type; all paths converge on metadata-enriched chunks before embed+index.</p>
+<section id="whatwhy"><h2>01 &mdash; What & Why</h2><div class="card"><p><strong>Chunking</strong> determines the atomic retrieval unit in RAG. Bad splits cannot be fixed downstream.</p><h3>Functional</h3><ul><li>Split PDF/HTML/Slack/code into searchable units</li><li>Preserve tables, headings, code blocks</li><li>Attach doc_id, section, page, ACL metadata</li><li>Re-chunk on update without orphan vectors</li></ul><h3>Non-functional</h3><ul><li>Deterministic chunk_ids on re-ingest</li><li>Gold passage contained in one chunk &gt;95%</li><li>10K docs/min CPU throughput</li></ul></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Chunk size</td><td>Target tokens per unit (256–1024)</td><td>Count tokens not chars</td></tr><tr><td>Overlap</td><td>Shared tokens between neighbors</td><td>10% of chunk_size typical</td></tr><tr><td>Recursive</td><td>Split on headings then paragraphs</td><td>LangChain default</td></tr><tr><td>Semantic</td><td>Split when embedding similarity drops</td><td>Extra embed cost</td></tr><tr><td>Parent-child</td><td>Index small, return large parent</td><td>Sync on delete</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre>POST /v1/chunk/preview
+  body: { doc_id, text, strategy: "recursive", chunk_size: 512, overlap: 50 }
+  -> { chunks: [{ chunk_id, text, token_count, metadata }] }
+
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)</pre></div></section><section id="whento"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Strategy</th><th>Use When</th><th>Skip When</th></tr><tr><td>Fixed-size</td><td>Logs, chat exports, MVP</td><td>Structured PDFs</td></tr><tr><td>Recursive</td><td>Mixed markdown/HTML</td><td>Need table atomicity</td></tr><tr><td>Semantic</td><td>Long prose, topic shifts</td><td>Latency-sensitive ingest</td></tr><tr><td>Document-aware</td><td>PDFs, code, reports</td><td>Plain text only</td></tr><tr><td>Parent-child</td><td>Precision + broad context</td><td>Docs already &lt;512 tok</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card"><pre>Raw Doc -> Parser -> Strategy Router
+  Fixed | Recursive | Doc-aware | Semantic
+       -> Overlap pass -> Metadata enricher
+       -> Optional parent-child linker -> Embed + Index</pre></div><div class="card"><div class='flow'><div class='step' data-num='1'><span class='label'>Parse</span><div class='detail'>OCR PDFs; strip HTML nav.</div></div><div class='step' data-num='2'><span class='label'>Route</span><div class='detail'>Mime-based strategy selection.</div></div><div class='step' data-num='3'><span class='label'>Split</span><div class='detail'>512 tok, 50 overlap; never mid-table.</div></div><div class='step' data-num='4'><span class='label'>Validate</span><div class='detail'>Min/max size; empty filter.</div></div><div class='step' data-num='5'><span class='label'>Index</span><div class='detail'>Upsert by content_hash.</div></div></div></div></section><section id="fixed"><h2>04 &mdash; Deep Dive: Fixed & Recursive</h2><div class="card"><pre>splitter = RecursiveCharacterTextSplitter(
+    chunk_size=512, chunk_overlap=50,
+    separators=["\n## ", "\n### ", "\n\n", "\n", ". ", " "],
+)
+# Grid search {256,512,768,1024} on golden Recall@5</pre><p>Start <strong>512/50</strong>. Evaluate before tuning embeddings.</p></div></section><section id="semantic"><h2>05 &mdash; Deep Dive: Semantic Chunking</h2><div class="diagram"><img src="img/chunking-strategies-semantic-zoom.png" alt="Semantic split at embedding similarity drop threshold"></div><p class="diagram-caption">Semantic split at embedding similarity drop threshold</p><div class="card"><p>Embed sentences; split when cosine similarity &lt; 0.75. Best for policies and long essays.</p></div></section><section id="docaware"><h2>06 &mdash; Deep Dive: Document-Aware</h2><div class="card"><ul><li><strong>PDF:</strong> Unstructured/Docling — tables atomic</li><li><strong>Markdown:</strong> split on ##; prepend heading to each chunk</li><li><strong>Code:</strong> tree-sitter function/class boundaries</li></ul></div></section><section id="parentchild"><h2>07 &mdash; Deep Dive: Parent-Child</h2><div class="diagram"><img src="img/chunking-strategies-parent-child-zoom.png" alt="Retrieve child chunk; inject parent section into LLM context"></div><p class="diagram-caption">Retrieve child chunk; inject parent section into LLM context</p><div class="card"><p>Index 128–256 tok children; store 1024 tok parent in metadata. Retrieve child, pass parent to LLM.</p></div></section><section id="tuning"><h2>08 &mdash; Deep Dive: Overlap & Eval</h2><div class="card"><p>Grid search chunk_size × overlap on golden set. Stop when Recall@5 gain &lt;2% for &gt;20% index growth.</p></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Alert on chunk_count 10× median per doc</li><li>Version chunk_strategy in metadata</li><li>Re-chunk via blue/green index swap</li><li>Dashboard: parser failures by mime type</li></ul></div></section><section id="shows-up"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="rag-end-to-end.html">RAG End-to-End</a></li><li><a href="document-ingestion.html">Document Ingestion</a></li><li><a href="../fundamentals/embeddings-semantic-search.html">Embeddings</a></li><li><a href="hybrid-search.html">Hybrid Search</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Common Pitfalls</h2><div class="card"><ul><li>Splitting tables mid-row</li><li>Char-based not token-based sizing</li><li>Tuning reranker before chunk size</li><li>No overlap on step-by-step docs</li><li>Orphan chunks on re-index</li></ul></div></section>
+<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>Why is chunking the #1 RAG quality lever?</summary><div class="answer">Retrieval returns indexed units only. Split boundaries and broken tables make gold answers unfindable regardless of reranker quality.</div></details><details><summary>How do you choose chunk size?</summary><div class="answer">Start 512/50. Sweep {256,512,768,1024} on golden Recall@5. Document-aware beats brute size tuning for PDFs.</div></details><details><summary>Explain parent-child indexing.</summary><div class="answer">Index small children for precision; link to larger parent sections. Retrieve child, inject parent into LLM prompt.</div></details><details><summary>When use semantic chunking?</summary><div class="answer">Long narrative with topic shifts. Skip for FAQs and code — extra embed latency.</div></details><details><summary>How handle code repos?</summary><div class="answer">AST/tree-sitter splits per function. Metadata: file path, symbol. Never split mid-function.</div></details><details><summary>What metadata per chunk?</summary><div class="answer">doc_id, chunk_index, content_hash, section, page, org_id, ACL, strategy_version.</div></details><details><summary>Re-chunk without downtime?</summary><div class="answer">Dual-write new version; query filters active version; blue/green index swap after golden eval.</div></details><details><summary>Fixed vs recursive vs semantic?</summary><div class="answer">Fixed: logs MVP. Recursive: default markdown. Semantic: long prose. Doc-aware: PDFs/tables.</div></details><details><summary>Chunking + hybrid search?</summary><div class="answer">Keep SKUs with explanations for BM25. Prepend headings for dense coherence.</div></details><details><summary>What is proposition chunking?</summary><div class="answer">LLM extracts atomic facts per chunk. High precision, 10× ingest cost — legal/medical only.</div></details><details><summary>How eval chunking?</summary><div class="answer">Gold passage fully in retrieved chunk (Recall@k). Block deploy if Recall@5 drops >2%.</div></details><details><summary>SDE3: chunking service for 50 source types?</summary><div class="answer">Pluggable Chunker per mime. Parser registry. Preview API. Golden-set CI per strategy change. Parent-child optional post-processor.</div></details></section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+<!-- ===== diagram lightbox (from job-scheduler.html) ===== -->
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+
+</body>
+</html>
+
+</body>
+</html>

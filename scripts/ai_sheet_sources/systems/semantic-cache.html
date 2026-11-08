@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Semantic Cache -- AI Systems Cheat Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../sheet-shell.css">
+<script src="../../sheet-shell.js" defer></script>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>Semantic Cache</h2>
+  <a href="../rag/index.html">&larr; Knowledge &amp; RAG</a>
+  <a href="#whatwhy"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#whento"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#threshold"><span class="num">04</span> Threshold Tuning</a><a href="#ttl"><span class="num">05</span> TTL & Freshness</a><a href="#invalidation"><span class="num">06</span> Invalidation</a><a href="#exact"><span class="num">07</span> Exact + Semantic</a><a href="#multitenant"><span class="num">08</span> Multi-Tenant</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#shows-up"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
+</nav>
+<div class="main">
+<div class="hero">
+  <h1>Semantic Cache <span>// Systems</span></h1>
+  <p>Cache LLM responses by embedding similarity, not exact string match. 40–60% hit rates on support bots — but wrong threshold causes confident wrong answers.</p>
+  <div class="tags"><span class="tag">Embedding Cache</span><span class="tag orange">Cosine Threshold</span><span class="tag green">TTL</span><span class="tag pink">Invalidation</span><span class="tag blue">Cost Save</span></div>
+</div>
+<div class="diagram"><img src="img/semantic-cache-main.png" alt="Semantic Cache architecture"></div>
+<p class="diagram-caption">Semantic cache flow: embed incoming query, ANN search cache index, if similarity > threshold return cached response else call LLM and store new entry.</p>
+<section id="whatwhy"><h2>01 &mdash; What & Why</h2><div class="card"><p>LLM inference is expensive. Many user queries are near-duplicates ('reset password' vs 'how do I reset my password'). Semantic cache cuts cost and latency.</p></div></section><section id="concepts"><h2>01a &mdash; Core Concepts</h2><div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Cache hit</td><td>Similar query found above threshold</td><td>False hit = wrong answer confidently</td></tr><tr><td>Threshold</td><td>Min cosine similarity for hit</td><td>0.92–0.97 depending on domain</td></tr><tr><td>TTL</td><td>Time-to-live before cache miss forced</td><td>Stale policy answers</td></tr></table></div></section><section id="api"><h2>01b &mdash; API Surface</h2><div class="card"><pre>cache.lookup(query_embedding, org_id) -> { hit, response, score } | miss
+cache.store(query, embedding, response, ttl=3600, metadata={sources})
+
+# GPTCache / Redis + vector extension</pre></div></section><section id="whento"><h2>02 &mdash; When to Use / When NOT</h2><div class="card"><table><tr><th>Cache</th><th>Use When</th><th>Skip When</th></tr><tr><td>Semantic</td><td>FAQ/support high repeat</td><td>Unique analytical queries</td></tr><tr><td>Exact only</td><td>Deterministic API responses</td><td>Paraphrase-heavy support</td></tr></table></div></section><section id="architecture"><h2>03 &mdash; Architecture</h2><div class="card"><pre>Query -> Embed -> Cache ANN lookup -> [hit: return] [miss: LLM -> store]</pre></div></section><section id="threshold"><h2>04 &mdash; Deep Dive: Threshold Tuning</h2><div class="diagram"><img src="img/semantic-cache-threshold-zoom.png" alt="ROC curve: false hit rate vs cache hit rate at thresholds 0.90, 0.93, 0.95, 0.97"></div><p class="diagram-caption">ROC curve: false hit rate vs cache hit rate at thresholds 0.90, 0.93, 0.95, 0.97</p><div class="card"><p>Start 0.95. Lower = more hits + more false hits. Evaluate on query pairs labeled same/different intent.</p></div></section><section id="ttl"><h2>05 &mdash; Deep Dive: TTL & Freshness</h2><div class="card"><p>Policy docs: TTL 1–24h. Product FAQs: 7d. Include source content_hash in cache entry; invalidate on doc update.</p></div></section><section id="invalidation"><h2>06 &mdash; Deep Dive: Invalidation</h2><div class="diagram"><img src="img/semantic-cache-invalidation-zoom.png" alt="Doc update triggers purge of cache entries whose citations reference changed doc_id"></div><p class="diagram-caption">Doc update triggers purge of cache entries whose citations reference changed doc_id</p><div class="card"><p>On doc delete/update: purge entries with matching source doc_ids. Bloom filter for fast candidate check.</p></div></section><section id="exact"><h2>07 &mdash; Deep Dive: Exact + Semantic Two-Tier</h2><div class="card"><p>L1: exact hash match (Redis). L2: semantic ANN. Exact hits ~5ms; semantic ~15ms; both beat LLM ~800ms.</p></div></section><section id="multitenant"><h2>08 &mdash; Deep Dive: Multi-Tenant</h2><div class="card"><p>Namespace cache by org_id. Never return cache entry from different tenant even if similarity high.</p></div></section><section id="production"><h2>09 &mdash; Production & Ops</h2><div class="card"><ul><li>Monitor hit rate, false hit rate (thumbs down on cached)</li><li>Cache stampede on cold start — pre-warm top queries</li></ul></div></section><section id="shows-up"><h2>10 &mdash; Where It Shows Up</h2><div class="card"><ul><li><a href="rag-end-to-end.html">RAG End-to-End</a></li><li><a href="chatbot-rag-system.html">Chatbot RAG System</a></li><li><a href="../fundamentals/embeddings-semantic-search.html">Embeddings</a></li><li><a href="../tech/vector-databases.html">Vector Databases</a></li></ul></div></section><section id="pitfalls"><h2>11 &mdash; Common Pitfalls</h2><div class="card"><ul><li>Threshold too low — wrong answers cached</li><li>No invalidation on doc update</li><li>Cross-tenant cache leakage</li><li>Caching personalized responses under shared key</li></ul></div></section>
+<section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>Semantic vs exact cache?</summary><div class="answer">Exact: hash match only. Semantic: embedding similarity catches paraphrases. Use two-tier L1 exact + L2 semantic.</div></details><details><summary>Typical hit rate?</summary><div class="answer">40–60% on support/FAQ bots. Near 0% on unique analytics. Measure before investing.</div></details><details><summary>How pick threshold?</summary><div class="answer">Label 500 query pairs same/different intent. Plot hit rate vs false hit rate. Start 0.95 cosine.</div></details><details><summary>Invalidate when docs change?</summary><div class="answer">Store source doc_ids in cache entry. On doc update/delete, purge matching entries. TTL as backstop.</div></details><details><summary>Cache personalized answers?</summary><div class="answer">Include user_id or session context in cache key metadata. Don't return user-A answer to user-B.</div></details><details><summary>GPTCache vs roll-your-own?</summary><div class="answer">GPTCache: plug-and-play. Roll-your-own Redis+pgvector if need tenant isolation and custom invalidation.</div></details><details><summary>Latency savings?</summary><div class="answer">Cache hit ~15ms vs LLM ~800ms+. Massive p99 improvement for repeated intents.</div></details><details><summary>False hit detection?</summary><div class="answer">Track thumbs-down on cached responses. Sample manual review. Auto-lower threshold region if false hits spike.</div></details><details><summary>Cache LLM embeddings too?</summary><div class="answer">Yes — cache query embeddings separately (exact on embedding input) to skip embed API on repeat.</div></details><details><summary>RAG + semantic cache?</summary><div class="answer">Cache final answer + citations. On hit, still verify source docs not updated since cached_at.</div></details><details><summary>Cold start?</summary><div class="answer">Pre-warm from top 100 historical queries. Seed from FAQ canonical questions.</div></details><details><summary>SDE3: semantic cache layer?</summary><div class="answer">Two-tier exact+semantic, org namespace, citation-aware invalidation, false-hit monitor, dashboard hit rate/latency/cost saved.</div></details></section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+<!-- ===== diagram lightbox (from job-scheduler.html) ===== -->
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+
+</body>
+</html>
+
+</body>
+</html>

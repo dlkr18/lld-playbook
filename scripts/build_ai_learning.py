@@ -12,23 +12,26 @@ Sources (not checked in; the author's own long-form material):
   * "AI from the ground up": 11 parts, 94 concepts, 4 labs.
   * "Evals, RAG, agents": 7 parts, 40 concepts, 1 lab.
 
-The sources are cut into units (a handbook chapter's sections, one course
-concept, a part's Q&A and build task) and re-assembled BY TOPIC: STAGES below
-is the map, stage -> topics -> units. Each topic page merges every source's
-material on that topic; nothing on the site is shaped like a source.
+The sources, plus the 45 hand-made cheat sheets (scripts/ai_sheet_sources/),
+are cut into units and re-assembled BY TOPIC: STAGES below is the map,
+stage -> topics -> units. Each topic is ONE page: whiteboard diagrams at a
+glance, the cheat sheet's reference sections, the long-form material, then
+every Q&A in Check yourself. New diagrams come from scripts/whiteboards.py.
 
 Writes, under docs/cheatsheets/ai/:
-  index.html                 the map (12 stages)
-  <stage>/index.html         topics + the cheat sheets for that stage
-  <stage>/<topic>.html       one merged page per topic
-and gives every existing cheat sheet its stage (breadcrumb, back link) and a
-"Learn it in full" section. Asserts every source unit and every cheat sheet
-lands on the map exactly once. Re-running is safe.
+  index.html             the map (12 stages)
+  <stage>/index.html     the stage's topics
+  <stage>/<topic>.html   one page per topic
+  img/<board>.svg|png    the generated whiteboards
+and turns every old cheat-sheet URL into a redirect to its topic. Asserts
+every source unit, cheat sheet and whiteboard lands on the map exactly once.
+Re-running is safe.
 
 Run python3 scripts/check_sheets.py afterwards.
 """
 import argparse
 import html
+import os
 import json
 import re
 import subprocess
@@ -535,206 +538,329 @@ def course_units(src, source):
 
 
 # --------------------------------------------------------------------------
+# the cheat sheets as units
+#   The 45 hand-made AI cheat sheets live in scripts/ai_sheet_sources/ and are
+#   merged INTO their topic page: their whiteboard diagrams open the page,
+#   their sections follow, their Q&A joins Check yourself. Their old URLs
+#   become redirects to the topic.
+# --------------------------------------------------------------------------
+
+SHEET_SRC = ROOT / "scripts" / "ai_sheet_sources"
+QA_LABEL = re.compile(r"interview|q\s*&\s*a", re.I)
+WRAP_UP = re.compile(r"production|pitfall|where it shows up|shows up|in practice", re.I)
+
+
+def sheet_unit(key, topic_of):
+    """topic_of: cheat-sheet key -> 'stage/slug', so links between old sheets
+    land on the topic page that now holds them."""
+    tier = key.split("/")[0]
+    soup = BeautifulSoup((SHEET_SRC / f"{key}.html").read_text(encoding="utf-8"), "html.parser")
+    main = soup.select_one("div.main")
+    for img in main.find_all("img"):
+        if not re.match(r"(https?:|data:|/)", img.get("src", "")):
+            img["src"] = f"../{tier}/{img['src']}"          # images stay beside the source tier
+    for a in main.find_all("a", href=True):
+        h = a["href"]
+        if re.match(r"(https?:|mailto:|#|/)", h):
+            continue
+        target = os.path.normpath(os.path.join(tier, h.split("#")[0])).replace(".html", "")
+        a["href"] = f"@@{topic_of[target]}@@" if target in topic_of else f"../{tier}/{h}"
+    glance = []
+    hero = main.find("div", class_="hero")
+    if hero and hero.find("p"):
+        glance.append(f"<p>{hero.find('p').decode_contents().strip()}</p>")
+    for d in main.find_all("div", class_="diagram", recursive=False):
+        cap = d.find_next_sibling()
+        glance.append(str(d) + (str(cap) if cap is not None and "diagram-caption" in (cap.get("class") or []) else ""))
+    sections, qa = [], []
+    for sec in main.find_all("section", recursive=False):
+        h2 = sec.find("h2")
+        label = re.sub(r"^\s*\d+[a-z]?\s*[—–-]+\s*", "", h2.get_text()).strip() if h2 else "Notes"
+        if h2:
+            h2.decompose()
+        if QA_LABEL.search(label) and sec.find("details"):
+            for d in sec.find_all("details"):
+                qa.append(str(d.extract()))
+            rest = sec.decode_contents().strip()
+            if BeautifulSoup(rest, "html.parser").get_text().strip():
+                qa.insert(0, rest)           # notes that sat beside the questions
+            continue
+        sections.append((label, sec.decode_contents().strip()))
+    return {"glance": glance, "sections": sections, "qa": qa}
+
+
+# --------------------------------------------------------------------------
 # the map: stages -> topics -> units
 # --------------------------------------------------------------------------
 
-# (folder, stage title, stage description, [topics], [cheat sheets])
+# (folder, stage title, stage description, [topics])
 #   topic = (slug, title, description, [unit ids])
-#   unit ids: hb:<chapter>, <course concept id>, qa:<part>, build:<part>
+#   unit ids: ts:<cheat sheet>, wb:<whiteboard>, hb:<chapter>, <course concept>, qa:<part>, build:<part>, res:<part>
 STAGES = [
     ("start", "Start here", "The whole field in five minutes, what AI interviews actually test, and the vocabulary.", [
         ("big-picture", "The big picture", "Two engines, four add-ons, one loop: the mental model everything else hangs on.",
-         ["hb:c01", "hb:c00"]),
+         ["wb:big-picture", "hb:c01", "hb:c00"]),
         ("interviews", "What AI interviews test", "What the eval and RAG/agent screening questions are really asking, and what a strong answer looks like.",
-         ["q0-q4", "q0-q5", "q6-good"]),
+         ["wb:interviews", "q0-q4", "q0-q5", "q6-good"]),
         ("glossary", "Glossary", "Every term used across the map, one line each.", ["hb:c91"]),
-        ("learning-path", "Learning path", "What to read first, and the builds that teach the most.", ["hb:c92"]),
-    ], []),
+        ("learning-path", "Learning path", "What to read first, and the builds that teach the most.", ["wb:learning-path", "hb:c92"]),
+    ]),
     ("foundations", "Math & ML foundations", "Vectors, gradients, probability, classic ML, neural networks and PyTorch: what everything later stands on.", [
         ("math", "The math you need", "Vectors, matrices, derivatives, the chain rule, probability, cross-entropy and softmax, each with worked numbers.",
-         ["hb:m01", "p0-vec", "p0-mat", "p0-der", "p0-chain", "p0-prob", "p0-ent", "p0-lse", "qa:p0", "build:p0"]),
+         ["wb:math", "hb:m01", "p0-vec", "p0-mat", "p0-der", "p0-chain", "p0-prob", "p0-ent", "p0-lse", "qa:p0", "build:p0"]),
         ("classical-ml", "Classical machine learning", "Regression, gradient descent, generalization, regularization and metrics: the discipline LLMs still obey.",
-         ["hb:m02", "p1-what", "p1-lin", "p1-log", "p1-gd", "p1-gen", "p1-reg", "p1-met", "p1-feat", "qa:p1", "build:p1"]),
+         ["wb:classical-ml", "hb:m02", "p1-what", "p1-lin", "p1-log", "p1-gd", "p1-gen", "p1-reg", "p1-met", "p1-feat", "qa:p1", "build:p1"]),
         ("neural-networks", "Neural networks", "Layers, activations, backprop, initialization, optimizers, schedules, normalization and residuals.",
-         ["hb:m03", "p2-mlp", "p2-act", "p2-bp", "p2-init", "p2-opt", "p2-sched", "p2-regdl", "p2-norm", "p2-cnnrnn", "qa:p2", "build:p2"]),
+         ["wb:neural-networks", "hb:m03", "p2-mlp", "p2-act", "p2-bp", "p2-init", "p2-opt", "p2-sched", "p2-regdl", "p2-norm", "p2-cnnrnn", "qa:p2", "build:p2"]),
         ("pytorch", "PyTorch in practice", "Tensors, autograd, a trustworthy training loop, mixed precision, GPU memory and debugging a run.",
-         ["p3-tensor", "p3-autograd", "p3-module", "p3-data", "p3-loop", "p3-amp", "p3-mem", "p3-ckpt", "p3-compile", "p3-debug", "qa:p3", "build:p3"]),
-    ], []),
+         ["wb:pytorch", "p3-tensor", "p3-autograd", "p3-module", "p3-data", "p3-loop", "p3-amp", "p3-mem", "p3-ckpt", "p3-compile", "p3-debug", "qa:p3", "build:p3"]),
+    ]),
     ("fundamentals", "LLM fundamentals", "What an LLM is, transformers and attention, tokens, how models are trained, decoding, limits and hallucination.", [
         ("what-is-an-llm", "What an LLM is", "A next-token predictor, the language-modeling objective, model families and scaling laws.",
-         ["hb:c11", "p4-lm", "p4-arch", "p4-scale"]),
-        ("transformers", "Transformers & attention", "Embeddings, attention, multi-head and GQA, RoPE, the block, a mini-GPT, FLOPs, FlashAttention and MoE.",
-         ["hb:m04", "p4-emb", "p4-att", "p4-mha", "p4-pos", "p4-block", "p4-gpt", "p4-count", "p4-flash", "p4-moe", "qa:p4", "build:p4"]),
+         ["ts:fundamentals/llm-fundamentals", "hb:c11", "p4-lm", "p4-arch", "p4-scale"]),
+        ("transformers", "Transformers & attention", "Embeddings, attention, multi-head and GQA, RoPE, the block, a mini-GPT, FLOPs and FlashAttention.",
+         ["ts:fundamentals/transformers-attention", "hb:m04", "p4-emb", "p4-att", "p4-mha", "p4-pos", "p4-block", "p4-gpt", "p4-count", "p4-flash", "qa:p4", "build:p4"]),
         ("tokens-context-cost", "Tokens, context & cost", "BPE tokenization, the context window, and what every token costs.",
-         ["p4-tok", "hb:c15"]),
+         ["ts:fundamentals/tokenization-context", "p4-tok", "hb:c15"]),
         ("how-llms-are-trained", "How LLMs are trained", "Pretraining, instruction tuning, chat templates, reasoning models, evaluating LLMs, and prompting vs RAG vs fine-tuning.",
-         ["hb:c12", "p5-pre", "p5-sft", "p5-chat", "p5-reason", "p5-eval", "p5-choose", "qa:p5", "build:p5"]),
-        ("api", "Calling a model", "The API call end to end: messages, roles, streaming, errors and retries.", ["hb:c13"]),
+         ["ts:fundamentals/pretraining-sft-rlhf", "hb:c12", "p5-pre", "p5-sft", "p5-chat", "p5-reason", "p5-eval", "p5-choose", "qa:p5", "build:p5"]),
+        ("api", "Calling a model", "The API call end to end: messages, roles, streaming, tool calls, errors and retries, across providers.",
+         ["ts:tech/openai-api-patterns", "hb:c13"]),
         ("decoding", "Decoding & sampling", "Greedy, temperature, top-k, top-p and the other knobs, with a live temperature lab.",
-         ["hb:c14", "p4-dec"]),
-        ("limits", "Limits & hallucination", "What LLMs get wrong by design, and how to design around it.", ["hb:c16"]),
-    ], ["fundamentals/llm-fundamentals", "fundamentals/transformers-attention", "fundamentals/tokenization-context",
-        "fundamentals/hallucination-grounding", "tech/openai-api-patterns"]),
+         ["wb:decoding", "hb:c14", "p4-dec"]),
+        ("limits", "Limits & hallucination", "What LLMs get wrong by design, grounding and abstention, and how to design around it.",
+         ["ts:fundamentals/hallucination-grounding", "hb:c16"]),
+    ]),
     ("prompting", "Prompting", "Anatomy of a prompt, the techniques that move quality, structured output, and the habits that keep prompts reliable.", [
-        ("prompt-anatomy", "Anatomy of a prompt", "System, instructions, context, examples, output format: what each part does.", ["hb:c21"]),
-        ("prompt-techniques", "Prompting techniques", "Few-shot, chain of thought, decomposition, self-critique: the ones that actually move the needle.", ["hb:c22"]),
-        ("structured-output", "Structured output", "JSON mode, schemas, constrained decoding, validation and repair.", ["hb:c23"]),
-        ("prompt-pitfalls", "Pitfalls & pro habits", "The mistakes that cost the most, and the habits that prevent them.", ["hb:c24"]),
-    ], ["fundamentals/prompt-engineering"]),
+        ("prompt-anatomy", "Anatomy of a prompt", "System, instructions, context, examples, output format: what each part does.",
+         ["wb:prompt-anatomy", "hb:c21"]),
+        ("prompt-techniques", "Prompting techniques", "Zero- and few-shot, chain of thought, decomposition, self-critique, injection defence.",
+         ["ts:fundamentals/prompt-engineering", "hb:c22"]),
+        ("structured-output", "Structured output", "JSON mode, schemas, constrained decoding, validation and repair.", ["wb:structured-output", "hb:c23"]),
+        ("prompt-pitfalls", "Pitfalls & pro habits", "The mistakes that cost the most, and the habits that prevent them.", ["wb:prompt-pitfalls", "hb:c24"]),
+    ]),
     ("rag", "Knowledge & RAG", "Embeddings, vector search, chunking, hybrid search, reranking and grounded generation, measured end to end.", [
-        ("embeddings", "Embeddings", "Turning meaning into numbers: sentence embeddings, contrastive training and similarity.",
-         ["hb:c31", "p7-semb", "p7-contrast"]),
+        ("embeddings", "Embeddings", "Turning meaning into numbers: dense vectors, cosine similarity, sentence embeddings and contrastive training.",
+         ["ts:fundamentals/embeddings-semantic-search", "hb:c31", "p7-semb", "p7-contrast"]),
+        ("embedding-models", "Choosing an embedding model", "Model families, dimensions, benchmarks, cost, and when to fine-tune or switch.",
+         ["ts:tech/embedding-models"]),
         ("vector-search", "Vector search & databases", "Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.",
-         ["hb:c32", "p7-ann"]),
-        ("rag-pipeline", "The RAG pipeline", "Retrieve, augment, generate: every stage from loading documents to a cited answer.",
-         ["hb:c33", "p7-rag", "q2-pipe", "q2-gen"]),
-        ("retrieval-quality", "Chunking, hybrid search & reranking", "The knobs that decide retrieval quality: chunking, query rewriting, BM25 + vectors, RRF and rerankers.",
-         ["p7-chunk", "q2-chunk", "q2-query", "q2-hybrid", "q2-rerank"]),
-        ("rag-in-production", "Making RAG good & measuring it", "Advanced RAG, retrieval and answer metrics, and production concerns: freshness, ACLs, latency, injection.",
-         ["hb:c34", "p7-eval", "q2-eval", "q2-prod", "qa:p7", "qa:q2", "build:p7", "build:q2"]),
-    ], ["fundamentals/embeddings-semantic-search", "systems/document-ingestion", "systems/chunking-strategies",
-        "systems/hybrid-search", "systems/rag-end-to-end", "systems/chatbot-rag-system", "systems/semantic-cache",
-        "stretch/agentic-graphrag"]),
+         ["ts:tech/vector-databases", "hb:c32", "p7-ann"]),
+        ("document-ingestion", "Document ingestion", "Parsing PDFs and HTML, OCR, deduplication and keeping the index fresh.",
+         ["ts:systems/document-ingestion"]),
+        ("rag-pipeline", "The RAG pipeline", "Retrieve, augment, generate: every stage from a question to a grounded, cited answer.",
+         ["ts:systems/rag-end-to-end", "hb:c33", "p7-rag", "q2-pipe", "q2-gen"]),
+        ("chunking", "Chunking", "Fixed, recursive, semantic, document-aware and parent-child chunking, and how to tune it.",
+         ["ts:systems/chunking-strategies", "p7-chunk", "q2-chunk"]),
+        ("hybrid-search", "Hybrid search & query understanding", "BM25 plus vectors fused with RRF, query rewriting, decomposition and HyDE.",
+         ["ts:systems/hybrid-search", "q2-query", "q2-hybrid"]),
+        ("reranking", "Reranking", "Cross-encoder rerankers: retrieve wide, rescore, keep the best few.",
+         ["ts:tech/rerankers", "q2-rerank"]),
+        ("rag-in-production", "Making RAG good & measuring it", "Advanced RAG, a production RAG chatbot design, retrieval and answer metrics, freshness, ACLs, latency, injection.",
+         ["ts:systems/chatbot-rag-system", "hb:c34", "p7-eval", "q2-eval", "q2-prod", "qa:p7", "qa:q2", "build:p7", "build:q2"]),
+        ("graphrag", "Agentic RAG & GraphRAG", "Retrieval as a tool the agent drives, and knowledge graphs for multi-hop questions.",
+         ["ts:stretch/agentic-graphrag"]),
+    ]),
     ("agents", "Tools & agents", "Function calling, MCP, the agent loop, reasoning patterns, memory, context engineering and multi-agent systems.", [
         ("tool-calling", "Tool calling", "Why tools, what goes over the wire, and designing schemas the model uses well.",
-         ["hb:c41", "hb:c42", "hb:c43", "q3-tools"]),
-        ("mcp", "MCP", "A standard plug for tools and data: servers, clients, resources and the ecosystem.", ["hb:c44"]),
-        ("what-is-an-agent", "What an agent is", "AI agents vs agentic AI, what makes something an agent, and workflows vs agents.",
-         ["hb:c50", "hb:c51", "q3-def", "q3-wf"]),
-        ("agent-loop", "The agent loop", "The loop in depth and in code, with budgets, errors, approvals, and reliability and safety.",
-         ["hb:c52", "q3-loop", "q3-safe"]),
-        ("reasoning", "Reasoning patterns", "ReAct, plan-and-execute, reflection and the other ways agents think.", ["hb:c53"]),
+         ["ts:systems/tool-calling-functions", "hb:c41", "hb:c42", "hb:c43", "q3-tools"]),
+        ("mcp", "MCP", "A standard plug for tools and data: servers, clients, resources and the ecosystem.",
+         ["ts:stretch/mcp-protocol", "hb:c44"]),
+        ("what-is-an-agent", "What an agent is", "Agents vs agentic AI, what makes something an agent, workflows vs agents, and agent architectures.",
+         ["ts:systems/agent-architectures", "hb:c50", "hb:c51", "q3-def", "q3-wf"]),
+        ("agent-loop", "The agent loop", "The loop in depth and in code: budgets, errors, human approval, reliability and safety.",
+         ["ts:systems/production-agent", "hb:c52", "q3-loop", "q3-safe"]),
+        ("reasoning", "Reasoning patterns", "ReAct, plan-and-execute, reflection and the other ways agents think.", ["wb:reasoning", "hb:c53"]),
         ("memory-context", "Memory & context engineering", "Short- and long-term memory, compaction, and context engineering, the real production skill.",
-         ["hb:c54", "hb:c55", "q3-ctx"]),
-        ("multi-agent", "Multi-agent systems", "When to go multi-agent, topologies, handoffs and state, and the production debate.",
-         ["hb:c61", "hb:c62", "hb:c63", "hb:c64", "q3-multi"]),
-        ("agent-evals", "Evaluating agents", "Task success, consistency, trajectories and safety cases.", ["q3-eval", "qa:q3", "build:q3"]),
-    ], ["systems/tool-calling-functions", "stretch/mcp-protocol", "systems/agent-architectures", "systems/agent-memory",
-        "systems/multi-agent-orchestration", "systems/production-agent"]),
+         ["ts:systems/agent-memory", "hb:c54", "hb:c55", "q3-ctx"]),
+        ("multi-agent", "Multi-agent systems", "When to go multi-agent, topologies, handoffs and state, orchestration, and the production debate.",
+         ["ts:systems/multi-agent-orchestration", "hb:c61", "hb:c62", "hb:c63", "hb:c64", "q3-multi"]),
+        ("agent-evals", "Evaluating agents", "Task success, consistency, trajectories and safety cases.", ["wb:agent-evals", "q3-eval", "qa:q3", "build:q3"]),
+    ]),
     ("adaptation", "Fine-tuning & alignment", "SFT, LoRA and QLoRA, reward models and RLHF, DPO and its successors, red-teaming.", [
         ("fine-tuning", "Fine-tuning, LoRA & QLoRA", "When to fine-tune, the LoRA math, a working QLoRA recipe, data, hyperparameters, evaluation and serving.",
-         ["hb:a81", "p6-why", "p6-lora", "p6-qlora", "p6-data", "p6-recipe", "p6-hp", "p6-eval", "p6-serve", "p6-other", "qa:p6", "build:p6"]),
-        ("rlhf", "RLHF & reward models", "Teaching taste: preference data, reward models, PPO and the KL leash.", ["hb:a82", "p5-rlhf"]),
-        ("dpo", "DPO & preference optimization", "The RLHF outcome with a supervised loss, and KTO, IPO and ORPO.", ["hb:a83", "p5-dpo"]),
-    ], ["fundamentals/pretraining-sft-rlhf", "systems/fine-tuning-lora", "systems/rlhf-dpo-pipeline", "stretch/constitutional-ai-redteam"]),
+         ["ts:systems/fine-tuning-lora", "hb:a81", "p6-why", "p6-lora", "p6-qlora", "p6-data", "p6-recipe", "p6-hp", "p6-eval", "p6-serve", "p6-other", "qa:p6", "build:p6"]),
+        ("rlhf", "RLHF & reward models", "Teaching taste: preference data, reward models, PPO and the KL leash.",
+         ["ts:systems/rlhf-dpo-pipeline", "hb:a82", "p5-rlhf"]),
+        ("dpo", "DPO & preference optimization", "The RLHF outcome with a supervised loss, and KTO, IPO and ORPO.", ["wb:dpo", "hb:a83", "p5-dpo"]),
+        ("constitutional-ai", "Constitutional AI & red-teaming", "Alignment from written principles, and attacking your own model before users do.",
+         ["ts:stretch/constitutional-ai-redteam"]),
+    ]),
     ("inference", "Inference & serving", "Why LLMs are slow and what fixes it: KV cache, batching, quantization, speculative decoding, GPUs and scale.", [
         ("inference-internals", "Inference internals", "Prefill vs decode, the KV cache, PagedAttention, continuous batching and speculative decoding.",
-         ["hb:i91", "p8-phase", "p4-kv", "p8-vllm", "p8-spec"]),
+         ["ts:fundamentals/context-window-kv-cache", "hb:i91", "p8-phase", "p4-kv", "p8-vllm", "p8-spec"]),
         ("model-compression", "Quantization & compression", "Quantization methods, distillation, pruning, ONNX/TensorRT and kernel fusion.",
-         ["p8-qbasic", "p8-qllm", "p8-kd", "p8-prune", "p8-onnx", "p8-fuse"]),
-        ("serving", "Serving & scaling", "Serving open models, benchmarking honestly, a production serving setup and scaling it.",
-         ["hb:i92", "p8-arch", "hb:c87", "qa:p8", "build:p8"]),
+         ["wb:model-compression", "p8-qbasic", "p8-qllm", "p8-kd", "p8-prune", "p8-onnx", "p8-fuse"]),
+        ("serving", "Serving & scaling", "vLLM and Ollama, benchmarking honestly, a production serving setup and scaling it.",
+         ["ts:tech/model-serving-vllm", "hb:i92", "p8-arch", "hb:c87", "qa:p8", "build:p8"]),
+        ("moe", "Mixture of experts", "Sparse experts and routers: more parameters for the same compute, and what it costs at serving time.",
+         ["ts:stretch/mixture-of-experts", "p4-moe"]),
         ("gpus-scale", "GPUs & distributed training", "GPU architecture, the roofline, data/tensor/pipeline parallelism, ZeRO and FSDP, fault tolerance.",
-         ["p9-gpu", "p9-roof", "p9-ddp", "p9-zero", "p9-tp", "p9-fault", "p9-cloud", "qa:p9", "build:p9"]),
-    ], ["fundamentals/context-window-kv-cache", "tech/model-serving-vllm", "stretch/mixture-of-experts",
-        "fundamentals/cost-latency-tradeoffs"]),
+         ["wb:gpus-scale", "p9-gpu", "p9-roof", "p9-ddp", "p9-zero", "p9-tp", "p9-fault", "p9-cloud", "qa:p9", "build:p9"]),
+    ]),
     ("production", "Production & evals", "Reference architectures, reliability, evals, observability, security, cost, hybrid patterns, MLOps and drift.", [
-        ("reference-architectures", "Reference architectures", "A production agent end to end, and architectures by use case.", ["hb:c81", "hb:c88"]),
-        ("reliability", "Reliability engineering", "Surviving flaky models and APIs: retries, fallbacks, timeouts, idempotency.", ["hb:c82"]),
-        ("evals", "Evaluating LLM features", "Success criteria, golden sets, graders, LLM-as-judge, statistics, CI gates, online evaluation and error analysis.",
-         ["hb:c83", "q1-why", "q1-success", "q1-data", "q1-graders", "q1-judge", "q1-stats", "q1-ci", "q1-online", "q1-err", "q1-plan", "qa:q1", "build:q1"]),
-        ("observability", "Observability", "Seeing inside a twelve-step agent: traces, spans, metrics and what to alert on.", ["hb:c84"]),
-        ("security", "Security", "How agents expand the attack surface, and the defences that hold.", ["hb:c85"]),
-        ("cost-performance", "Cost & performance", "Where the money goes, and caching, routing and batching to cut it.", ["hb:c86"]),
+        ("reference-architectures", "Reference architectures", "AI system design patterns, a production agent end to end, and architectures by use case.",
+         ["ts:fundamentals/ai-system-design-patterns", "hb:c81", "hb:c88"]),
+        ("reliability", "Reliability engineering", "Surviving flaky models and APIs: retries, fallbacks, timeouts, idempotency.", ["wb:reliability", "hb:c82"]),
+        ("eval-metrics", "Evaluation metrics", "Perplexity, BLEU/ROUGE, benchmarks, LLM-as-judge and human evaluation: what each measures.",
+         ["ts:fundamentals/evaluation-metrics"]),
+        ("evals", "Evaluating LLM features", "Golden sets, graders, LLM-as-judge done properly, statistics, an eval harness in CI, online evaluation and error analysis.",
+         ["ts:systems/eval-harness", "hb:c83",
+          "q1-why", "q1-success", "q1-data", "q1-graders", "q1-judge", "q1-stats", "q1-ci", "q1-online", "q1-err", "q1-plan", "qa:q1", "build:q1"]),
+        ("observability", "Observability", "Seeing inside a twelve-step agent: traces, spans, metrics, tools, and what to alert on.",
+         ["ts:tech/llm-observability", "hb:c84"]),
+        ("security", "Security & guardrails", "How agents expand the attack surface, input and output guardrails, and the defences that hold.",
+         ["ts:fundamentals/ai-safety-guardrails", "hb:c85"]),
+        ("cost-performance", "Cost & latency", "Where the money and the milliseconds go: pricing, prefill vs decode, routing, batching and prompt caching.",
+         ["ts:fundamentals/cost-latency-tradeoffs", "hb:c86"]),
+        ("semantic-cache", "Semantic caching", "Answering repeat questions from a cache keyed on meaning, and avoiding wrong hits.",
+         ["ts:systems/semantic-cache"]),
         ("hybrid-patterns", "Hybrid LLM patterns", "LLM extracts and code decides, routing and cascades, LLMs with classic ML, guardrails, text-to-SQL.",
-         ["q4-extract", "q4-cascade", "q4-ml", "q4-guard", "q4-sql", "qa:q4", "build:q4"]),
-        ("mlops-drift", "MLOps & drift", "Version everything that changes behaviour, and notice when the world moves.", ["hb:p89", "hb:p90"]),
-    ], ["fundamentals/ai-system-design-patterns", "fundamentals/evaluation-metrics", "systems/eval-harness",
-        "tech/llm-observability", "fundamentals/ai-safety-guardrails"]),
-    ("tech", "Tech & tools", "Agent frameworks and when to skip them, vector databases, embedding models and rerankers.", [
-        ("frameworks", "Agent frameworks", "The landscape, the same agent in five frameworks, and framework vs thin harness vs raw.",
-         ["hb:c71", "hb:c72", "hb:c73"]),
-    ], ["tech/langgraph", "tech/langchain", "tech/llamaindex", "tech/crewai", "tech/vector-databases", "tech/pgvector",
-        "tech/pinecone", "tech/weaviate", "tech/chroma", "tech/embedding-models", "tech/rerankers"]),
+         ["wb:hybrid-patterns", "q4-extract", "q4-cascade", "q4-ml", "q4-guard", "q4-sql", "qa:q4", "build:q4"]),
+        ("mlops-drift", "MLOps & drift", "Version everything that changes behaviour, and notice when the world moves.", ["wb:mlops-drift", "hb:p89", "hb:p90"]),
+    ]),
+    ("tech", "Tech & tools", "Agent frameworks and when to skip them, and the vector databases worth knowing.", [
+        ("frameworks", "Choosing an agent framework", "The landscape, the same agent in five frameworks, and framework vs thin harness vs raw.",
+         ["wb:frameworks", "hb:c71", "hb:c72", "hb:c73"]),
+        ("langgraph", "LangGraph", "Agents as explicit state graphs: nodes, edges, checkpoints, interrupts.", ["ts:tech/langgraph"]),
+        ("langchain", "LangChain", "Chains, runnables, retrievers and the integrations layer.", ["ts:tech/langchain"]),
+        ("llamaindex", "LlamaIndex", "Data-first RAG framework: loaders, indexes, query engines.", ["ts:tech/llamaindex"]),
+        ("crewai", "CrewAI", "Role-based multi-agent crews: agents, tasks, processes.", ["ts:tech/crewai"]),
+        ("pgvector", "pgvector", "Vector search inside Postgres: HNSW/IVFFlat, hybrid with full-text, operations.", ["ts:tech/pgvector"]),
+        ("pinecone", "Pinecone", "Managed serverless vector database: namespaces, metadata filters, hybrid.", ["ts:tech/pinecone"]),
+        ("weaviate", "Weaviate", "Open-source vector database with modules, hybrid search and multi-tenancy.", ["ts:tech/weaviate"]),
+        ("chroma", "Chroma", "Lightweight embedded vector store for prototypes and local RAG.", ["ts:tech/chroma"]),
+    ]),
     ("stretch", "Stretch: voice & multimodal", "Agents with a latency budget, and models that see and hear.", [
-        ("voice-agents", "Voice agents", "STT, TTS, VAD, barge-in and the latency budget of a real-time voice agent.", ["hb:v01"]),
-    ], ["stretch/multimodal-llms"]),
+        ("voice-agents", "Voice agents", "STT, TTS, VAD, barge-in and the latency budget of a real-time voice agent.", ["wb:voice-agents", "hb:v01"]),
+        ("multimodal", "Multimodal LLMs", "Vision and audio encoders, how images become tokens, and what multimodal models are good for.",
+         ["ts:stretch/multimodal-llms"]),
+    ]),
     ("projects", "Build & interview", "One complete system built end to end, portfolio projects, and the interview answer kit.", [
-        ("build-spec", "Complete build: spec & architecture", "The system we build end to end: requirements, architecture and decisions.", ["hb:e01"]),
-        ("build-knowledge", "Complete build: the knowledge layer", "Ingestion, chunking, indexing and retrieval for the build.", ["hb:e02"]),
-        ("build-agent", "Complete build: the agent", "The order agent: tools, loop, memory and guardrails.", ["hb:e03"]),
-        ("build-ship", "Complete build: prove it, serve it, afford it", "Evals, serving, cost and operations for the build.", ["hb:e04"]),
+        ("build-spec", "Complete build: spec & architecture", "The system we build end to end: requirements, architecture and decisions.", ["wb:build", "hb:e01"]),
+        ("build-knowledge", "Complete build: the knowledge layer", "Ingestion, chunking, indexing and retrieval for the build.", ["wb:build-knowledge", "hb:e02"]),
+        ("build-agent", "Complete build: the agent", "The order agent: tools, loop, memory and guardrails.", ["wb:build-agent", "hb:e03"]),
+        ("build-ship", "Complete build: prove it, serve it, afford it", "Evals, serving, cost and operations for the build.", ["wb:build-ship", "hb:e04"]),
         ("portfolio-projects", "Portfolio projects", "Five projects from micrograd to a shipped service, and a weekend build that makes interview answers real.",
-         ["p10-a", "p10-b", "p10-c", "p10-d", "p10-e", "q5-d1", "q5-d2", "qa:p10", "build:p10", "qa:q5", "build:q5", "res:p10"]),
+         ["wb:portfolio-projects", "p10-a", "p10-b", "p10-c", "p10-d", "p10-e", "q5-d1", "q5-d2", "qa:p10", "build:p10", "qa:q5", "build:q5", "res:p10"]),
         ("answer-kit", "Interview answer kit", "Model answers for the eval and RAG/agent questions, and the follow-ups to prepare.",
-         ["q6-q4a", "q6-q4b", "q6-q5", "q6-follow"]),
-    ], []),
+         ["wb:answer-kit", "q6-q4a", "q6-q4b", "q6-q5", "q6-follow"]),
+    ]),
 ]
+
+REDIRECT = ('<!DOCTYPE html><meta charset="utf-8"><title>{t}</title>'
+            '<meta http-equiv="refresh" content="0; url={u}"><link rel="canonical" href="{u}">'
+            '<p>Moved: <a href="{u}">{t}</a></p>\n')
 
 
 def build(units, labs):
-    topics = json.loads((ROOT / "scripts" / "ai_topic_cards.json").read_text(encoding="utf-8"))
-    used, order = set(), []
-    for folder, stitle, _, tlist, _ in STAGES:
+    import whiteboards                                    # scripts/whiteboards.py
+    boards = whiteboards.render_all(AI / "img")           # name -> caption
+    cards = json.loads((ROOT / "scripts" / "ai_topic_cards.json").read_text(encoding="utf-8"))
+    used, order, moved = set(), [], {}
+    topic_of = {}
+    for folder, stitle, _, tlist in STAGES:
         for t in tlist:
             order.append((folder, stitle) + t)
+            for u in t[3]:
+                if u.startswith("ts:"):
+                    topic_of[u[3:]] = f"{folder}/{t[0]}"
 
     for i, (folder, stitle, slug, title, desc, ids) in enumerate(order):
-        sections, qa, builds, has_lab, seen = [], [], [], False, set()
+        glance, ref, body, tail, qa, builds, has_lab, seen = [], [], [], [], [], [], False, set()
+        sheets = [u for u in ids if u.startswith("ts:")]
+
+        def add(target, lab, inner):
+            sid, k = slugify(lab) or "section", 2
+            while sid in seen:
+                sid, k = f"{slugify(lab)}-{k}", k + 1
+            seen.add(sid)
+            target.append((sid, lab, inner))
+
         for uid in ids:
-            assert uid in units, f"unknown unit {uid}"
             assert uid not in used, f"{uid} used twice"
             used.add(uid)
-            has_lab |= uid in labs
-            if uid.startswith("qa:"):
-                qa += units[uid]
-            elif uid.startswith("build:"):
-                if units[uid]:
-                    builds.append(units[uid])
+            if uid.startswith("ts:"):
+                key = uid[3:]
+                u = sheet_unit(key, topic_of)
+                glance += u["glance"]
+                prefix = cards[key]["title"] + ": " if len(sheets) > 1 else ""
+                for lab, inner in u["sections"]:
+                    add(tail if WRAP_UP.search(lab) else ref, prefix + lab, inner)
+                qa += u["qa"]
+                moved[key] = f"../{folder}/{slug}.html"
+            elif uid.startswith("wb:"):
+                name = uid[3:]
+                assert name in boards, f"no whiteboard named {name}"
+                glance.append(f'<div class="diagram"><img src="../img/{name}.png" alt="{esc(boards[name])}"></div>'
+                              f'<p class="diagram-caption">{esc(boards[name])}</p>')
             else:
-                for lab, inner in units[uid]:
-                    sid, k = slugify(lab) or "section", 2
-                    while sid in seen:
-                        sid, k = f"{slugify(lab)}-{k}", k + 1
-                    seen.add(sid)
-                    sections.append((sid, lab, inner))
+                assert uid in units, f"unknown unit {uid}"
+                has_lab |= uid in labs
+                if uid.startswith("qa:"):
+                    qa += units[uid]
+                elif uid.startswith("build:"):
+                    if units[uid]:
+                        builds.append(units[uid])
+                else:
+                    for lab, inner in units[uid]:
+                        add(body, lab, inner)
+
+        sections = []
+        if glance:
+            sections.append(("at-a-glance", "At a glance", "\n".join(glance)))
+        # overview and concepts, then the long-form depth, then production notes and pitfalls
+        sections += ref + body + tail
         if qa:
             sections.append(("check-yourself", "Check yourself", "\n".join(qa)))
         if builds:
             sections.append(("build-it", "Build it", "".join(f'<div class="callout success">{b}</div>' for b in builds)))
-        prev = order[i - 1] if i else None
-        nxt = order[i + 1] if i + 1 < len(order) else None
-        rel = lambda t: (f"../{t[0]}/{t[2]}.html" if t[0] != folder else f"{t[2]}.html", t[3])
+
         def resolve(h, here=folder):
             return re.sub(r'href="@@([^/@]+)/([^@]+)@@"',
                           lambda m: f'href="{m.group(2) if m.group(1) == here else "../" + m.group(1) + "/" + m.group(2)}.html"', h)
         sections = [(sid, lab, resolve(inner)) for sid, lab, inner in sections]
+        prev = order[i - 1] if i else None
+        nxt = order[i + 1] if i + 1 < len(order) else None
+        rel = lambda t: (f"../{t[0]}/{t[2]}.html" if t[0] != folder else f"{t[2]}.html", t[3])
+        html_ = page(title=title, h1=title, qualifier=stitle, lead=esc(desc), tags=[],
+                     sections=sections, back=("index.html", stitle),
+                     pager=(rel(prev) if prev else None, rel(nxt) if nxt else None),
+                     scripts=("../ai-labs.js",) if has_lab else ())
+        html_ = html_.replace("</title>", f'</title>\n<meta name="ai-stage" content="{esc(stitle)}" data-href="index.html">', 1)
         (AI / folder).mkdir(exist_ok=True)
-        (AI / folder / f"{slug}.html").write_text(page(
-            title=title, h1=title, qualifier=stitle, lead=esc(desc), tags=[],
-            sections=sections, back=("index.html", stitle),
-            pager=(rel(prev) if prev else None, rel(nxt) if nxt else None),
-            scripts=("../ai-labs.js",) if has_lab else ()).replace(
-                "</title>", f'</title>\n<meta name="ai-stage" content="{esc(stitle)}" data-href="index.html">', 1),
-            encoding="utf-8")
+        (AI / folder / f"{slug}.html").write_text(html_, encoding="utf-8")
 
     leftover = sorted(u for u in units if u not in used and units[u])
     assert not leftover, f"source units not on the map: {leftover}"
+    unplaced = set(cards) - set(moved)
+    assert not unplaced, f"cheat sheets not merged: {unplaced}"
+    unused = set(boards) - {u[3:] for u in used if u.startswith("wb:")}
+    assert not unused, f"whiteboards drawn but unused: {unused}"
 
-    # stage pages
-    placed = set()
-    for n, (folder, stitle, sdesc, tlist, sheets) in enumerate(STAGES, 1):
+    current = {AI / f / f"{t[0]}.html" for f, _, _, tl in STAGES for t in tl}
+    for f in AI.glob("*/*.html"):
+        if f not in current and f.name != "index.html" and \
+                "generated by scripts/build_ai_learning.py" in f.read_text(encoding="utf-8"):
+            f.unlink()
+
+    # stage pages: topics only
+    for n, (folder, stitle, sdesc, tlist) in enumerate(STAGES, 1):
         groups = [("Topics", [(f"{s}.html", t, d, []) for s, t, d, _ in tlist])]
-        if sheets:
-            groups.append(("Cheat sheets", [(f"../{k}.html", topics[k]["title"], topics[k]["desc"], topics[k]["tags"]) for k in sheets]))
-            placed |= set(sheets)
         if n < len(STAGES):
-            nf, nt, nd, _, _ = STAGES[n]
+            nf, nt, nd, _ = STAGES[n]
             groups.append(("Next stage", [(f"../{nf}/index.html", f"{n + 1:02d} · {nt}", nd, [])]))
         (AI / folder / "index.html").write_text(hub(
             title=f"{stitle} — AI",
             crumbs=[("../../index.html", "Cheat Sheets"), ("../index.html", "AI"), ("", stitle)],
             h1=f"{n:02d} · {stitle}", h1_span="", subtitle=esc(sdesc),
-            stat=(len(tlist) + len(sheets), "pages"), groups=groups), encoding="utf-8")
-    missing = set(topics) - placed
-    assert not missing, f"cheat sheets not on the map: {missing}"
+            stat=(len(tlist), "topics"), groups=groups), encoding="utf-8")
 
-    # the AI landing page is the map
-    n_topics = sum(len(s[3]) for s in STAGES)
-    cards = "".join(
+    n_topics = len(order)
+    stage_cards = "".join(
         f'\n    <a href="{f}/index.html" class="sub-card"><h3>{n:02d} &middot; {esc(t)}</h3><p>{esc(d)}</p>'
-        f'<div class="count">{len(tl)} topics{f" &middot; {len(sh)} cheat sheets" if sh else ""}</div></a>'
-        for n, (f, t, d, tl, sh) in enumerate(STAGES, 1))
+        f'<div class="count">{len(tl)} topics</div></a>'
+        for n, (f, t, d, tl) in enumerate(STAGES, 1))
     (AI / "index.html").write_text(f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -752,52 +878,33 @@ def build(units, labs):
 <div class="container">
   <div class="breadcrumbs"><a href="../index.html">Cheat Sheets</a><span>/</span> AI</div>
   <header class="page-header"><h1>AI / LLMs / <span>Agents</span></h1>
-  <p class="subtitle">One map from first principles to a shipped agent. Work through the stages in order: each has topic pages that teach it in full, and cheat sheets for the night before.</p>
-  <div class="stats"><span class="stat"><strong>{len(STAGES)}</strong> stages</span><span class="stat"><strong>{n_topics}</strong> topics</span><span class="stat"><strong>{len(topics)}</strong> cheat sheets</span></div></header>
-  <div class="sub-grid">{cards}
+  <p class="subtitle">One map from first principles to a shipped agent. Work through the stages in order. Every topic is one page: a diagram at a glance, the quick reference, the full explanation with code and labs, and questions to check yourself.</p>
+  <div class="stats"><span class="stat"><strong>{len(STAGES)}</strong> stages</span><span class="stat"><strong>{n_topics}</strong> topics</span></div></header>
+  <div class="sub-grid">{stage_cards}
   </div></div><script src="../hub.js" defer></script>
 <script src="../../theme.js"></script>
 </body></html>
 """, encoding="utf-8")
 
-    # cheat sheets: stage breadcrumb + back link, and a "Learn it in full" section
-    # pointing at the topic pages of their stage
-    marker = re.compile(r'\n?<section id="go-deeper">.*?</section>\n?', re.S)
-    nav_marker = re.compile(r'\n?\s*<a href="#go-deeper">.*?</a>')
-    for folder, stitle, _, tlist, sheets in STAGES:
-        for key in sheets:
-            f = AI / f"{key}.html"
-            s = marker.sub("\n", nav_marker.sub("", f.read_text(encoding="utf-8")))
-            s = re.sub(r'\n?<meta name="ai-stage"[^>]*>', "", s)
-            s = s.replace("</title>", f'</title>\n<meta name="ai-stage" content="{esc(stitle)}" data-href="../{folder}/index.html">', 1)
-            s = re.sub(r'(<nav class="nav">\s*<h2>.*?</h2>\s*)<a href="[^"#]*"[^>]*>&larr;[^<]*</a>',
-                       lambda m: m.group(1) + f'<a href="../{folder}/index.html">&larr; {esc(stitle)}</a>', s, count=1, flags=re.S)
-            items = "".join(f'<li><a href="../{folder}/{sl}.html">{esc(t)}</a> &mdash; {esc(d)}</li>' for sl, t, d, _ in tlist)
-            sec = (f'<section id="go-deeper">\n  <h2>Learn it in full</h2>\n  <p>The {esc(stitle)} topics, '
-                   f'with worked examples, code and exercises.</p>\n  <ul>{items}</ul>\n</section>\n')
-            nums = re.findall(r'<span class="num">(\d+)[a-z]?</span>', s)
-            num = (max(int(x) for x in nums) + 1) if nums else 1
-            s = s.replace("</nav>", f'  <a href="#go-deeper"><span class="num">{num:02d}</span> Learn it in full</a>\n</nav>', 1)
-            j = s.rfind("</section>")
-            s = s[:j + len("</section>")] + "\n\n" + sec + s[j + len("</section>"):]
-            f.write_text(s, encoding="utf-8")
-
-    # tiers that are no longer stages send old links to the map
+    # old addresses keep working: cheat sheets and retired tier indexes redirect
+    for key, target in moved.items():
+        tier = key.split("/")[0]
+        if target == f"../{key}.html":       # the topic page took over this exact path
+            continue
+        (AI / tier).mkdir(exist_ok=True)
+        (AI / f"{key}.html").write_text(REDIRECT.format(t=esc(cards[key]["title"]), u=target), encoding="utf-8")
+    stage_folders = {s[0] for s in STAGES}
     for gone in ("systems", "handbook", "courses"):
         d = AI / gone
-        if d.exists():
-            for old in d.glob("*.html"):
-                if gone != "systems" or old.name == "index.html":
-                    old.unlink()
-            d.mkdir(exist_ok=True)
-            (d / "index.html").write_text(
-                '<!DOCTYPE html><meta charset="utf-8"><title>AI</title>'
-                '<meta http-equiv="refresh" content="0; url=../index.html"><a href="../index.html">AI learning map</a>\n',
-                encoding="utf-8")
-    return len(order)
+        d.mkdir(exist_ok=True)
+        if gone not in stage_folders:
+            (d / "index.html").write_text(REDIRECT.format(t="AI", u="../index.html"), encoding="utf-8")
+    return n_topics, len(moved), len(boards)
 
 
 def main():
+    import sys
+    sys.path.insert(0, str(ROOT / "scripts"))
     ap = argparse.ArgumentParser()
     ap.add_argument("--handbook", required=True)
     ap.add_argument("--ground-up", required=True)
@@ -808,8 +915,9 @@ def main():
     ev, ev_labs = course_units(Path(a.evals).expanduser(), "ev")
     units.update(gu)
     units.update(ev)
-    n = build(units, gu_labs | ev_labs)
-    print(f"{len(STAGES)} stages, {n} topic pages from {len(units)} source units")
+    topics, sheets, boards = build(units, gu_labs | ev_labs)
+    print(f"{len(STAGES)} stages · {topics} topics · {sheets} cheat sheets merged · {boards} whiteboards · "
+          f"{len(units)} source units")
 
 
 if __name__ == "__main__":

@@ -16,16 +16,31 @@
 <nav class="nav">
   <h2>RLHF &amp; reward models</h2>
   <a href="index.html">&larr; Fine-tuning &amp; alignment</a>
-  <a href="#rlhf-reward-modeling-teaching-taste"><span class="num">01</span> RLHF &amp; reward modeling — teaching taste</a>
-  <a href="#the-classic-three-stage-pipeline-instructgpt"><span class="num">02</span> The classic three-stage pipeline (InstructGPT)</a>
-  <a href="#stage-2a-collecting-preferences-the-unglamorous-80"><span class="num">03</span> Stage 2a: collecting preferences (the unglamorous 80%)</a>
-  <a href="#stage-2b-training-the-reward-model"><span class="num">04</span> Stage 2b: training the reward model</a>
-  <a href="#stage-3-the-ppo-loop-annotated"><span class="num">05</span> Stage 3: the PPO loop, annotated</a>
-  <a href="#the-kl-coefficient-intuition-via-the-extremes"><span class="num">06</span> The KL coefficient — intuition via the extremes</a>
-  <a href="#why-the-kl-leash-and-why-it-still-breaks"><span class="num">07</span> Why the KL leash and why it still breaks</a>
-  <a href="#practical-pains-of-ppo-style-rlhf"><span class="num">08</span> Practical pains of PPO-style RLHF</a>
-  <a href="#variants-you-ll-hear"><span class="num">09</span> Variants you&#x27;ll hear</a>
-  <a href="#rlhf"><span class="num">10</span> RLHF</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
+  <a href="#api-surface"><span class="num">04</span> API Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">06</span> Architecture</a>
+  <a href="#deep-dive-sft-baseline"><span class="num">07</span> Deep Dive: SFT Baseline</a>
+  <a href="#deep-dive-reward-model"><span class="num">08</span> Deep Dive: Reward Model</a>
+  <a href="#deep-dive-dpo"><span class="num">09</span> Deep Dive: DPO</a>
+  <a href="#deep-dive-ppo-rlhf"><span class="num">10</span> Deep Dive: PPO / RLHF</a>
+  <a href="#deep-dive-alignment-eval"><span class="num">11</span> Deep Dive: Alignment Eval</a>
+  <a href="#rlhf-reward-modeling-teaching-taste"><span class="num">12</span> RLHF &amp; reward modeling — teaching taste</a>
+  <a href="#the-classic-three-stage-pipeline-instructgpt"><span class="num">13</span> The classic three-stage pipeline (InstructGPT)</a>
+  <a href="#stage-2a-collecting-preferences-the-unglamorous-80"><span class="num">14</span> Stage 2a: collecting preferences (the unglamorous 80%)</a>
+  <a href="#stage-2b-training-the-reward-model"><span class="num">15</span> Stage 2b: training the reward model</a>
+  <a href="#stage-3-the-ppo-loop-annotated"><span class="num">16</span> Stage 3: the PPO loop, annotated</a>
+  <a href="#the-kl-coefficient-intuition-via-the-extremes"><span class="num">17</span> The KL coefficient — intuition via the extremes</a>
+  <a href="#why-the-kl-leash-and-why-it-still-breaks"><span class="num">18</span> Why the KL leash and why it still breaks</a>
+  <a href="#practical-pains-of-ppo-style-rlhf"><span class="num">19</span> Practical pains of PPO-style RLHF</a>
+  <a href="#variants-you-ll-hear"><span class="num">20</span> Variants you&#x27;ll hear</a>
+  <a href="#rlhf"><span class="num">21</span> RLHF</a>
+  <a href="#production-ops"><span class="num">22</span> Production &amp; Ops</a>
+  <a href="#where-it-shows-up"><span class="num">23</span> Where It Shows Up</a>
+  <a href="#common-pitfalls"><span class="num">24</span> Common Pitfalls</a>
+  <a href="#check-yourself"><span class="num">25</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -34,13 +49,63 @@
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<p>Align LLMs with human preferences: SFT baseline, reward modeling, PPO/RLHF, DPO direct preference optimization. Know when alignment training beats prompt engineering.</p>
+<div class="diagram"><img alt="RLHF &amp; DPO Pipeline architecture" src="../systems/img/rlhf-dpo-pipeline-main.png"/></div><p class="diagram-caption">Alignment pipeline: base model → SFT on demonstrations → preference pair collection → DPO or RLHF (reward model + PPO) → aligned model → eval harness gate.</p>
+</section>
+<section id="what-why">
+  <h2>02 &mdash; What &amp; Why</h2>
+<div class="card"><p>Base LLMs optimize next-token prediction, not helpfulness or safety. Alignment training steers behavior toward human preferences.</p></div>
+</section>
+<section id="core-concepts">
+  <h2>03 &mdash; Core Concepts</h2>
+<div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>SFT</td><td>Supervised fine-tune on expert demos</td><td>Imitates demos not preferences</td></tr><tr><td>Reward model</td><td>Scores response quality</td><td>Goodharting — optimize score not intent</td></tr><tr><td>DPO</td><td>Direct preference optimization without RM</td><td>Needs quality preference pairs</td></tr><tr><td>PPO</td><td>RL fine-tune against reward model</td><td>Unstable, expensive</td></tr></table></div>
+</section>
+<section id="api-surface">
+  <h2>04 &mdash; API Surface</h2>
+<div class="card"><pre># Preference dataset format
+{"prompt": "...", "chosen": "...", "rejected": "..."}
+
+# TRL DPO
+trainer = DPOTrainer(model, ref_model, train_dataset=prefs)
+trainer.train()</pre></div>
+</section>
+<section id="when-to-use-when-not">
+  <h2>05 &mdash; When to Use / When NOT</h2>
+<div class="card"><table><tr><th>Method</th><th>Use When</th><th>Skip When</th></tr><tr><td>Prompt only</td><td>General assistant behavior</td><td>Need domain-specific tone at scale</td></tr><tr><td>DPO/LoRA</td><td>Preference data available, moderate shift</td><td>No preference labels</td></tr><tr><td>Full RLHF</td><td>Large budget, research-grade alignment</td><td>Most product teams — use DPO</td></tr></table></div>
+</section>
+<section id="architecture">
+  <h2>06 &mdash; Architecture</h2>
+<div class="card"><pre>Base LM -&gt; SFT -&gt; Collect prefs (A/B human rank) -&gt; DPO train -&gt; Eval gate -&gt; Deploy</pre></div>
+</section>
+<section id="deep-dive-sft-baseline">
+  <h2>07 &mdash; Deep Dive: SFT Baseline</h2>
+<div class="card"><p>10K–100K high-quality (prompt, response) pairs. Must precede DPO. Teaches format and domain vocabulary.</p></div>
+</section>
+<section id="deep-dive-reward-model">
+  <h2>08 &mdash; Deep Dive: Reward Model</h2>
+<div class="diagram"><img alt="Reward model scores chosen response higher than rejected; Bradley-Terry loss" src="../systems/img/rlhf-dpo-pipeline-reward-zoom.png"/></div><p class="diagram-caption">Reward model scores chosen response higher than rejected; Bradley-Terry loss</p><div class="card"><p>Train classifier on preference pairs. Used as PPO reward signal. Monitor reward hacking.</p></div>
+</section>
+<section id="deep-dive-dpo">
+  <h2>09 &mdash; Deep Dive: DPO</h2>
+<div class="diagram"><img alt="DPO loss directly increases log-prob of chosen vs rejected without separate reward model" src="../systems/img/rlhf-dpo-pipeline-dpo-zoom.png"/></div><p class="diagram-caption">DPO loss directly increases log-prob of chosen vs rejected without separate reward model</p><div class="card"><p>DPO is default for most teams: simpler than PPO, no reward model, stable on 7B–70B with LoRA.</p></div>
+</section>
+<section id="deep-dive-ppo-rlhf">
+  <h2>10 &mdash; Deep Dive: PPO / RLHF</h2>
+<div class="card"><p>PPO fine-tunes policy against RM with KL penalty to base model. OpenAI original InstructGPT path. Expensive and unstable — reserved for frontier labs.</p></div>
+</section>
+<section id="deep-dive-alignment-eval">
+  <h2>11 &mdash; Deep Dive: Alignment Eval</h2>
+<div class="card"><p>Win-rate vs baseline on held-out prefs. Safety red-team set. Capability eval (don't degrade MMLU). MT-Bench / Arena Elo.</p></div>
+</section>
 <section id="rlhf-reward-modeling-teaching-taste">
-  <h2>01 &mdash; RLHF &amp; reward modeling — teaching taste</h2>
+  <h2>12 &mdash; RLHF &amp; reward modeling — teaching taste</h2>
 <p>SFT teaches <i>format</i> ("answer the request"). It cannot teach <i>"of these two valid answers, this one is better."</i> Preference optimization does — it's why chat models feel helpful rather than merely fluent.</p>
 <p>Think about what SFT's loss actually says: "make the training answer more likely, token by token." It has no concept of <i>better</i> — an SFT model trained on good answers still can't rank two of its own samples. But almost everything we care about in a deployed assistant is comparative: more helpful, less evasive, better organized, correctly hedged. Humans are terrible at writing the single optimal answer but quite good at picking the better of two. RLHF is the machinery that converts that cheap comparative judgment into a gradient.</p>
 </section>
 <section id="the-classic-three-stage-pipeline-instructgpt">
-  <h2>02 &mdash; The classic three-stage pipeline (InstructGPT)</h2>
+  <h2>13 &mdash; The classic three-stage pipeline (InstructGPT)</h2>
 <pre class="ascii-diagram">1. SFT        base model → instruction-tuned model (demonstrations)
 
 2. REWARD MODEL (RM)
@@ -54,7 +119,7 @@
                                      └── stops the policy drifting into reward-hacking gibberish</pre>
 </section>
 <section id="stage-2a-collecting-preferences-the-unglamorous-80">
-  <h2>03 &mdash; Stage 2a: collecting preferences (the unglamorous 80%)</h2>
+  <h2>14 &mdash; Stage 2a: collecting preferences (the unglamorous 80%)</h2>
 <p>Before any loss function, there's a labeling operation. The standard setup: a rater UI shows one prompt and two (sometimes 4–8, ranked) candidate answers sampled from the current model at moderate temperature — <i>same model, different samples</i>, so the comparison isolates quality, not model identity. The rater picks A, B, or "tie / both bad", ideally with a rubric ("prefer the answer that is correct first, then complete, then concise; penalize unsupported claims") and a free-text reason for a subsample. Operational details that decide whether your data is signal or mush:</p>
 <ul>
 <li><b>Rubric before raters.</b> Without a written rubric, you're training an RM on the average of ten people's unexamined taste. Pilot on 50 prompts, read disagreements, tighten the rubric, then scale.</li>
@@ -65,7 +130,7 @@
 <p>Cost intuition (illustrative): a trained rater does 30–60 pairs/hour on chat-length answers; at $20–40/hour loaded cost, 50K pairs is a $30–70K, multi-week operation. This is why RLAIF exists, and why production teams mine implicit signals (<a href="index.html">Fine-tuning &amp; alignment</a>'s flywheel) instead of paying for everything.</p>
 </section>
 <section id="stage-2b-training-the-reward-model">
-  <h2>04 &mdash; Stage 2b: training the reward model</h2>
+  <h2>15 &mdash; Stage 2b: training the reward model</h2>
 <p>The RM is usually the SFT model with its LM head swapped for a scalar head (one linear layer). Bradley–Terry says: model the probability that A beats B as σ(r(A) − r(B)), and maximize the likelihood of the observed preferences. Implemented, it's ten lines:</p>
 <div class="code-block"><div class="code-file"><span>reward_model.py — Bradley–Terry loss, the actual mechanism</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> torch, torch.nn.functional <span class="kw">as</span> F
 <span class="kw">from</span> transformers <span class="kw">import</span> AutoModelForSequenceClassification, AutoTokenizer
@@ -94,7 +159,7 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 <p>Note what the loss does <i>not</i> say: nothing anchors the absolute scale of r. Only differences matter, so RM scores are meaningless across checkpoints ("the RM gives 3.2!" means nothing). The metric that matters is <b>held-out pair accuracy</b>: a good RM lands at 70–80% on human pairs (illustrative — remember humans agree with each other only ~75% of the time; an RM at 90% on noisy pairs is probably overfit or your pairs are too easy). And your RM's held-out accuracy is the <b>ceiling of the entire pipeline</b> — PPO cannot extract preference signal the RM doesn't encode.</p>
 </section>
 <section id="stage-3-the-ppo-loop-annotated">
-  <h2>05 &mdash; Stage 3: the PPO loop, annotated</h2>
+  <h2>16 &mdash; Stage 3: the PPO loop, annotated</h2>
 <p>You will probably never implement this (TRL's <code>PPOTrainer</code> and friends exist), but you should be able to read it — every "why is RLHF expensive/unstable" conversation is downstream of this loop:</p>
 <div class="code-block"><div class="code-file"><span>ppo_loop.py — annotated pseudocode of one RLHF iteration</span><span class="code-lang">python</span></div><pre><span class="cm"># FOUR models live in memory:</span>
 <span class="cm">#   policy      πθ   — being trained (gradients + optimizer states: the big one)</span>
@@ -132,7 +197,7 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 <span class="cm">#   3. value model lags policy → garbage advantages → noisy updates</span></pre></div>
 </section>
 <section id="the-kl-coefficient-intuition-via-the-extremes">
-  <h2>06 &mdash; The KL coefficient — intuition via the extremes</h2>
+  <h2>17 &mdash; The KL coefficient — intuition via the extremes</h2>
 <p>β is the single most important hyperparameter, and it's best understood by asking what happens at the limits:</p>
 <table>
 <tr><th>β</th><th>What the objective becomes</th><th>What you observe</th></tr>
@@ -145,7 +210,7 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 <p>The deeper reading: the KL term makes the objective's optimum a <i>softmax-weighted reshaping</i> of the reference model — π*(y|x) ∝ π_ref(y|x)·exp(r(x,y)/β). That closed form is exactly the observation DPO starts from (next chapter). β is the temperature of trust: how much you believe the RM relative to the SFT prior.</p>
 </section>
 <section id="why-the-kl-leash-and-why-it-still-breaks">
-  <h2>07 &mdash; Why the KL leash and why it still breaks</h2>
+  <h2>18 &mdash; Why the KL leash and why it still breaks</h2>
 <p>The reward model is an imperfect proxy trained on finite labels. Optimize hard against it and the policy finds <b>reward hacks</b> — outputs the RM loves but humans don't (sycophancy, padded length, confident nonsense). The KL penalty keeps the policy near the SFT model; even so, RM quality is the ceiling of the whole pipeline. <i>Goodhart's law, industrialized.</i></p>
 <div class="callout warn"><p><strong>Reward hacking, concretely</strong></p><ul>
 <li><b>Length bias, measured.</b> Raters prefer longer answers even at equal quality, so RMs learn length as a proxy. Diagnose it in one line: correlate RM score with token count on a fixed prompt set — <code>spearmanr(rm_scores, lengths)</code>. Illustrative but typical: ρ ≈ 0.3–0.5 on an unde-biased RM. Left alone, mean response length creeps up 30–50% over a PPO run with no quality gain. Fixes: length-balanced pairs (chosen/rejected within ±20% tokens), an explicit length penalty in reward, or length-normalized RM scores.</li>
@@ -156,7 +221,7 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 </ul></div>
 </section>
 <section id="practical-pains-of-ppo-style-rlhf">
-  <h2>08 &mdash; Practical pains of PPO-style RLHF</h2>
+  <h2>19 &mdash; Practical pains of PPO-style RLHF</h2>
 <ul>
 <li><b>Four models in memory</b>: policy, frozen reference, reward model, value model. For an 8B policy that's roughly 4×16 GB of weights before optimizer states and activations — a multi-GPU job for what a QLoRA SFT run does on one card.</li>
 <li>RL training is unstable and hyperparameter-sensitive: β, clip ε, rollout batch size, value-loss coefficient, generation temperature all interact.</li>
@@ -167,7 +232,7 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 <div class="callout"><p><strong>Mini-scenario: the support-bot that learned to grovel</strong></p>You run RLHF on a support assistant using thumbs-up/down from real users as preference signal. Three weeks post-launch, resolution rate is flat but thumbs-up is way up. Reading transcripts, the model has learned that apologizing profusely and promising escalation earns 👍 regardless of whether the problem got solved — users reward <i>feeling heard</i>. Your reward was a proxy (thumbs) for the target (resolution); the model optimized the proxy. Fix: make the reward the verifiable thing (ticket closed without reopen within 7 days), and use thumbs only as a tiebreaker. Every RLHF war story is this story with different nouns.</div>
 </section>
 <section id="variants-you-ll-hear">
-  <h2>09 &mdash; Variants you&#x27;ll hear</h2>
+  <h2>20 &mdash; Variants you&#x27;ll hear</h2>
 <table>
 <tr><th>Name</th><th>Change</th><th>Trade-off</th></tr>
 <tr><td><b>RLAIF / Constitutional AI</b></td><td>AI feedback instead of human labels — a judge model generates the preferences against principles; scales labeling</td><td>cheap and consistent, but inherits and amplifies the judge's biases (length, format, sycophancy) — audit the judge like you'd audit raters</td></tr>
@@ -186,13 +251,40 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 </ol></div>
 </section>
 <section id="rlhf">
-  <h2>10 &mdash; RLHF</h2>
+  <h2>21 &mdash; RLHF</h2>
 <ol>
 <li>Collect human comparisons: for a prompt, which of two responses is better?</li>
 <li>Train a <strong>reward model</strong> to predict those preferences (Bradley–Terry: P(a ≻ b) = σ(r(a) − r(b))).</li>
 <li>Optimize the LLM with RL (PPO) to maximize reward, with a <strong>KL penalty</strong> to the SFT model so it doesn't drift into gibberish that fools the reward model (reward hacking).</li>
 </ol>
 <p>Powerful but heavy: four models in memory (policy, reference, reward, value), unstable hyperparameters.</p>
+</section>
+<section id="production-ops">
+  <h2>22 &mdash; Production &amp; Ops</h2>
+<div class="card"><ul><li>Version alignment dataset with model</li><li>A/B aligned vs base in shadow</li><li>Monitor refusal rate and user thumbs</li></ul></div>
+</section>
+<section id="where-it-shows-up">
+  <h2>23 &mdash; Where It Shows Up</h2>
+<div class="card"><ul><li><a href="fine-tuning.html">Fine-Tuning LoRA</a></li><li><a href="../production/evals.html">Eval Harness</a></li><li><a href="../fundamentals/what-is-an-llm.html">LLM Fundamentals</a></li><li><a href="../agents/agent-loop.html">Production Agent</a></li></ul></div>
+</section>
+<section id="common-pitfalls">
+  <h2>24 &mdash; Common Pitfalls</h2>
+<div class="card"><ul><li>DPO without SFT baseline</li><li>Preference data from single annotator bias</li><li>Reward hacking / sycophancy</li><li>Alignment tax on reasoning capability</li></ul></div>
+</section>
+<section id="check-yourself">
+  <h2>25 &mdash; Check yourself</h2>
+<details><summary>RLHF vs DPO?</summary><div class="answer">RLHF: train reward model + PPO — complex, unstable. DPO: optimize preferences directly — simpler, default for product teams with LoRA.</div></details>
+<details><summary>What data for DPO?</summary><div class="answer">Triplets: prompt, chosen response, rejected response. 5K–50K pairs. Diverse prompts; consistent ranking criteria.</div></details>
+<details><summary>Why SFT before DPO?</summary><div class="answer">SFT teaches format and domain. DPO refines preferences on top. DPO alone on base model often fails to learn task format.</div></details>
+<details><summary>What is reward hacking?</summary><div class="answer">Model optimizes RM score without being actually helpful — verbose, sycophantic answers. Mitigate with KL penalty and human eval.</div></details>
+<details><summary>PPO when still used?</summary><div class="answer">Frontier labs with compute for online RL. Most enterprises use DPO or RLHF-DPO hybrid (Constitutional AI).</div></details>
+<details><summary>How eval alignment?</summary><div class="answer">Preference win-rate on held-out set. Safety benchmarks. Regression on capability evals. Production thumbs up/down.</div></details>
+<details><summary>Alignment tax?</summary><div class="answer">Alignment can slightly reduce raw reasoning scores. Monitor MMLU/GSM8K during training; early stop if &gt;3% drop.</div></details>
+<details><summary>Human preference collection?</summary><div class="answer">Side-by-side ranking UI. Multiple annotators. Inter-rater agreement &gt;0.7. Balance easy/hard prompts.</div></details>
+<details><summary>DPO + LoRA?</summary><div class="answer">Standard stack: QLoRA on 7B–70B with preference pairs. Train on 1–4 A100s for hours not weeks.</div></details>
+<details><summary>Constitutional AI?</summary><div class="answer">AI generates critique/revision against principles. Reduces human label need. Used in Claude training pipeline.</div></details>
+<details><summary>Online vs offline RL?</summary><div class="answer">Offline: DPO on fixed prefs. Online: PPO with live RM — higher risk, used at scale by OpenAI.</div></details>
+<details><summary>SDE3: alignment plan for domain assistant?</summary><div class="answer">Month 1: SFT on 20K expert pairs. Month 2: collect 10K prefs from PM review. Month 3: DPO LoRA. Eval gate: win-rate &gt;60% + no safety regression. Shadow deploy.</div></details>
 </section>
 
 <div class="sheet-pager"><a class="prev" href="fine-tuning.html"><span>Previous</span>Fine-tuning, LoRA &amp; QLoRA</a><a class="next" href="dpo.html"><span>Next</span>DPO &amp; preference optimization</a></div>

@@ -16,17 +16,18 @@
 <nav class="nav">
   <h2>MLOps &amp; drift</h2>
   <a href="index.html">&larr; Production &amp; evals</a>
-  <a href="#mlops-version-everything-that-changes-behavior"><span class="num">01</span> MLOps — version everything that changes behavior</a>
-  <a href="#the-version-manifest"><span class="num">02</span> The version manifest</a>
-  <a href="#deployment-discipline"><span class="num">03</span> Deployment discipline</a>
-  <a href="#cost-accounting"><span class="num">04</span> Cost accounting</a>
-  <a href="#ml-observability-drift-when-the-world-moves"><span class="num">05</span> ML observability &amp; drift — when the world moves</a>
-  <a href="#the-signal-stack-monitor-in-this-order"><span class="num">06</span> The signal stack (monitor in this order)</a>
-  <a href="#detecting-drift-in-code-psi-and-ks"><span class="num">07</span> Detecting drift, in code: PSI and KS</a>
-  <a href="#llm-flavored-drift"><span class="num">08</span> LLM-flavored drift</a>
-  <a href="#alert-design-page-ticket-or-log"><span class="num">09</span> Alert design: page, ticket, or log</a>
-  <a href="#two-incidents-walked-end-to-end"><span class="num">10</span> Two incidents, walked end to end</a>
-  <a href="#the-retraining-refresh-loop"><span class="num">11</span> The retraining / refresh loop</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#mlops-version-everything-that-changes-behavior"><span class="num">02</span> MLOps — version everything that changes behavior</a>
+  <a href="#the-version-manifest"><span class="num">03</span> The version manifest</a>
+  <a href="#deployment-discipline"><span class="num">04</span> Deployment discipline</a>
+  <a href="#cost-accounting"><span class="num">05</span> Cost accounting</a>
+  <a href="#ml-observability-drift-when-the-world-moves"><span class="num">06</span> ML observability &amp; drift — when the world moves</a>
+  <a href="#the-signal-stack-monitor-in-this-order"><span class="num">07</span> The signal stack (monitor in this order)</a>
+  <a href="#detecting-drift-in-code-psi-and-ks"><span class="num">08</span> Detecting drift, in code: PSI and KS</a>
+  <a href="#llm-flavored-drift"><span class="num">09</span> LLM-flavored drift</a>
+  <a href="#alert-design-page-ticket-or-log"><span class="num">10</span> Alert design: page, ticket, or log</a>
+  <a href="#two-incidents-walked-end-to-end"><span class="num">11</span> Two incidents, walked end to end</a>
+  <a href="#the-retraining-refresh-loop"><span class="num">12</span> The retraining / refresh loop</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -35,13 +36,17 @@
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<div class="diagram"><img src="../img/mlops-drift.png" alt="Every behaviour change (data, prompt, model, code) is versioned and gated by evals before rollout; monitoring catches drift and triggers retraining or rollback."></div><p class="diagram-caption">Every behaviour change (data, prompt, model, code) is versioned and gated by evals before rollout; monitoring catches drift and triggers retraining or rollback.</p>
+</section>
 <section id="mlops-version-everything-that-changes-behavior">
-  <h2>01 &mdash; MLOps — version everything that changes behavior</h2>
+  <h2>02 &mdash; MLOps — version everything that changes behavior</h2>
 <p>"It worked last week" is only debuggable if you can name exactly what changed. In an LLM system, far more things change behavior than in ordinary software.</p>
 <p>The mini-scenario: Tuesday, support tickets spike — the bot is "giving weird answers about billing." You check deploys: nothing shipped. You check the provider status page: green. Three hours later you find it: a teammate re-ran the ingestion pipeline Monday night with a chunker fix, which changed chunk boundaries, which changed what retrieval returns for billing queries. No code deploy, no model change — and yet the system's <i>behavior</i> deployed. If your version manifest had included the index build ID, the first diff you ran would have found it in three minutes. That's the entire pitch for this chapter.</p>
 </section>
 <section id="the-version-manifest">
-  <h2>02 &mdash; The version manifest</h2>
+  <h2>03 &mdash; The version manifest</h2>
 <table>
 <tr><th>Classic ML</th><th>LLM apps add</th></tr>
 <tr><td>code + environment</td><td>provider + <b>model identifier</b> (models get silently updated!)</td></tr>
@@ -92,7 +97,7 @@
 <div class="callout"><p><strong>Where does it live?</strong></p>Anywhere append-only and queryable: git (fine to start), MLflow's model registry, or a <code>releases</code> table in Postgres. What matters is that the running service <b>logs its release ID on every trace</b> (<a href="index.html">Production &amp; evals</a>'s tracing chapter), so any logged request can be mapped back to the exact manifest that produced it — that's the join that makes debugging and replay possible.</div>
 </section>
 <section id="deployment-discipline">
-  <h2>03 &mdash; Deployment discipline</h2>
+  <h2>04 &mdash; Deployment discipline</h2>
 <ul>
 <li><b>Staged rollout:</b> shadow (run silently next to prod) → canary (small %) → full; explicit rollback path rehearsed, not hoped.</li>
 <li><b>Eval gates in CI:</b> a prompt/model/index change ships only after the frozen eval suite passes; regressions block.</li>
@@ -189,7 +194,7 @@ SHADOW_SAMPLE = <span class="nr">0.20</span> <span class="cm"># shadow 20% of st
 <p>Diffing intermediates instead of outputs is the trick: rendered-prompt hash, chunk IDs, schema hash, params. Those are deterministic, so any mismatch is a true positive — a real divergence between what you evaluate and what you serve. When the nightly job pages you with "retrieval mismatch on 14% of traces," you've caught Tuesday's mystery index rebuild before the tickets spike.</p>
 </section>
 <section id="cost-accounting">
-  <h2>04 &mdash; Cost accounting</h2>
+  <h2>05 &mdash; Cost accounting</h2>
 <pre class="ascii-diagram">cost per successful task =
   (model tokens + embeddings + reranking + tool calls + compute
    + retries + human review + observability) / successful tasks
@@ -213,11 +218,11 @@ SHADOW_SAMPLE = <span class="nr">0.20</span> <span class="cm"># shadow 20% of st
 </ol></div>
 </section>
 <section id="ml-observability-drift-when-the-world-moves">
-  <h2>05 &mdash; ML observability &amp; drift — when the world moves</h2>
+  <h2>06 &mdash; ML observability &amp; drift — when the world moves</h2>
 <p>The tracing chapter covered <i>watching the system</i>. This one covers <i>watching the world</i>: models decay not because code broke, but because reality drifted away from the training data.</p>
 </section>
 <section id="the-signal-stack-monitor-in-this-order">
-  <h2>06 &mdash; The signal stack (monitor in this order)</h2>
+  <h2>07 &mdash; The signal stack (monitor in this order)</h2>
 <table>
 <tr><th>Layer</th><th>Signals</th><th>Catches</th></tr>
 <tr><td><b>Service health</b></td><td>rate, errors, latency, saturation</td><td>ordinary outages</td></tr>
@@ -230,7 +235,7 @@ SHADOW_SAMPLE = <span class="nr">0.20</span> <span class="cm"># shadow 20% of st
 <div class="callout warn"><p><strong>Drift is a symptom, not a verdict</strong></p>Distribution shift doesn't prove quality dropped — it says "look here." If ground-truth labels arrive (even delayed), monitor quality <b>directly</b> and use drift as the early-warning tripwire. Alerting on every drifted feature = alarm fatigue in a week.</div>
 </section>
 <section id="detecting-drift-in-code-psi-and-ks">
-  <h2>07 &mdash; Detecting drift, in code: PSI and KS</h2>
+  <h2>08 &mdash; Detecting drift, in code: PSI and KS</h2>
 <p>Two workhorses. <b>PSI</b> (Population Stability Index) bins a feature, compares the fraction of traffic in each bin between a reference window (training data, or last month) and the current window; it's symmetric, additive over bins, and has folk thresholds. The <b>KS statistic</b> is the max gap between the two empirical CDFs — binless, with a real hypothesis test attached, but its p-values become uselessly twitchy at large n. Use PSI for dashboards and alerts, KS when samples are small and you want a principled test.</p>
 <div class="code-block"><div class="code-file"><span>drift.py — PSI + KS on one feature, with interpretation</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> numpy <span class="kw">as</span> np
 <span class="kw">from</span> scipy <span class="kw">import</span> stats
@@ -281,7 +286,7 @@ cur = np.concatenate([                       <span class="cm"># current: 15% of 
 <p>Operational details that separate a useful monitor from a noisy one: compute drift <b>per segment</b> (a per-country mix shift can show global drift while every country is individually stable — or vice versa); compare <b>same-window-shape to same-window-shape</b> (Tuesday vs reference Tuesdays, not Tuesday vs a month) or seasonality masquerades as drift; and pin the reference window in your release manifest so "drift vs what?" has an answer.</p>
 </section>
 <section id="llm-flavored-drift">
-  <h2>08 &mdash; LLM-flavored drift</h2>
+  <h2>09 &mdash; LLM-flavored drift</h2>
 <ul>
 <li><b>Input drift:</b> users start asking things your prompts/retrieval never saw (new product, new language mix).</li>
 <li><b>Corpus staleness:</b> RAG index falls behind reality — measure retrieval freshness.</li>
@@ -369,7 +374,7 @@ cur = np.concatenate([                       <span class="cm"># current: 15% of 
 <p>For LLM apps the "label" is often a proxy: thumbs, ticket-reopen within 72h, human-edit distance on a draft, escalation. Proxies are biased (angry users click more) — keep a small always-on human-review sample (say 50 traces/day, stratified) as the calibration anchor for the proxies, and treat proxy-vs-human disagreement as its own drift signal.</p>
 </section>
 <section id="alert-design-page-ticket-or-log">
-  <h2>09 &mdash; Alert design: page, ticket, or log</h2>
+  <h2>10 &mdash; Alert design: page, ticket, or log</h2>
 <p>The failure mode of ML monitoring isn't missing signals — it's the wall of yellow that trains everyone to ignore it. Budget pages ruthlessly: a page means <i>a human should stop what they're doing now because acting now changes the outcome</i>. Almost no drift signal meets that bar; almost every data-quality signal does.</p>
 <table>
 <tr><th>Severity</th><th>Criteria</th><th>Examples</th></tr>
@@ -380,7 +385,7 @@ cur = np.concatenate([                       <span class="cm"># current: 15% of 
 <p>Three rules that keep the tiers honest. <b>Aggregate before alerting:</b> one daily "drift digest" (top-5 moved features with effect sizes and sampled examples) beats forty per-feature alerts — same information, one interrupt. <b>Every page needs a next action:</b> if the runbook line for an alert is "look into it," it's a ticket, not a page. <b>Review the budget monthly:</b> count pages, count the ones where a human actually did something within an hour; demote the rest. Alert fatigue is not a personal failing of the on-call — it's a design bug in the alert set.</p>
 </section>
 <section id="two-incidents-walked-end-to-end">
-  <h2>10 &mdash; Two incidents, walked end to end</h2>
+  <h2>11 &mdash; Two incidents, walked end to end</h2>
 <h3>Incident A: the "drift" that was a data bug</h3>
 <pre class="ascii-diagram">Mon 09:40 page: missingness spike — feature user_tenure_days NULL on 34%
           of requests (baseline 0.5%)                    [data-quality layer]
@@ -418,7 +423,7 @@ Week 3  eval gate passes → canary → ship. no-good-doc rate back &lt; 2.5%;
 <p>The contrasts with Incident A carry the lesson: <b>gradual vs cliff</b>, <b>a coherent new topic vs a broken column</b>, <b>ticket-pace vs page-pace</b>, and the fix was <i>content and retrieval</i>, not pipeline repair — and not reflexive retraining either. The monitor earned its keep by handing the on-call readable examples ("here's what cluster 14 is asking"), which turned a statistical anomaly into a product decision in one meeting.</p>
 </section>
 <section id="the-retraining-refresh-loop">
-  <h2>11 &mdash; The retraining / refresh loop</h2>
+  <h2>12 &mdash; The retraining / refresh loop</h2>
 <pre class="ascii-diagram">monitor → drift/quality alert → diagnose (data bug? world change? upstream model?)
    → refresh the right thing (reindex corpus / retrain model / fix pipeline / update prompt)
    → eval gate → canary → ship. Same loop as Production &amp; evals evals — drift is just another trigger.</pre>
@@ -441,7 +446,7 @@ Week 3  eval gate passes → canary → ship. no-good-doc rate back &lt; 2.5%;
 </ol></div>
 </section>
 
-<div class="sheet-pager"><a class="prev" href="hybrid-patterns.html"><span>Previous</span>Hybrid LLM patterns</a><a class="next" href="../tech/frameworks.html"><span>Next</span>Agent frameworks</a></div>
+<div class="sheet-pager"><a class="prev" href="hybrid-patterns.html"><span>Previous</span>Hybrid LLM patterns</a><a class="next" href="../tech/frameworks.html"><span>Next</span>Choosing an agent framework</a></div>
 </div>
 <div id="lightbox" role="dialog" aria-hidden="true">
   <span class="lb-close" aria-label="Close">&times;</span>

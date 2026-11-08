@@ -16,22 +16,89 @@
 <nav class="nav">
   <h2>The agent loop</h2>
   <a href="index.html">&larr; Tools &amp; agents</a>
-  <a href="#the-agent-loop-in-depth"><span class="num">01</span> The agent loop, in depth</a>
-  <a href="#the-minimal-loop-start-here"><span class="num">02</span> The minimal loop (start here)</a>
-  <a href="#watch-the-messages-evolve-a-3-step-run-verbatim"><span class="num">03</span> Watch the messages evolve: a 3-step run, verbatim</a>
-  <a href="#growing-it-into-a-production-module"><span class="num">04</span> Growing it into a production module</a>
-  <a href="#the-agent-loop-in-code"><span class="num">05</span> The agent loop in code</a>
-  <a href="#reliability-and-safety"><span class="num">06</span> Reliability and safety</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
+  <a href="#api-surface"><span class="num">04</span> API Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">06</span> Architecture</a>
+  <a href="#deep-dive-hitl"><span class="num">07</span> Deep Dive: HITL</a>
+  <a href="#deep-dive-guardrails"><span class="num">08</span> Deep Dive: Guardrails</a>
+  <a href="#deep-dive-tracing"><span class="num">09</span> Deep Dive: Tracing</a>
+  <a href="#deep-dive-cost-caps"><span class="num">10</span> Deep Dive: Cost Caps</a>
+  <a href="#deep-dive-graceful-degrade"><span class="num">11</span> Deep Dive: Graceful Degrade</a>
+  <a href="#the-agent-loop-in-depth"><span class="num">12</span> The agent loop, in depth</a>
+  <a href="#the-minimal-loop-start-here"><span class="num">13</span> The minimal loop (start here)</a>
+  <a href="#watch-the-messages-evolve-a-3-step-run-verbatim"><span class="num">14</span> Watch the messages evolve: a 3-step run, verbatim</a>
+  <a href="#growing-it-into-a-production-module"><span class="num">15</span> Growing it into a production module</a>
+  <a href="#the-agent-loop-in-code"><span class="num">16</span> The agent loop in code</a>
+  <a href="#reliability-and-safety"><span class="num">17</span> Reliability and safety</a>
+  <a href="#production-ops"><span class="num">18</span> Production &amp; Ops</a>
+  <a href="#where-it-shows-up"><span class="num">19</span> Where It Shows Up</a>
+  <a href="#common-pitfalls"><span class="num">20</span> Common Pitfalls</a>
+  <a href="#check-yourself"><span class="num">21</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>The agent loop <span>// Tools &amp; agents</span></h1>
-  <p>The loop in depth and in code, with budgets, errors, approvals, and reliability and safety.</p>
+  <p>The loop in depth and in code: budgets, errors, human approval, reliability and safety.</p>
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<p>Ship agents safely: human-in-the-loop approvals, guardrails, tracing, cost caps, graceful degradation. Production agents are bounded loops, not autonomous AGI.</p>
+<div class="diagram"><img alt="Production Agent (HITL) architecture" src="../systems/img/production-agent-main.png"/></div><p class="diagram-caption">Production agent stack: API gateway, agent orchestrator with termination controller, HITL approval queue, tool sandbox, guardrails filter, observability pipeline.</p>
+</section>
+<section id="what-why">
+  <h2>02 &mdash; What &amp; Why</h2>
+<div class="card"><p>Dev agents demo well; production agents fail on edge cases, cost overruns, and destructive actions. HITL and guardrails are non-negotiable for write actions.</p></div>
+</section>
+<section id="core-concepts">
+  <h2>03 &mdash; Core Concepts</h2>
+<div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>HITL</td><td>Human approves before risky action</td><td>Adds latency — async queue</td></tr><tr><td>Guardrails</td><td>Input/output policy filters</td><td>Not a substitute for sandbox</td></tr><tr><td>Circuit breaker</td><td>Stop calling failing tools</td><td>Need half-open retry</td></tr></table></div>
+</section>
+<section id="api-surface">
+  <h2>04 &mdash; API Surface</h2>
+<div class="card"><pre>POST /v1/agent/run
+  { task, user_id, hitl_mode: "required_for_write" }
+  -&gt; { run_id, status: "awaiting_approval", pending_action: {...} }
+
+POST /v1/agent/runs/{id}/approve
+  -&gt; resumes execution</pre></div>
+</section>
+<section id="when-to-use-when-not">
+  <h2>05 &mdash; When to Use / When NOT</h2>
+<div class="card"><table><tr><th>Control</th><th>Use When</th><th>Skip When</th></tr><tr><td>Full auto</td><td>Read-only search/RAG</td><td>Send email, charge card, delete data</td></tr><tr><td>HITL</td><td>Write/destructive tools</td><td>Read-only always safe</td></tr></table></div>
+</section>
+<section id="architecture">
+  <h2>06 &mdash; Architecture</h2>
+<div class="card"><pre>API GW -&gt; Agent Orchestrator -&gt; [Guardrails in/out] -&gt; Tool Sandbox
+              |-&gt; HITL Queue (async approve)
+              |-&gt; Trace -&gt; Langfuse/OTel</pre></div>
+</section>
+<section id="deep-dive-hitl">
+  <h2>07 &mdash; Deep Dive: HITL</h2>
+<div class="diagram"><img alt="Agent pauses before send_email; human reviews in approval UI; approve or reject resumes or aborts" src="../systems/img/production-agent-hitl-zoom.png"/></div><p class="diagram-caption">Agent pauses before send_email; human reviews in approval UI; approve or reject resumes or aborts</p><div class="card"><p>Classify tools: read (auto), write (approve), destructive (manager approve). Timeout 24h → abort with notification.</p></div>
+</section>
+<section id="deep-dive-guardrails">
+  <h2>08 &mdash; Deep Dive: Guardrails</h2>
+<div class="card"><p>Input: PII detection, prompt injection scan. Output: toxicity, data leak, off-topic. NeMo Guardrails, Guardrails AI, custom regex.</p></div>
+</section>
+<section id="deep-dive-tracing">
+  <h2>09 &mdash; Deep Dive: Tracing</h2>
+<div class="diagram"><img alt="OpenTelemetry trace showing LLM calls, tool executions, latencies, token counts per agent run" src="../systems/img/production-agent-trace-zoom.png"/></div><p class="diagram-caption">OpenTelemetry trace showing LLM calls, tool executions, latencies, token counts per agent run</p><div class="card"><p>LangSmith, Langfuse, Arize. Span per LLM call and tool. Store prompts/responses for replay (PII redacted).</p></div>
+</section>
+<section id="deep-dive-cost-caps">
+  <h2>10 &mdash; Deep Dive: Cost Caps</h2>
+<div class="card"><p>max_llm_calls=15, max_cost_usd=0.50 per run. Track token usage per span. Alert on 10× median cost queries.</p></div>
+</section>
+<section id="deep-dive-graceful-degrade">
+  <h2>11 &mdash; Deep Dive: Graceful Degrade</h2>
+<div class="card"><p>On timeout: return partial answer + 'could not complete action'. Fallback to simpler chain without tools. Never infinite spin.</p></div>
+</section>
 <section id="the-agent-loop-in-depth">
-  <h2>01 &mdash; The agent loop, in depth</h2>
+  <h2>12 &mdash; The agent loop, in depth</h2>
 <p>An agent is not a library. It's a while-loop. Here's the real thing, with the parts tutorials skip.</p>
 <pre class="ascii-diagram">       ┌──────────────────── agent loop ────────────────────┐
 goal ─►│ observe context → LLM reasons → call tool(s)         │
@@ -40,7 +107,7 @@ goal ─►│ observe context → LLM reasons → call tool(s)         │
        └──────────── stop when goal met OR budget hit ────────┘</pre>
 </section>
 <section id="the-minimal-loop-start-here">
-  <h2>02 &mdash; The minimal loop (start here)</h2>
+  <h2>13 &mdash; The minimal loop (start here)</h2>
 <div class="code-block"><div class="code-file"><span>agent.py — production-shaped loop</span><span class="code-lang">python</span></div><pre><span class="kw">def</span> <span class="fn">run_agent</span>(user_msg, tools, impls, *, max_steps=<span class="nr">12</span>):
     msgs=[{<span class="st">"role"</span>:<span class="st">"user"</span>,<span class="st">"content"</span>:user_msg}]; tin=tout=<span class="nr">0</span>
     <span class="kw">for</span> step <span class="kw">in</span> <span class="fn">range</span>(max_steps):                 <span class="cm"># ① HARD BUDGET — never omit</span>
@@ -62,7 +129,7 @@ goal ─►│ observe context → LLM reasons → call tool(s)         │
 <div class="callout warn"><p><strong>The budget is not optional</strong></p>Without <code>max_steps</code>, a confused model loops forever calling the same failing tool — burning money and time. The budget (steps + tokens + wall-clock) is the one thing between you and a runaway agent.</div>
 </section>
 <section id="watch-the-messages-evolve-a-3-step-run-verbatim">
-  <h2>03 &mdash; Watch the messages evolve: a 3-step run, verbatim</h2>
+  <h2>14 &mdash; Watch the messages evolve: a 3-step run, verbatim</h2>
 <p>The single most clarifying thing you can do is print <code>msgs</code> every iteration. Here is a real-shaped transcript for the goal <i>"What did we pay vendor Acme last quarter, in EUR?"</i> with tools <code>query_payments</code> and <code>fx_convert</code>. The list only ever grows; every LLM call sees everything above it.</p>
 <div class="code-block"><div class="code-file"><span>transcript — msgs after each append (abridged values)</span><span class="code-lang">text</span></div><pre>── entering step 0: msgs has 1 item ─────────────────────────────
 [0] user      : "What did we pay vendor Acme last quarter, in EUR?"
@@ -98,7 +165,7 @@ goal ─►│ observe context → LLM reasons → call tool(s)         │
 <p>Three things to internalize from this transcript. <b>First</b>, the "conversation" is a lie we maintain: entries [2], [4], [6] have <code>role:"user"</code> but no user typed them — tool results are injected as user-turns because that's the protocol. <b>Second</b>, the failed FX call at [4] wasn't handled by <i>our</i> code beyond marking <code>is_error</code> — the <b>model</b> read the error and chose to retry. That's control flow living in the LLM, the definition of an agent from the previous chapter. <b>Third</b>, count the input cost: step 0 sends ~1 message, step 1 sends 3, step 2 sends 5, step 3 sends 7 — the same tokens are re-sent every step. History is a tax you pay per iteration (prompt caching, later this Part, is the rebate).</p>
 </section>
 <section id="growing-it-into-a-production-module">
-  <h2>04 &mdash; Growing it into a production module</h2>
+  <h2>15 &mdash; Growing it into a production module</h2>
 <p>The minimal loop is correct but naked. Production adds five things — retries, tracing, parallel tool execution, cancellation, streaming — and every one of them attaches to a specific line of the loop. Here is the full module, then the commentary.</p>
 <div class="code-block"><div class="code-file"><span>agent_prod.py — the loop with its production organs (anthropic SDK shapes)</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> asyncio, json, time, uuid, random
 <span class="kw">import</span> anthropic
@@ -219,7 +286,7 @@ RETRYABLE = (anthropic.APIStatusError, anthropic.APIConnectionError)
 </ol></div>
 </section>
 <section id="the-agent-loop-in-code">
-  <h2>05 &mdash; The agent loop in code</h2>
+  <h2>16 &mdash; The agent loop in code</h2>
 <pre><span class="kw">def</span> <span class="fn">run_agent</span>(task, tools, llm, max_steps=<span class="nr">10</span>, budget_tokens=<span class="nr">200_000</span>):
     msgs = [{<span class="st">"</span><span class="st">role</span><span class="st">"</span>: <span class="st">"</span><span class="st">system</span><span class="st">"</span>, <span class="st">"</span><span class="st">content</span><span class="st">"</span>: SYSTEM}, {<span class="st">"</span><span class="st">role</span><span class="st">"</span>: <span class="st">"</span><span class="st">user</span><span class="st">"</span>, <span class="st">"</span><span class="st">content</span><span class="st">"</span>: task}]
     used = <span class="nr">0</span>
@@ -245,7 +312,7 @@ RETRYABLE = (anthropic.APIStatusError, anthropic.APIConnectionError)
 <p>Every production concern is visible here: step and token budgets, unknown tools, errors fed back, side-effect approval, output truncation, context compaction.</p>
 </section>
 <section id="reliability-and-safety">
-  <h2>06 &mdash; Reliability and safety</h2>
+  <h2>17 &mdash; Reliability and safety</h2>
 <ul>
 <li><strong>Bounds</strong>: max steps, token/cost budget, wall-clock timeout, loop detection (same call repeated).</li>
 <li><strong>Human-in-the-loop</strong> for irreversible actions (send, pay, delete); dry-run modes.</li>
@@ -253,6 +320,33 @@ RETRYABLE = (anthropic.APIStatusError, anthropic.APIConnectionError)
 <li><strong>Least privilege</strong>: scoped credentials, sandboxed code execution, allow-lists of domains.</li>
 <li><strong>Observability</strong>: trace every step (prompt, tool call, result, latency, tokens) so failures can be replayed.</li>
 </ul>
+</section>
+<section id="production-ops">
+  <h2>18 &mdash; Production &amp; Ops</h2>
+<div class="card"><ul><li>Run replay suite on every deploy</li><li>On-call runbook for agent failures</li><li>Rate limit per user/org</li></ul></div>
+</section>
+<section id="where-it-shows-up">
+  <h2>19 &mdash; Where It Shows Up</h2>
+<div class="card"><ul><li><a href="what-is-an-agent.html">Agent Architectures</a></li><li><a href="multi-agent.html">Multi-Agent</a></li><li><a href="tool-calling.html">Tool Calling</a></li><li><a href="../tech/langgraph.html">LangGraph</a></li></ul></div>
+</section>
+<section id="common-pitfalls">
+  <h2>20 &mdash; Common Pitfalls</h2>
+<div class="card"><ul><li>No HITL on write tools</li><li>Logging full prompts with PII</li><li>No max_iterations — runaway loops</li><li>Guardrails only on output not input docs</li></ul></div>
+</section>
+<section id="check-yourself">
+  <h2>21 &mdash; Check yourself</h2>
+<details><summary>When require HITL?</summary><div class="answer">Any write/destructive tool: email, ticket update, payment, delete. Read-only RAG can auto-run.</div></details>
+<details><summary>HITL sync vs async?</summary><div class="answer">Async default — user gets notification to approve. Sync only for live chat with operator present.</div></details>
+<details><summary>Guardrails vs sandbox?</summary><div class="answer">Guardrails filter content; sandbox restricts execution environment. Need both.</div></details>
+<details><summary>What trace for debugging?</summary><div class="answer">Every LLM call, tool name/args/latency, token counts, final outcome. Replay exact run from trace ID.</div></details>
+<details><summary>Cost cap implementation?</summary><div class="answer">Accumulate token cost per run_id. Hard stop when budget exceeded. Return partial result.</div></details>
+<details><summary>Graceful degradation patterns?</summary><div class="answer">Timeout → partial answer. Tool failure → tell user + suggest manual step. LLM down → cached FAQ.</div></details>
+<details><summary>LangGraph HITL?</summary><div class="answer">interrupt_before on write tool nodes. Checkpoint state. Resume after approve via API.</div></details>
+<details><summary>Red-team production agents?</summary><div class="answer">Prompt injection in retrieved docs. Tool argument injection. Privilege escalation across tenants.</div></details>
+<details><summary>SLA for agent tasks?</summary><div class="answer">Interactive: p95 &lt;15s for read-only. Async write tasks: minutes with HITL queue.</div></details>
+<details><summary>Multi-tenant agent isolation?</summary><div class="answer">Separate tool creds per org. user_id/org_id in every tool call. No shared scratchpad.</div></details>
+<details><summary>Deploy checklist?</summary><div class="answer">Golden eval pass, HITL on write tools, max_iterations set, tracing on, cost cap, red-team spot check.</div></details>
+<details><summary>SDE3: production agent platform?</summary><div class="answer">Shared orchestrator, tool registry with ACL, HITL service, unified tracing, eval CI, per-team cost budgets, run replay debugger.</div></details>
 </section>
 
 <div class="sheet-pager"><a class="prev" href="what-is-an-agent.html"><span>Previous</span>What an agent is</a><a class="next" href="reasoning.html"><span>Next</span>Reasoning patterns</a></div>

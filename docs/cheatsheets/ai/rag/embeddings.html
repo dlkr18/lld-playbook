@@ -16,29 +16,283 @@
 <nav class="nav">
   <h2>Embeddings</h2>
   <a href="index.html">&larr; Knowledge &amp; RAG</a>
-  <a href="#embeddings-turning-meaning-into-numbers"><span class="num">01</span> Embeddings: turning meaning into numbers</a>
-  <a href="#the-idea"><span class="num">02</span> The idea</a>
-  <a href="#see-it-real-sentences-real-numbers"><span class="num">03</span> See it: real sentences, real numbers</a>
-  <a href="#dense-vs-sparse-a-worked-example-where-each-wins"><span class="num">04</span> Dense vs sparse: a worked example where each wins</a>
-  <a href="#dimensions-normalization-and-what-they-cost-you"><span class="num">05</span> Dimensions, normalization, and what they cost you</a>
-  <a href="#choosing-an-embedding-model"><span class="num">06</span> Choosing an embedding model</a>
-  <a href="#mini-scenario-the-demo-that-lied"><span class="num">07</span> Mini-scenario: the demo that lied</a>
-  <a href="#sentence-embeddings"><span class="num">08</span> Sentence embeddings</a>
-  <a href="#contrastive-learning-infonce"><span class="num">09</span> Contrastive learning (InfoNCE)</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
+  <a href="#api-interface-surface"><span class="num">04</span> API / Interface Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">06</span> Architecture</a>
+  <a href="#dense-vectors"><span class="num">07</span> Dense Vectors</a>
+  <a href="#cosine-similarity-normalization"><span class="num">08</span> Cosine Similarity &amp; Normalization</a>
+  <a href="#bi-encoders-vs-cross-encoders"><span class="num">09</span> Bi-Encoders vs Cross-Encoders</a>
+  <a href="#embedding-model-selection"><span class="num">10</span> Embedding Model Selection</a>
+  <a href="#semantic-search-pipeline"><span class="num">11</span> Semantic Search Pipeline</a>
+  <a href="#embeddings-turning-meaning-into-numbers"><span class="num">12</span> Embeddings: turning meaning into numbers</a>
+  <a href="#the-idea"><span class="num">13</span> The idea</a>
+  <a href="#see-it-real-sentences-real-numbers"><span class="num">14</span> See it: real sentences, real numbers</a>
+  <a href="#dense-vs-sparse-a-worked-example-where-each-wins"><span class="num">15</span> Dense vs sparse: a worked example where each wins</a>
+  <a href="#dimensions-normalization-and-what-they-cost-you"><span class="num">16</span> Dimensions, normalization, and what they cost you</a>
+  <a href="#choosing-an-embedding-model"><span class="num">17</span> Choosing an embedding model</a>
+  <a href="#mini-scenario-the-demo-that-lied"><span class="num">18</span> Mini-scenario: the demo that lied</a>
+  <a href="#sentence-embeddings"><span class="num">19</span> Sentence embeddings</a>
+  <a href="#contrastive-learning-infonce"><span class="num">20</span> Contrastive learning (InfoNCE)</a>
+  <a href="#production-ops"><span class="num">21</span> Production &amp; Ops</a>
+  <a href="#where-it-shows-up"><span class="num">22</span> Where It Shows Up</a>
+  <a href="#common-pitfalls"><span class="num">23</span> Common Pitfalls</a>
+  <a href="#check-yourself"><span class="num">24</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Embeddings <span>// Knowledge &amp; RAG</span></h1>
-  <p>Turning meaning into numbers: sentence embeddings, contrastive training and similarity.</p>
+  <p>Turning meaning into numbers: dense vectors, cosine similarity, sentence embeddings and contrastive training.</p>
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<p>Turn text into dense vectors so meaning—not keywords—drives retrieval. Bi-encoders embed offline at scale; cross-encoders rerank for precision. Cosine similarity on L2-normalized vectors powers every RAG, semantic cache, and recommendation system.</p>
+<div class="diagram">
+<img alt="Embeddings and semantic search pipeline overview" src="../fundamentals/img/embeddings-semantic-search-main.png"/>
+</div><p class="diagram-caption">End-to-end semantic search: documents chunked and embedded via a bi-encoder (OpenAI/Cohere/BGE), L2-normalized vectors indexed in a vector DB, query embedded with the same model, ANN retrieval via cosine similarity, optional cross-encoder rerank on top-K.</p>
+</section>
+<section id="what-why">
+  <h2>02 &mdash; What &amp; Why</h2>
+<div class="card"><h3>Functional</h3><ul>
+<li>Convert text (documents, queries, product titles) into fixed-size numeric vectors that capture semantic meaning</li>
+<li>Find the most similar items to a query by vector distance, not exact keyword match</li>
+<li>Support multilingual and paraphrase queries ("refund policy" matches "how do I get my money back")</li>
+<li>Enable retrieval-augmented generation (RAG), deduplication, clustering, and recommendation</li>
+</ul></div>
+<div class="card"><h3>Non-Functional</h3><ul>
+<li><strong>Latency:</strong> query embed &lt;100ms; ANN search p99 &lt;50ms on 10M vectors</li>
+<li><strong>Recall:</strong> top-20 recall@100 &gt;95% vs brute-force (HNSW tuning)</li>
+<li><strong>Consistency:</strong> same embedding model + version for index and query (re-embed on model change)</li>
+<li><strong>Cost:</strong> embedding API ~$0.02–0.13 per 1M tokens; self-hosted BGE eliminates per-token cost</li>
+<li><strong>Dimensionality:</strong> 384–3072 dims; higher dims = more storage + slower ANN, not always better recall</li>
+</ul></div>
+<blockquote><strong>Why not keyword search?</strong> BM25 misses synonyms, paraphrases, and cross-language matches. Embeddings capture distributional semantics—words that appear in similar contexts get similar vectors. Hybrid (BM25 + vector) is production default.</blockquote>
+</section>
+<section id="core-concepts">
+  <h2>03 &mdash; Core Concepts</h2>
+<div class="card"><table>
+<tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+<tr><td><strong>Dense vector / embedding</strong></td><td>Fixed-length float array (e.g. 1536 dims) representing text semantics.</td><td>Not human-interpretable; nearest-neighbor in vector space = semantic similarity.</td></tr>
+<tr><td><strong>Cosine similarity</strong></td><td><code>cos(θ) = A·B / (||A|| × ||B||)</code>; range −1 to 1.</td><td>After L2 normalization, cosine = dot product. Most vector DBs assume normalized vectors.</td></tr>
+<tr><td><strong>L2 normalization</strong></td><td>Scale vector to unit length: <code>v / ||v||</code>.</td><td>Skip this and cosine vs dot product diverge. OpenAI/Cohere return pre-normalized vectors.</td></tr>
+<tr><td><strong>Bi-encoder</strong></td><td>Query and document encoded independently; similarity = vector distance.</td><td>Fast (embed once, search many). Weaker than cross-encoder for fine-grained relevance.</td></tr>
+<tr><td><strong>Cross-encoder</strong></td><td>Query + document concatenated; joint transformer attention produces relevance score.</td><td>Slow (O(n) forward passes). Use only on top-K candidates from bi-encoder.</td></tr>
+<tr><td><strong>ANN index</strong></td><td>Approximate nearest neighbor (HNSW, IVF, PQ) for sub-linear search.</td><td>Tuning <code>ef_search</code> / <code>nprobe</code> trades latency vs recall. Always benchmark.</td></tr>
+<tr><td><strong>Embedding drift</strong></td><td>Model version change shifts vector space; old index incompatible with new queries.</td><td>Version-tag embeddings; re-embed entire corpus on model upgrade.</td></tr>
+<tr><td><strong>Matryoshka embeddings</strong></td><td>Truncated prefix of vector retains most signal (OpenAI v3, Cohere v3).</td><td>Store full dim; query with truncated dim for speed/storage tradeoff.</td></tr>
+</table></div>
+</section>
+<section id="api-interface-surface">
+  <h2>04 &mdash; API / Interface Surface</h2>
+<div class="card">
+<h3>OpenAI Embeddings</h3>
+<pre>POST https://api.openai.com/v1/embeddings
+{
+  "model": "text-embedding-3-small",
+  "input": ["query text", "doc chunk 1", ...],
+  "dimensions": 1536          // optional; Matryoshka truncate
+}
+→ { "data": [{ "embedding": [0.012, -0.034, ...], "index": 0 }] }</pre>
+<h3>Cohere Embed v3</h3>
+<pre>POST https://api.cohere.ai/v1/embed
+{
+  "model": "embed-english-v3.0",
+  "texts": ["..."],
+  "input_type": "search_query" | "search_document",
+  "embedding_types": ["float"]
+}
+→ { "embeddings": { "float": [[...]] } }</pre>
+<blockquote>Cohere requires different <code>input_type</code> for queries vs documents—asymmetric embedding. OpenAI uses the same call for both.</blockquote>
+<h3>Self-hosted (sentence-transformers / BGE)</h3>
+<pre>from sentence_transformers import SentenceTransformer
+model = SentenceTransformer("BAAI/bge-large-en-v1.5")
+query_vec  = model.encode("how to reset password", normalize_embeddings=True)
+doc_vecs   = model.encode(chunks, normalize_embeddings=True, batch_size=64)</pre>
+<h3>Vector DB query (Pinecone-style)</h3>
+<pre>index.query(
+  vector=query_vec,
+  top_k=20,
+  filter={"tenant_id": "acme", "doc_type": "policy"},
+  include_metadata=True
+)</pre>
+</div>
+</section>
+<section id="when-to-use-when-not">
+  <h2>05 &mdash; When to Use / When NOT</h2>
+<div class="card"><table>
+<tr><th>Scenario</th><th>Use Embeddings?</th><th>Alternative</th></tr>
+<tr><td>Semantic doc search, RAG retrieval</td><td><strong>Yes</strong> — core use case</td><td>Hybrid with BM25 for exact-match terms (SKUs, error codes)</td></tr>
+<tr><td>Exact keyword / ID lookup</td><td><strong>No</strong></td><td>BM25, inverted index, or direct key lookup</td></tr>
+<tr><td>Deduplication / clustering</td><td><strong>Yes</strong></td><td>MinHash for near-duplicate at web scale (cheaper)</td></tr>
+<tr><td>Real-time personalization (&lt;5ms)</td><td><strong>Maybe</strong></td><td>Precomputed user vectors + in-memory ANN; or feature store</td></tr>
+<tr><td>Structured SQL filters ("price &lt; $50")</td><td><strong>Hybrid</strong></td><td>Metadata pre-filter in vector DB, then vector search</td></tr>
+<tr><td>Small corpus (&lt;1K docs)</td><td><strong>Overkill</strong></td><td>Brute-force cosine in memory, or even LLM in-context</td></tr>
+<tr><td>Multilingual without translation</td><td><strong>Yes</strong></td><td>Cohere multilingual-v3 or BGE-M3</td></tr>
+</table>
+<blockquote><strong>Rule of thumb:</strong> if the user might phrase the question differently than the document, use embeddings. If they know the exact term (order ID, SKU), use keyword.</blockquote>
+</div>
+</section>
+<section id="architecture">
+  <h2>06 &mdash; Architecture</h2>
+<div class="card highlight">
+<pre>                    INGEST (offline / batch)
+Documents → Chunker → Bi-Encoder API → L2 Normalize → Vector DB (HNSW)
+                              ↑                              ↓
+                         same model                    metadata: {doc_id,
+                         + version                      chunk_idx, tenant}
+
+                    QUERY (online)
+User Query → Preprocess → Bi-Encoder → L2 Normalize → ANN Search (top-K=20)
+                                                              ↓
+                                              [Optional] Cross-Encoder Rerank → top-5
+                                                              ↓
+                                              Context to LLM (RAG) or direct results</pre>
+</div>
+</section>
+<section id="dense-vectors">
+  <h2>07 &mdash; Dense Vectors</h2>
+<div class="card">
+<p>A dense embedding is a learned mapping from variable-length text to a fixed-dimensional real vector. Unlike sparse bag-of-words (one dimension per vocabulary token, mostly zeros), every dimension carries signal.</p>
+<h3>How they're learned</h3>
+<ul>
+<li><strong>Contrastive learning:</strong> pull similar pairs closer, push dissimilar apart (InfoNCE loss). MS MARCO, NLI datasets.</li>
+<li><strong>Dual-tower architecture:</strong> shared or separate transformer encoders for query/doc towers (bi-encoder).</li>
+<li><strong>Pooling:</strong> mean-pool last hidden states (most common), CLS token, or last-token (decoder models).</li>
+</ul>
+<h3>Properties that matter in production</h3>
+<table>
+<tr><th>Property</th><th>Typical range</th><th>Impact</th></tr>
+<tr><td>Dimensions</td><td>384, 768, 1024, 1536, 3072</td><td>Storage = N × dim × 4 bytes (float32). 1M × 1536 = ~6 GB.</td></tr>
+<tr><td>Precision</td><td>float32, float16, int8</td><td>PQ/scalar quantization cuts memory 4–32× with ~1–3% recall loss.</td></tr>
+<tr><td>Max input tokens</td><td>512–8192</td><td>Long docs must be chunked before embedding.</td></tr>
+</table>
+<pre>import numpy as np
+
+def l2_normalize(v: np.ndarray) -&gt; np.ndarray:
+    norm = np.linalg.norm(v, axis=-1, keepdims=True)
+    return v / np.clip(norm, 1e-12, None)
+
+# 1536-dim example
+vec = np.random.randn(1536)
+unit = l2_normalize(vec)
+assert abs(np.linalg.norm(unit) - 1.0) &lt; 1e-6</pre>
+</div>
+</section>
+<section id="cosine-similarity-normalization">
+  <h2>08 &mdash; Cosine Similarity &amp; Normalization</h2>
+<div class="card">
+<p>Cosine similarity measures the angle between two vectors, ignoring magnitude. Two documents of different length can still be semantically similar if their direction in embedding space aligns.</p>
+<h3>Why normalize?</h3>
+<ul>
+<li>After L2 normalization, <strong>cosine similarity = dot product</strong> — one multiply-add loop, no division.</li>
+<li>Vector DBs (Pinecone, pgvector with <code>vector_cosine_ops</code>) assume unit vectors for index efficiency.</li>
+<li>Prevents long documents from dominating via larger vector norms (some models still vary norm slightly).</li>
+</ul>
+<pre>def cosine_similarity(a: np.ndarray, b: np.ndarray) -&gt; float:
+    a_norm = l2_normalize(a)
+    b_norm = l2_normalize(b)
+    return float(np.dot(a_norm, b_norm))
+
+def dot_product_search(query: np.ndarray, matrix: np.ndarray) -&gt; np.ndarray:
+    """matrix: (N, dim) pre-normalized doc vectors"""
+    q = l2_normalize(query)
+    return matrix @ q   # scores shape (N,)</pre>
+<blockquote><strong>Interview trap:</strong> "Why cosine not Euclidean?" — For normalized vectors, Euclidean distance and cosine are monotonically related: <code>||a−b||² = 2(1 − cosθ)</code>. Use cosine when magnitude is meaningless (text semantics).</blockquote>
+<h3>Score interpretation</h3>
+<table>
+<tr><th>Cosine score</th><th>Meaning</th><th>Action</th></tr>
+<tr><td>&gt; 0.85</td><td>Near-duplicate or very strong match</td><td>Return directly; dedup</td></tr>
+<tr><td>0.70 – 0.85</td><td>Relevant</td><td>Include in RAG context</td></tr>
+<tr><td>0.50 – 0.70</td><td>Weak / tangential</td><td>Filter out or rerank</td></tr>
+<tr><td>&lt; 0.50</td><td>Unrelated</td><td>Drop; consider "no results" fallback</td></tr>
+</table>
+<p>Thresholds are model-dependent—calibrate on your eval set, not these defaults.</p>
+</div>
+</section>
+<section id="bi-encoders-vs-cross-encoders">
+  <h2>09 &mdash; Bi-Encoders vs Cross-Encoders</h2>
+<div class="diagram">
+<img alt="Bi-encoder vs cross-encoder and model selection" src="../fundamentals/img/embeddings-model-zoom.png"/>
+</div>
+<p class="diagram-caption">Bi-encoder: query and document encoded separately; cosine at search time (fast, indexable). Cross-encoder: query+doc through joint attention (accurate, O(n) per candidate). Production pattern: bi-encoder retrieve top-100, cross-encoder rerank to top-5.</p>
+<div class="card"><table>
+<tr><th></th><th>Bi-Encoder</th><th>Cross-Encoder</th></tr>
+<tr><td><strong>Architecture</strong></td><td>Two independent encoders (or shared weights, separate forward passes)</td><td>Single transformer; query and doc concatenated with [SEP]</td></tr>
+<tr><td><strong>Similarity</strong></td><td>Cosine / dot product of fixed vectors</td><td>Classification head score (0–1 relevance)</td></tr>
+<tr><td><strong>Index-time cost</strong></td><td>Embed each doc once — O(N)</td><td>Cannot pre-compute; must score each (query, doc) pair</td></tr>
+<tr><td><strong>Query-time cost</strong></td><td>1 embed + ANN search — O(log N)</td><td>K forward passes for K candidates</td></tr>
+<tr><td><strong>Latency (top-100 rerank)</strong></td><td>~50ms total retrieve</td><td>~200–500ms on GPU batch</td></tr>
+<tr><td><strong>Recall@100</strong></td><td>Good (~85–90%)</td><td>Excellent (~95%+) but only on scored pairs</td></tr>
+<tr><td><strong>Examples</strong></td><td>OpenAI ada, BGE, E5, Cohere embed</td><td>ms-marco-MiniLM-L-6-v2, Cohere rerank-v3, bge-reranker-large</td></tr>
+</table>
+<blockquote><strong>Two-stage retrieval</strong> is the production standard: bi-encoder casts a wide net (recall), cross-encoder sharpens precision on the shortlist. Never cross-encode your full corpus.</blockquote>
+<pre># Stage 1: bi-encoder ANN (see ../tech/vector-databases.html)
+candidates = vector_db.search(query_vec, top_k=100)
+
+# Stage 2: cross-encoder rerank
+from sentence_transformers import CrossEncoder
+reranker = CrossEncoder("BAAI/bge-reranker-base")
+pairs = [(query, c.text) for c in candidates]
+scores = reranker.predict(pairs)
+ranked = sorted(zip(candidates, scores), key=lambda x: x[1], reverse=True)[:5]</pre>
+</div>
+</section>
+<section id="embedding-model-selection">
+  <h2>10 &mdash; Embedding Model Selection</h2>
+<div class="card"><table>
+<tr><th>Model</th><th>Dims</th><th>Max tokens</th><th>Cost / quality</th><th>Best for</th></tr>
+<tr><td><strong>OpenAI text-embedding-3-small</strong></td><td>1536 (truncatable to 512)</td><td>8191</td><td>$0.02/1M tokens; strong general English</td><td>Fast prototyping, managed infra, RAG MVP</td></tr>
+<tr><td><strong>OpenAI text-embedding-3-large</strong></td><td>3072</td><td>8191</td><td>$0.13/1M tokens; MTEB top-tier</td><td>High-stakes retrieval where recall matters</td></tr>
+<tr><td><strong>Cohere embed-english-v3</strong></td><td>1024</td><td>512</td><td>API pricing; asymmetric query/doc types</td><td>Search-optimized; compress to 256/512 dims</td></tr>
+<tr><td><strong>Cohere embed-multilingual-v3</strong></td><td>1024</td><td>512</td><td>100+ languages</td><td>Global products without translation layer</td></tr>
+<tr><td><strong>BGE-large-en-v1.5</strong></td><td>1024</td><td>512</td><td>Free self-hosted; MTEB competitive</td><td>On-prem, cost-sensitive, data privacy</td></tr>
+<tr><td><strong>BGE-M3</strong></td><td>1024</td><td>8192</td><td>Self-hosted; dense+sparse+multi-vector</td><td>Hybrid retrieval in one model</td></tr>
+<tr><td><strong>E5-large-v2</strong></td><td>1024</td><td>512</td><td>Self-hosted; prefix "query: " / "passage: "</td><td>Research-grade open source</td></tr>
+</table>
+<h3>Selection checklist</h3>
+<ol>
+<li><strong>Same model for index + query</strong> — mixing models breaks vector space alignment.</li>
+<li><strong>Benchmark on YOUR data</strong> — MTEB leaderboard ≠ your domain (legal, medical, code).</li>
+<li><strong>Latency budget</strong> — API adds network hop; self-hosted on GPU ~5ms/batch of 64.</li>
+<li><strong>Privacy / compliance</strong> — PII can't leave VPC → BGE on vLLM/TEI.</li>
+<li><strong>Version pinning</strong> — store <code>model_name@version</code> in metadata; plan re-embed migrations.</li>
+</ol>
+</div>
+</section>
+<section id="semantic-search-pipeline">
+  <h2>11 &mdash; Semantic Search Pipeline</h2>
+<div class="diagram">
+<img alt="Semantic search query path zoom" src="../fundamentals/img/embeddings-search-zoom.png"/>
+</div>
+<p class="diagram-caption">Query path: preprocess → embed (same bi-encoder) → L2 normalize → ANN search with metadata filters → top-K candidates → optional cross-encoder rerank → return scored chunks. Hybrid systems blend BM25 score with vector score.</p>
+<div class="card">
+<div class="flow">
+<div class="step" data-num="1"><div class="label">Ingest &amp; chunk</div><div class="detail">Split docs into 256–512 token chunks with 10–20% overlap. Store chunk text + metadata (source, page, tenant).</div></div>
+<div class="step" data-num="2"><div class="label">Embed documents</div><div class="detail">Batch bi-encoder calls (64–256 per batch). L2 normalize. Upsert to vector DB with chunk_id as key.</div></div>
+<div class="step" data-num="3"><div class="label">Query preprocess</div><div class="detail">Strip HTML, normalize whitespace. Optional: query expansion via LLM ("generate 3 paraphrases").</div></div>
+<div class="step" data-num="4"><div class="label">Embed query</div><div class="detail">Same model + input_type as indexing. Single forward pass.</div></div>
+<div class="step" data-num="5"><div class="label">ANN retrieve</div><div class="detail">Top-K=20–100 with metadata filters. Tune HNSW <code>ef_search</code> for recall/latency.</div></div>
+<div class="step" data-num="6"><div class="label">Rerank (optional)</div><div class="detail">Cross-encoder or Cohere Rerank on top-100 → top-5–10 for LLM context.</div></div>
+<div class="step" data-num="7"><div class="label">Post-process</div><div class="detail">Dedup overlapping chunks (same doc, adjacent chunks). Apply score threshold. Return with citations.</div></div>
+</div>
+<pre># Hybrid search score fusion (Reciprocal Rank Fusion)
+def rrf_score(rank_bm25: int, rank_vector: int, k: int = 60) -&gt; float:
+    return 1 / (k + rank_bm25) + 1 / (k + rank_vector)
+
+# Or weighted linear: 0.3 * bm25_norm + 0.7 * cosine</pre>
+<p>See <a href="rag-pipeline.html">RAG End-to-End</a> for how retrieved chunks feed the LLM, and <a href="vector-search.html">Vector Databases</a> for index tuning (HNSW, IVF, filtering).</p>
+</div>
+</section>
 <section id="embeddings-turning-meaning-into-numbers">
-  <h2>01 &mdash; Embeddings: turning meaning into numbers</h2>
+  <h2>12 &mdash; Embeddings: turning meaning into numbers</h2>
 <p>To search by <i>meaning</i> (not keywords) and to give models your data, we need a second kind of model: the embedding model.</p>
 </section>
 <section id="the-idea">
-  <h2>02 &mdash; The idea</h2>
+  <h2>13 &mdash; The idea</h2>
 <p>An <b>embedding model</b> turns a piece of text into a list of numbers — a <b>vector</b> (e.g. 768 or 1536 numbers). The magic property: <b>similar meaning → vectors close together; different meaning → far apart.</b></p>
 <pre class="ascii-diagram">"car loan"        → [0.12, -0.04, 0.88, …]  ┐ close together
 "auto financing"  → [0.11, -0.02, 0.85, …]  ┘ (similar meaning)
@@ -47,7 +301,7 @@
 <div class="callout"><p><strong>Two different models</strong></p>A <b>generative</b> model <i>creates</i> text. An <b>embedding</b> model <i>measures</i> text (returns a vector). Both are "AI models" but do opposite jobs. RAG uses both: the embedder to find the right facts, the generator to write the answer.</div>
 </section>
 <section id="see-it-real-sentences-real-numbers">
-  <h2>03 &mdash; See it: real sentences, real numbers</h2>
+  <h2>14 &mdash; See it: real sentences, real numbers</h2>
 <p>Don't take the geometry on faith — compute it. This runs locally with <code>sentence-transformers</code> (no API key) and prints a similarity matrix you can actually read.</p>
 <div class="code-block"><div class="code-file"><span>cosine_demo.py — embed 5 sentences, print the full similarity matrix</span><span class="code-lang">python</span></div><pre><span class="kw">from</span> sentence_transformers <span class="kw">import</span> SentenceTransformer
 <span class="kw">import</span> numpy <span class="kw">as</span> np
@@ -79,7 +333,7 @@ s4  +0.48  +0.41  +0.02  +0.01  +1.00</pre>
 <div class="callout warn"><p><strong>Cosine scores are not probabilities</strong></p>A cosine of 0.71 does not mean "71% relevant." Score <i>scales</i> differ wildly across models: some embedders rarely go below 0.6 for any English pair (anisotropy — all vectors crowd into a cone), others spread scores across the full range. Consequences: (1) never hard-code a threshold like "keep hits above 0.8" when switching models; recalibrate on your own data. (2) Never compare scores <i>across</i> models. (3) Only relative order within one model's results is trustworthy — which is exactly what top-K search uses.</div>
 </section>
 <section id="dense-vs-sparse-a-worked-example-where-each-wins">
-  <h2>04 &mdash; Dense vs sparse: a worked example where each wins</h2>
+  <h2>15 &mdash; Dense vs sparse: a worked example where each wins</h2>
 <p>Embeddings ("dense" vectors — every dimension has a value) have an older sibling: <b>sparse</b> lexical vectors like BM25, where each dimension is a vocabulary word and almost all entries are zero. They fail in opposite directions, which is why production systems run both (hybrid search, Ch. on vector DBs).</p>
 <p><b>Case 1 — dense wins.</b> Corpus doc: <i>"Employees may carry over unused paid leave into the next calendar year, up to a limit of five days."</i> Query: <i>"can I roll over my remaining vacation days?"</i> Word overlap after stopword removal: essentially only "days". BM25 scores this near-zero and ranks it below any doc that happens to repeat "vacation". A dense embedder maps "carry over unused paid leave" and "roll over remaining vacation" to nearly the same point — cosine ~0.7 (illustrative) — and retrieves it at rank 1. Meaning matched, vocabulary didn't.</p>
 <p><b>Case 2 — sparse wins.</b> Corpus of 4,000 support tickets, one of which mentions error code <i>"E-4417 on the KX-220 controller"</i>. Query: <i>"E-4417 KX-220"</i>. To an embedding model these alphanumeric codes are rare tokens seen almost never in training; their vectors are nearly meaningless, so the true doc might land at rank 40 behind generically "controller-error-ish" tickets. BM25 treats "E-4417" as a very rare term (high IDF), and the one document containing it wins by a landslide. Exact identifiers — SKUs, error codes, product names, legal citation numbers, function names — are sparse territory.</p>
@@ -92,7 +346,7 @@ s4  +0.48  +0.41  +0.02  +0.01  +1.00</pre>
 </table>
 </section>
 <section id="dimensions-normalization-and-what-they-cost-you">
-  <h2>05 &mdash; Dimensions, normalization, and what they cost you</h2>
+  <h2>16 &mdash; Dimensions, normalization, and what they cost you</h2>
 <p>Three practical mechanics that bite people in week one:</p>
 <p><b>1. Dimensionality is a storage/quality dial.</b> Each vector of dimension <i>d</i> costs <i>d</i> × 4 bytes as float32. Worked numbers: 1M chunks at 1536-dim = 1,000,000 × 1536 × 4 ≈ <b>6.1 GB</b> of raw vectors (before the ANN index, which adds 1.5–2×). The same corpus at 384-dim ≈ 1.5 GB. Modern models trained with <b>Matryoshka representation learning</b> (e.g. OpenAI <code>text-embedding-3-large</code>) let you truncate a 3072-dim vector to the first 256–1024 dims and re-normalize, keeping most quality — a free 3–12× storage cut you opt into at index time.</p>
 <p><b>2. Cosine vs dot product vs Euclidean.</b> On <i>unit-normalized</i> vectors they induce the same ranking: cosine(a,b) = a·b, and ‖a−b‖² = 2 − 2·a·b. So the standard move is: normalize once at embed time, then use plain dot product (cheapest op) everywhere.</p>
@@ -113,7 +367,7 @@ emb256 = truncate_matryoshka(emb, <span class="nr">256</span>)         <span cla
 <p><b>3. Query vs document asymmetry.</b> Several model families (E5, BGE) were trained with instruction prefixes: documents embedded as <code>"passage: …"</code>, queries as <code>"query: …"</code>. Skip the prefixes and you can lose several recall points with no error message. Read the model card; this is the most common silent misconfiguration in RAG systems.</p>
 </section>
 <section id="choosing-an-embedding-model">
-  <h2>06 &mdash; Choosing an embedding model</h2>
+  <h2>17 &mdash; Choosing an embedding model</h2>
 <p>Illustrative snapshot (early 2026); check the MTEB leaderboard for current numbers, then <i>always</i> re-verify on 50–100 queries from your own domain — leaderboard rank and your-corpus rank disagree constantly.</p>
 <table>
 <tr><th>Model</th><th>Dims</th><th>Hosting</th><th>Sweet spot</th><th>Watch out</th></tr>
@@ -127,7 +381,7 @@ emb256 = truncate_matryoshka(emb, <span class="nr">256</span>)         <span cla
 <div class="callout"><p><strong>Practical notes</strong></p>Popular models: OpenAI <code>text-embedding-3</code>, <code>BAAI/bge</code>, <code>intfloat/e5</code>, <code>all-MiniLM</code>. There are <b>multimodal</b> embeddings (text+image in one space) too — CLIP-style models let "photo of a beach at sunset" retrieve actual images. Domain jargon may need a domain-tuned embedder: on legal or biomedical text, a general model may cluster "assignment" (of a contract) with homework; fine-tuned embedders (or a reranker on top, see Advanced RAG) fix this. Also mind <b>context windows</b>: most embedders effectively handle 512 tokens; feeding a 3,000-token chunk means most of it is truncated or averaged into mush — chunking (RAG pipeline chapter) exists partly because of this.</div>
 </section>
 <section id="mini-scenario-the-demo-that-lied">
-  <h2>07 &mdash; Mini-scenario: the demo that lied</h2>
+  <h2>18 &mdash; Mini-scenario: the demo that lied</h2>
 <p>You build a search MVP over your company wiki with <code>all-MiniLM-L6-v2</code>. Demo queries — "how do I request time off?", "what's the deployment process?" — work beautifully; leadership is thrilled. Two weeks post-launch, support tickets: searches for "PX-Gateway timeout config" return on-call philosophy pages, and German-language pages are invisible to German queries. Nothing is "broken" — you hit both known blind spots at once: exact identifiers need sparse/hybrid search, and MiniLM is English-only. The fix isn't a better prompt; it's <code>bge-m3</code> (multilingual, dense+sparse) plus hybrid fusion — and a re-embed of the whole corpus, which is why you stored raw text next to every vector. Total cost of the migration: one batch job. Total cost if you hadn't kept the text: re-crawling the wiki.</p>
 <div class="callout"><p><strong>Exercises</strong></p><ol>
 <li>Run <code>cosine_demo.py</code>, then add the sentence "I need money for a new vehicle" and predict its row of the matrix <i>before</i> running. Were you right about whether it lands closer to s0/s1 or s4?</li>
@@ -138,7 +392,7 @@ emb256 = truncate_matryoshka(emb, <span class="nr">256</span>)         <span cla
 </ol></div>
 </section>
 <section id="sentence-embeddings">
-  <h2>08 &mdash; Sentence embeddings</h2>
+  <h2>19 &mdash; Sentence embeddings</h2>
 <p>Most AI products ground a model in private data. Know how text becomes searchable vectors, how nearest-neighbor search scales, and how a retrieval pipeline is built and measured.</p>
 <p>An embedding model maps a whole text to one vector (often 384–4096 dims) so that similar meanings are close by cosine similarity. Usually an encoder transformer (or a decoder) with mean pooling or a special token, trained specifically for similarity.</p>
 <p>Two shapes of model:</p>
@@ -148,13 +402,77 @@ emb256 = truncate_matryoshka(emb, <span class="nr">256</span>)         <span cla
 </ul>
 </section>
 <section id="contrastive-learning-infonce">
-  <h2>09 &mdash; Contrastive learning (InfoNCE)</h2>
+  <h2>20 &mdash; Contrastive learning (InfoNCE)</h2>
 <p>Train embeddings by pulling matching pairs together and pushing non-matching ones apart. With a batch of N (query, positive) pairs, every other positive in the batch serves as a negative:</p>
 <pre class="formula">L = −log [ exp(sim(q, p⁺)/τ) / Σⱼ exp(sim(q, pⱼ)/τ) ]</pre>
 <p>It's cross-entropy where the "class" is which document matches. Bigger batches and hard negatives (similar but wrong documents) make better embeddings. CLIP uses the same loss between images and captions.</p>
 </section>
+<section id="production-ops">
+  <h2>21 &mdash; Production &amp; Ops</h2>
+<div class="card"><table>
+<tr><th>Concern</th><th>Pattern</th><th>Numbers</th></tr>
+<tr><td><strong>Embedding cost</strong></td><td>Batch ingest offline; cache query embeddings for repeat searches</td><td>1M docs × 500 tokens × $0.02/1M ≈ $10 one-time</td></tr>
+<tr><td><strong>Re-embedding</strong></td><td>Blue/green index: build new index with new model, swap alias</td><td>Plan 2–4h for 10M chunks on 4 GPU workers</td></tr>
+<tr><td><strong>Monitoring</strong></td><td>Track p50/p99 embed latency, ANN recall@K on golden set, score distribution drift</td><td>Alert if mean cosine top-1 drops &gt;0.05 week-over-week</td></tr>
+<tr><td><strong>Rate limits</strong></td><td>OpenAI: 1M TPM on tier 3; queue + exponential backoff</td><td>Self-hosted TEI: ~2000 embeds/sec on A10G</td></tr>
+<tr><td><strong>Failure modes</strong></td><td>Embed API timeout → retry 3×; fallback to BM25-only</td><td>Empty results → lower threshold or expand query</td></tr>
+<tr><td><strong>Observability</strong></td><td>Log query, top-K ids + scores, reranker scores, user click feedback</td><td>Feed clicks into fine-tune or reranker training</td></tr>
+</table></div>
+</section>
+<section id="where-it-shows-up">
+  <h2>22 &mdash; Where It Shows Up</h2>
+<div class="card"><ul>
+<li><a href="rag-pipeline.html">RAG End-to-End</a> — retrieval step that grounds LLM answers in your docs</li>
+<li><a href="vector-search.html">Vector Databases</a> — where embeddings are stored and searched (HNSW, filtering, sharding)</li>
+<li><a href="embedding-models.html">Embedding Models</a> — deeper dive on model families and fine-tuning</li>
+<li><a href="reranking.html">Rerankers</a> — cross-encoder stage after bi-encoder retrieval</li>
+<li><a href="hybrid-search.html">Hybrid Search</a> — BM25 + vector fusion patterns</li>
+<li><a href="../production/semantic-cache.html">Semantic Cache</a> — embed query, find similar past queries, return cached LLM response</li>
+<li><a href="../fundamentals/../../hld/web-search-engine.html">Web Search Engine HLD</a> — classical IR + neural re-ranking at scale</li>
+</ul></div>
+</section>
+<section id="common-pitfalls">
+  <h2>23 &mdash; Common Pitfalls</h2>
+<div class="card"><ul>
+<li><strong>Model mismatch</strong> — indexing with ada-002, querying with v3-small. Vectors live in different spaces; recall collapses.</li>
+<li><strong>Skipping normalization</strong> — using raw dot product on unnormalized vectors ranks by document length, not semantics.</li>
+<li><strong>Chunks too large</strong> — 2000-token chunks dilute specific facts; embedder loses fine-grained signal. Target 256–512 tokens.</li>
+<li><strong>No metadata filtering</strong> — searching all tenants' docs; always filter by tenant/user before ANN.</li>
+<li><strong>Cross-encoding the corpus</strong> — scoring 1M docs with a cross-encoder at query time = minutes of latency.</li>
+<li><strong>Trusting MTEB alone</strong> — leaderboard models fail on domain jargon (medical codes, internal acronyms). Build a 50-query golden set.</li>
+<li><strong>Ignoring embedding drift</strong> — silent model API updates change vector space. Pin versions; monitor score distributions.</li>
+<li><strong>Threshold too high</strong> — cosine &gt;0.85 filter returns nothing for valid paraphrases. Calibrate per model on labeled data.</li>
+</ul></div>
+</section>
+<section id="check-yourself">
+  <h2>24 &mdash; Check yourself</h2>
+<details><summary>What is an embedding and why is it "dense"?</summary>
+<div class="answer">An embedding is a fixed-size vector (typically 384–3072 floats) produced by a neural encoder that maps text into a continuous semantic space. "Dense" means every dimension carries learned signal—unlike sparse TF-IDF where 99.9% of dimensions are zero. Similar meanings cluster nearby; cosine similarity between vectors approximates semantic relatedness.</div></details>
+<details><summary>Why cosine similarity instead of Euclidean distance?</summary>
+<div class="answer">Cosine measures angle, not magnitude—appropriate when vector length doesn't encode relevance (text semantics). For L2-normalized vectors, cosine equals dot product (cheaper) and is monotonically related to Euclidean distance: ||a−b||² = 2(1 − cosθ). Vector DBs optimize for cosine/dot on unit vectors.</div></details>
+<details><summary>Explain bi-encoder vs cross-encoder tradeoffs.</summary>
+<div class="answer">Bi-encoder: query and doc encoded independently → fixed vectors → ANN search in O(log N). Fast but no cross-attention between query and doc tokens. Cross-encoder: concatenates query+doc through one transformer → joint attention → accurate relevance score but O(K) forward passes at query time. Production: bi-encoder retrieve top-100, cross-encoder rerank to top-5.</div></details>
+<details><summary>How do you pick between OpenAI, Cohere, and BGE?</summary>
+<div class="answer">OpenAI v3-small: fastest MVP, $0.02/1M tokens, strong English. Cohere v3: search-optimized asymmetric embeddings, multilingual, Matryoshka truncation. BGE-large: self-hosted, no data leaves VPC, competitive MTEB, zero marginal cost at scale. Decision factors: latency budget, privacy, language coverage, and benchmark on YOUR domain data—not MTEB alone.</div></details>
+<details><summary>Why must you L2-normalize embeddings?</summary>
+<div class="answer">Normalization makes cosine similarity equal to dot product—simpler and faster math. Prevents longer documents from having larger vector norms and ranking higher regardless of semantic relevance. Most API providers (OpenAI, Cohere) return pre-normalized vectors, but self-hosted models need explicit <code>normalize_embeddings=True</code>. Vector indexes (HNSW with cosine metric) assume unit vectors.</div></details>
+<details><summary>Walk through a semantic search pipeline for RAG.</summary>
+<div class="answer">Ingest: chunk docs (256–512 tokens, 10% overlap) → batch embed with bi-encoder → L2 normalize → upsert to vector DB with metadata. Query: embed user question (same model) → ANN top-K=20 with tenant filter → optional cross-encoder rerank to top-5 → dedup adjacent chunks → inject into LLM prompt as context. See <a href="rag-pipeline.html">RAG End-to-End</a> for the generation step.</div></details>
+<details><summary>What happens when you change embedding models?</summary>
+<div class="answer">Vector spaces are model-specific—you cannot mix old and new embeddings. Plan a blue/green re-embed: build a new index with the new model, validate recall on golden queries, swap the alias, delete old index. Store <code>embedding_model@version</code> in metadata. Typical migration: 2–4 hours for 10M chunks with GPU batching.</div></details>
+<details><summary>How does hybrid search improve pure vector search?</summary>
+<div class="answer">Vector search misses exact matches (error codes, SKUs, product IDs) where BM25 excels. Hybrid runs both in parallel and fuses scores via Reciprocal Rank Fusion (RRF: 1/(k+rank_bm25) + 1/(k+rank_vector)) or weighted linear blend. Typical weight: 30% BM25 + 70% vector for general docs; flip for catalog search with exact identifiers.</div></details>
+<details><summary>What ANN index would you use and how do you tune it?</summary>
+<div class="answer">HNSW (Hierarchical Navigable Small World) is default for &lt;50M vectors—sub-10ms p99, &gt;95% recall@100. Tune <code>M</code> (connections, default 16) and <code>ef_search</code> (exploration depth; higher = better recall, slower). IVF for &gt;100M vectors with PQ compression. Always benchmark recall@K on a labeled set; don't trust defaults. Details in <a href="vector-search.html">Vector Databases</a>.</div></details>
+<details><summary>What cosine score threshold should you use?</summary>
+<div class="answer">There's no universal threshold—it depends on the model and domain. OpenAI v3-small: relevant docs often score 0.65–0.85; BGE may cluster differently. Build a 50-query eval set with labeled relevant/irrelevant docs, plot precision-recall at various thresholds. Common starting point: 0.70 for inclusion, 0.85 for near-duplicate dedup. Monitor score distribution drift in production.</div></details>
+<details><summary>How do you handle embedding API rate limits at ingest scale?</summary>
+<div class="answer">Batch 64–256 texts per API call (OpenAI accepts arrays). Use async workers with token-bucket rate limiting matching your TPM quota. For 10M+ docs, self-host BGE on Text Embeddings Inference (TEI) or vLLM—~2000 embeds/sec on A10G, no per-token cost. Queue-based ingest with checkpointing for crash recovery.</div></details>
+<details><summary>SDE3: Design semantic search for 100M documents with multi-tenant isolation.</summary>
+<div class="answer">Partition by tenant_id in vector DB metadata filter (pre-filter before ANN—Pinecone namespace or pgvector partial index). Embed with BGE-large self-hosted on GPU pool (TEI, 4× A10G ≈ 8K embeds/sec). Store float16 vectors (1024d × 2 bytes ≈ 200 GB for 100M). HNSW per tenant namespace or shared index with mandatory tenant filter. Ingest pipeline: Kafka → chunker → embed workers → upsert with idempotency key. Query path: embed (&lt;20ms) → filtered ANN top-100 (&lt;30ms) → cross-encoder rerank top-5 (&lt;100ms GPU batch) → return with citations. Monitor: recall@10 on per-tenant golden sets, p99 latency, embed queue depth. Blue/green re-embed on model upgrade. Hybrid BM25 via Elasticsearch for SKU/error-code exact match. Cost: ~$15K/mo GPU vs ~$500 ingest + $50/mo query on OpenAI API at this scale—self-host wins.</div></details>
+</section>
 
-<div class="sheet-pager"><a class="prev" href="../prompting/prompt-pitfalls.html"><span>Previous</span>Pitfalls &amp; pro habits</a><a class="next" href="vector-search.html"><span>Next</span>Vector search &amp; databases</a></div>
+<div class="sheet-pager"><a class="prev" href="../prompting/prompt-pitfalls.html"><span>Previous</span>Pitfalls &amp; pro habits</a><a class="next" href="embedding-models.html"><span>Next</span>Choosing an embedding model</a></div>
 </div>
 <div id="lightbox" role="dialog" aria-hidden="true">
   <span class="lb-close" aria-label="Close">&times;</span>

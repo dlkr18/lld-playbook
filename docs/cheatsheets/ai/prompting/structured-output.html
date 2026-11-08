@@ -16,11 +16,12 @@
 <nav class="nav">
   <h2>Structured output</h2>
   <a href="index.html">&larr; Prompting</a>
-  <a href="#getting-machine-readable-output"><span class="num">01</span> Getting machine-readable output</a>
-  <a href="#the-scenario"><span class="num">02</span> The scenario</a>
-  <a href="#three-levels-of-reliability"><span class="num">03</span> Three levels of reliability</a>
-  <a href="#validate-anyway-pydantic-retry"><span class="num">04</span> Validate anyway: pydantic + retry</a>
-  <a href="#streaming-structured-output"><span class="num">05</span> Streaming structured output</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#getting-machine-readable-output"><span class="num">02</span> Getting machine-readable output</a>
+  <a href="#the-scenario"><span class="num">03</span> The scenario</a>
+  <a href="#three-levels-of-reliability"><span class="num">04</span> Three levels of reliability</a>
+  <a href="#validate-anyway-pydantic-retry"><span class="num">05</span> Validate anyway: pydantic + retry</a>
+  <a href="#streaming-structured-output"><span class="num">06</span> Streaming structured output</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -29,16 +30,20 @@
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<div class="diagram"><img src="../img/structured-output.png" alt="Constrain generation with a schema, validate everything, repair or retry on failure, and escalate when repairs run out."></div><p class="diagram-caption">Constrain generation with a schema, validate everything, repair or retry on failure, and escalate when repairs run out.</p>
+</section>
 <section id="getting-machine-readable-output">
-  <h2>01 &mdash; Getting machine-readable output</h2>
+  <h2>02 &mdash; Getting machine-readable output</h2>
 <p>If a program will consume the model's output, you need reliable structure — not prose you have to parse with regex. This chapter is the bridge between "the model writes text" and "the model returns data my code can branch on."</p>
 </section>
 <section id="the-scenario">
-  <h2>02 &mdash; The scenario</h2>
+  <h2>03 &mdash; The scenario</h2>
 <p>You're building a support-ticket triage service. Every inbound ticket must become a row: <code>category</code> (one of <code>hw</code>/<code>sw</code>/<code>billing</code>), <code>urgent</code> (boolean), <code>summary</code> (string). Downstream code routes on <code>category</code> and pages someone on <code>urgent=true</code>. A single malformed output doesn't degrade gracefully — it throws in the parser, lands in a dead-letter queue, and a human fishes it out. At 50,000 tickets/day, a 2% malformation rate is 1,000 manual interventions daily. The difference between the three levels below is exactly that number.</p>
 </section>
 <section id="three-levels-of-reliability">
-  <h2>03 &mdash; Three levels of reliability</h2>
+  <h2>04 &mdash; Three levels of reliability</h2>
 <ol>
 <li><b>Ask for JSON</b> in the prompt — works, but the model occasionally adds prose or breaks the schema.</li>
 <li><b>JSON mode</b> — many APIs force syntactically valid JSON output.</li>
@@ -107,7 +112,7 @@ data = resp.content[<span class="nr">0</span>].input   <span class="cm"># → {"
 </table>
 </section>
 <section id="validate-anyway-pydantic-retry">
-  <h2>04 &mdash; Validate anyway: pydantic + retry</h2>
+  <h2>05 &mdash; Validate anyway: pydantic + retry</h2>
 <p>Even at level 3, validate in your own code. Reasons: you may switch providers (and level-3 semantics differ), schema constraints like <code>pattern</code> aren't uniformly enforced everywhere, and <i>semantic</i> checks (a summary that just repeats the ticket verbatim, a date in the past) are beyond any JSON schema. The pattern that covers all of it is: parse into a pydantic model, and on failure send the validation errors <i>back to the model</i> for one or two repair rounds.</p>
 <div class="code-block"><div class="code-file"><span>validate_retry.py — pydantic gate + repair loop</span><span class="code-lang">python</span></div><pre><span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel, Field, field_validator, ValidationError
 <span class="kw">from</span> typing <span class="kw">import</span> Literal
@@ -154,7 +159,7 @@ client = anthropic.Anthropic()
 <p>Worked reliability math (illustrative): if one attempt yields a valid object 97% of the time and repair fixes 90% of the failures, the loop's overall failure rate is 3% × 10% × (again for attempt 3) ≈ 0.03% — from 1,500 dead-lettered tickets/day down to ~15, for an average cost of 1.03 calls per ticket. Cap attempts and dead-letter the rest; infinite retry loops on a systematically-broken prompt are a great way to spend a weekend's budget overnight.</p>
 </section>
 <section id="streaming-structured-output">
-  <h2>05 &mdash; Streaming structured output</h2>
+  <h2>06 &mdash; Streaming structured output</h2>
 <p>Structured output and streaming coexist awkwardly: a partial JSON object is not valid JSON, so you can't <code>json.loads</code> a stream mid-flight. Your options, in order of preference: (1) <b>don't stream</b> — extraction payloads are small and nobody watches a triage row render; (2) stream for <i>display</i> but parse only the final accumulated string (APIs emit tool-argument deltas as <code>input_json_delta</code> partial-JSON chunks you concatenate); (3) if you truly need incremental fields — e.g. rendering a long report object section by section — use an incremental parser (streaming JSON libraries, or the SDK helpers that surface "best-effort partial objects"). Never act on a partial object: <code>urgent</code> may simply not have streamed yet, and a missing field is indistinguishable from a false one.</p>
 <div class="callout warn"><p><strong>Failure modes that survive contact with production</strong></p><ul>
 <li><b>Markdown fences at level 1:</b> models love <code>```json … ```</code>. Say "no fences", prime with <code>{"</code>, or strip fences defensively before parsing — pick two.</li>

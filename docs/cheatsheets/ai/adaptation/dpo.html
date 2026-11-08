@@ -16,16 +16,17 @@
 <nav class="nav">
   <h2>DPO &amp; preference optimization</h2>
   <a href="index.html">&larr; Fine-tuning &amp; alignment</a>
-  <a href="#dpo-preference-optimization-without-the-rl"><span class="num">01</span> DPO — preference optimization without the RL</a>
-  <a href="#the-loss-read-it-slowly-once"><span class="num">02</span> The loss (read it slowly once)</a>
-  <a href="#the-complete-run-trl-qlora-compatible"><span class="num">03</span> The complete run (TRL, QLoRA-compatible)</a>
-  <a href="#choosing-and-how-to-sweep-it"><span class="num">04</span> Choosing β (and how to sweep it)</a>
-  <a href="#building-pairs-from-production-logs"><span class="num">05</span> Building pairs from production logs</a>
-  <a href="#evaluating-the-aligned-model-a-win-rate-harness"><span class="num">06</span> Evaluating the aligned model — a win-rate harness</a>
-  <a href="#the-family"><span class="num">07</span> The family</a>
-  <a href="#dpo-vs-rlhf-ppo-the-decision-expanded"><span class="num">08</span> DPO vs RLHF (PPO) — the decision, expanded</a>
-  <a href="#the-production-rl-flywheel-what-companies-usually-mean"><span class="num">09</span> The production &quot;RL flywheel&quot; (what companies usually mean)</a>
-  <a href="#dpo-and-friends"><span class="num">10</span> DPO and friends</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#dpo-preference-optimization-without-the-rl"><span class="num">02</span> DPO — preference optimization without the RL</a>
+  <a href="#the-loss-read-it-slowly-once"><span class="num">03</span> The loss (read it slowly once)</a>
+  <a href="#the-complete-run-trl-qlora-compatible"><span class="num">04</span> The complete run (TRL, QLoRA-compatible)</a>
+  <a href="#choosing-and-how-to-sweep-it"><span class="num">05</span> Choosing β (and how to sweep it)</a>
+  <a href="#building-pairs-from-production-logs"><span class="num">06</span> Building pairs from production logs</a>
+  <a href="#evaluating-the-aligned-model-a-win-rate-harness"><span class="num">07</span> Evaluating the aligned model — a win-rate harness</a>
+  <a href="#the-family"><span class="num">08</span> The family</a>
+  <a href="#dpo-vs-rlhf-ppo-the-decision-expanded"><span class="num">09</span> DPO vs RLHF (PPO) — the decision, expanded</a>
+  <a href="#the-production-rl-flywheel-what-companies-usually-mean"><span class="num">10</span> The production &quot;RL flywheel&quot; (what companies usually mean)</a>
+  <a href="#dpo-and-friends"><span class="num">11</span> DPO and friends</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -34,13 +35,17 @@
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<div class="diagram"><img src="../img/dpo.png" alt="Both start from an SFT model and preference pairs. RLHF trains a reward model and runs RL with a KL leash; DPO gets the same target with one supervised loss."></div><p class="diagram-caption">Both start from an SFT model and preference pairs. RLHF trains a reward model and runs RL with a KL leash; DPO gets the same target with one supervised loss.</p>
+</section>
 <section id="dpo-preference-optimization-without-the-rl">
-  <h2>01 &mdash; DPO — preference optimization without the RL</h2>
+  <h2>02 &mdash; DPO — preference optimization without the RL</h2>
 <p>DPO's insight: under RLHF's own assumptions, the optimal policy can be written in closed form — so you can skip the reward model <i>and</i> the RL loop, and train directly on preference pairs with a supervised loss.</p>
 <p>Recall from the last chapter that RLHF's KL-constrained objective has a known optimum: π*(y|x) ∝ π_ref(y|x)·exp(r(x,y)/β). DPO simply inverts it — solve for the reward: r(x,y) = β·log(π(y|x)/π_ref(y|x)) + const. Substitute that into the Bradley–Terry preference likelihood and the reward model cancels out of the equation entirely. What's left is a loss on the policy itself, computable from four log-probabilities per pair. The model <i>is</i> secretly its own reward model; DPO trains it as one.</p>
 </section>
 <section id="the-loss-read-it-slowly-once">
-  <h2>02 &mdash; The loss (read it slowly once)</h2>
+  <h2>03 &mdash; The loss (read it slowly once)</h2>
 <pre class="ascii-diagram">for each pair (prompt x, winner y_w, loser y_l):
 
 L_DPO = −log σ( β · [ log π(y_w|x)/π_ref(y_w|x)  −  log π(y_l|x)/π_ref(y_l|x) ] )
@@ -51,7 +56,7 @@ reference model (the implicit KL leash), with β controlling how hard you push.<
 <p>One ordinary training run. Standard supervised infra. No reward model, no PPO, no four-models-in-memory — two models (policy + frozen ref), and with adapter tricks effectively one. That's why it won by default for open-model alignment.</p>
 </section>
 <section id="the-complete-run-trl-qlora-compatible">
-  <h2>03 &mdash; The complete run (TRL, QLoRA-compatible)</h2>
+  <h2>04 &mdash; The complete run (TRL, QLoRA-compatible)</h2>
 <div class="code-block"><div class="code-file"><span>dpo_full.py — SFT model → DPO-aligned model, one GPU</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> torch
 <span class="kw">from</span> datasets <span class="kw">import</span> load_dataset
 <span class="kw">from</span> transformers <span class="kw">import</span> AutoModelForCausalLM, AutoTokenizer
@@ -108,7 +113,7 @@ trainer.save_model(<span class="st">"</span><span class="st">triage-dpo/adapter<
 <span class="cm">#                      The gate is the win-rate harness below.</span></pre></div>
 </section>
 <section id="choosing-and-how-to-sweep-it">
-  <h2>04 &mdash; Choosing β (and how to sweep it)</h2>
+  <h2>05 &mdash; Choosing β (and how to sweep it)</h2>
 <p>β plays the same role as RLHF's KL coefficient, inverted in feel: it scales the log-ratio margin inside the sigmoid, so <b>small β lets the policy drift far</b> from the reference before the loss saturates, and large β keeps it pinned close. Sweep it — it's one config field — but sweep it like this: 3 short runs, same data, β ∈ {0.05, 0.1, 0.3}, judged by win-rate + regression probe (never by loss, which isn't comparable across β).</p>
 <table>
 <tr><th>β</th><th>Behavior</th><th>Reach for it when</th></tr>
@@ -119,7 +124,7 @@ trainer.save_model(<span class="st">"</span><span class="st">triage-dpo/adapter<
 <p>Illustrative sweep outcome for the triage assistant (2K pairs): β=0.05 → 71% win-rate vs SFT but the regression probe drops 6 points (over-styled, verbose); β=0.1 → 66% win, regression flat; β=0.3 → 58% win, regression flat. You ship β=0.1. That shape — an interior optimum once you score regressions too — is the typical result.</p>
 </section>
 <section id="building-pairs-from-production-logs">
-  <h2>05 &mdash; Building pairs from production logs</h2>
+  <h2>06 &mdash; Building pairs from production logs</h2>
 <p>The highest-leverage DPO trick: you're already generating preference data every day. Explicit thumbs, edits (user rewrote the model's draft = rejected/chosen in one event), retries, escalations, resolved-vs-reopened tickets — all of it converts to pairs.</p>
 <div class="code-block"><div class="code-file"><span>mine_pairs.py — production logs → DPO pairs, with hygiene</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> json, hashlib
 <span class="kw">from</span> collections <span class="kw">import</span> defaultdict
@@ -185,7 +190,7 @@ pairs = <span class="tp">list</span>(hygiene(make_pairs(iter_events(<span class=
 <span class="cm"># not quality) that no filter will.</span></pre></div>
 </section>
 <section id="evaluating-the-aligned-model-a-win-rate-harness">
-  <h2>06 &mdash; Evaluating the aligned model — a win-rate harness</h2>
+  <h2>07 &mdash; Evaluating the aligned model — a win-rate harness</h2>
 <p>The only meaningful DPO metric is: <i>does a judge (ideally humans, practically an LLM with position-bias control) prefer the new model's answers on held-out prompts?</i> Plus a regression suite. Here's the minimal honest harness:</p>
 <div class="code-block"><div class="code-file"><span>winrate.py — pairwise judge with position-swap, the honest way</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> json, random, asyncio
 <span class="kw">from</span> openai <span class="kw">import</span> AsyncOpenAI   <span class="cm"># judge via any OpenAI-compatible endpoint</span>
@@ -228,7 +233,7 @@ asyncio.run(main())</pre></div>
 <p>Two integrity rules. First, the judge must never be the model being evaluated (self-preference bias is strong), and if the judge shares a family with one side, note it. Second, run your <i>capability regression suite</i> (<a href="index.html">Fine-tuning &amp; alignment</a>'s SFT chapter) on the DPO checkpoint — preference tuning quietly moves things you weren't looking at, and the win-rate prompt set won't catch it.</p>
 </section>
 <section id="the-family">
-  <h2>07 &mdash; The family</h2>
+  <h2>08 &mdash; The family</h2>
 <table>
 <tr><th>Method</th><th>Twist</th><th>Use when</th></tr>
 <tr><td><b>DPO</b></td><td>the closed-form original</td><td>default; you have clean pairs</td></tr>
@@ -240,7 +245,7 @@ asyncio.run(main())</pre></div>
 </table>
 </section>
 <section id="dpo-vs-rlhf-ppo-the-decision-expanded">
-  <h2>08 &mdash; DPO vs RLHF (PPO) — the decision, expanded</h2>
+  <h2>09 &mdash; DPO vs RLHF (PPO) — the decision, expanded</h2>
 <table>
 <tr><th>Dimension</th><th>DPO</th><th>PPO-style RLHF</th></tr>
 <tr><td>Infra</td><td>supervised trainer, 1–2 models in memory; QLoRA-friendly on one GPU</td><td>3–4 models + a generation engine inside the training loop; multi-GPU</td></tr>
@@ -255,7 +260,7 @@ asyncio.run(main())</pre></div>
 </table>
 </section>
 <section id="the-production-rl-flywheel-what-companies-usually-mean">
-  <h2>09 &mdash; The production &quot;RL flywheel&quot; (what companies usually mean)</h2>
+  <h2>10 &mdash; The production &quot;RL flywheel&quot; (what companies usually mean)</h2>
 <pre class="ascii-diagram">production interactions → capture outcomes (resolved? escalated? thumbs? edits?)
    → mine failures and wins → build preference pairs + eval cases
    → DPO/SFT on wins; prompt/tool/retrieval fixes for systematic failures
@@ -280,13 +285,13 @@ asyncio.run(main())</pre></div>
 </ol></div>
 </section>
 <section id="dpo-and-friends">
-  <h2>10 &mdash; DPO and friends</h2>
+  <h2>11 &mdash; DPO and friends</h2>
 <p>Direct Preference Optimization shows the RLHF objective has a closed-form optimal policy, so you can optimize preferences with a simple classification-style loss, no reward model, no RL:</p>
 <pre class="formula">L = −log σ( β [ log π(y_w|x)/π_ref(y_w|x) − log π(y_l|x)/π_ref(y_l|x) ] )</pre>
 <p>Increase the chosen answer's likelihood relative to the reference more than the rejected one's. β sets how far you may move from the reference. Variants: IPO, KTO (needs only thumbs up/down), ORPO, SimPO. In TRL: <code>DPOTrainer</code>.</p>
 </section>
 
-<div class="sheet-pager"><a class="prev" href="rlhf.html"><span>Previous</span>RLHF &amp; reward models</a><a class="next" href="../inference/inference-internals.html"><span>Next</span>Inference internals</a></div>
+<div class="sheet-pager"><a class="prev" href="rlhf.html"><span>Previous</span>RLHF &amp; reward models</a><a class="next" href="constitutional-ai.html"><span>Next</span>Constitutional AI &amp; red-teaming</a></div>
 </div>
 <div id="lightbox" role="dialog" aria-hidden="true">
   <span class="lb-close" aria-label="Close">&times;</span>

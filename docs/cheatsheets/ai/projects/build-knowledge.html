@@ -16,11 +16,12 @@
 <nav class="nav">
   <h2>Complete build: the knowledge layer</h2>
   <a href="index.html">&larr; Build &amp; interview</a>
-  <a href="#the-complete-build-2-4-the-knowledge-layer"><span class="num">01</span> The Complete Build 2/4 — the knowledge layer</a>
-  <a href="#step-1-ingestion-with-provenance-the-unglamorous-60"><span class="num">02</span> Step 1 — ingestion with provenance (the unglamorous 60%)</a>
-  <a href="#step-2-build-the-eval-set-before-tuning-anything"><span class="num">03</span> Step 2 — build the eval set BEFORE tuning anything</a>
-  <a href="#step-3-retrieve-wide-fuse-rerank-and-measure-each-stage"><span class="num">04</span> Step 3 — retrieve wide, fuse, rerank — and measure each stage</a>
-  <a href="#step-4-grounded-generation-with-mandatory-abstention"><span class="num">05</span> Step 4 — grounded generation with mandatory abstention</a>
+  <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
+  <a href="#the-complete-build-2-4-the-knowledge-layer"><span class="num">02</span> The Complete Build 2/4 — the knowledge layer</a>
+  <a href="#step-1-ingestion-with-provenance-the-unglamorous-60"><span class="num">03</span> Step 1 — ingestion with provenance (the unglamorous 60%)</a>
+  <a href="#step-2-build-the-eval-set-before-tuning-anything"><span class="num">04</span> Step 2 — build the eval set BEFORE tuning anything</a>
+  <a href="#step-3-retrieve-wide-fuse-rerank-and-measure-each-stage"><span class="num">05</span> Step 3 — retrieve wide, fuse, rerank — and measure each stage</a>
+  <a href="#step-4-grounded-generation-with-mandatory-abstention"><span class="num">06</span> Step 4 — grounded generation with mandatory abstention</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -29,12 +30,16 @@
   <div class="tags"></div>
 </div>
 
+<section id="at-a-glance">
+  <h2>01 &mdash; At a glance</h2>
+<div class="diagram"><img src="../img/build-knowledge.png" alt="Policy documents are parsed, chunked with their heading path, embedded and indexed in Postgres for hybrid search; queries are rewritten, fused and reranked."></div><p class="diagram-caption">Policy documents are parsed, chunked with their heading path, embedded and indexed in Postgres for hybrid search; queries are rewritten, fused and reranked.</p>
+</section>
 <section id="the-complete-build-2-4-the-knowledge-layer">
-  <h2>01 &mdash; The Complete Build 2/4 — the knowledge layer</h2>
+  <h2>02 &mdash; The Complete Build 2/4 — the knowledge layer</h2>
 <p>Rule from <a href="../rag/index.html">Knowledge &amp; RAG</a>: most RAG failures are retrieval failures, so we build and <b>measure retrieval before generation exists</b>. No prompt is written until Recall@5 is known.</p>
 </section>
 <section id="step-1-ingestion-with-provenance-the-unglamorous-60">
-  <h2>02 &mdash; Step 1 — ingestion with provenance (the unglamorous 60%)</h2>
+  <h2>03 &mdash; Step 1 — ingestion with provenance (the unglamorous 60%)</h2>
 <p>The corpus: ~1,200 internal docs (Markdown in a wiki export, some HTML), covering billing policy, product FAQs, plan matrices, troubleshooting runbooks. Ingestion is where most of the engineering time actually goes, so here it is as a real module rather than a sketch. The design decisions, in order of impact: <b>preserve heading structure</b> (it's the context embeddings need), <b>content-hash everything</b> (dedupe + cheap incremental re-index), <b>carry ACLs on every chunk</b> (security lives here, not in prompts), and <b>batch the embedding calls with retry</b> (the embedding API will flake at least once per full index).</p>
 <div class="code-block"><div class="code-file"><span>ingest.py — parse, chunk by structure, hash, embed, upsert (complete module)</span><span class="code-lang">python</span></div><pre><span class="cm"># ingest.py — run nightly + on doc-save webhook. Idempotent by content hash.</span>
 import hashlib, time, itertools, logging
@@ -156,7 +161,7 @@ class Section:
 <div class="callout warn"><p><strong>The ACL rule that prevents an incident</strong></p>Every chunk carries its source document's access-control list, and retrieval filters by the <b>requesting user's</b> permissions <i>in the SQL query itself</i> — not in the prompt, not after generation. An LLM cannot leak a chunk it never received. (<a href="../production/index.html">Production &amp; evals</a> security: enforce authorization at the data boundary.) Two sibling gotchas from real ingestions: <b>embedding-version skew</b> — a partial re-embed leaves v2 and v3 vectors in one index and cosine distances between them are meaningless; the <code>embed_model</code> column plus a <code>WHERE embed_model = current</code> filter turns silent recall loss into an explicit re-index task. And <b>tombstoning</b> — a deleted policy doc that stays in the index is a compliance answer from the grave; the final <code>DELETE</code> above is not optional.</div>
 </section>
 <section id="step-2-build-the-eval-set-before-tuning-anything">
-  <h2>03 &mdash; Step 2 — build the eval set BEFORE tuning anything</h2>
+  <h2>04 &mdash; Step 2 — build the eval set BEFORE tuning anything</h2>
 <p>75 questions, hand-labeled with the chunk(s) that answer them: 40 common, 10 exact-term (invoice codes, plan names — lexical territory), 10 paraphrase (semantic territory), 5 multi-hop, 10 <b>unanswerable</b> (the system must abstain). One afternoon of work; it converts every future argument into a measurement. The format is deliberately boring — one JSON object per line, checked into the repo next to the code it judges:</p>
 <div class="code-block"><div class="code-file"><span>evalset/retrieval.jsonl — 5 of the 75 (one per slice)</span><span class="code-lang">json</span></div><pre>{<span class="tp">"qid"</span>:<span class="st">"q007"</span>,<span class="tp">"slice"</span>:<span class="st">"common"</span>,<span class="tp">"question"</span>:<span class="st">"How long does a customer have to request a refund on a monthly plan?"</span>,<span class="tp">"gold_chunks"</span>:[<span class="st">"billing-refunds#standard~0"</span>],<span class="tp">"answerable"</span>:<span class="nr">true</span>}
 {<span class="tp">"qid"</span>:<span class="st">"q041"</span>,<span class="tp">"slice"</span>:<span class="st">"exact_term"</span>,<span class="tp">"question"</span>:<span class="st">"What does invoice code INV-ADJ-CR mean?"</span>,<span class="tp">"gold_chunks"</span>:[<span class="st">"billing-invoices#codes~2"</span>],<span class="tp">"answerable"</span>:<span class="nr">true</span>}
@@ -166,7 +171,7 @@ class Section:
 <p>Three details that make this set earn its keep: <b>gold chunks are anchors, not text</b> — they survive re-chunking as long as anchors are stable; the <b>slice label</b> is what turns an aggregate score into a diagnosis (see the walkthrough below); and the <b>unanswerable ten</b> are graded on abstention — a retrieval system that always returns <i>something</i> plausible for them is manufacturing hallucination fuel for Step 4.</p>
 </section>
 <section id="step-3-retrieve-wide-fuse-rerank-and-measure-each-stage">
-  <h2>04 &mdash; Step 3 — retrieve wide, fuse, rerank — and measure each stage</h2>
+  <h2>05 &mdash; Step 3 — retrieve wide, fuse, rerank — and measure each stage</h2>
 <div class="code-block"><div class="code-file"><span>retrieve.py — hybrid + RRF + cross-encoder</span><span class="code-lang">python</span></div><pre><span class="kw">def</span> <span class="fn">retrieve</span>(query, user, k=<span class="nr">5</span>):
     dense = pg.vector_search(embed([query])[<span class="nr">0</span>], limit=<span class="nr">30</span>, acl=user.acl)   <span class="cm"># semantic</span>
     lex   = pg.fts_search(query, limit=<span class="nr">30</span>, acl=user.acl)                  <span class="cm"># BM25-ish: exact terms</span>
@@ -216,7 +221,7 @@ If the question needs only one fact, return exactly one query."""</span>
 <div class="callout"><p><strong>Why not parent-chunk expansion instead?</strong></p>The other standard multi-hop fix — retrieve small chunks, hand the generator their parent sections — was tried and helped less here (0.40 → 0.60, illustrative) because the two gold facts lived in <i>different documents</i>, not different parts of one document. Expansion fixes "the answer was split across neighboring chunks"; decomposition fixes "the question needs two searches." Match the fix to the failing traces, not to the blog post you read last week. Both can coexist; each must earn its row in the table.</div>
 </section>
 <section id="step-4-grounded-generation-with-mandatory-abstention">
-  <h2>05 &mdash; Step 4 — grounded generation with mandatory abstention</h2>
+  <h2>06 &mdash; Step 4 — grounded generation with mandatory abstention</h2>
 <div class="code-block"><div class="code-file"><span>answer.py</span><span class="code-lang">python</span></div><pre>SYSTEM = <span class="st">"""Answer ONLY from the numbered sources. Cite every claim like [2].
 If the sources don't contain the answer, say exactly: INSUFFICIENT_EVIDENCE.
 Never use knowledge outside the sources for policy/billing facts."""</span>
