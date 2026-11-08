@@ -35,8 +35,8 @@
     </a>
     <a href="cheatsheets/ai/index.html" class="pb-home-row">
       <span class="pb-home-row-title">AI, LLMs and agents</span>
-      <span class="pb-home-row-desc">A 59-chapter handbook from tokens to production agents, two courses with labs and interview answers, and 45 topic sheets for quick review.</span>
-      <span class="pb-home-row-count">122 pages</span>
+      <span class="pb-home-row-desc">A 12-stage map from the math to a shipped agent: topics taught in full with code and labs, plus cheat sheets for quick review.</span>
+      <span class="pb-home-row-count">55 topics</span>
     </a>
   </div>
 </section>

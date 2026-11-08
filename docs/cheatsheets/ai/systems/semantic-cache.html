@@ -16,7 +16,7 @@
   <h2>Semantic Cache</h2>
   <a href="../rag/index.html">&larr; Knowledge &amp; RAG</a>
   <a href="#whatwhy"><span class="num">01</span> What & Why</a><a href="#concepts"><span class="num">01a</span> Core Concepts</a><a href="#api"><span class="num">01b</span> API Surface</a><a href="#whento"><span class="num">02</span> When to Use</a><a href="#architecture"><span class="num">03</span> Architecture</a><a href="#threshold"><span class="num">04</span> Threshold Tuning</a><a href="#ttl"><span class="num">05</span> TTL & Freshness</a><a href="#invalidation"><span class="num">06</span> Invalidation</a><a href="#exact"><span class="num">07</span> Exact + Semantic</a><a href="#multitenant"><span class="num">08</span> Multi-Tenant</a><a href="#production"><span class="num">09</span> Production & Ops</a><a href="#shows-up"><span class="num">10</span> Where It Shows Up</a><a href="#pitfalls"><span class="num">11</span> Pitfalls</a><a href="#interview"><span class="num">12</span> Interview Q&A</a>
-  <a href="#go-deeper"><span class="num">13</span> Go deeper</a>
+  <a href="#go-deeper"><span class="num">13</span> Learn it in full</a>
 </nav>
 <div class="main">
 <div class="hero">
@@ -33,10 +33,16 @@ cache.store(query, embedding, response, ttl=3600, metadata={sources})
 <section id="interview"><h2>12 &mdash; Interview Q&amp;A</h2><details><summary>Semantic vs exact cache?</summary><div class="answer">Exact: hash match only. Semantic: embedding similarity catches paraphrases. Use two-tier L1 exact + L2 semantic.</div></details><details><summary>Typical hit rate?</summary><div class="answer">40–60% on support/FAQ bots. Near 0% on unique analytics. Measure before investing.</div></details><details><summary>How pick threshold?</summary><div class="answer">Label 500 query pairs same/different intent. Plot hit rate vs false hit rate. Start 0.95 cosine.</div></details><details><summary>Invalidate when docs change?</summary><div class="answer">Store source doc_ids in cache entry. On doc update/delete, purge matching entries. TTL as backstop.</div></details><details><summary>Cache personalized answers?</summary><div class="answer">Include user_id or session context in cache key metadata. Don't return user-A answer to user-B.</div></details><details><summary>GPTCache vs roll-your-own?</summary><div class="answer">GPTCache: plug-and-play. Roll-your-own Redis+pgvector if need tenant isolation and custom invalidation.</div></details><details><summary>Latency savings?</summary><div class="answer">Cache hit ~15ms vs LLM ~800ms+. Massive p99 improvement for repeated intents.</div></details><details><summary>False hit detection?</summary><div class="answer">Track thumbs-down on cached responses. Sample manual review. Auto-lower threshold region if false hits spike.</div></details><details><summary>Cache LLM embeddings too?</summary><div class="answer">Yes — cache query embeddings separately (exact on embedding input) to skip embed API on repeat.</div></details><details><summary>RAG + semantic cache?</summary><div class="answer">Cache final answer + citations. On hit, still verify source docs not updated since cached_at.</div></details><details><summary>Cold start?</summary><div class="answer">Pre-warm from top 100 historical queries. Seed from FAQ canonical questions.</div></details><details><summary>SDE3: semantic cache layer?</summary><div class="answer">Two-tier exact+semantic, org namespace, citation-aware invalidation, false-hit monitor, dashboard hit rate/latency/cost saved.</div></details></section>
 
 <section id="go-deeper">
-  <h2>Go deeper</h2>
-  <p>The long-form chapters and course parts that cover this topic in full, with worked examples and exercises.</p>
-  <ul><li><a href="../handbook/12-6-cost-performance.html">Handbook 12.6 &middot; Cost &amp; performance</a></li><li><a href="../courses/eval-4-hybrid-patterns.html">Evals, RAG and agents · Part 4: Hybrid LLM patterns</a></li></ul>
+  <h2>Learn it in full</h2>
+  <p>The Knowledge &amp; RAG topics, with worked examples, code and exercises.</p>
+  <ul><li><a href="../rag/embeddings.html">Embeddings</a> &mdash; Turning meaning into numbers: sentence embeddings, contrastive training and similarity.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from loading documents to a cited answer.</li><li><a href="../rag/retrieval-quality.html">Chunking, hybrid search &amp; reranking</a> &mdash; The knobs that decide retrieval quality: chunking, query rewriting, BM25 + vectors, RRF and rerankers.</li><li><a href="../rag/rag-in-production.html">Making RAG good &amp; measuring it</a> &mdash; Advanced RAG, retrieval and answer metrics, and production concerns: freshness, ACLs, latency, injection.</li></ul>
 </section>
+
+
+
+
+
+
 
 
 
