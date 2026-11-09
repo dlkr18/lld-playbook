@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mixture of experts -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Inference &amp; serving" data-href="index.html">
+<meta name="ai-topic" content="inference/moe">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,26 +19,28 @@
   <h2>Mixture of experts</h2>
   <a href="index.html">&larr; Inference &amp; serving</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#serving-view-not-a-public-api"><span class="num">04</span> Serving View (Not a Public API)</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#deep-dive-routing-gating"><span class="num">07</span> Deep Dive: Routing &amp; Gating</a>
-  <a href="#deep-dive-training-moe"><span class="num">08</span> Deep Dive: Training MoE</a>
-  <a href="#deep-dive-model-families"><span class="num">09</span> Deep Dive: Model Families</a>
-  <a href="#deep-dive-inference-serving"><span class="num">10</span> Deep Dive: Inference Serving</a>
-  <a href="#recap"><span class="num">11</span> Recap</a>
-  <a href="#production-ops"><span class="num">12</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">13</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">14</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">15</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#serving-view-not-a-public-api"><span class="num">05</span> Serving View (Not a Public API)</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#deep-dive-routing-gating"><span class="num">08</span> Deep Dive: Routing &amp; Gating</a>
+  <a href="#deep-dive-training-moe"><span class="num">09</span> Deep Dive: Training MoE</a>
+  <a href="#deep-dive-model-families"><span class="num">10</span> Deep Dive: Model Families</a>
+  <a href="#deep-dive-inference-serving"><span class="num">11</span> Deep Dive: Inference Serving</a>
+  <a href="#recap"><span class="num">12</span> Recap</a>
+  <a href="#production-ops"><span class="num">13</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">14</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">15</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">16</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">17</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Mixture of experts <span>// Inference &amp; serving</span></h1>
   <p>Sparse experts and routers: more parameters for the same compute, and what it costs at serving time.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">6 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -52,9 +56,13 @@
 <img alt="MoE expert parallelism serving zoom" src="../stretch/img/mixture-of-experts-serving-zoom.png"/>
 </div><p class="diagram-caption">Serving zoom: GPU0 holds experts 0–3, GPU1 holds 4–7; router on attention GPU sends token batches via NCCL all-to-all. Hot expert = straggler; mitigations: expert replication, capacity buffers.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Routing</strong></td><td>Classifier sends input to a specialized branch/model.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card">
 <p><strong>Problem:</strong> Scaling dense LLMs hits diminishing returns — every token activates all FFN parameters. MoE increases model capacity (more specialists) without proportional FLOPs per token.</p>
 <h3>Functional</h3>
@@ -74,7 +82,7 @@
 </div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card">
 <table>
 <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
@@ -90,7 +98,7 @@
 </div>
 </section>
 <section id="serving-view-not-a-public-api">
-  <h2>04 &mdash; Serving View (Not a Public API)</h2>
+  <h2>05 &mdash; Serving View (Not a Public API)</h2>
 <div class="card">
 <p>MoE is a <strong>model architecture</strong>, not an API protocol. Consumers see the same chat completion interface; routing is internal.</p>
 <pre># vLLM / TGI serve Mixtral like any model
@@ -108,7 +116,7 @@ client.chat.completions.create(
 </div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card">
 <table>
 <tr><th>Scenario</th><th>MoE?</th><th>Alternative</th></tr>
@@ -121,7 +129,7 @@ client.chat.completions.create(
 </div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card highlight">
 <pre>  Token x ──► Multi-Head Attention (dense, shared)
                     │
@@ -138,7 +146,7 @@ client.chat.completions.create(
 </div>
 </section>
 <section id="deep-dive-routing-gating">
-  <h2>07 &mdash; Deep Dive: Routing &amp; Gating</h2>
+  <h2>08 &mdash; Deep Dive: Routing &amp; Gating</h2>
 <div class="card">
 <pre># Conceptual top-2 routing (PyTorch-style pseudo)
 router_logits = x @ W_gate          # [batch, seq, num_experts]
@@ -158,7 +166,7 @@ for i in range(k):
 </div>
 </section>
 <section id="deep-dive-training-moe">
-  <h2>08 &mdash; Deep Dive: Training MoE</h2>
+  <h2>09 &mdash; Deep Dive: Training MoE</h2>
 <div class="card">
 <ul>
 <li><strong>Auxiliary loss:</strong> encourage uniform expert utilization (Switch Transformer)</li>
@@ -170,7 +178,7 @@ for i in range(k):
 </div>
 </section>
 <section id="deep-dive-model-families">
-  <h2>09 &mdash; Deep Dive: Model Families</h2>
+  <h2>10 &mdash; Deep Dive: Model Families</h2>
 <div class="card">
 <table>
 <tr><th>Model</th><th>Experts</th><th>Active / Total</th><th>Notes</th></tr>
@@ -182,7 +190,7 @@ for i in range(k):
 </div>
 </section>
 <section id="deep-dive-inference-serving">
-  <h2>10 &mdash; Deep Dive: Inference Serving</h2>
+  <h2>11 &mdash; Deep Dive: Inference Serving</h2>
 <div class="card">
 <ul>
 <li><strong>Expert parallelism:</strong> shard experts across GPUs; dispatch tokens via all-to-all</li>
@@ -194,13 +202,13 @@ for i in range(k):
 </section>
 <p class="part-divider">The full explanation</p>
 <section id="recap">
-  <h2>11 &mdash; Recap</h2>
+  <h2>12 &mdash; Recap</h2>
 <p>Replace the single FFN with E expert FFNs and a learned router that sends each token to the top-k (often 2, or 8 of 256 in very sparse designs). Total parameters grow (knowledge capacity) while active parameters per token stay small (compute). Mixtral 8×7B: ~47B total, ~13B active. DeepSeek-V3, Qwen-MoE and others push this further.</p>
 <p>Costs: all experts must sit in memory, load balancing needs an auxiliary loss, and distributed training needs expert parallelism (all-to-all communication).</p>
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>12 &mdash; Production &amp; Ops</h2>
+  <h2>13 &mdash; Production &amp; Ops</h2>
 <div class="card"><h3>Monitoring</h3>
 <ul>
 <li>Per-expert utilization histogram (detect collapse)</li>
@@ -216,7 +224,7 @@ for i in range(k):
 </div>
 </section>
 <section id="related-topics">
-  <h2>13 &mdash; Related topics</h2>
+  <h2>14 &mdash; Related topics</h2>
 <div class="card">
 <ul>
 <li><a href="../fundamentals/what-is-an-llm.html">What an LLM is</a> — dense vs sparse scaling context</li>
@@ -226,8 +234,8 @@ for i in range(k):
 </ul>
 </div>
 </section>
-<section id="common-pitfalls">
-  <h2>14 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>15 &mdash; Where people get lost</h2>
 <div class="card">
 <ul>
 <li><strong>Confusing total params with inference cost:</strong> bill FLOPs on active params</li>
@@ -237,8 +245,12 @@ for i in range(k):
 </ul>
 </div>
 </section>
+<section id="how-this-connects">
+  <h2>16 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../fundamentals/what-is-an-llm.html">What an LLM is</a> &mdash; A next-token predictor, the language-modeling objective, model families and scaling laws.</li><li><a href="serving.html">Serving &amp; scaling</a> &mdash; vLLM and Ollama, benchmarking honestly, a production serving setup and scaling it.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>15 &mdash; Check yourself</h2>
+  <h2>17 &mdash; Check yourself</h2>
 <details>
 <summary>Explain MoE in one sentence for an interviewer.</summary>
 <div class="answer">Replace each transformer FFN with many expert FFNs plus a router that picks top-k experts per token, so total model capacity grows while per-token compute stays near k/N of the expert pool.</div>

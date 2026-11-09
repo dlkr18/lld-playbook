@@ -5,10 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quantization &amp; compression -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Inference &amp; serving" data-href="index.html">
+<meta name="ai-topic" content="inference/model-compression">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,26 +23,214 @@
   <h2>Quantization &amp; compression</h2>
   <a href="index.html">&larr; Inference &amp; serving</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#quantization-basics"><span class="num">02</span> Quantization basics</a>
-  <a href="#llm-quantization-methods"><span class="num">03</span> LLM quantization methods</a>
-  <a href="#knowledge-distillation"><span class="num">04</span> Knowledge distillation</a>
-  <a href="#pruning-and-sparsity"><span class="num">05</span> Pruning and sparsity</a>
-  <a href="#onnx-onnx-runtime-tensorrt"><span class="num">06</span> ONNX, ONNX Runtime, TensorRT</a>
-  <a href="#kernel-fusion-and-why-compilers-help"><span class="num">07</span> Kernel fusion and why compilers help</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#the-question"><span class="num">03</span> The question</a>
+  <a href="#step-1-why-fewer-bytes-means-faster"><span class="num">04</span> Step 1: why fewer bytes means faster</a>
+  <a href="#step-2-the-mapping-from-real-numbers-to-integers"><span class="num">05</span> Step 2: the mapping from real numbers to integers</a>
+  <a href="#step-3-outliers-and-why-scales-are-shared-by-small-groups"><span class="num">06</span> Step 3: outliers, and why scales are shared by small groups</a>
+  <a href="#step-4-activations-are-the-hard-part"><span class="num">07</span> Step 4: activations are the hard part</a>
+  <a href="#step-5-smarter-rounding-with-gptq-and-awq"><span class="num">08</span> Step 5: smarter rounding with GPTQ and AWQ</a>
+  <a href="#step-6-the-formats-you-will-meet"><span class="num">09</span> Step 6: the formats you will meet</a>
+  <a href="#step-7-quantizing-the-kv-cache"><span class="num">10</span> Step 7: quantizing the KV cache</a>
+  <a href="#step-8-distillation-a-smaller-model-trained-to-imitate"><span class="num">11</span> Step 8: distillation, a smaller model trained to imitate</a>
+  <a href="#step-9-pruning-and-structured-sparsity"><span class="num">12</span> Step 9: pruning and structured sparsity</a>
+  <a href="#step-10-compilation-and-kernel-fusion"><span class="num">13</span> Step 10: compilation and kernel fusion</a>
+  <a href="#measuring-the-quality-cost"><span class="num">14</span> Measuring the quality cost</a>
+  <a href="#choosing-a-lever"><span class="num">15</span> Choosing a lever</a>
+  <a href="#in-code-group-wise-int4-by-hand-then-the-real-thing"><span class="num">16</span> In code: group-wise INT4 by hand, then the real thing</a>
+  <a href="#quantization-basics"><span class="num">17</span> Quantization basics</a>
+  <a href="#llm-quantization-methods"><span class="num">18</span> LLM quantization methods</a>
+  <a href="#knowledge-distillation"><span class="num">19</span> Knowledge distillation</a>
+  <a href="#pruning-and-sparsity"><span class="num">20</span> Pruning and sparsity</a>
+  <a href="#onnx-onnx-runtime-tensorrt"><span class="num">21</span> ONNX, ONNX Runtime, TensorRT</a>
+  <a href="#kernel-fusion-and-why-compilers-help"><span class="num">22</span> Kernel fusion and why compilers help</a>
+  <a href="#where-people-get-lost"><span class="num">23</span> Where people get lost</a>
+  <a href="#check-yourself"><span class="num">24</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Quantization &amp; compression <span>// Inference &amp; serving</span></h1>
   <p>Quantization methods, distillation, pruning, ONNX/TensorRT and kernel fusion.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">15 min read</span><span class="tag">1 diagram</span></div>
 </div>
 
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
 <div class="diagram"><img src="../img/model-compression.png" alt="Four independent levers: quantize the weights, distill into a smaller student, prune, and compile. Check quality after each one."></div><p class="diagram-caption">Four independent levers: quantize the weights, distill into a smaller student, prune, and compile. Check quality after each one.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Quantization</strong></td><td>Storing numbers with fewer bits (for example 4 instead of 16), accepting a small rounding error.</td></tr><tr><td><strong>Scale \(s\)</strong></td><td>The step size between representable values: a quantized integer \(q\) means the real number \(s \cdot q\).</td></tr><tr><td><strong>Zero-point \(z\)</strong></td><td>An integer offset so an asymmetric range (say −0.2 to 1.3) can use every integer level.</td></tr><tr><td><strong>Per-tensor / per-channel / per-group</strong></td><td>How many weights share one scale: a whole matrix, one row, or a block of (typically) 128 weights.</td></tr><tr><td><strong>Outlier</strong></td><td>A value far larger than its neighbours. One outlier forces a big scale and wastes resolution on everything else.</td></tr><tr><td><strong>PTQ / QAT</strong></td><td>Post-training quantization (quantize a finished model) versus quantization-aware training (train with rounding simulated).</td></tr><tr><td><strong>Weight-only vs W8A8</strong></td><td>Quantize only the weights (activations stay 16-bit), or quantize weights and activations to 8 bits.</td></tr><tr><td><strong>Calibration set</strong></td><td>A few hundred representative inputs used to measure activation ranges while quantizing.</td></tr><tr><td><strong>GPTQ / AWQ</strong></td><td>Two widely used 4-bit weight methods: error-compensating rounding, and protecting important channels.</td></tr><tr><td><strong>FP8 (E4M3, E5M2)</strong></td><td>8-bit floating-point formats: 4 exponent and 3 mantissa bits, or 5 and 2. More range than INT8, less precision.</td></tr><tr><td><strong>NF4</strong></td><td>"NormalFloat 4": 16 levels placed at the quantiles of a normal distribution, matching how weights are distributed. Used by QLoRA.</td></tr><tr><td><strong>Distillation</strong></td><td>Training a small student model to imitate a large teacher's outputs.</td></tr><tr><td><strong>Pruning / 2:4 sparsity</strong></td><td>Removing weights. 2:4 means exactly two of every four consecutive weights are zero, a pattern GPUs can accelerate.</td></tr><tr><td><strong>Parameters / weights</strong></td><td>The billions of learned numbers that make up the model.</td></tr></tbody></table>
+</section>
+<p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>03 &mdash; The question</h2>
+<p>A 70-billion-parameter model stored in 16-bit floats is 140 GB of weights. That does not fit on one 80 GB GPU, and even where it fits, it is slow: generating each token means reading every weight from GPU memory once. Compression attacks both problems with four independent levers:</p>
+<ol>
+<li><strong>Quantization</strong>: fewer bits per weight (and sometimes per activation and per cache entry).</li>
+<li><strong>Distillation</strong>: a smaller model trained to behave like the big one.</li>
+<li><strong>Pruning</strong>: fewer weights.</li>
+<li><strong>Compilation</strong>: the same maths with fewer trips to memory.</li>
+</ol>
+<p>Quantization does most of the work in practice and gets most of this lesson. The question to keep asking is: <em>what did we save, and what did it cost in quality?</em></p>
+</section>
+<section id="step-1-why-fewer-bytes-means-faster">
+  <h2>04 &mdash; Step 1: why fewer bytes means faster</h2>
+<p>During decoding, each new token requires a matrix-vector product with every weight matrix in the model. At small batch sizes the GPU spends almost all its time <em>reading weights from memory</em>, not multiplying. So a hard upper bound on single-stream speed is:</p>
+\[ \text{tokens per second} \;\lesssim\; \frac{\text{memory bandwidth}}{\text{bytes of weights}} \]
+<p>An H100 reads its memory at about 3.35 TB/s. For a 7B model:</p>
+<table>
+<thead><tr><th>Format</th><th>Weight bytes</th><th>Upper bound, batch of 1</th></tr></thead>
+<tbody>
+<tr><td>FP16 / BF16</td><td>14 GB</td><td>≈ 240 tokens/s</td></tr>
+<tr><td>INT8</td><td>7 GB</td><td>≈ 480 tokens/s</td></tr>
+<tr><td>INT4 with group scales</td><td>≈ 3.6 GB</td><td>≈ 930 tokens/s</td></tr>
+</tbody>
+</table>
+<p>Real numbers are lower (kernels are not perfect, and the KV cache must be read too), but the ratio holds: halving the bytes roughly doubles single-stream decode speed. And the 70B model that needed two GPUs in FP16 fits on one 80 GB GPU at 4 bits (about 36 GB), with room left for the KV cache.</p>
+<div class="callout warn"><p><strong>Prefill is different.</strong> Processing the prompt multiplies many tokens at once, so it is limited by compute, not memory. Weight-only quantization speeds up decoding much more than prefill; to speed up prefill you need lower-precision <em>arithmetic</em> (FP8 or INT8 activations), not just smaller weights.</p></div>
+</section>
+<section id="step-2-the-mapping-from-real-numbers-to-integers">
+  <h2>05 &mdash; Step 2: the mapping from real numbers to integers</h2>
+<p>Quantization maps each real value \(x\) to an integer \(q\) on a grid, and back:</p>
+\[ q = \mathrm{clamp}\Big(\mathrm{round}\big(\tfrac{x}{s}\big) + z,\ q_{\min},\ q_{\max}\Big), \qquad \hat x = s\,(q - z) \]
+<p>The <strong>symmetric</strong> version sets \(z = 0\) and picks the scale so the largest magnitude lands on the last level: for signed 8-bit integers (−127 to 127), \(s = \max|x| / 127\); for 4-bit (−7 to 7), \(s = \max|x| / 7\). The error \(\hat x - x\) is at most \(s/2\) per value.</p>
+<h3>Worked: five weights to INT8, then to INT4</h3>
+<p>Take \(x = [0.12,\ -0.50,\ 0.33,\ 1.27,\ -0.04]\). The largest magnitude is 1.27.</p>
+<ul>
+<li><strong>INT8:</strong> \(s = 1.27/127 = 0.01\), so \(q = [12, -50, 33, 127, -4]\). Dequantizing gives back exactly \([0.12, -0.50, 0.33, 1.27, -0.04]\): 256 levels are plenty.</li>
+<li><strong>INT4:</strong> \(s = 1.27/7 \approx 0.181\). Then \(x/s = [0.66, -2.76, 1.82, 7.0, -0.22]\), which rounds to \(q = [1, -3, 2, 7, 0]\). Dequantized: \([0.181, -0.544, 0.363, 1.27, 0]\). The mean absolute error is 0.036, and the small weight −0.04 has become exactly 0.</li>
+</ul>
+<p>With only 15 levels, the grid is coarse, and its spacing is set entirely by the biggest value.</p>
+</section>
+<section id="step-3-outliers-and-why-scales-are-shared-by-small-groups">
+  <h2>06 &mdash; Step 3: outliers, and why scales are shared by small groups</h2>
+<p>Now remove the outlier: \(x = [0.12, -0.50, 0.33, 0.27, -0.04]\). At INT4, \(s = 0.50/7 = 0.071\), and the mean absolute error falls from 0.036 to 0.019. Nearly halved, just because one large value no longer stretches the grid.</p>
+<p>Real weight matrices have such outliers, so sharing one scale across a whole matrix ("per-tensor") wastes most levels on rare big values. The fixes trade a little storage for accuracy:</p>
+<ul>
+<li><strong>Per-channel</strong>: one scale per output row.</li>
+<li><strong>Per-group</strong>: one scale per block of \(g\) consecutive weights, typically \(g = 128\). An FP16 scale per 128 weights adds \(16/128 = 0.125\) bits per weight, so "4-bit" is really about 4.1 to 4.5 bits per weight once scales (and zero-points, if any) are counted.</li>
+</ul>
+<p>Group-wise INT4 is the standard for weight-only quantization of LLMs.</p>
+</section>
+<section id="step-4-activations-are-the-hard-part">
+  <h2>07 &mdash; Step 4: activations are the hard part</h2>
+<p>Weights are fixed, so they can be quantized carefully once, offline. Activations change with every input, and LLM activations have a specific problem: in models beyond a few billion parameters, a handful of hidden dimensions carry values tens to hundreds of times larger than the rest, consistently across tokens. Quantize those activations to INT8 with one scale and everything else collapses to a few levels.</p>
+<p>That is why two families exist:</p>
+<ul>
+<li><strong>Weight-only (W4A16, W8A16)</strong>: weights stored in 4 or 8 bits, converted back to 16-bit just before the multiply. Easy, robust, and the right choice for memory-bound decoding.</li>
+<li><strong>Weights and activations (W8A8, FP8)</strong>: the multiply itself runs in 8 bits on tensor cores, roughly doubling arithmetic throughput. Needs a fix for activation outliers. <strong>SmoothQuant</strong> moves the difficulty from activations into weights with an exactly equivalent rescaling: \(XW = (X\,\mathrm{diag}(s)^{-1})(\mathrm{diag}(s)\,W)\). Dividing the outlier channels of \(X\) by \(s\) tames them; multiplying the matching rows of \(W\) by \(s\) keeps the product unchanged. <strong>FP8</strong> sidesteps much of the problem because a floating-point format has far more dynamic range than an integer one.</li>
+</ul>
+</section>
+<section id="step-5-smarter-rounding-with-gptq-and-awq">
+  <h2>08 &mdash; Step 5: smarter rounding with GPTQ and AWQ</h2>
+<p>Rounding each weight to its nearest level independently ("round to nearest") is a reasonable baseline but leaves accuracy on the table at 4 bits. Two methods dominate:</p>
+<h3>GPTQ: compensate each error</h3>
+<p>GPTQ quantizes a weight matrix one column at a time. After rounding a column, it adjusts the <em>not-yet-quantized</em> columns to cancel the error that rounding introduced, as measured on calibration inputs. The adjustment uses second-order information (an approximation of how sensitive the layer's output is to each weight), so errors in sensitive directions get compensated most. The result is much better 4-bit (and usable 3-bit) quality than plain rounding, computed in minutes to hours on one GPU.</p>
+<h3>AWQ: protect the weights that matter</h3>
+<p>AWQ starts from an observation: a small fraction of weight channels (around 1%) matter far more than the rest, and you can tell which ones from the <em>activation</em> magnitudes on calibration data. Instead of keeping those channels in high precision (awkward for kernels), AWQ scales them up before quantization and scales the matching activations down, the same equivalence trick as SmoothQuant, so their relative rounding error shrinks. No retraining, and it generalises well across tasks.</p>
+<p>In practice both produce 4-bit models that lose little quality at 7B parameters and above. Which one to use is often decided by what your serving engine supports.</p>
+</section>
+<section id="step-6-the-formats-you-will-meet">
+  <h2>09 &mdash; Step 6: the formats you will meet</h2>
+<table>
+<thead><tr><th>Format</th><th>Bits</th><th>What it is good for</th></tr></thead>
+<tbody>
+<tr><td>FP32</td><td>32</td><td>Master weights and optimizer state during training</td></tr>
+<tr><td>BF16 / FP16</td><td>16</td><td>The default for inference; BF16 has FP32's range, FP16 has more precision</td></tr>
+<tr><td>FP8 E4M3</td><td>8</td><td>Inference and training matmuls on Hopper-class GPUs and newer; range about ±448</td></tr>
+<tr><td>FP8 E5M2</td><td>8</td><td>Gradients in FP8 training, where range matters more than precision; about ±57,344</td></tr>
+<tr><td>INT8</td><td>8</td><td>W8A8 with SmoothQuant, or near-lossless weight-only</td></tr>
+<tr><td>INT4 (GPTQ, AWQ)</td><td>4 + scales</td><td>Weight-only serving on GPUs; the common "4-bit" checkpoint</td></tr>
+<tr><td>NF4</td><td>4 + scales</td><td>Frozen base weights in QLoRA fine-tuning</td></tr>
+<tr><td>GGUF k-quants (Q4_K_M, Q5_K_M, …)</td><td>2 to 8</td><td>llama.cpp and Ollama on CPUs and laptops; mixed precision per tensor</td></tr>
+</tbody>
+</table>
+</section>
+<section id="step-7-quantizing-the-kv-cache">
+  <h2>10 &mdash; Step 7: quantizing the KV cache</h2>
+<p>At high concurrency the KV cache, not the weights, fills GPU memory (see the inference-internals topic for its size formula). Storing keys and values in FP8 instead of FP16 halves the cache, which roughly doubles how many sequences or how much context fits at once. Serving engines expose this as a single flag (for example <code>--kv-cache-dtype fp8</code> in vLLM). Quality impact is usually small; check long-context tasks, where errors can accumulate.</p>
+</section>
+<section id="step-8-distillation-a-smaller-model-trained-to-imitate">
+  <h2>11 &mdash; Step 8: distillation, a smaller model trained to imitate</h2>
+<p>Quantization keeps the model and shrinks its numbers. Distillation trains a different, smaller model. The student learns from the teacher's full output distribution, not just the right answer, because the distribution carries information: a teacher that gives "cat" 0.7 and "kitten" 0.2 and "car" 0.001 is teaching which mistakes are reasonable.</p>
+<p>The classic loss mixes imitation and ordinary training, with both distributions softened by a temperature \(T\):</p>
+\[ \mathcal{L} = \alpha\, T^2\, \mathrm{KL}\big(p^{\text{teacher}}_T \,\|\, p^{\text{student}}_T\big) + (1 - \alpha)\, \mathrm{CE}\big(y, p^{\text{student}}\big) \]
+<p>Softening (\(T &gt; 1\)) exposes the small probabilities that carry the teacher's knowledge; the \(T^2\) factor keeps the gradient size comparable as \(T\) changes. For LLMs, the common practical form is <strong>sequence-level distillation</strong>: generate a large set of answers with the teacher and fine-tune the student on them. Much of the instruction data behind today's small open models was produced this way.</p>
+<p>Distillation is expensive (it is training) but can buy a large cut: DistilBERT kept about 97% of BERT's language-understanding score with 40% fewer parameters and 60% faster inference. Use it when the same narrow task runs at very high volume.</p>
+</section>
+<section id="step-9-pruning-and-structured-sparsity">
+  <h2>12 &mdash; Step 9: pruning and structured sparsity</h2>
+<p>Pruning sets weights to zero. Two kinds behave very differently:</p>
+<ul>
+<li><strong>Unstructured</strong>: remove any individual weights (for example, the smallest by magnitude). One-shot methods such as SparseGPT and Wanda can zero 50% of an LLM's weights with modest quality loss. But scattered zeros do not make a dense GPU kernel faster; you only save if you store and compute in a sparse format, which rarely pays off at 50%.</li>
+<li><strong>Structured</strong>: remove whole units (heads, channels, layers), or impose the <strong>2:4 pattern</strong> (two zeros in every four weights), which NVIDIA tensor cores since Ampere can execute at up to twice the matmul throughput. Speedups are real; quality loss is larger, and usually needs some retraining to recover.</li>
+</ul>
+<p>In LLM serving today, pruning is used far less than quantization. Know it exists and why unstructured sparsity rarely gives speed.</p>
+</section>
+<section id="step-10-compilation-and-kernel-fusion">
+  <h2>13 &mdash; Step 10: compilation and kernel fusion</h2>
+<p>A transformer layer is dozens of small operations: a matmul, add bias, apply activation, normalise. Run separately, each reads its input from GPU memory and writes its output back. <strong>Kernel fusion</strong> combines them into one kernel that keeps intermediates in fast on-chip memory, removing those round trips. FlashAttention is the famous example: it fuses the whole attention computation so the full attention matrix is never written to memory.</p>
+<p>Tools: <code>torch.compile</code> generates fused kernels from PyTorch code; ONNX Runtime and TensorRT / TensorRT-LLM optimise an exported graph for specific hardware; serving engines such as vLLM ship hand-tuned fused kernels. Compilation changes no weights and no outputs (beyond floating-point noise), so it is the one lever with no quality cost.</p>
+</section>
+<section id="measuring-the-quality-cost">
+  <h2>14 &mdash; Measuring the quality cost</h2>
+<p>Never trust a compression method's headline; measure on your own task:</p>
+<ol>
+<li><strong>Perplexity</strong> on held-out text: a quick, sensitive check. A rise of a few percent at 4 bits is typical; a large jump means something went wrong.</li>
+<li><strong>Your task evaluation</strong> (accuracy, faithfulness, pass rate) compared side by side with the 16-bit model on the same set.</li>
+<li><strong>Edge cases</strong>: long contexts, other languages, maths and code, which degrade first.</li>
+</ol>
+<p>Rules of thumb, not guarantees: 8-bit weights are close to lossless; good 4-bit methods cost a little at 7B and above; small models (under about 3B) and 3-bit or lower suffer noticeably. A larger model at 4 bits usually beats a smaller model at 16 bits that uses the same memory.</p>
+</section>
+<section id="choosing-a-lever">
+  <h2>15 &mdash; Choosing a lever</h2>
+<table>
+<thead><tr><th>Situation</th><th>First choice</th></tr></thead>
+<tbody>
+<tr><td>Model does not fit on the GPU</td><td>INT4 weight-only (AWQ or GPTQ)</td></tr>
+<tr><td>Single-user latency too high</td><td>Weight-only quantization, then speculative decoding</td></tr>
+<tr><td>Throughput too low at high concurrency</td><td>FP8 weights and activations, FP8 KV cache, continuous batching</td></tr>
+<tr><td>Running on a laptop or CPU</td><td>GGUF Q4_K_M or Q5_K_M with llama.cpp or Ollama</td></tr>
+<tr><td>Fine-tuning a big model on one GPU</td><td>QLoRA: NF4 frozen base plus 16-bit LoRA adapters</td></tr>
+<tr><td>One narrow task at enormous volume</td><td>Distil into a smaller model, then quantize it</td></tr>
+</tbody>
+</table>
+</section>
+<section id="in-code-group-wise-int4-by-hand-then-the-real-thing">
+  <h2>16 &mdash; In code: group-wise INT4 by hand, then the real thing</h2>
+<pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="kw">def</span> <span class="fn">quantize_groupwise</span>(w, bits=<span class="nr">4</span>, group=<span class="nr">128</span>):
+    <span class="st">"""Symmetric per-group quantization. Returns integers, scales, and the reconstruction."""</span>
+    qmax = <span class="nr">2</span> ** (bits - <span class="nr">1</span>) - <span class="nr">1</span> <span class="cm"># 7 for 4-bit, 127 for 8-bit</span>
+    w = w.reshape(-<span class="nr">1</span>, group)
+    scale = np.abs(w).max(axis=<span class="nr">1</span>, keepdims=<span class="nr">True</span>) / qmax
+    scale[scale == <span class="nr">0</span>] = <span class="nr">1.0</span>
+    q = np.clip(np.round(w / scale), -qmax, qmax).astype(np.int8)
+    <span class="kw">return</span> q, scale.astype(np.float16), (q * scale).reshape(-<span class="nr">1</span>)
+
+rng = np.random.default_rng(<span class="nr">0</span>)
+w = rng.normal(<span class="nr">0</span>, <span class="nr">0.02</span>, <span class="nr">4096</span> * <span class="nr">128</span>)
+w[::<span class="nr">997</span>] *= <span class="nr">40</span> <span class="cm"># sprinkle outliers, like real weights</span>
+<span class="kw">for</span> g in (<span class="nr">4096</span> * <span class="nr">128</span>, <span class="nr">128</span>):                        <span class="cm"># one scale for everything, vs per-128</span>
+    _, _, w_hat = quantize_groupwise(w, bits=<span class="nr">4</span>, group=g)
+    <span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">group=</span><span class="st">{</span>g<span class="st">:</span><span class="st">&gt;7</span><span class="st">}</span><span class="st">: mean abs error </span><span class="st">{</span>np.abs(w_hat - w).mean()<span class="st">:</span><span class="st">.5f</span><span class="st">}</span><span class="st">"</span>)
+</pre>
+<p>The per-128 error comes out several times smaller than the single-scale error: Step 3 in numbers. Loading a ready-made 4-bit model in practice is a single argument:</p>
+<pre><span class="cm"># vLLM: serve an AWQ checkpoint, with an FP8 KV cache</span>
+<span class="cm">#   vllm serve TheBloke/Mistral-7B-Instruct-v0.2-AWQ --quantization awq --kv-cache-dtype fp8</span>
+<span class="cm"># Transformers + bitsandbytes: load any model in 4-bit NF4 (the QLoRA setup)</span>
+<span class="kw">from</span> transformers <span class="kw">import</span> AutoModelForCausalLM, BitsAndBytesConfig
+<span class="kw">import</span> torch
+cfg = BitsAndBytesConfig(load_in_4bit=<span class="nr">True</span>, bnb_4bit_quant_type=<span class="st">"</span><span class="st">nf4</span><span class="st">"</span>,
+                         bnb_4bit_compute_dtype=torch.bfloat16, bnb_4bit_use_double_quant=<span class="nr">True</span>)
+model = AutoModelForCausalLM.from_pretrained(<span class="st">"</span><span class="st">meta-llama/Llama-3.1-8B-Instruct</span><span class="st">"</span>,
+                                             quantization_config=cfg, device_map=<span class="st">"</span><span class="st">auto</span><span class="st">"</span>)
+</pre>
+</section>
 <section id="quantization-basics">
-  <h2>02 &mdash; Quantization basics</h2>
+  <h2>17 &mdash; Quantization basics</h2>
 <pre class="formula">symmetric:   s = max|x| / (2^{b−1} − 1),   q = round(x / s),   x̂ = s·q
 asymmetric:  s = (max − min)/(2^b − 1),  z = round(−min/s),  q = round(x/s) + z
 int8 example: weights in [−0.5, 0.5] → s = 0.5/127 ≈ 0.0039; 0.123 → q = 31 → x̂ = 0.122</pre>
@@ -47,7 +241,7 @@ int8 example: weights in [−0.5, 0.5] → s = 0.5/127 ≈ 0.0039; 0.123 → q =
 </ul>
 </section>
 <section id="llm-quantization-methods">
-  <h2>03 &mdash; LLM quantization methods</h2>
+  <h2>18 &mdash; LLM quantization methods</h2>
 <p>The core difficulty: LLM activations contain a few channels with values 100× larger than the rest. One shared scale then crushes everything else to zero.</p>
 <ul>
 <li><strong>LLM.int8()</strong>: detect outlier channels, run them in fp16, the rest in int8.</li>
@@ -60,7 +254,7 @@ int8 example: weights in [−0.5, 0.5] → s = 0.5/127 ≈ 0.0039; 0.123 → q =
 <p>Rule of thumb: 8-bit is nearly free; 4-bit weight-only usually costs ~1–2 points on benchmarks, more on math/code; below 4 bits degrades fast. Always measure on your own eval.</p>
 </section>
 <section id="knowledge-distillation">
-  <h2>04 &mdash; Knowledge distillation</h2>
+  <h2>19 &mdash; Knowledge distillation</h2>
 <p>A large teacher's output distribution says not just "the answer is cat" but "dog is somewhat plausible, car is not". That "dark knowledge" gives a student far more signal per example than one-hot labels.</p>
 <pre class="formula">L = α · CE(y, s) + (1 − α) · T² · KL( softmax(t/T) ‖ softmax(s/T) )
 T: temperature (2–5 typical) softens both distributions
@@ -73,11 +267,11 @@ T²: restores gradient scale, which softening shrinks by 1/T²</pre>
 <p>Startup pattern: prototype with a frontier API model, log inputs/outputs, distill into a fine-tuned 1–8B open model that's 10–50× cheaper to serve.</p>
 </section>
 <section id="pruning-and-sparsity">
-  <h2>05 &mdash; Pruning and sparsity</h2>
+  <h2>20 &mdash; Pruning and sparsity</h2>
 <p>Remove weights or whole structures. <strong>Unstructured</strong> pruning (zero individual weights, e.g. SparseGPT, Wanda) keeps accuracy at 50% sparsity but needs sparse kernels to be faster. <strong>2:4 structured sparsity</strong> (2 zeros in every 4) is accelerated by Ampere+ tensor cores. <strong>Structured</strong> pruning removes heads, channels or layers, then distills to recover (e.g. Minitron).</p>
 </section>
 <section id="onnx-onnx-runtime-tensorrt">
-  <h2>06 &mdash; ONNX, ONNX Runtime, TensorRT</h2>
+  <h2>21 &mdash; ONNX, ONNX Runtime, TensorRT</h2>
 <ul>
 <li><strong>ONNX</strong>: an open, framework-neutral format for a model's computation graph and weights. <code>torch.onnx.export(model, example_inputs, "m.onnx", dynamic_axes=…)</code> (or the newer dynamo-based exporter).</li>
 <li><strong>ONNX Runtime</strong>: runs ONNX graphs with graph optimizations (constant folding, operator fusion) and pluggable execution providers: CPU, CUDA, TensorRT, CoreML, DirectML. Supports int8 quantization. Great for CPU or edge serving of encoders and classifiers.</li>
@@ -87,8 +281,29 @@ T²: restores gradient scale, which softening shrinks by 1/T²</pre>
 <p>Rule of thumb: LLM generation → vLLM/SGLang/TensorRT-LLM. Embedding models, rerankers, classifiers, vision → ONNX Runtime or TensorRT (or Triton Inference Server hosting them).</p>
 </section>
 <section id="kernel-fusion-and-why-compilers-help">
-  <h2>07 &mdash; Kernel fusion and why compilers help</h2>
+  <h2>22 &mdash; Kernel fusion and why compilers help</h2>
 <p>Every separate GPU op reads its input from HBM and writes its output back. A chain like matmul → add bias → GELU → dropout does four round-trips; a fused kernel does one. Fusion, FlashAttention, torch.compile, TensorRT and Triton custom kernels are all applications of one principle: <strong>minimize bytes moved between HBM and the compute units</strong>.</p>
+</section>
+<p class="part-divider">In production</p>
+<section id="where-people-get-lost">
+  <h2>23 &mdash; Where people get lost</h2>
+<ul>
+<li><strong>"4-bit means 4 bits per weight."</strong> Scales and zero-points add roughly 0.1 to 0.5 bits; budget 0.5 to 0.6 bytes per parameter.</li>
+<li><strong>Expecting weight-only quantization to speed up prefill.</strong> Prefill is compute-bound; smaller weights mainly speed up decoding.</li>
+<li><strong>Quantizing activations like weights.</strong> Activation outliers wreck naive INT8; use SmoothQuant-style rescaling or FP8.</li>
+<li><strong>Judging by perplexity alone.</strong> Long-context, multilingual, maths and code tasks degrade first and can hide behind a small perplexity change.</li>
+<li><strong>Calibrating on the wrong data.</strong> GPTQ and AWQ fit to their calibration set; calibrate on text like your production traffic.</li>
+<li><strong>Expecting 50% unstructured sparsity to halve latency.</strong> Dense kernels do not skip scattered zeros.</li>
+<li><strong>Forgetting the KV cache.</strong> At high concurrency it can outweigh the weights; quantizing it may matter more.</li>
+</ul>
+</section>
+<section id="check-yourself">
+  <h2>24 &mdash; Check yourself</h2>
+<details><summary>Quantize \([0.12, -0.50, 0.33, 1.27, -0.04]\) to symmetric INT4. What scale and integers do you get, and what happens to −0.04?</summary><div class="answer">\(s = 1.27/7 \approx 0.181\); integers \([1, -3, 2, 7, 0]\). −0.04 is less than half a step, so it rounds to 0.</div></details>
+<details><summary>Why does per-group quantization beat per-tensor, and what does it cost?</summary><div class="answer">Each small group gets a scale fitted to its own largest value, so one outlier only coarsens 128 weights instead of the whole matrix. The cost is storing one scale per group, about 0.125 extra bits per weight for an FP16 scale per 128 weights.</div></details>
+<details><summary>A 7B model decodes at 60 tokens/s for one user in FP16. Roughly what would INT4 weight-only give, and why only roughly?</summary><div class="answer">Up to about 3 to 4 times faster, since roughly 4 times fewer bytes are read per token. Not exactly 4×: dequantization adds work, kernels are not ideal, and the KV cache and activations still use 16-bit reads.</div></details>
+<details><summary>What problem does SmoothQuant solve, and why is the result exactly equivalent?</summary><div class="answer">LLM activations have a few huge outlier channels that break INT8 activation quantization. SmoothQuant divides those activation channels by a factor and multiplies the corresponding weight rows by the same factor, so \(XW\) is unchanged while the activations become easy to quantize.</div></details>
+<details><summary>When would you distil instead of quantize?</summary><div class="answer">When one narrow task runs at very high volume and a much smaller model can learn it: distillation can cut size and cost by large factors, but it costs a training run. Quantization is the cheap first step for general-purpose serving, and the two combine.</div></details>
 </section>
 
 <div class="sheet-pager"><a class="prev" href="inference-internals.html"><span>Previous</span>Inference internals</a><a class="next" href="serving.html"><span>Next</span>Serving &amp; scaling</a></div>

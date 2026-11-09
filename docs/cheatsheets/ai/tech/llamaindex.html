@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LlamaIndex -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Tech &amp; tools" data-href="index.html">
+<meta name="ai-topic" content="tech/llamaindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -29,14 +31,15 @@
   <a href="#llamaindex-vs-langchain"><span class="num">11</span> LlamaIndex vs LangChain</a>
   <a href="#production-ops"><span class="num">12</span> Production &amp; Ops</a>
   <a href="#related-topics"><span class="num">13</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">14</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">15</span> Check yourself</a>
+  <a href="#where-people-get-lost"><span class="num">14</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">15</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">16</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>LlamaIndex <span>// Tech &amp; tools</span></h1>
   <p>Data-first RAG framework: loaders, indexes, query engines.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">7 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -287,16 +290,20 @@ response = chat_engine.chat("What about enterprise plans?")
 <ul><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — full pipeline reference</li><li><a href="../rag/rag-in-production.html">Making RAG good &amp; measuring it</a> — production chat</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> — storage layer</li><li><a href="../rag/chunking.html">Chunking</a> — node parser tuning</li><li><a href="../rag/hybrid-search.html">Hybrid search &amp; query understanding</a> — QueryFusionRetriever</li><li><a href="langchain.html">LangChain</a> — orchestration layer</li><li><a href="../rag/embeddings.html">Embeddings</a> — theory</li><li><a href="../fundamentals/api.html">Calling a model</a> — embed + LLM calls</li><li><a href="../production/evals.html">Evaluating LLM features</a> — source_nodes recall tests</li></ul>
 </div>
 </section>
-<section id="common-pitfalls">
-  <h2>14 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>14 &mdash; Where people get lost</h2>
 <div class="card">
 <ul><li><strong>Default chunk size wrong</strong> for your docs — eval before prod</li><li><strong>Not persisting index</strong> — rebuild every deploy wastes time and money</li><li><strong>Ignoring source_nodes</strong> in eval — answer quality can hide bad retrieval</li><li><strong>Mixing embedding models</strong> in same index — never do this</li><li><strong>refine mode at scale</strong> — too many LLM calls; prefer compact + rerank</li><li><strong>Skipping metadata filters</strong> — cross-tenant leakage in multi-tenant SaaS</li></ul>
 </div> <div class="card">
 <h3>Re-index playbook</h3><ol><li>Create new namespace/collection with embed version suffix (e.g. <code>_e3small_v2</code>)</li><li>Run IngestionPipeline on full corpus into new namespace</li><li>Eval recall@5 on golden set against new index</li><li>Blue/green switch query engine config in app</li><li>Delete old namespace after 7-day rollback window</li></ol><p>Coordinate with <a href="../rag/document-ingestion.html">Document ingestion</a> jobs for scheduled refresh.</p>
 </div>
 </section>
+<section id="how-this-connects">
+  <h2>15 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../fundamentals/api.html">Calling a model</a> &mdash; The API call end to end: messages, roles, streaming, tool calls, errors and retries, across providers.</li><li><a href="../rag/embeddings.html">Embeddings</a> &mdash; Turning meaning into numbers: dense vectors, cosine similarity, sentence embeddings and contrastive training.</li><li><a href="../rag/embedding-models.html">Choosing an embedding model</a> &mdash; Model families, dimensions, benchmarks, cost, and when to fine-tune or switch.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../rag/document-ingestion.html">Document ingestion</a> &mdash; Parsing PDFs and HTML, OCR, deduplication and keeping the index fresh.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li></ul><h3>Where this shows up later</h3><ul><li><a href="crewai.html">CrewAI</a> &mdash; Role-based multi-agent crews: agents, tasks, processes.</li><li><a href="pinecone.html">Pinecone</a> &mdash; Managed serverless vector database: namespaces, metadata filters, hybrid.</li><li><a href="chroma.html">Chroma</a> &mdash; Lightweight embedded vector store for prototypes and local RAG.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>15 &mdash; Check yourself</h2>
+  <h2>16 &mdash; Check yourself</h2>
 <details>
 <summary>Node vs Document?</summary>
 <div class="answer">Document = loaded file or record. Node = parsed chunk(s) with metadata — the unit that gets embedded, stored, and retrieved.</div>

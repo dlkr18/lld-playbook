@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Transformers &amp; attention -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="LLM fundamentals" data-href="index.html">
+<meta name="ai-topic" content="fundamentals/transformers">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,41 +19,43 @@
   <h2>Transformers &amp; attention</h2>
   <a href="index.html">&larr; LLM fundamentals</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-surface-pytorch-huggingface-mental-model"><span class="num">04</span> API Surface (PyTorch / HuggingFace mental model)</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#deep-dive-self-attention"><span class="num">07</span> Deep Dive: Self-Attention</a>
-  <a href="#deep-dive-multi-head-attention"><span class="num">08</span> Deep Dive: Multi-Head Attention</a>
-  <a href="#deep-dive-positional-encoding-rope"><span class="num">09</span> Deep Dive: Positional Encoding (RoPE)</a>
-  <a href="#deep-dive-ffn-residual-connections"><span class="num">10</span> Deep Dive: FFN &amp; Residual Connections</a>
-  <a href="#deep-dive-complexity-optimizations"><span class="num">11</span> Deep Dive: Complexity &amp; Optimizations</a>
-  <a href="#transformer-internals-attention-for-real"><span class="num">12</span> Transformer internals — attention, for real</a>
-  <a href="#tokenization-bpe-in-one-paragraph"><span class="num">13</span> Tokenization: BPE in one paragraph</a>
-  <a href="#self-attention-the-actual-computation"><span class="num">14</span> Self-attention: the actual computation</a>
-  <a href="#the-block-and-the-shapes"><span class="num">15</span> The block, and the shapes</a>
-  <a href="#two-numbers-you-should-be-able-to-estimate"><span class="num">16</span> Two numbers you should be able to estimate</a>
-  <a href="#mini-scenario-the-count-the-letters-bug-report"><span class="num">17</span> Mini-scenario: the &quot;count the letters&quot; bug report</a>
-  <a href="#embeddings"><span class="num">18</span> Embeddings</a>
-  <a href="#scaled-dot-product-attention"><span class="num">19</span> Scaled dot-product attention</a>
-  <a href="#multi-head-attention-mqa-and-gqa"><span class="num">20</span> Multi-head attention, MQA and GQA</a>
-  <a href="#positional-encoding-and-rope"><span class="num">21</span> Positional encoding and RoPE</a>
-  <a href="#the-transformer-block"><span class="num">22</span> The transformer block</a>
-  <a href="#a-complete-mini-gpt-in-pytorch"><span class="num">23</span> A complete mini-GPT in PyTorch</a>
-  <a href="#counting-parameters-and-flops"><span class="num">24</span> Counting parameters and FLOPs</a>
-  <a href="#flashattention"><span class="num">25</span> FlashAttention</a>
-  <a href="#production-ops"><span class="num">26</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">27</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">28</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">29</span> Check yourself</a>
-  <a href="#build-it"><span class="num">30</span> Build it</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-surface-pytorch-huggingface-mental-model"><span class="num">05</span> API Surface (PyTorch / HuggingFace mental model)</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#deep-dive-self-attention"><span class="num">08</span> Deep Dive: Self-Attention</a>
+  <a href="#deep-dive-multi-head-attention"><span class="num">09</span> Deep Dive: Multi-Head Attention</a>
+  <a href="#deep-dive-positional-encoding-rope"><span class="num">10</span> Deep Dive: Positional Encoding (RoPE)</a>
+  <a href="#deep-dive-ffn-residual-connections"><span class="num">11</span> Deep Dive: FFN &amp; Residual Connections</a>
+  <a href="#deep-dive-complexity-optimizations"><span class="num">12</span> Deep Dive: Complexity &amp; Optimizations</a>
+  <a href="#transformer-internals-attention-for-real"><span class="num">13</span> Transformer internals — attention, for real</a>
+  <a href="#tokenization-bpe-in-one-paragraph"><span class="num">14</span> Tokenization: BPE in one paragraph</a>
+  <a href="#self-attention-the-actual-computation"><span class="num">15</span> Self-attention: the actual computation</a>
+  <a href="#the-block-and-the-shapes"><span class="num">16</span> The block, and the shapes</a>
+  <a href="#two-numbers-you-should-be-able-to-estimate"><span class="num">17</span> Two numbers you should be able to estimate</a>
+  <a href="#mini-scenario-the-count-the-letters-bug-report"><span class="num">18</span> Mini-scenario: the &quot;count the letters&quot; bug report</a>
+  <a href="#embeddings"><span class="num">19</span> Embeddings</a>
+  <a href="#scaled-dot-product-attention"><span class="num">20</span> Scaled dot-product attention</a>
+  <a href="#multi-head-attention-mqa-and-gqa"><span class="num">21</span> Multi-head attention, MQA and GQA</a>
+  <a href="#positional-encoding-and-rope"><span class="num">22</span> Positional encoding and RoPE</a>
+  <a href="#the-transformer-block"><span class="num">23</span> The transformer block</a>
+  <a href="#a-complete-mini-gpt-in-pytorch"><span class="num">24</span> A complete mini-GPT in PyTorch</a>
+  <a href="#counting-parameters-and-flops"><span class="num">25</span> Counting parameters and FLOPs</a>
+  <a href="#flashattention"><span class="num">26</span> FlashAttention</a>
+  <a href="#production-ops"><span class="num">27</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">28</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">29</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">30</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">31</span> Check yourself</a>
+  <a href="#build-it"><span class="num">32</span> Build it</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Transformers &amp; attention <span>// LLM fundamentals</span></h1>
   <p>Embeddings, attention, multi-head and GQA, RoPE, the block, a mini-GPT, FLOPs and FlashAttention.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">20 min read</span><span class="tag">4 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -60,17 +64,21 @@
 <div class="diagram"><img alt="Transformers &amp; Attention overview" src="../fundamentals/img/transformers-attention-main.png"/></div><p class="diagram-caption">Decoder-only transformer: embeddings + positional encoding feed stacked blocks of causal self-attention and FFN; output logits drive autoregressive next-token prediction.</p>
 <div class="diagram"><img src="../fundamentals/img/transformers-attention-scaled-zoom.png" alt="Scaled dot-product attention with every shape: project to Q, K, V, multiply Q by K-transpose, divide by the square root of d_k, apply the causal mask and softmax, multiply by V."></div><p class="diagram-caption">Scaled dot-product attention with every shape: project to Q, K, V, multiply Q by K-transpose, divide by the square root of d_k, apply the causal mask and softmax, multiply by V.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Attention</strong></td><td>Lets each token weigh every other token to decide relevance.</td></tr><tr><td><strong>Softmax</strong></td><td>Turns scores into probabilities that sum to 1.</td></tr><tr><td><strong>Q / K / V</strong></td><td>Query, key, value projections; attention = softmax(QKᵀ/√dk)·V.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card"><p>The <strong>transformer</strong> (Vaswani et al., 2017) replaced recurrence with <strong>self-attention</strong>: each token attends to others in parallel. Modern chat LLMs use <strong>decoder-only</strong> stacks with a <strong>causal mask</strong> so generation stays left-to-right.</p><h3>Functional</h3><ul><li>Map token sequence to next-token logits</li><li>Capture long-range dependencies without RNN vanishing gradients</li><li>Parallelize prefill across prompt tokens on GPU</li></ul><h3>Non-functional</h3><ul><li>Attention cost O(n²) in sequence length n (naive)</li><li>Memory scales with layers × heads × seq_len (KV cache)</li></ul><blockquote>See <a href="what-is-an-llm.html">What an LLM is</a> for the full training→inference story; this sheet is the <strong>mechanism</strong>.</blockquote></div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Self-attention</td><td>Q,K,V from same sequence; weighted sum of values</td><td>Not cross-attention (encoder-decoder)</td></tr><tr><td>Scaled dot-product</td><td>softmax(QK<sup>T</sup>/√d<sub>k</sub>)V</td><td>Scaling prevents softmax saturation</td></tr><tr><td>Causal mask</td><td>Position i cannot attend to j &gt; i</td><td>Required for autoregressive LM</td></tr><tr><td>Multi-head</td><td>h parallel attention subspaces, concat + project</td><td>d_model = h × d_head typically</td></tr><tr><td>RoPE</td><td>Rotary positional encoding in Q,K</td><td>Llama/Mistral default; better length extrapolation</td></tr><tr><td>FFN</td><td>Two linear layers with activation (SwiGLU)</td><td>~2/3 of model parameters</td></tr><tr><td>FlashAttention</td><td>IO-aware fused attention kernels</td><td>Same math, less HBM traffic</td></tr></table></div>
 </section>
 <section id="api-surface-pytorch-huggingface-mental-model">
-  <h2>04 &mdash; API Surface (PyTorch / HuggingFace mental model)</h2>
+  <h2>05 &mdash; API Surface (PyTorch / HuggingFace mental model)</h2>
 <div class="card"><pre>import torch
 import torch.nn.functional as F
 
@@ -85,11 +93,11 @@ def scaled_dot_product_attention(q, k, v, mask=None):
 # outputs = model(input_ids, use_cache=True)  # returns past_key_values</pre><p>Production apps rarely implement attention directly — but interviews ask you to derive QKV and explain causal masking.</p></div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card"><table><tr><th>Architecture</th><th>Use When</th><th>Alternative</th></tr><tr><td>Decoder-only (GPT)</td><td>General chat, code, agents</td><td>Encoder-only for embeddings</td></tr><tr><td>Encoder-decoder (T5)</td><td>Fixed source→target (translation)</td><td>Decoder-only + prompt for chat</td></tr><tr><td>Encoder-only (BERT)</td><td>Classification, embeddings</td><td>Not for open-ended generation</td></tr><tr><td>Sparse attention</td><td>Very long context (&gt;32K)</td><td>Full attention + KV optimizations</td></tr></table></div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card highlight"><pre>Token IDs -&gt; Embedding + PosEnc
   -&gt; [Block] x L:
        x -&gt; LN -&gt; Multi-Head Causal Attention -&gt; +residual
@@ -97,32 +105,32 @@ def scaled_dot_product_attention(q, k, v, mask=None):
   -&gt; LN -&gt; Linear(d_model, vocab) -&gt; logits</pre></div><div class="card"><div class="flow"><div class="step" data-num="1"><span class="label">Embed</span><div class="detail">Token + position info.</div></div><div class="step" data-num="2"><span class="label">Attend</span><div class="detail">Causal self-attention per layer.</div></div><div class="step" data-num="3"><span class="label">FFN</span><div class="detail">Per-token MLP transformation.</div></div><div class="step" data-num="4"><span class="label">Project</span><div class="detail">Vocab-sized logits; sample next token.</div></div></div></div>
 </section>
 <section id="deep-dive-self-attention">
-  <h2>07 &mdash; Deep Dive: Self-Attention</h2>
+  <h2>08 &mdash; Deep Dive: Self-Attention</h2>
 <div class="diagram"><img alt="Scaled dot-product self-attention with causal mask preventing future token peeking." src="../fundamentals/img/transformers-attention-self-attention-zoom.png"/></div><p class="diagram-caption">Scaled dot-product self-attention with causal mask preventing future token peeking.</p><div class="card"><p>Each token produces Query, Key, Value via learned linear maps. Attention weights = softmax of dot products; output = weighted sum of Values. <strong>Causal mask</strong> sets future positions to −∞ before softmax.</p></div>
 </section>
 <section id="deep-dive-multi-head-attention">
-  <h2>08 &mdash; Deep Dive: Multi-Head Attention</h2>
+  <h2>09 &mdash; Deep Dive: Multi-Head Attention</h2>
 <div class="diagram"><img alt="Parallel attention heads capture syntactic, semantic, and positional relations; outputs concatenated and projected." src="../fundamentals/img/transformers-attention-multihead-zoom.png"/></div><p class="diagram-caption">Parallel attention heads capture syntactic, semantic, and positional relations; outputs concatenated and projected.</p><div class="card"><p>Heads specialize (some track syntax, some coreference). Split d_model into h heads of dimension d_head = d_model/h. Output = Concat(head<sub>1</sub>,…)W<sub>O</sub>.</p></div>
 </section>
 <section id="deep-dive-positional-encoding-rope">
-  <h2>09 &mdash; Deep Dive: Positional Encoding (RoPE)</h2>
+  <h2>10 &mdash; Deep Dive: Positional Encoding (RoPE)</h2>
 <div class="card"><p><strong>RoPE</strong> rotates Q and K vectors by position-dependent angles. Relative position emerges in dot products; extrapolates better than absolute sinusoidal encodings. Used in Llama 3, Mistral, Qwen.</p><p><strong>ALiBi</strong> (alternative): additive bias by distance — simpler extrapolation, less common in newest stacks.</p></div>
 </section>
 <section id="deep-dive-ffn-residual-connections">
-  <h2>10 &mdash; Deep Dive: FFN &amp; Residual Connections</h2>
+  <h2>11 &mdash; Deep Dive: FFN &amp; Residual Connections</h2>
 <div class="card"><p>FFN: Linear(d → 4d) → GELU/SwiGLU → Linear(4d → d). Residual connections + LayerNorm (Pre-LN in modern stacks) stabilize deep training (32–80+ layers).</p></div>
 </section>
 <section id="deep-dive-complexity-optimizations">
-  <h2>11 &mdash; Deep Dive: Complexity &amp; Optimizations</h2>
+  <h2>12 &mdash; Deep Dive: Complexity &amp; Optimizations</h2>
 <div class="card"><ul><li><strong>Naive attention:</strong> O(n²d) time, O(n²) memory for n tokens</li><li><strong>KV cache:</strong> O(n) memory per layer at decode; see <a href="../inference/inference-internals.html">Inference internals</a></li><li><strong>FlashAttention:</strong> tiled computation, recomputes in SRAM</li><li><strong>GQA/MQA:</strong> share K/V heads across Q heads — fewer KV bytes</li></ul></div>
 </section>
 <p class="part-divider">The full explanation</p>
 <section id="transformer-internals-attention-for-real">
-  <h2>12 &mdash; Transformer internals — attention, for real</h2>
+  <h2>13 &mdash; Transformer internals — attention, for real</h2>
 <p><a href="index.html">LLM fundamentals</a> gives the intuition ("attention lets tokens look at each other"). This topic is the actual mechanism — the one interviews and serving math (<a href="../inference/index.html">Inference &amp; serving</a>) depend on.</p>
 </section>
 <section id="tokenization-bpe-in-one-paragraph">
-  <h2>13 &mdash; Tokenization: BPE in one paragraph</h2>
+  <h2>14 &mdash; Tokenization: BPE in one paragraph</h2>
 <p><b>Byte-pair encoding</b>: start from characters/bytes, repeatedly merge the most frequent adjacent pair into a new token, stop at vocab size (~50–200K). Result: common words = 1 token, rare words = several sub-pieces. Consequences you'll feel: token counts ≠ word counts, non-English text costs more tokens, exact spelling/arithmetic are hard (the model sees pieces, not characters).</p>
 <p>The algorithm is small enough to hold in your head — and worth implementing once, because every tokenizer surprise you'll ever debug (why "hello" and " hello" are different tokens, why numbers shatter into odd pieces) falls out of these few lines:</p>
 <div class="code-block"><div class="code-file"><span>bpe_mini.py — the whole BPE training loop, minus production plumbing</span><span class="code-lang">python</span></div><pre><span class="kw">from</span> collections <span class="kw">import</span> Counter
@@ -163,7 +171,7 @@ merges = []
 <span class="cm"># IS the tokenizer; GPT-2's shipped as exactly this, 50K merges long.</span></pre></div>
 </section>
 <section id="self-attention-the-actual-computation">
-  <h2>14 &mdash; Self-attention: the actual computation</h2>
+  <h2>15 &mdash; Self-attention: the actual computation</h2>
 <pre class="ascii-diagram">From hidden states X, three learned projections:
     Q = X·W_Q      "what am I looking for?"        (queries)
     K = X·W_K      "what do I offer?"              (keys)
@@ -219,7 +227,7 @@ out = CausalSelfAttention()(x)
 <p>Two things to notice in the code. First, the <b>causal mask is why the KV cache works</b>: token t's output depends only on tokens ≤ t, so during generation the K and V of past tokens never change — cache them and each new token costs one row of attention instead of recomputing the whole T×T matrix. Second, the <code>att</code> tensor is <code>[B, heads, T, T]</code> — at T=32K and 32 heads that's 32×32K×32K floats <i>per sequence</i> if you materialize it, which is why FlashAttention (computing the same softmax in tiles, never storing the full matrix) matters so much in practice (<a href="../inference/index.html">Inference &amp; serving</a>).</p>
 </section>
 <section id="the-block-and-the-shapes">
-  <h2>15 &mdash; The block, and the shapes</h2>
+  <h2>16 &mdash; The block, and the shapes</h2>
 <pre class="ascii-diagram">decoder block:  x → norm → causal self-attention → +x (residual)
                   → norm → feed-forward (per-token MLP) → +x (residual)
 stack N blocks, then a final projection to vocabulary logits.
@@ -239,7 +247,7 @@ shapes:  token ids   [batch, seq]
 </table>
 </section>
 <section id="two-numbers-you-should-be-able-to-estimate">
-  <h2>16 &mdash; Two numbers you should be able to estimate</h2>
+  <h2>17 &mdash; Two numbers you should be able to estimate</h2>
 <pre class="ascii-diagram">params ≈ 12 × N_layers × d_model²           (attention + FFN, rough decoder-only rule)
 KV cache per sequence ≈ 2 × layers × tokens × kv_heads × head_dim × bytes
                         └ keys and values; this — not weights — often caps concurrency (Inference &amp; serving)</pre>
@@ -247,7 +255,7 @@ KV cache per sequence ≈ 2 × layers × tokens × kv_heads × head_dim × bytes
 <p>Now the KV cache, same model, one 2,048-token sequence at fp16: <code>2 (K and V) × 12 layers × 2,048 tokens × 768 (12 kv_heads × 64 head_dim) × 2 bytes = 75.5 MB</code>. Harmless. Scale to a Llama-2-7B-shaped model (32 layers, 32 KV heads × 128 dims = 4,096) at a 4,096-token context: <code>2 × 32 × 4,096 × 4,096 × 2 = 2.1 GB per sequence</code>. Forty concurrent users at that context want ~86 GB of cache — more than the 14 GB the weights themselves take at fp16. This is why grouped-query attention (fewer KV heads than query heads) exists: cut kv_heads from 32 to 8 and the cache drops 4× with minor quality loss. When <a href="../inference/index.html">Inference &amp; serving</a> talks about batching, paged KV cache, and GQA, this multiplication is the entire motivation.</p>
 </section>
 <section id="mini-scenario-the-count-the-letters-bug-report">
-  <h2>17 &mdash; Mini-scenario: the &quot;count the letters&quot; bug report</h2>
+  <h2>18 &mdash; Mini-scenario: the &quot;count the letters&quot; bug report</h2>
 <p>A PM files a bug: "the model can't count the r's in strawberry, and it garbles our SKU codes like <code>XR-2049-BLK</code>." Both are tokenization, not intelligence. "strawberry" may be 1–3 tokens depending on the tokenizer — the model has literally never seen its letters, only piece IDs; asking it to count characters is asking someone to count letters in a word they've only heard spoken. The SKU shatters into ~6 arbitrary pieces (<code>XR</code>, <code>-", "20</code>, <code>49</code>, …) whose boundaries shift if a space precedes it, so the model's "memory" of the code is a fragile piece-sequence. Fixes are engineering, not prompting heroics: for counting/spelling, have the model call a tool (<a href="../agents/index.html">Tools &amp; agents</a>); for IDs, keep them intact in structured fields the code handles, not free text the model must reproduce. You cannot prompt your way out of the tokenizer.</p>
 <div class="callout warn"><p><strong>Internals gotchas that surface as product bugs</strong></p><ul>
 <li><b>Token counts differ per tokenizer.</b> Budgeting context with one model's tokenizer while calling another can overflow by 20–30% — non-English and code by more. Count with the target model's tokenizer.</li>
@@ -273,13 +281,13 @@ KV cache per sequence ≈ 2 × layers × tokens × kv_heads × head_dim × bytes
 </ol></div>
 </section>
 <section id="embeddings">
-  <h2>18 &mdash; Embeddings</h2>
+  <h2>19 &mdash; Embeddings</h2>
 <p>An embedding table is a V × d matrix; token id i looks up row i. These vectors are learned so that tokens used in similar contexts end up nearby (the distributional hypothesis: "you shall know a word by the company it keeps").</p>
 <p>word2vec showed directions carry meaning: vec(king) − vec(man) + vec(woman) ≈ vec(queen). In a transformer the embedding is only the starting point; each layer refines it with context, so "bank" ends up different in "river bank" and "bank loan".</p>
 <p>The final layer (LM head) projects d back to V logits; many models <strong>tie</strong> it to the embedding matrix to save parameters.</p>
 </section>
 <section id="scaled-dot-product-attention">
-  <h2>19 &mdash; Scaled dot-product attention</h2>
+  <h2>20 &mdash; Scaled dot-product attention</h2>
 <p>Each token emits three vectors from learned projections: a <strong>query</strong> (what I'm looking for), a <strong>key</strong> (what I offer to be found by), a <strong>value</strong> (what I pass along). Each token's output is a weighted average of all values, with weights from query–key similarity.</p>
 <pre class="formula">Q = X W_q,  K = X W_k,  V = X W_v           X: (T, d)
 A = softmax( Q Kᵀ / √d_k + M )               (T, T) attention weights
@@ -293,7 +301,7 @@ M = 0 on/below diagonal, −∞ above            # causal mask</pre>
 <p>Mental model: a soft, differentiable dictionary lookup. Keys are addresses, values are contents, the query does fuzzy matching.</p>
 </section>
 <section id="multi-head-attention-mqa-and-gqa">
-  <h2>20 &mdash; Multi-head attention, MQA and GQA</h2>
+  <h2>21 &mdash; Multi-head attention, MQA and GQA</h2>
 <p>Split d into h heads of size d/h; each head runs attention in its own subspace, then outputs are concatenated and mixed by W_o. Different heads learn different relations (previous token, syntax, coreference, induction/copying patterns). Same total FLOPs as one wide head.</p>
 <pre class="formula">MHA: h query heads, h KV heads
 MQA: h query heads, 1 KV head          → KV cache ÷ h
@@ -301,7 +309,7 @@ GQA: h query heads, g KV heads (g | h) → KV cache ÷ (h/g)   e.g. Llama-3-8B: 
 <p>GQA keeps nearly MHA quality while cutting KV cache memory and bandwidth, which is what limits serving throughput.</p>
 </section>
 <section id="positional-encoding-and-rope">
-  <h2>21 &mdash; Positional encoding and RoPE</h2>
+  <h2>22 &mdash; Positional encoding and RoPE</h2>
 <p>Attention treats inputs as a set: permute tokens and the outputs permute identically. Order must be injected.</p>
 <ul>
 <li><strong>Sinusoidal</strong> (original transformer): add fixed sin/cos waves of many frequencies.</li>
@@ -312,7 +320,7 @@ GQA: h query heads, g KV heads (g | h) → KV cache ÷ (h/g)   e.g. Llama-3-8B: 
 <p>Long-context extension (8k → 128k) works by rescaling RoPE frequencies (position interpolation, NTK-aware scaling, YaRN) and briefly training on long sequences.</p>
 </section>
 <section id="the-transformer-block">
-  <h2>22 &mdash; The transformer block</h2>
+  <h2>23 &mdash; The transformer block</h2>
 <pre class="formula">x = x + Attention( RMSNorm(x) )
 x = x + FFN( RMSNorm(x) )                 # pre-norm residual block, × L layers
 FFN (classic):  W₂ · GELU(W₁ x)           d → 4d → d
@@ -320,7 +328,7 @@ FFN (SwiGLU):   W₂ · ( SiLU(W₁x) ⊙ W₃x )  d → ~8d/3 → d  (3 matrice
 <p>Division of labor: attention moves information <em>between</em> tokens; the FFN transforms each token independently and stores much of the model's factual knowledge (it acts like a key–value memory). Pre-norm (normalize before each sublayer) trains more stably than the original post-norm.</p>
 </section>
 <section id="a-complete-mini-gpt-in-pytorch">
-  <h2>23 &mdash; A complete mini-GPT in PyTorch</h2>
+  <h2>24 &mdash; A complete mini-GPT in PyTorch</h2>
 <pre><span class="kw">class</span> <span class="tp">Block</span>(nn.Module):
     <span class="kw">def</span> <span class="fn">__init__</span>(s, d, h):
         <span class="tp">super</span>().<span class="fn">__init__</span>()
@@ -352,7 +360,7 @@ FFN (SwiGLU):   W₂ · ( SiLU(W₁x) ⊙ W₃x )  d → ~8d/3 → d  (3 matrice
 <p>Train it on Tiny Shakespeare with the <a href="../foundations/pytorch.html">PyTorch in practice</a> loop. If you can write this from memory and explain every line, you understand transformers.</p>
 </section>
 <section id="counting-parameters-and-flops">
-  <h2>24 &mdash; Counting parameters and FLOPs</h2>
+  <h2>25 &mdash; Counting parameters and FLOPs</h2>
 <pre class="formula">per layer:  attention 4d² (Q, K, V, O)  +  FFN 8d² (d→4d→d)  = 12d²
 total     ≈ 12 · L · d²  +  V · d  (embeddings)
 GPT-2 small (L=12, d=768, V=50257): 85M + 39M ≈ 124M ✓
@@ -361,25 +369,29 @@ inference FLOPs ≈ 2 · N per generated token</pre>
 <p>Worked: a 7B model trained on 2T tokens ≈ 6 · 7e9 · 2e12 = 8.4e22 FLOPs. At 40% utilization of an H100 (~400 TFLOP/s effective) that's ~2.1e8 GPU-seconds ≈ 58,000 GPU-hours.</p>
 </section>
 <section id="flashattention">
-  <h2>25 &mdash; FlashAttention</h2>
+  <h2>26 &mdash; FlashAttention</h2>
 <p>Naive attention writes the T × T score matrix to slow HBM, reads it back for softmax, writes again, reads again for × V. At long T that memory traffic dominates.</p>
 <p>FlashAttention tiles Q, K, V into blocks that fit in on-chip SRAM, computes scores block by block, and uses an <strong>online softmax</strong> (keep a running max and running sum, rescale partial outputs when the max changes) so the full matrix never exists. Result is <em>exact</em> attention with O(T) memory and 2–4× speed. In PyTorch: <code>F.scaled_dot_product_attention</code> picks a flash kernel automatically.</p>
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>26 &mdash; Production &amp; Ops</h2>
+  <h2>27 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Serving uses fused kernels (FlashAttention-2, cuDNN)</li><li>Tensor parallel splits heads/layers across GPUs</li><li>Monitor KV cache memory per request in <a href="../inference/serving.html">Serving &amp; scaling</a></li><li>Quantization (INT4) shrinks weight memory, not attention FLOPs</li></ul></div>
 </section>
 <section id="related-topics">
-  <h2>27 &mdash; Related topics</h2>
+  <h2>28 &mdash; Related topics</h2>
 <div class="card"><ul><li><a href="what-is-an-llm.html">What an LLM is</a> — decoder-only stack overview</li><li><a href="../inference/inference-internals.html">Inference internals</a> — KV cache inference memory</li><li><a href="tokens-context-cost.html">Tokens, context &amp; cost</a> — tokens fed into embeddings</li><li><a href="how-llms-are-trained.html">How LLMs are trained</a> — training these weights</li><li><a href="../inference/serving.html">Serving &amp; scaling</a> — PagedAttention serving</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — attention over retrieved context</li><li><a href="../fundamentals/../../hld/web-search-engine.html">Web Search Engine</a> — ranking + LLM synthesis</li></ul></div>
 </section>
-<section id="common-pitfalls">
-  <h2>28 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>29 &mdash; Where people get lost</h2>
 <div class="card"><ul><li>Confusing encoder-only BERT with generative decoder-only</li><li>Ignoring causal mask in hand-rolled attention bugs</li><li>Assuming O(n) attention without sparse methods or cache</li><li>Forgetting FFN dominates parameter count</li><li>Mixing absolute vs RoPE when extrapolating context</li></ul></div>
 </section>
+<section id="how-this-connects">
+  <h2>30 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../foundations/math.html">The math you need</a> &mdash; Vectors, matrices, derivatives, the chain rule, probability, cross-entropy and softmax, each with worked numbers.</li><li><a href="../foundations/pytorch.html">PyTorch in practice</a> &mdash; Tensors, autograd, a trustworthy training loop, mixed precision, GPU memory and debugging a run.</li><li><a href="what-is-an-llm.html">What an LLM is</a> &mdash; A next-token predictor, the language-modeling objective, model families and scaling laws.</li></ul><h3>Where this shows up later</h3><ul><li><a href="../inference/inference-internals.html">Inference internals</a> &mdash; Prefill vs decode, the KV cache, PagedAttention, continuous batching and speculative decoding.</li><li><a href="../projects/portfolio-projects.html">Portfolio projects</a> &mdash; Five projects from micrograd to a shipped service, and a weekend build that makes interview answers real.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>29 &mdash; Check yourself</h2>
+  <h2>31 &mdash; Check yourself</h2>
 <details><summary>Explain self-attention in one minute.</summary><div class="answer">Each token builds Q,K,V vectors. Scores = Q·K scaled by √d<sub>k</sub>; softmax yields weights; output = weighted sum of V. Causal mask zeroes future keys so token t only sees ≤t. Parallel over sequence during prefill.</div></details>
 <details><summary>Why multi-head instead of one big attention?</summary><div class="answer">Multiple subspaces let the model attend to different relation types simultaneously (syntax, coreference, position). Single head would need much larger d to capture same diversity.</div></details>
 <details><summary>What is the causal mask and why?</summary><div class="answer">Upper-triangular mask sets attention to future tokens to −∞. Without it, token t could peek at t+1 and break autoregressive training/generation.</div></details>
@@ -400,7 +412,7 @@ inference FLOPs ≈ 2 · N per generated token</pre>
 <details><summary>Parameters of a model with L=32, d=4096, V=32000?</summary><div class="answer">12·32·4096² ≈ 6.4B + 32000·4096 ≈ 0.13B (×2 if untied) → ~6.6–6.7B, i.e. Llama-2-7B.</div></details>
 </section>
 <section id="build-it">
-  <h2>30 &mdash; Build it</h2>
+  <h2>32 &mdash; Build it</h2>
 <div class="callout success">Follow Karpathy's "Let's build GPT", then nanoGPT. Add a KV cache to generation and measure tokens/sec with and without it.</div>
 </section>
 

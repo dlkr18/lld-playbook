@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reliability engineering -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Production &amp; evals" data-href="index.html">
+<meta name="ai-topic" content="production/reliability">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,29 +19,35 @@
   <h2>Reliability engineering</h2>
   <a href="index.html">&larr; Production &amp; evals</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#reliability-surviving-flaky-models-apis"><span class="num">02</span> Reliability: surviving flaky models &amp; APIs</a>
-  <a href="#retries-backoff-circuit-breaker-fallback-the-module"><span class="num">03</span> Retries, backoff, circuit breaker, fallback — the module</a>
-  <a href="#idempotency-retry-safe-side-effects"><span class="num">04</span> Idempotency: retry-safe side effects</a>
-  <a href="#timeout-budgets-a-worked-example"><span class="num">05</span> Timeout budgets: a worked example</a>
-  <a href="#graceful-degradation-decide-the-fallbacks-before-the-outage"><span class="num">06</span> Graceful degradation: decide the fallbacks before the outage</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#reliability-surviving-flaky-models-apis"><span class="num">03</span> Reliability: surviving flaky models &amp; APIs</a>
+  <a href="#retries-backoff-circuit-breaker-fallback-the-module"><span class="num">04</span> Retries, backoff, circuit breaker, fallback — the module</a>
+  <a href="#idempotency-retry-safe-side-effects"><span class="num">05</span> Idempotency: retry-safe side effects</a>
+  <a href="#timeout-budgets-a-worked-example"><span class="num">06</span> Timeout budgets: a worked example</a>
+  <a href="#graceful-degradation-decide-the-fallbacks-before-the-outage"><span class="num">07</span> Graceful degradation: decide the fallbacks before the outage</a>
+  <a href="#how-this-connects"><span class="num">08</span> How this connects</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Reliability engineering <span>// Production &amp; evals</span></h1>
   <p>Surviving flaky models and APIs: retries, fallbacks, timeouts, idempotency.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">9 min read</span><span class="tag">1 diagram</span></div>
 </div>
 
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
 <div class="diagram"><img src="../img/reliability.png" alt="Bound every call with a timeout, retry with backoff, fall back to another model, and degrade gracefully when all else fails."></div><p class="diagram-caption">Bound every call with a timeout, retry with backoff, fall back to another model, and degrade gracefully when all else fails.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Idempotency</strong></td><td>A side-effecting action safe to retry without duplicating it.</td></tr><tr><td><strong>Circuit breaker</strong></td><td>Stop calling a failing dependency after repeated errors.</td></tr></tbody></table>
+</section>
 <section id="reliability-surviving-flaky-models-apis">
-  <h2>02 &mdash; Reliability: surviving flaky models &amp; APIs</h2>
+  <h2>03 &mdash; Reliability: surviving flaky models &amp; APIs</h2>
 <p>LLM APIs rate-limit, time out, and occasionally return garbage. Agents compound small errors: a 2% failure rate per step is an 18% failure rate over a 10-step trajectory (0.98¹⁰ ≈ 0.82). Engineer for it — this topic is the module you drop into the thin harness from <a href="../tech/frameworks.html">Choosing an agent framework</a>.</p>
 </section>
 <section id="retries-backoff-circuit-breaker-fallback-the-module">
-  <h2>03 &mdash; Retries, backoff, circuit breaker, fallback — the module</h2>
+  <h2>04 &mdash; Retries, backoff, circuit breaker, fallback — the module</h2>
 <p>The one-liner version first, because it's the shape to memorize:</p>
 <div class="code-block"><div class="code-file"><span>call_with_retry — the minimal shape</span><span class="code-lang">python</span></div><pre><span class="kw">def</span> <span class="fn">call_with_retry</span>(**kw):
     <span class="kw">for</span> attempt in <span class="tp">range</span>(<span class="nr">5</span>):
@@ -110,7 +118,7 @@ BREAKERS = {name: Breaker() <span class="kw">for</span> name in (<span class="st
 <p>Design notes worth stealing: <b>full jitter</b> (uniform 0..base) rather than base+jitter — when 400 workers retry a provider blip simultaneously, decorrelation is what prevents the self-inflicted second outage. <b>Per-try timeout ≤ remaining deadline</b> — otherwise attempt 1 eats the whole budget and "5 attempts" is fiction. <b>A 400 closes the breaker</b> — a bad request means the service is fine and your payload isn't; don't let your own bug lock you out of a healthy provider.</p>
 </section>
 <section id="idempotency-retry-safe-side-effects">
-  <h2>04 &mdash; Idempotency: retry-safe side effects</h2>
+  <h2>05 &mdash; Idempotency: retry-safe side effects</h2>
 <p>Retries multiply <i>attempts</i>, and agents add a second multiplier: the model may call the same tool twice in one trajectory. Any tool that charges, emails, or creates must be idempotent. The mechanism is a key that makes "do X" mean "do X at most once."</p>
 <div class="code-block"><div class="code-file"><span>idempotency.py — keys derived from intent, results cached</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> hashlib, json
 
@@ -141,7 +149,7 @@ BREAKERS = {name: Breaker() <span class="kw">for</span> name in (<span class="st
 </ul>
 </section>
 <section id="timeout-budgets-a-worked-example">
-  <h2>05 &mdash; Timeout budgets: a worked example</h2>
+  <h2>06 &mdash; Timeout budgets: a worked example</h2>
 <p>Timeouts must nest, outermost largest, or the layers fight. Take a chat SLA of <b>p95 ≤ 20s</b> and allocate downward — every inner budget is what's left after its siblings, minus headroom:</p>
 <table>
 <tr><th>Layer</th><th>Budget</th><th>Reasoning</th></tr>
@@ -156,7 +164,7 @@ BREAKERS = {name: Breaker() <span class="kw">for</span> name in (<span class="st
 <p>The arithmetic discipline: 6+6+8 = 20s of budgeted work fits the 20s deadline only because the deadline is <i>shared</i> — a fast call #1 (800ms) donates its slack to the rest via the <code>remaining</code> computation in <code>reliable_call</code>. And note what falls out: with a 20s deadline you get <b>at most 2 attempts</b> on any single LLM call. "5 retries with exponential backoff" is an async-job policy (there, with a 10-min deadline, 5 attempts and 30s sleeps are fine); on the chat path it's a fairy tale. This is why retry policy must be a parameter, not a constant.</p>
 </section>
 <section id="graceful-degradation-decide-the-fallbacks-before-the-outage">
-  <h2>06 &mdash; Graceful degradation: decide the fallbacks before the outage</h2>
+  <h2>07 &mdash; Graceful degradation: decide the fallbacks before the outage</h2>
 <p>Every dependency gets a written answer to "what do we do when it's down?" — decided in a design review, not improvised at 3am. A partial answer beats a 500, <i>and the user is told it's partial</i>.</p>
 <table>
 <tr><th>Dependency down</th><th>Degraded behavior</th><th>User-visible note</th><th>Never do</th></tr>
@@ -183,6 +191,10 @@ BREAKERS = {name: Breaker() <span class="kw">for</span> name in (<span class="st
 <li>Take your own chat SLA and build the nested timeout table. Find the layer where today's config violates the nesting (there is almost always one).</li>
 <li>Write the graceful-degradation matrix for your system's top five dependencies, including the user-visible sentence for each. Get it reviewed by whoever owns the product copy.</li>
 </ol></div>
+</section>
+<section id="how-this-connects">
+  <h2>08 &mdash; How this connects</h2>
+<h3>Where this shows up later</h3><ul><li><a href="../tech/frameworks.html">Choosing an agent framework</a> &mdash; The landscape, the same agent in five frameworks, and framework vs thin harness vs raw.</li></ul>
 </section>
 
 <div class="sheet-pager"><a class="prev" href="reference-architectures.html"><span>Previous</span>Reference architectures</a><a class="next" href="eval-metrics.html"><span>Next</span>Evaluation metrics</a></div>

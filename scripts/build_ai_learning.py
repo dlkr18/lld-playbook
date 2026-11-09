@@ -66,7 +66,12 @@ def esc(text):
 # page skeleton
 # --------------------------------------------------------------------------
 
-def page(*, title, h1, qualifier, lead, tags, sections, back, pager, scripts=()):
+KATEX = ('\n<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">'
+         '\n<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>'
+         '\n<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>')
+
+
+def page(*, title, h1, qualifier, lead, tags, sections, back, pager, scripts=(), math=False):
     nav = [f'  <h2>{esc(h1)}</h2>', f'  <a href="{back[0]}">&larr; {esc(back[1])}</a>']
     body = []
     n = 0
@@ -82,7 +87,7 @@ def page(*, title, h1, qualifier, lead, tags, sections, back, pager, scripts=())
     pager_html = '<div class="sheet-pager">' + (
         f'<a class="prev" href="{prev[0]}"><span>Previous</span>{esc(prev[1])}</a>' if prev else "<span></span>") + (
         f'<a class="next" href="{nxt[0]}"><span>Next</span>{esc(nxt[1])}</a>' if nxt else "<span></span>") + "</div>"
-    extra = "".join(f'\n<script src="{s}" defer></script>' for s in scripts)
+    extra = (KATEX if math else "") + "".join(f'\n<script src="{s}" defer></script>' for s in scripts)
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -155,6 +160,7 @@ def hub(*, title, crumbs, h1, h1_span, subtitle, stat, groups):
   <div class="stats"><span class="stat"><strong>{stat[0]}</strong> {esc(stat[1])}</span></div></header>
 {chr(10).join(parts)}
 </div><script src="../../hub.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script src="../../../theme.js"></script>
 </body></html>
 """
@@ -714,6 +720,44 @@ def sheet_unit(key, topic_of):
 
 
 # --------------------------------------------------------------------------
+# deep lessons: hand-written teaching for a topic (scripts/ai_depth/<slug>.html)
+#   A fragment of <section data-label="..."> blocks. Two labels are special:
+#     "New words"             a <table> of term / meaning rows, merged into the
+#                             page's New words table
+#     "Where people get lost" merged with the page's pitfalls
+#   Everything else opens "The full explanation", before the source material.
+#   Maths: \( inline \) and \[ display \] (KaTeX).
+# --------------------------------------------------------------------------
+
+DEPTH = ROOT / "scripts" / "ai_depth"
+
+
+def depth_unit(slug):
+    f = DEPTH / f"{slug}.html"
+    if not f.exists():
+        return None
+    soup = BeautifulSoup(f.read_text(encoding="utf-8"), "html.parser")
+    for pre in soup.find_all("pre", attrs={"data-lang": True}):   # <pre data-lang="python"> gets colour
+        highlight(soup, pre, pre["data-lang"])
+        del pre["data-lang"]
+    out = {"words": [], "lost": "", "sections": [], "qa": []}
+    for sec in soup.find_all("section", attrs={"data-label": True}):
+        lab = sec["data-label"]
+        if lab == "New words":
+            for tr in sec.find_all("tr"):
+                td = tr.find_all("td")
+                if len(td) == 2:
+                    out["words"].append((td[0].decode_contents().strip(), td[1].decode_contents().strip()))
+        elif lab == "Where people get lost":
+            out["lost"] = sec.decode_contents().strip()
+        elif lab == "Check yourself":
+            out["qa"] += [str(d) for d in sec.find_all("details")]
+        else:
+            out["sections"].append((lab, sec.decode_contents().strip()))
+    return out
+
+
+# --------------------------------------------------------------------------
 # the map: stages -> topics -> units
 # --------------------------------------------------------------------------
 
@@ -935,8 +979,10 @@ def build(units, labs):
                 if u.startswith("ts:"):
                     topic_of[u[3:]] = f"{folder}/{t[0]}"
 
+    collected = []
     for i, (folder, stitle, slug, title, desc, ids) in enumerate(order):
         glance, ref, body, tail, qa, builds, has_lab, seen = [], [], [], [], [], [], False, set()
+        deep = depth_unit(slug)
         sheets = [u for u in ids if u.startswith("ts:")]
 
         def add(target, lab, inner):
@@ -974,6 +1020,20 @@ def build(units, labs):
                 else:
                     for lab, inner in units[uid]:
                         add(body, "Recap" if lab.strip().lower() == title.lower() else lab, inner)
+
+        if deep:                                   # hand-written teaching opens the explanation
+            lesson = []
+            for lab, inner in deep["sections"]:
+                add(lesson, lab, inner)
+            body[:0] = lesson
+            qa[:0] = deep["qa"]
+            if deep["lost"]:
+                add(tail, "Where people get lost", deep["lost"])
+        # one "Where people get lost" section: the sheet's pitfalls and the lesson's, together
+        lost = [x for x in tail if re.search(r"pitfall|where people get lost", x[1], re.I)]
+        if len(lost) > 1 or (lost and lost[0][1] != "Where people get lost"):
+            merged = "\n".join(x[2] for x in lost)
+            tail = [x for x in tail if x not in lost] + [("where-people-get-lost", "Where people get lost", merged)]
 
         for img, cap in EXTRA_DIAGRAMS.get(slug, []):
             assert (AI / img).exists(), img
@@ -1034,16 +1094,88 @@ def build(units, labs):
                 inner = str(frag)
             fixed.append((sid, lab, inner))
         sections = fixed
+        collected.append({"i": i, "folder": folder, "stitle": stitle, "slug": slug, "title": title,
+                          "desc": desc, "sections": sections, "has_lab": has_lab,
+                          "words": deep["words"] if deep else []})
+
+    # ---- second pass: things that need the whole map
+    key_of = lambda c: f"{c['folder']}/{c['slug']}"
+    pos = {key_of(c): c["i"] for c in collected}
+    desc_of = {key_of(c): c["desc"] for c in collected}
+
+    def links_from(c):
+        out = set()
+        for _, _, inner in c["sections"]:
+            for h in re.findall(r'href="([^"#:]+\.html)', inner or ""):
+                parts = h.split("/")
+                k = f"{parts[-2]}/{parts[-1][:-5]}" if len(parts) > 1 else f"{c['folder']}/{h[:-5]}"
+                if k in pos and k != key_of(c):
+                    out.add(k)
+        return out
+    out_links = {key_of(c): links_from(c) for c in collected}
+    in_links = {k: {src for src, outs in out_links.items() if k in outs} for k in pos}
+
+    # glossary terms: each lives on the topic that uses it most
+    gloss = []
+    g = BeautifulSoup("".join(x[1] for x in units.get("hb:c91", [])), "html.parser")
+    for tr in g.find_all("tr"):
+        td = tr.find_all("td")
+        if len(td) == 2:
+            gloss.append((td[0].get_text(strip=True), td[1].decode_contents().strip()))
+    text_of = {key_of(c): BeautifulSoup(" ".join(x[2] or "" for x in c["sections"]), "html.parser").get_text(" ")
+               for c in collected}
+    home = {}
+    for term, meaning in gloss:
+        alts = [a.strip() for a in term.split("/") if a.strip()]
+        pats = [re.compile(r"\b" + re.escape(a) + r"\b", 0 if a.isupper() else re.I) for a in alts]
+        counts = {k: sum(len(p.findall(t)) for p in pats) for k, t in text_of.items() if not k.endswith("/glossary")}
+        best = max(counts, key=lambda k: (counts[k], -pos[k]))
+        if counts[best]:
+            home.setdefault(best, []).append((term, meaning))
+
+    for c in collected:
+        k = key_of(c)
+        folder = c["folder"]
+        rel_href = lambda t: f"{t.split('/')[1]}.html" if t.split("/")[0] == folder else f"../{t}.html"
+        sections = list(c["sections"])
+        # New words: hand-written rows first, then the glossary terms that live here
+        rows = list(c["words"]) + [(esc(t), m) for t, m in home.get(k, [])
+                                   if t.lower() not in {BeautifulSoup(w, "html.parser").get_text().lower() for w, _ in c["words"]}]
+        if rows and not k.endswith("/glossary"):
+            table = ("<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody>" +
+                     "".join(f"<tr><td><strong>{w}</strong></td><td>{m}</td></tr>" for w, m in rows) +
+                     "</tbody></table>")
+            at = 1 if sections and sections[0][0] == "at-a-glance" else 0
+            sections.insert(at, ("new-words", "New words", table))
+        # how this topic connects to the rest of the map
+        before = sorted((t for t in out_links[k] if pos[t] < pos[k]), key=pos.get)[:6]
+        later = sorted((t for t in in_links[k] if pos[t] > pos[k]), key=pos.get)[:8]
+        if before or later:
+            li = lambda t: f'<li><a href="{rel_href(t)}">{esc(title_of[t])}</a> &mdash; {esc(desc_of[t])}</li>'
+            html_c = ""
+            if before:
+                html_c += "<h3>Builds on</h3><ul>" + "".join(li(t) for t in before) + "</ul>"
+            if later:
+                html_c += "<h3>Where this shows up later</h3><ul>" + "".join(li(t) for t in later) + "</ul>"
+            at = next((j for j, x in enumerate(sections) if x[0] in ("check-yourself", "build-it")), len(sections))
+            sections.insert(at, ("how-this-connects", "How this connects", html_c))
+        words = sum(len(BeautifulSoup(x[2] or "", "html.parser").get_text(" ").split()) for x in sections)
+        n_diag = sum((x[2] or "").count('class="diagram"') for x in sections)
+        tags = [f"{max(1, round(words / 230))} min read"] + ([f"{n_diag} diagram{'s' if n_diag > 1 else ''}"] if n_diag else [])
+        math = any(("\\(" in (x[2] or "") or "\\[" in (x[2] or "")) for x in sections)
+        scripts = (("../ai-math.js",) if math else ()) + (("../ai-labs.js",) if c["has_lab"] else ()) + ("../ai-progress.js",)
+        i = c["i"]
         prev = order[i - 1] if i else None
         nxt = order[i + 1] if i + 1 < len(order) else None
         rel = lambda t: (f"../{t[0]}/{t[2]}.html" if t[0] != folder else f"{t[2]}.html", t[3])
-        html_ = page(title=title, h1=title, qualifier=stitle, lead=esc(desc), tags=[],
-                     sections=sections, back=("index.html", stitle),
+        html_ = page(title=c["title"], h1=c["title"], qualifier=c["stitle"], lead=esc(c["desc"]), tags=tags,
+                     sections=sections, back=("index.html", c["stitle"]),
                      pager=(rel(prev) if prev else None, rel(nxt) if nxt else None),
-                     scripts=("../ai-labs.js",) if has_lab else ())
-        html_ = html_.replace("</title>", f'</title>\n<meta name="ai-stage" content="{esc(stitle)}" data-href="index.html">', 1)
+                     scripts=scripts, math=math)
+        html_ = html_.replace("</title>", f'</title>\n<meta name="ai-stage" content="{esc(c["stitle"])}" data-href="index.html">'
+                              f'\n<meta name="ai-topic" content="{k}">', 1)
         (AI / folder).mkdir(exist_ok=True)
-        (AI / folder / f"{slug}.html").write_text(html_, encoding="utf-8")
+        (AI / folder / f"{c['slug']}.html").write_text(html_, encoding="utf-8")
 
     leftover = sorted(u for u in units if u not in used and units[u])
     assert not leftover, f"source units not on the map: {leftover}"
@@ -1073,7 +1205,8 @@ def build(units, labs):
 
     n_topics = len(order)
     stage_cards = "".join(
-        f'\n    <a href="{f}/index.html" class="sub-card"><h3>{n:02d} &middot; {esc(t)}</h3><p>{esc(d)}</p>'
+        f'\n    <a href="{f}/index.html" class="sub-card" data-stage="{f}" data-topics="{" ".join(f + "/" + x[0] for x in tl)}">'
+        f'<h3>{n:02d} &middot; {esc(t)}</h3><p>{esc(d)}</p>'
         f'<div class="count">{len(tl)} topics</div></a>'
         for n, (f, t, d, tl) in enumerate(STAGES, 1))
     (AI / "index.html").write_text(f"""<!DOCTYPE html>
@@ -1097,6 +1230,7 @@ def build(units, labs):
   <div class="stats"><span class="stat"><strong>{len(STAGES)}</strong> stages</span><span class="stat"><strong>{n_topics}</strong> topics</span></div></header>
   <div class="sub-grid">{stage_cards}
   </div></div><script src="../hub.js" defer></script>
+<script src="ai-progress.js" defer></script>
 <script src="../../theme.js"></script>
 </body></html>
 """, encoding="utf-8")

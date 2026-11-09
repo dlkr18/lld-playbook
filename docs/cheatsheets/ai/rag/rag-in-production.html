@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Making RAG good &amp; measuring it -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Knowledge &amp; RAG" data-href="index.html">
+<meta name="ai-topic" content="rag/rag-in-production">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,35 +19,37 @@
   <h2>Making RAG good &amp; measuring it</h2>
   <a href="index.html">&larr; Knowledge &amp; RAG</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-entities"><span class="num">04</span> API &amp; Entities</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#estimation-1m-docs-10k-qps"><span class="num">07</span> Estimation (1M docs, 10K QPS)</a>
-  <a href="#core-entities"><span class="num">08</span> Core Entities</a>
-  <a href="#deep-dive-chat-path"><span class="num">09</span> Deep Dive: Chat Path</a>
-  <a href="#deep-dive-rag-integration"><span class="num">10</span> Deep Dive: RAG Integration</a>
-  <a href="#deep-dive-session-memory"><span class="num">11</span> Deep Dive: Session Memory</a>
-  <a href="#deep-dive-agent-tools"><span class="num">12</span> Deep Dive: Agent Tools</a>
-  <a href="#making-rag-actually-good"><span class="num">13</span> Making RAG actually good</a>
-  <a href="#the-foundation-levers-from-an-earlier-topic"><span class="num">14</span> The foundation levers (from an earlier topic)</a>
-  <a href="#the-advanced-toolbox-mechanism-payoff-and-when-to-reach-for"><span class="num">15</span> The advanced toolbox — mechanism, payoff, and when to reach for each</a>
-  <a href="#evaluation-the-harness-that-makes-all-of-this-tunable"><span class="num">16</span> Evaluation: the harness that makes all of this tunable</a>
-  <a href="#the-debugging-matrix"><span class="num">17</span> The debugging matrix</a>
-  <a href="#measuring-retrieval-and-rag"><span class="num">18</span> Measuring retrieval and RAG</a>
-  <a href="#measuring-a-rag-system"><span class="num">19</span> Measuring a RAG system</a>
-  <a href="#production-concerns"><span class="num">20</span> Production concerns</a>
-  <a href="#production-ops"><span class="num">21</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">22</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">23</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">24</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-entities"><span class="num">05</span> API &amp; Entities</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#estimation-1m-docs-10k-qps"><span class="num">08</span> Estimation (1M docs, 10K QPS)</a>
+  <a href="#core-entities"><span class="num">09</span> Core Entities</a>
+  <a href="#deep-dive-chat-path"><span class="num">10</span> Deep Dive: Chat Path</a>
+  <a href="#deep-dive-rag-integration"><span class="num">11</span> Deep Dive: RAG Integration</a>
+  <a href="#deep-dive-session-memory"><span class="num">12</span> Deep Dive: Session Memory</a>
+  <a href="#deep-dive-agent-tools"><span class="num">13</span> Deep Dive: Agent Tools</a>
+  <a href="#making-rag-actually-good"><span class="num">14</span> Making RAG actually good</a>
+  <a href="#the-foundation-levers-from-an-earlier-topic"><span class="num">15</span> The foundation levers (from an earlier topic)</a>
+  <a href="#the-advanced-toolbox-mechanism-payoff-and-when-to-reach-for"><span class="num">16</span> The advanced toolbox — mechanism, payoff, and when to reach for each</a>
+  <a href="#evaluation-the-harness-that-makes-all-of-this-tunable"><span class="num">17</span> Evaluation: the harness that makes all of this tunable</a>
+  <a href="#the-debugging-matrix"><span class="num">18</span> The debugging matrix</a>
+  <a href="#measuring-retrieval-and-rag"><span class="num">19</span> Measuring retrieval and RAG</a>
+  <a href="#measuring-a-rag-system"><span class="num">20</span> Measuring a RAG system</a>
+  <a href="#production-concerns"><span class="num">21</span> Production concerns</a>
+  <a href="#production-ops"><span class="num">22</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">23</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">24</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">25</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">26</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Making RAG good &amp; measuring it <span>// Knowledge &amp; RAG</span></h1>
   <p>Advanced RAG, a production RAG chatbot design, retrieval and answer metrics, freshness, ACLs, latency, injection.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">17 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -53,17 +57,21 @@
 <p>Full system design: enterprise chatbot with RAG, conversation memory, semantic cache, agent tools, and HITL. The canonical 45-minute AI system design interview.</p>
 <div class="diagram"><img alt="Chatbot with RAG (System Design) architecture" src="../systems/img/chatbot-rag-system-main.png"/></div><p class="diagram-caption">Chatbot RAG system HLD: client apps → API gateway → chat service (session, memory, cache) → RAG pipeline → optional agent tools → LLM fleet with streaming SSE responses.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Recall@k</strong></td><td>Eval: is the correct chunk in the top-k retrieved?</td></tr><tr><td><strong>Faithfulness</strong></td><td>Eval: is the answer actually supported by the sources?</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card"><h3>Functional Requirements</h3><ul><li>Multi-turn chat with conversation history</li><li>Answer from private enterprise knowledge base with citations</li><li>Execute actions (create ticket, search CRM) via agent tools</li><li>Stream responses token-by-token</li><li>Admin: ingest docs, view analytics, configure bot persona</li></ul><h3>Non-Functional Requirements</h3><ul><li>10K QPS peak; p99 first token &lt;500ms</li><li>Multi-tenant isolation (org_id, ACL)</li><li>99.9% availability</li><li>GDPR: delete user data within 30 days</li><li>Cost budget: &lt;$0.05 per query average</li></ul></div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Session</td><td>Conversation thread with message history</td><td>Unbounded history exceeds context</td></tr><tr><td>Router</td><td>Classifies simple FAQ vs RAG vs agent path</td><td>Wrong route wastes cost or misses tools</td></tr><tr><td>Grounding</td><td>Answer constrained to retrieved docs</td><td>Need eval not just prompt</td></tr></table></div>
 </section>
 <section id="api-entities">
-  <h2>04 &mdash; API &amp; Entities</h2>
+  <h2>05 &mdash; API &amp; Entities</h2>
 <div class="card"><pre>POST /v1/chat/sessions { org_id, user_id } -&gt; { session_id }
 POST /v1/chat/sessions/{id}/messages
   { content, stream: true } -&gt; SSE tokens + citations event
@@ -75,11 +83,11 @@ Entities: Organization, User, Session, Message, Document, Chunk,
          Citation, ToolRun, CacheEntry, Feedback</pre></div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card"><table><tr><th>Component</th><th>Include When</th><th>Defer When</th></tr><tr><td>RAG</td><td>Private knowledge required</td><td>General chit-chat only</td></tr><tr><td>Agent tools</td><td>User expects actions</td><td>Read-only FAQ</td></tr><tr><td>Semantic cache</td><td>High repeat query rate</td><td>Unique queries every time</td></tr></table></div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card"><pre>Clients -&gt; CDN/API GW -&gt; Chat Service
   -&gt; Query Router -&gt; [Cache hit] | [RAG path] | [Agent path]
   RAG: embed -&gt; hybrid retrieve -&gt; rerank -&gt; LLM stream
@@ -87,7 +95,7 @@ Entities: Organization, User, Session, Message, Document, Chunk,
   Session store (Redis) + Memory (vector) + Postgres metadata</pre></div><div class="diagram"><img alt="Detailed chat service components: router, session store, RAG retriever, LLM gateway, streaming SSE" src="../systems/img/chatbot-rag-system-architecture-zoom.png"/></div><p class="diagram-caption">Detailed chat service components: router, session store, RAG retriever, LLM gateway, streaming SSE</p>
 </section>
 <section id="estimation-1m-docs-10k-qps">
-  <h2>07 &mdash; Estimation (1M docs, 10K QPS)</h2>
+  <h2>08 &mdash; Estimation (1M docs, 10K QPS)</h2>
 <div class="card"><pre>Corpus: 1M docs -&gt; ~10M chunks
 Storage: ~120GB vectors + 30GB sparse + 5GB metadata
 10K QPS: semantic cache 40% hit -&gt; 6K to LLM
@@ -96,32 +104,32 @@ RAG retrieve: 50 ANN shards, rerank bottleneck -&gt; top-20
 Cost: cache saves ~40% LLM spend; avg $0.03/query achievable</pre></div>
 </section>
 <section id="core-entities">
-  <h2>08 &mdash; Core Entities</h2>
+  <h2>09 &mdash; Core Entities</h2>
 <div class="diagram"><img alt="ER diagram: Organization, User, Session, Message, Document, Chunk, Citation, ToolRun relationships" src="../systems/img/chatbot-rag-system-entities-zoom.png"/></div><p class="diagram-caption">ER diagram: Organization, User, Session, Message, Document, Chunk, Citation, ToolRun relationships</p><div class="card"><p><strong>Session</strong> owns Messages. <strong>Message</strong> has role, content, citations[], tool_runs[]. <strong>Document</strong> 1:N Chunks. <strong>Citation</strong> links Message to Chunk with snippet.</p></div>
 </section>
 <section id="deep-dive-chat-path">
-  <h2>09 &mdash; Deep Dive: Chat Path</h2>
+  <h2>10 &mdash; Deep Dive: Chat Path</h2>
 <div class="card"><ol><li>Auth + rate limit</li><li>Load session history; summarize if &gt;8K tokens</li><li>Semantic cache lookup</li><li>Router: FAQ / RAG / agent</li><li>Stream LLM response via SSE</li><li>Persist message + citations; async feedback</li></ol></div>
 </section>
 <section id="deep-dive-rag-integration">
-  <h2>10 &mdash; Deep Dive: RAG Integration</h2>
+  <h2>11 &mdash; Deep Dive: RAG Integration</h2>
 <div class="card"><p>See <a href="rag-pipeline.html">The RAG pipeline</a>. Hybrid retrieve top-50, rerank top-5, inject numbered passages, generate with [1][2] citations. Refuse if max rerank score below threshold.</p></div>
 </section>
 <section id="deep-dive-session-memory">
-  <h2>11 &mdash; Deep Dive: Session Memory</h2>
+  <h2>12 &mdash; Deep Dive: Session Memory</h2>
 <div class="card"><p>Redis session buffer. Rolling summary over 8K tokens. Long-term vector memory for user prefs (<a href="../agents/memory-context.html">Memory &amp; context engineering</a>).</p></div>
 </section>
 <section id="deep-dive-agent-tools">
-  <h2>12 &mdash; Deep Dive: Agent Tools</h2>
+  <h2>13 &mdash; Deep Dive: Agent Tools</h2>
 <div class="card"><p>Optional agent path for ticket creation, CRM lookup. HITL on writes (<a href="../agents/agent-loop.html">The agent loop</a>). Max 8 tool calls.</p></div>
 </section>
 <p class="part-divider">The full explanation</p>
 <section id="making-rag-actually-good">
-  <h2>13 &mdash; Making RAG actually good</h2>
+  <h2>14 &mdash; Making RAG actually good</h2>
 <p>Basic RAG is easy; <i>reliable</i> RAG is where the work is. Most failures are retrieval failures.</p>
 </section>
 <section id="the-foundation-levers-from-an-earlier-topic">
-  <h2>14 &mdash; The foundation levers (from an earlier topic)</h2>
+  <h2>15 &mdash; The foundation levers (from an earlier topic)</h2>
 <div class="tile-grid">
 <div class="tile"><h4>Chunking strategy</h4><p>Too big → noisy matches; too small → lost context. Start ~600–1000 tokens with ~15% overlap. Better: split on structure (headings, sections), keep metadata.</p></div>
 <div class="tile"><h4>Reranking</h4><p>Retrieve 30 candidates with vectors (fast, fuzzy), then a <b>cross-encoder reranker</b> scores each (query, chunk) pair precisely and keeps the top 5. Biggest quality lever after chunking.</p></div>
@@ -132,7 +140,7 @@ Cost: cache saves ~40% LLM spend; avg $0.03/query achievable</pre></div>
 </div>
 </section>
 <section id="the-advanced-toolbox-mechanism-payoff-and-when-to-reach-for">
-  <h2>15 &mdash; The advanced toolbox — mechanism, payoff, and when to reach for each</h2>
+  <h2>16 &mdash; The advanced toolbox — mechanism, payoff, and when to reach for each</h2>
 <p><b>Parent-child retrieval (small-to-big).</b> <i>Mechanism:</i> index <b>small</b> chunks (150–300 tokens — precise vectors, one idea each), but store on each a pointer to its <b>parent</b> (the full section, 1,500–3,000 tokens). Search over the children; feed the LLM the parents. <i>Why it works:</i> retrieval precision and generation context want opposite chunk sizes; this decouples them. <i>When it pays:</i> structured docs (manuals, contracts, policies) where the answer's evidence is one paragraph but understanding it needs the whole section — like the "see section 7.1" cross-reference from the handbook example in an earlier topic. Cost: ~nothing at query time; slightly bigger index.</p>
 <div class="code-block"><div class="code-file"><span>parent_child.py — search small, return big</span><span class="code-lang">python</span></div><pre><span class="kw">def</span> <span class="fn">ingest_parent_child</span>(sections, db, embedder, child_tokens=<span class="nr">250</span>):
     <span class="kw">for</span> parent_id, section_text in sections:               <span class="cm"># parent = whole section</span>
@@ -187,7 +195,7 @@ Cost: cache saves ~40% LLM spend; avg $0.03/query achievable</pre></div>
 <div class="callout success"><p><strong>Order of operations</strong></p>Do not start here. The sequence that pays: solid chunking → hybrid search → reranking → <b>an eval set</b> → and only then pick from this table the technique whose failure mode your eval actually shows. Every technique above adds latency, cost, or an ingest pipeline; adopted blind, they add all three and no measured quality.</div>
 </section>
 <section id="evaluation-the-harness-that-makes-all-of-this-tunable">
-  <h2>16 &mdash; Evaluation: the harness that makes all of this tunable</h2>
+  <h2>17 &mdash; Evaluation: the harness that makes all of this tunable</h2>
 <div class="callout warn"><p><strong>Measure retrieval and generation separately</strong></p><b>Recall@k</b>: is the correct chunk in the top-k? (retrieval quality). <b>Faithfulness</b>: is the answer actually supported by the retrieved text? (generation quality). If recall@k is low, <i>no</i> prompt tweak helps — fix chunking/embedding/rerank first. Tools: Ragas, TruLens, or your own eval set — which is ~80 lines, below, and never surprises you with a framework upgrade.</div>
 <p>You need 30–100 eval questions with known gold chunks. Build them from support tickets, or generate synthetically: sample chunks, ask an LLM "write a question this chunk answers" (have a human skim them — a bad eval set is worse than none, because you'll tune toward it).</p>
 <div class="code-block"><div class="code-file"><span>rag_eval.py — recall@k + faithfulness judge, end to end</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> json
@@ -247,7 +255,7 @@ FAITH_PROMPT = <span class="st">"""</span><span class="st">You are grading a RAG
 <p>Judge caveats: use a <i>different</i> (and ideally stronger) model as judge than as generator — models grade their own style leniently; spot-check ~20 judge verdicts by hand once to calibrate; and keep the judge prompt frozen while you tune the pipeline, or your metric moves under you.</p>
 </section>
 <section id="the-debugging-matrix">
-  <h2>17 &mdash; The debugging matrix</h2>
+  <h2>18 &mdash; The debugging matrix</h2>
 <table>
 <tr><th>Symptom</th><th>Metric signature</th><th>Likely culprit</th><th>Fix first</th></tr>
 <tr><td>Wrong/irrelevant answers</td><td>recall@k <b>low</b></td><td>Chunking, embedder, missing hybrid</td><td>Read 20 chunks; structure-aware chunking; add BM25+RRF</td></tr>
@@ -272,7 +280,7 @@ FAITH_PROMPT = <span class="st">"""</span><span class="st">You are grading a RAG
 </ol></div>
 </section>
 <section id="measuring-retrieval-and-rag">
-  <h2>18 &mdash; Measuring retrieval and RAG</h2>
+  <h2>19 &mdash; Measuring retrieval and RAG</h2>
 <ul>
 <li><strong>Retrieval</strong>: recall@k (is a correct chunk in the top k?), MRR, nDCG on a labeled set of (question, relevant chunk) pairs.</li>
 <li><strong>Generation</strong>: faithfulness (is every claim supported by retrieved text?), answer correctness, citation accuracy, usually via LLM-as-judge plus human spot checks.</li>
@@ -280,7 +288,7 @@ FAITH_PROMPT = <span class="st">"""</span><span class="st">You are grading a RAG
 <p>Fix retrieval first: generation can't use what it never sees.</p>
 </section>
 <section id="measuring-a-rag-system">
-  <h2>19 &mdash; Measuring a RAG system</h2>
+  <h2>20 &mdash; Measuring a RAG system</h2>
 <table>
 <tr><th>Stage</th><th>Metric</th><th>How</th></tr>
 <tr><td>Retrieval</td><td>recall@k, MRR, nDCG</td><td>Golden (question → relevant chunk ids) set</td></tr>
@@ -293,7 +301,7 @@ FAITH_PROMPT = <span class="st">"""</span><span class="st">You are grading a RAG
 <p>Quick way to build the golden set: have an LLM write questions from random chunks (so the source chunk is the label), then hand-review and add real user questions. Diagnose order: if recall@k is low, nothing downstream can fix it.</p>
 </section>
 <section id="production-concerns">
-  <h2>20 &mdash; Production concerns</h2>
+  <h2>21 &mdash; Production concerns</h2>
 <ul>
 <li><strong>Freshness</strong>: incremental re-indexing on document change; delete stale chunks; track index version per answer.</li>
 <li><strong>Access control</strong>: filter by user permissions at retrieval time, never after generation.</li>
@@ -305,19 +313,23 @@ FAITH_PROMPT = <span class="st">"""</span><span class="st">You are grading a RAG
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>21 &mdash; Production &amp; Ops</h2>
+  <h2>22 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Eval harness CI gate on every deploy</li><li>Tracing: cache/RAG/agent/LLM spans</li><li>Moderation on input and output</li><li>Per-org usage billing dashboard</li></ul></div>
 </section>
 <section id="related-topics">
-  <h2>22 &mdash; Related topics</h2>
+  <h2>23 &mdash; Related topics</h2>
 <div class="card"><ul><li><a href="rag-pipeline.html">The RAG pipeline</a></li><li><a href="../production/semantic-cache.html">Semantic caching</a></li><li><a href="../agents/agent-loop.html">The agent loop</a></li><li><a href="../systems/../../hld/web-search-engine.html">Web Search Engine HLD</a></li></ul></div>
 </section>
-<section id="common-pitfalls">
-  <h2>23 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>24 &mdash; Where people get lost</h2>
 <div class="card"><ul><li>No query router — every query hits expensive RAG</li><li>Session history unbounded</li><li>Missing citation verification</li><li>No tenant isolation on cache and retrieval</li></ul></div>
 </section>
+<section id="how-this-connects">
+  <h2>25 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li></ul><h3>Where this shows up later</h3><ul><li><a href="../adaptation/fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a> &mdash; When to fine-tune, the LoRA math, a working QLoRA recipe, data, hyperparameters, evaluation and serving.</li><li><a href="../production/reference-architectures.html">Reference architectures</a> &mdash; AI system design patterns, a production agent end to end, and architectures by use case.</li><li><a href="../production/semantic-cache.html">Semantic caching</a> &mdash; Answering repeat questions from a cache keyed on meaning, and avoiding wrong hits.</li><li><a href="../tech/langchain.html">LangChain</a> &mdash; Chains, runnables, retrievers and the integrations layer.</li><li><a href="../tech/llamaindex.html">LlamaIndex</a> &mdash; Data-first RAG framework: loaders, indexes, query engines.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>24 &mdash; Check yourself</h2>
+  <h2>26 &mdash; Check yourself</h2>
 <details><summary>Design a chatbot with RAG from scratch.</summary><div class="answer">Clarify: corpus size, QPS, multi-tenant, actions needed. Draw: API GW → Chat Service → Router → Cache/RAG/Agent paths. Offline ingest pipeline. Session in Redis. Stream via SSE. Citations required.</div></details>
 <details><summary>Core entities?</summary><div class="answer">Organization, User, Session, Message, Document, Chunk, Citation, ToolRun, Feedback. Session 1:N Messages. Document 1:N Chunks.</div></details>
 <details><summary>API design?</summary><div class="answer">POST sessions, POST messages with stream:true → SSE, async ingest POST /documents. Idempotent message IDs for retry.</div></details>

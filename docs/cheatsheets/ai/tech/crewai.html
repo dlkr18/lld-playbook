@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CrewAI -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Tech &amp; tools" data-href="index.html">
+<meta name="ai-topic" content="tech/crewai">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,26 +19,28 @@
   <h2>CrewAI</h2>
   <a href="index.html">&larr; Tech &amp; tools</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-interface-surface"><span class="num">04</span> API / Interface Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#deep-dive-agents"><span class="num">07</span> Deep Dive: Agents</a>
-  <a href="#deep-dive-tasks"><span class="num">08</span> Deep Dive: Tasks</a>
-  <a href="#deep-dive-process-types"><span class="num">09</span> Deep Dive: Process Types</a>
-  <a href="#deep-dive-tools"><span class="num">10</span> Deep Dive: Tools</a>
-  <a href="#crewai-vs-langgraph"><span class="num">11</span> CrewAI vs LangGraph</a>
-  <a href="#production-ops"><span class="num">12</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">13</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">14</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">15</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-interface-surface"><span class="num">05</span> API / Interface Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#deep-dive-agents"><span class="num">08</span> Deep Dive: Agents</a>
+  <a href="#deep-dive-tasks"><span class="num">09</span> Deep Dive: Tasks</a>
+  <a href="#deep-dive-process-types"><span class="num">10</span> Deep Dive: Process Types</a>
+  <a href="#deep-dive-tools"><span class="num">11</span> Deep Dive: Tools</a>
+  <a href="#crewai-vs-langgraph"><span class="num">12</span> CrewAI vs LangGraph</a>
+  <a href="#production-ops"><span class="num">13</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">14</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">15</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">16</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">17</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>CrewAI <span>// Tech &amp; tools</span></h1>
   <p>Role-based multi-agent crews: agents, tasks, processes.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">8 min read</span><span class="tag">5 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -48,9 +52,13 @@
 <div class="diagram"><img src="../tech/img/crewai-roles-zoom.png" alt="A hierarchical crew: a manager agent delegates to researcher, analyst and writer agents, each with a role, goal, backstory and tools."></div><p class="diagram-caption">A hierarchical crew: a manager agent delegates to researcher, analyst and writer agents, each with a role, goal, backstory and tools.</p>
 <div class="diagram"><img src="../tech/img/crewai-flow-zoom.png" alt="Tasks run in sequence, and each one receives the previous task&#x27;s output as context."></div><p class="diagram-caption">Tasks run in sequence, and each one receives the previous task&#x27;s output as context.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Least privilege</strong></td><td>Scoped, minimal tool permissions to limit blast radius.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card">
 <p><strong>Problem:</strong> Multi-step workflows (research → analyze → write) map naturally to <em>roles</em>, but hand-rolling LangGraph nodes for every demo is slow. CrewAI offers declarative Agents, Tasks, and Crew processes.</p><h3>Functional</h3><ul><li>Define agents with role, goal, backstory, and tool subsets</li><li>Chain tasks with explicit dependencies via <code>context=[prior_task]</code></li><li>Sequential or hierarchical (manager delegates) execution</li><li><code>kickoff(inputs={...})</code> runs full workflow and returns consolidated output</li></ul><h3>Non-Functional</h3><ul><li><strong>Cost</strong> — multiple LLM calls per crew run; cap tasks and delegation</li><li><strong>Control</strong> — less fine-grained than LangGraph for HITL and audit</li><li><strong>Speed to prototype</strong> — excellent for research/report pipelines</li></ul><blockquote>Production systems needing approval gates often migrate to <a href="langgraph.html">LangGraph</a>. CrewAI sits above <a href="../fundamentals/api.html">Calling a model</a> and often uses <a href="langchain.html">LangChain</a> tool wrappers. Multi-agent patterns: <a href="../agents/multi-agent.html">Multi-agent systems</a>.</blockquote>
 </div> <div class="card">
@@ -58,7 +66,7 @@
 </div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card">
 <table>
 <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
@@ -71,7 +79,7 @@
 </div>
 </section>
 <section id="api-interface-surface">
-  <h2>04 &mdash; API / Interface Surface</h2>
+  <h2>05 &mdash; API / Interface Surface</h2>
 <div class="card">
 <pre>from crewai import Agent, Task, Crew, Process
 from crewai.tools import tool
@@ -124,7 +132,7 @@ print(result.raw)</pre><h3>Crew configuration knobs</h3> <table>
 </div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card">
 <table>
 <tr><th>Case</th><th>CrewAI?</th><th>Alternative</th></tr>
@@ -137,7 +145,7 @@ print(result.raw)</pre><h3>Crew configuration knobs</h3> <table>
 </div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card highlight">
 <pre>Inputs (topic, params)
         |
@@ -168,7 +176,7 @@ print(result.raw)</pre><h3>Crew configuration knobs</h3> <table>
 </div>
 </section>
 <section id="deep-dive-agents">
-  <h2>07 &mdash; Deep Dive: Agents</h2>
+  <h2>08 &mdash; Deep Dive: Agents</h2>
 <div class="diagram">
 <img alt="Agent cards: role, goal, backstory, tools, allow_delegation flag." src="../tech/img/crewai-agents-zoom.png"/>
 </div>
@@ -185,7 +193,7 @@ print(result.raw)</pre><h3>Crew configuration knobs</h3> <table>
 </div>
 </section>
 <section id="deep-dive-tasks">
-  <h2>08 &mdash; Deep Dive: Tasks</h2>
+  <h2>09 &mdash; Deep Dive: Tasks</h2>
 <div class="card">
 <p><code>expected_output</code> acts as an implicit rubric the agent optimizes toward — always specify format and length.</p><pre>t_research = Task(
     description="Research {product}. Focus on pricing and competitors.",
@@ -202,7 +210,7 @@ t_write = Task(
 </div>
 </section>
 <section id="deep-dive-process-types">
-  <h2>09 &mdash; Deep Dive: Process Types</h2>
+  <h2>10 &mdash; Deep Dive: Process Types</h2>
 <div class="diagram">
 <img alt="Sequential vs hierarchical: manager agent routes tasks to researcher and writer." src="../tech/img/crewai-process-zoom.png"/>
 </div>
@@ -239,13 +247,13 @@ print(crew.kickoff(inputs={"topic": "enterprise RAG"}).raw)</pre>
 </div>
 </section>
 <section id="deep-dive-tools">
-  <h2>10 &mdash; Deep Dive: Tools</h2>
+  <h2>11 &mdash; Deep Dive: Tools</h2>
 <div class="card">
 <p>CrewAI tools wrap LangChain tools or custom functions with descriptions. Same security model as any agent framework.</p><ul><li>Validate JSON args before API calls or SQL</li><li>Read-only tools by default; HITL on writes (publish, delete, charge)</li><li>RAG tool can wrap <a href="llamaindex.html">LlamaIndex</a> query engine or <a href="langchain.html">LangChain</a> retriever</li></ul><p>Deep dive: <a href="../agents/tool-calling.html">Tool calling</a>.</p>
 </div>
 </section>
 <section id="crewai-vs-langgraph">
-  <h2>11 &mdash; CrewAI vs LangGraph</h2>
+  <h2>12 &mdash; CrewAI vs LangGraph</h2>
 <div class="card">
 <table>
 <tr><th>Dimension</th><th>CrewAI</th><th>LangGraph</th></tr>
@@ -277,7 +285,7 @@ researcher = Agent(
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>12 &mdash; Production &amp; Ops</h2>
+  <h2>13 &mdash; Production &amp; Ops</h2>
 <div class="card">
 <table>
 <tr><th>Concern</th><th>Practice</th></tr>
@@ -290,21 +298,25 @@ researcher = Agent(
 </div>
 </section>
 <section id="related-topics">
-  <h2>13 &mdash; Related topics</h2>
+  <h2>14 &mdash; Related topics</h2>
 <div class="card">
 <ul><li><a href="../agents/multi-agent.html">Multi-agent systems</a> — crew vs supervisor patterns</li><li><a href="../agents/what-is-an-agent.html">What an agent is</a> — role-based teams</li><li><a href="langgraph.html">LangGraph</a> — production alternative</li><li><a href="langchain.html">LangChain</a> — underlying LLM/tool integrations</li><li><a href="../production/reference-architectures.html">Reference architectures</a> — when multi-agent helps</li><li><a href="../agents/agent-loop.html">The agent loop</a> — HITL requirements</li><li><a href="../production/cost-performance.html">Cost &amp; latency</a> — crew cost model</li><li><a href="../fundamentals/api.html">Calling a model</a> — underlying LLM calls</li></ul>
 </div>
 </section>
-<section id="common-pitfalls">
-  <h2>14 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>15 &mdash; Where people get lost</h2>
 <div class="card">
 <ul><li><strong>Crew for 2-step tasks</strong> — overkill; use single agent or LCEL chain</li><li><strong>Unbounded delegation loops</strong> — agents ping-pong questions</li><li><strong>Identical tools on all agents</strong> — violates least privilege</li><li><strong>Vague expected_output</strong> — inconsistent format across runs</li><li><strong>No timeout on kickoff()</strong> — hung crew blocks worker</li><li><strong>Skipping eval</strong> — backstory changes silently degrade quality</li><li><strong>Manager model too weak</strong> — bad delegation in hierarchical mode</li><li><strong>No structured expected_output</strong> — downstream parsing breaks</li></ul>
 </div> <div class="card">
 <h3>Debugging checklist</h3><ol><li>Run with <code>verbose=True</code> on agents and crew</li><li>Log each task output before next task consumes it</li><li>Compare sequential vs hierarchical on same golden input</li><li>Isolate one agent/task pair to spot bad backstory or tool schema</li><li>Measure token usage per task in LangSmith or custom callback</li></ol>
 </div>
 </section>
+<section id="how-this-connects">
+  <h2>16 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../fundamentals/api.html">Calling a model</a> &mdash; The API call end to end: messages, roles, streaming, tool calls, errors and retries, across providers.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../agents/tool-calling.html">Tool calling</a> &mdash; Why tools, what goes over the wire, and designing schemas the model uses well.</li><li><a href="../agents/what-is-an-agent.html">What an agent is</a> &mdash; Agents vs agentic AI, what makes something an agent, workflows vs agents, and agent architectures.</li><li><a href="../agents/agent-loop.html">The agent loop</a> &mdash; The loop in depth and in code: budgets, errors, human approval, reliability, safety, and how to evaluate an agent.</li><li><a href="../agents/memory-context.html">Memory &amp; context engineering</a> &mdash; Short- and long-term memory, compaction, and context engineering, the real production skill.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>15 &mdash; Check yourself</h2>
+  <h2>17 &mdash; Check yourself</h2>
 <details>
 <summary>What is CrewAI optimized for?</summary>
 <div class="answer">Role-based multi-step workflows: research → analyze → write. Declarative agents/tasks faster than hand-rolling <a href="langgraph.html">LangGraph</a> for demos and internal tools.</div>

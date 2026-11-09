@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Calling a model -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="LLM fundamentals" data-href="index.html">
+<meta name="ai-topic" content="fundamentals/api">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,31 +19,33 @@
   <h2>Calling a model</h2>
   <a href="index.html">&larr; LLM fundamentals</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-interface-surface"><span class="num">04</span> API / Interface Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#deep-dive-streaming"><span class="num">07</span> Deep Dive: Streaming</a>
-  <a href="#deep-dive-structured-output"><span class="num">08</span> Deep Dive: Structured Output</a>
-  <a href="#deep-dive-tool-calling"><span class="num">09</span> Deep Dive: Tool Calling</a>
-  <a href="#deep-dive-embeddings-api"><span class="num">10</span> Deep Dive: Embeddings API</a>
-  <a href="#deep-dive-batch-api-retries"><span class="num">11</span> Deep Dive: Batch API &amp; Retries</a>
-  <a href="#talking-to-a-model-the-api-call"><span class="num">12</span> Talking to a model: the API call</a>
-  <a href="#the-mental-model-a-list-of-messages"><span class="num">13</span> The mental model: a list of messages</a>
-  <a href="#holding-a-conversation-resending-history"><span class="num">14</span> Holding a conversation = resending history</a>
-  <a href="#streaming-tokens-as-they-re-generated"><span class="num">15</span> Streaming: tokens as they&#x27;re generated</a>
-  <a href="#when-the-call-fails-it-will"><span class="num">16</span> When the call fails (it will)</a>
-  <a href="#production-ops"><span class="num">17</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">18</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">19</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">20</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-interface-surface"><span class="num">05</span> API / Interface Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#deep-dive-streaming"><span class="num">08</span> Deep Dive: Streaming</a>
+  <a href="#deep-dive-structured-output"><span class="num">09</span> Deep Dive: Structured Output</a>
+  <a href="#deep-dive-tool-calling"><span class="num">10</span> Deep Dive: Tool Calling</a>
+  <a href="#deep-dive-embeddings-api"><span class="num">11</span> Deep Dive: Embeddings API</a>
+  <a href="#deep-dive-batch-api-retries"><span class="num">12</span> Deep Dive: Batch API &amp; Retries</a>
+  <a href="#talking-to-a-model-the-api-call"><span class="num">13</span> Talking to a model: the API call</a>
+  <a href="#the-mental-model-a-list-of-messages"><span class="num">14</span> The mental model: a list of messages</a>
+  <a href="#holding-a-conversation-resending-history"><span class="num">15</span> Holding a conversation = resending history</a>
+  <a href="#streaming-tokens-as-they-re-generated"><span class="num">16</span> Streaming: tokens as they&#x27;re generated</a>
+  <a href="#when-the-call-fails-it-will"><span class="num">17</span> When the call fails (it will)</a>
+  <a href="#production-ops"><span class="num">18</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">19</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">20</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">21</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">22</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Calling a model <span>// LLM fundamentals</span></h1>
   <p>The API call end to end: messages, roles, streaming, tool calls, errors and retries, across providers.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">18 min read</span><span class="tag">4 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -52,15 +56,19 @@
 </div><p class="diagram-caption">Request flow: client → auth + rate limit → chat.completions (stream or JSON) → optional tool loop → response. Typical latency: 200–800 ms TTFT streaming; Batch API ~50% cost discount for offline jobs.</p>
 <div class="diagram"><img src="../tech/img/openai-api-patterns-tools-zoom.png" alt="Function calling: the model returns tool_calls, your code runs the function, and the result goes back as a tool message for the next turn."></div><p class="diagram-caption">Function calling: the model returns tool_calls, your code runs the function, and the result goes back as a tool message for the next turn.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>max_tokens</strong></td><td>Hard cap on output length (and cost).</td></tr><tr><td><strong>Backoff + jitter</strong></td><td>Exponential retry delay + randomness on rate limits/flaky calls.</td></tr><tr><td><strong>Structured output</strong></td><td>Forcing JSON/typed results for programmatic use.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card">
 <p><strong>Problem:</strong> LLM apps need a stable contract for chat, tools, embeddings, and structured data — with streaming UX, cost control, and provider failover. Raw HTTP to OpenAI/Anthropic is the foundation; frameworks like <a href="../tech/langchain.html">LangChain</a> wrap these calls.</p><h3>Functional</h3><ul><li>Multi-turn chat with system/user/assistant/tool messages</li><li>Stream tokens to UI (SSE) for perceived low latency</li><li>Force JSON / Pydantic schema via structured outputs</li><li>Native tool calling loop (model proposes → you execute → feed results back)</li><li>Embeddings for RAG ingest and query (same model both sides)</li><li>Batch API for offline bulk jobs at reduced cost</li></ul><h3>Non-Functional</h3><ul><li><strong>Retries</strong> — exponential backoff on 429/5xx; honor <code>Retry-After</code></li><li><strong>Observability</strong> — log <code>usage</code> tokens, model, latency_ms, trace_id</li><li><strong>Latency</strong> — TTFT &lt;500 ms for gpt-4o-mini class; total time scales with output tokens</li><li><strong>Security</strong> — API keys server-side only; never in browser bundles</li></ul><blockquote><strong>Position in stack:</strong> Below orchestration (<a href="../tech/langgraph.html">LangGraph</a>, <a href="../tech/crewai.html">CrewAI</a>) and above vector storage (<a href="../rag/vector-search.html">Vector search &amp; databases</a>). Token and context fundamentals: <a href="what-is-an-llm.html">What an LLM is</a>.</blockquote>
 </div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card">
 <table>
 <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
@@ -75,7 +83,7 @@
 </div>
 </section>
 <section id="api-interface-surface">
-  <h2>04 &mdash; API / Interface Surface</h2>
+  <h2>05 &mdash; API / Interface Surface</h2>
 <div class="card">
 <p>OpenAI Python SDK v1+ uses a unified client. Always log <code>response.usage</code> for cost attribution.</p><pre>from openai import OpenAI
 client = OpenAI()  # OPENAI_API_KEY env
@@ -116,7 +124,7 @@ msg = cl.messages.create(
 </div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card">
 <table>
 <tr><th>Pattern</th><th>Use direct API?</th><th>Alternative</th></tr>
@@ -130,7 +138,7 @@ msg = cl.messages.create(
 </div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card highlight">
 <pre>                    +------------------+
                     |   Client / UI    |
@@ -165,7 +173,7 @@ msg = cl.messages.create(
 </div>
 </section>
 <section id="deep-dive-streaming">
-  <h2>07 &mdash; Deep Dive: Streaming</h2>
+  <h2>08 &mdash; Deep Dive: Streaming</h2>
 <div class="diagram">
 <img alt="SSE streaming: client receives delta chunks until finish_reason stop; map to WebSocket/SSE for UI." src="../tech/img/openai-api-patterns-streaming-zoom.png"/>
 </div>
@@ -193,7 +201,7 @@ return StreamingResponse(token_stream(), media_type="text/event-stream")</pre><u
 </div>
 </section>
 <section id="deep-dive-structured-output">
-  <h2>08 &mdash; Deep Dive: Structured Output</h2>
+  <h2>09 &mdash; Deep Dive: Structured Output</h2>
 <div class="diagram">
 <img alt="JSON schema / Pydantic structured output: model constrained to valid object shape for routing and extraction." src="../tech/img/openai-api-patterns-structured-zoom.png"/>
 </div>
@@ -223,7 +231,7 @@ route: Route = resp.choices[0].message.parsed
 </div>
 </section>
 <section id="deep-dive-tool-calling">
-  <h2>09 &mdash; Deep Dive: Tool Calling</h2>
+  <h2>10 &mdash; Deep Dive: Tool Calling</h2>
 <div class="card">
 <p>Tool calling lets the model request side effects (search, SQL, APIs). You remain in control: the model proposes; your code executes. Orchestration layer: <a href="../tech/langgraph.html">LangGraph</a> ToolNode; framework wrapper: <a href="../tech/langchain.html">LangChain</a> <code>bind_tools</code>.</p><pre>tools = [{
   "type": "function",
@@ -289,7 +297,7 @@ def run_agent(user_msg: str, max_rounds: int = 8) -&gt; str:
 </div>
 </section>
 <section id="deep-dive-embeddings-api">
-  <h2>10 &mdash; Deep Dive: Embeddings API</h2>
+  <h2>11 &mdash; Deep Dive: Embeddings API</h2>
 <div class="card">
 <pre>emb = client.embeddings.create(
     model="text-embedding-3-small",
@@ -300,7 +308,7 @@ vectors = [d.embedding for d in emb.data]</pre><ul><li><strong>Same model</stron
 </div>
 </section>
 <section id="deep-dive-batch-api-retries">
-  <h2>11 &mdash; Deep Dive: Batch API &amp; Retries</h2>
+  <h2>12 &mdash; Deep Dive: Batch API &amp; Retries</h2>
 <div class="card">
 <h3>Retries (429 / 5xx)</h3><pre>import time, random
 
@@ -333,11 +341,11 @@ resp = cl.messages.create(
 </section>
 <p class="part-divider">The full explanation</p>
 <section id="talking-to-a-model-the-api-call">
-  <h2>12 &mdash; Talking to a model: the API call</h2>
+  <h2>13 &mdash; Talking to a model: the API call</h2>
 <p>Forget the chat UI. Under it is a simple HTTP call. Here's exactly what you send and get back.</p>
 </section>
 <section id="the-mental-model-a-list-of-messages">
-  <h2>13 &mdash; The mental model: a list of messages</h2>
+  <h2>14 &mdash; The mental model: a list of messages</h2>
 <p>You send a <b>list of messages</b>, each with a <b>role</b>. The model returns the next <b>assistant</b> message. There are three roles:</p>
 <ul>
 <li><b>system</b> — your standing instructions (who the model should be, rules, format). Set once.</li>
@@ -388,7 +396,7 @@ resp = client.chat.completions.create(
 <div class="callout"><p><strong>OpenAI looks the same</strong></p>OpenAI's API uses the same messages+roles shape (<code>client.chat.completions.create</code>). The system role, the message list, the usage object — all analogous. Learn one, read them all. (Nearly every other provider — Google, Mistral, local servers like vLLM and Ollama — exposes an OpenAI-compatible endpoint, so this shape is effectively the industry's lingua franca.)</div>
 </section>
 <section id="holding-a-conversation-resending-history">
-  <h2>14 &mdash; Holding a conversation = resending history</h2>
+  <h2>15 &mdash; Holding a conversation = resending history</h2>
 <p>The API is <b>stateless</b> — it remembers nothing between calls. "Memory" is an illusion you create by <b>resending the whole message list</b> each time, with the new turn appended.</p>
 <div class="code-block"><div class="code-file"><span>multi_turn.py — memory is you, resending everything</span><span class="code-lang">python</span></div><pre>M = <span class="st">"</span><span class="st">claude-sonnet-4-5</span><span class="st">"</span>
 messages = [{<span class="st">"</span><span class="st">role</span><span class="st">"</span>: <span class="st">"</span><span class="st">user</span><span class="st">"</span>, <span class="st">"</span><span class="st">content</span><span class="st">"</span>: <span class="st">"</span><span class="st">My name is Sam.</span><span class="st">"</span>}]
@@ -437,7 +445,7 @@ chat = Conversation(system=<span class="st">"</span><span class="st">You are a t
 <p>Run that and watch <code>input_tokens</code> climb turn over turn even though each user message is tiny — turn 2's input includes turn 1's question <i>and</i> answer. Worked numbers (illustrative): if the system prompt is 40 tokens and each turn adds ~120 tokens of history, turn 1 costs ~60 input tokens, turn 10 costs ~1,150, and turn 50 costs ~5,900 — a two-orders-of-magnitude drift you'll never notice in a demo and will absolutely notice on the invoice.</p>
 </section>
 <section id="streaming-tokens-as-they-re-generated">
-  <h2>15 &mdash; Streaming: tokens as they&#x27;re generated</h2>
+  <h2>16 &mdash; Streaming: tokens as they&#x27;re generated</h2>
 <p>By default you wait for the whole response. For anything user-facing, request a <b>stream</b> instead: the API sends tokens as they're produced, so the user sees output in ~1 second instead of staring at a spinner for 20. Same request, one flag, an iterator instead of an object:</p>
 <div class="code-block"><div class="code-file"><span>streaming.py — print tokens as they arrive (both SDKs)</span><span class="code-lang">python</span></div><pre><span class="cm"># Anthropic</span>
 <span class="kw">with</span> client.messages.stream(
@@ -461,7 +469,7 @@ stream = openai_client.chat.completions.create(
 <p>Streaming changes perceived latency, not total latency or cost. The metric to watch is <b>time-to-first-token</b> (typically well under a second) versus total generation time (potentially tens of seconds for long outputs).</p>
 </section>
 <section id="when-the-call-fails-it-will">
-  <h2>16 &mdash; When the call fails (it will)</h2>
+  <h2>17 &mdash; When the call fails (it will)</h2>
 <p>Production code talks to a rate-limited, occasionally overloaded remote service. You will see these shapes; know them before they page you:</p>
 <table>
 <tr><th>HTTP</th><th>Meaning</th><th>What you do</th></tr>
@@ -520,7 +528,7 @@ stream = openai_client.chat.completions.create(
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>17 &mdash; Production &amp; Ops</h2>
+  <h2>18 &mdash; Production &amp; Ops</h2>
 <div class="card">
 <table>
 <tr><th>Concern</th><th>Practice</th></tr>
@@ -534,19 +542,23 @@ stream = openai_client.chat.completions.create(
 </div>
 </section>
 <section id="related-topics">
-  <h2>18 &mdash; Related topics</h2>
+  <h2>19 &mdash; Related topics</h2>
 <div class="card">
 <ul><li><a href="../tech/langchain.html">LangChain</a> — <code>ChatOpenAI</code> wraps chat completions</li><li><a href="../tech/langgraph.html">LangGraph</a> — LLM nodes call same API inside graph</li><li><a href="../rag/rag-in-production.html">Making RAG good &amp; measuring it</a> — embed + generate calls</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — retrieval + synthesis</li><li><a href="../rag/embedding-models.html">Choosing an embedding model</a> — model choice and metrics</li><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a> — message and system prompt design</li><li><a href="../production/cost-performance.html">Cost &amp; latency</a> — when to stream vs batch</li></ul>
 </div>
 </section>
-<section id="common-pitfalls">
-  <h2>19 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>20 &mdash; Where people get lost</h2>
 <div class="card">
 <ul><li><strong>No retry on 429</strong> — thundering herd after rate limit clears</li><li><strong>Trusting structured JSON blindly</strong> — always Pydantic-validate server-side</li><li><strong>API keys in frontend</strong> — use backend proxy exclusively</li><li><strong>Ignoring <code>finish_reason=length</code></strong> — truncated JSON or cut-off answers</li><li><strong>Mixing Chat Completions with legacy Completion API</strong> — different message shapes</li><li><strong>No timeout</strong> — hung connections block worker threads</li><li><strong>Unbounded tool loop</strong> — cap iterations; detect repeated identical tool calls</li><li><strong>Full history every call without trimming</strong> — context overflow and cost blow-up</li></ul>
 </div>
 </section>
+<section id="how-this-connects">
+  <h2>21 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="what-is-an-llm.html">What an LLM is</a> &mdash; A next-token predictor, the language-modeling objective, model families and scaling laws.</li></ul><h3>Where this shows up later</h3><ul><li><a href="limits.html">Limits &amp; hallucination</a> &mdash; What LLMs get wrong by design, grounding and abstention, and how to design around it.</li><li><a href="../rag/embedding-models.html">Choosing an embedding model</a> &mdash; Model families, dimensions, benchmarks, cost, and when to fine-tune or switch.</li><li><a href="../inference/serving.html">Serving &amp; scaling</a> &mdash; vLLM and Ollama, benchmarking honestly, a production serving setup and scaling it.</li><li><a href="../production/observability.html">Observability</a> &mdash; Seeing inside a twelve-step agent: traces, spans, metrics, tools, and what to alert on.</li><li><a href="../tech/langchain.html">LangChain</a> &mdash; Chains, runnables, retrievers and the integrations layer.</li><li><a href="../tech/llamaindex.html">LlamaIndex</a> &mdash; Data-first RAG framework: loaders, indexes, query engines.</li><li><a href="../tech/crewai.html">CrewAI</a> &mdash; Role-based multi-agent crews: agents, tasks, processes.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>20 &mdash; Check yourself</h2>
+  <h2>22 &mdash; Check yourself</h2>
 <details>
 <summary>Chat Completions vs Assistants API?</summary>
 <div class="answer">Chat Completions is stateless — you send full message history each call (or manage history yourself). Assistants/Threads store state server-side with built-in file search and code interpreter. Most production RAG/agents use Chat Completions + your own retrieval (<a href="../rag/vector-search.html">Vector search &amp; databases</a>) and <a href="../tech/langgraph.html">LangGraph</a> for durable agent state.</div>

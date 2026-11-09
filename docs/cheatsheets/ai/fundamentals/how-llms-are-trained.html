@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>How LLMs are trained -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="LLM fundamentals" data-href="index.html">
+<meta name="ai-topic" content="fundamentals/how-llms-are-trained">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,38 +19,40 @@
   <h2>How LLMs are trained</h2>
   <a href="index.html">&larr; LLM fundamentals</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-surface"><span class="num">04</span> API Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#deep-dive-pre-training"><span class="num">07</span> Deep Dive: Pre-training</a>
-  <a href="#deep-dive-sft"><span class="num">08</span> Deep Dive: SFT</a>
-  <a href="#deep-dive-rlhf-dpo"><span class="num">09</span> Deep Dive: RLHF &amp; DPO</a>
-  <a href="#deep-dive-data-quality"><span class="num">10</span> Deep Dive: Data Quality</a>
-  <a href="#deep-dive-lora-for-sft"><span class="num">11</span> Deep Dive: LoRA for SFT</a>
-  <a href="#how-an-llm-is-made"><span class="num">12</span> How an LLM is made</a>
-  <a href="#stage-1-pre-training-learn-language-the-world"><span class="num">13</span> Stage 1 — Pre-training (learn language &amp; the world)</a>
-  <a href="#stage-2-instruction-tuning-sft-learn-to-follow-requests"><span class="num">14</span> Stage 2 — Instruction tuning / SFT (learn to follow requests)</a>
-  <a href="#stage-3-alignment-rlhf-learn-to-be-helpful-honest-harmless"><span class="num">15</span> Stage 3 — Alignment / RLHF (learn to be helpful, honest, harmless)</a>
-  <a href="#same-prompt-three-stages-watch-the-behavior-change"><span class="num">16</span> Same prompt, three stages: watch the behavior change</a>
-  <a href="#which-stage-does-what-a-decision-view"><span class="num">17</span> Which stage does what — a decision view</a>
-  <a href="#pretraining"><span class="num">18</span> Pretraining</a>
-  <a href="#supervised-fine-tuning-instruction-tuning"><span class="num">19</span> Supervised fine-tuning (instruction tuning)</a>
-  <a href="#chat-templates-and-special-tokens"><span class="num">20</span> Chat templates and special tokens</a>
-  <a href="#reasoning-models-and-rl-with-verifiable-rewards"><span class="num">21</span> Reasoning models and RL with verifiable rewards</a>
-  <a href="#evaluating-llms"><span class="num">22</span> Evaluating LLMs</a>
-  <a href="#prompting-vs-rag-vs-fine-tuning"><span class="num">23</span> Prompting vs RAG vs fine-tuning</a>
-  <a href="#production-ops"><span class="num">24</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">25</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">26</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">27</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-surface"><span class="num">05</span> API Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#deep-dive-pre-training"><span class="num">08</span> Deep Dive: Pre-training</a>
+  <a href="#deep-dive-sft"><span class="num">09</span> Deep Dive: SFT</a>
+  <a href="#deep-dive-rlhf-dpo"><span class="num">10</span> Deep Dive: RLHF &amp; DPO</a>
+  <a href="#deep-dive-data-quality"><span class="num">11</span> Deep Dive: Data Quality</a>
+  <a href="#deep-dive-lora-for-sft"><span class="num">12</span> Deep Dive: LoRA for SFT</a>
+  <a href="#how-an-llm-is-made"><span class="num">13</span> How an LLM is made</a>
+  <a href="#stage-1-pre-training-learn-language-the-world"><span class="num">14</span> Stage 1 — Pre-training (learn language &amp; the world)</a>
+  <a href="#stage-2-instruction-tuning-sft-learn-to-follow-requests"><span class="num">15</span> Stage 2 — Instruction tuning / SFT (learn to follow requests)</a>
+  <a href="#stage-3-alignment-rlhf-learn-to-be-helpful-honest-harmless"><span class="num">16</span> Stage 3 — Alignment / RLHF (learn to be helpful, honest, harmless)</a>
+  <a href="#same-prompt-three-stages-watch-the-behavior-change"><span class="num">17</span> Same prompt, three stages: watch the behavior change</a>
+  <a href="#which-stage-does-what-a-decision-view"><span class="num">18</span> Which stage does what — a decision view</a>
+  <a href="#pretraining"><span class="num">19</span> Pretraining</a>
+  <a href="#supervised-fine-tuning-instruction-tuning"><span class="num">20</span> Supervised fine-tuning (instruction tuning)</a>
+  <a href="#chat-templates-and-special-tokens"><span class="num">21</span> Chat templates and special tokens</a>
+  <a href="#reasoning-models-and-rl-with-verifiable-rewards"><span class="num">22</span> Reasoning models and RL with verifiable rewards</a>
+  <a href="#evaluating-llms"><span class="num">23</span> Evaluating LLMs</a>
+  <a href="#prompting-vs-rag-vs-fine-tuning"><span class="num">24</span> Prompting vs RAG vs fine-tuning</a>
+  <a href="#production-ops"><span class="num">25</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">26</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">27</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">28</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">29</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>How LLMs are trained <span>// LLM fundamentals</span></h1>
   <p>Pretraining, instruction tuning, chat templates, reasoning models, evaluating LLMs, and prompting vs RAG vs fine-tuning.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">14 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -56,17 +60,21 @@
 <p>The three-stage pipeline from internet-scale pre-training through supervised fine-tuning to preference alignment (RLHF/DPO) that turns a base model into a helpful chat assistant.</p>
 <div class="diagram"><img alt="Pre-training, SFT &amp; RLHF overview" src="../fundamentals/img/pretraining-sft-rlhf-main.png"/></div><p class="diagram-caption">Corpus pre-training learns next-token prediction; SFT teaches instruction format; RLHF/DPO aligns outputs with human preferences before production deployment.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Pre-training</strong></td><td>First stage: learn language by predicting next tokens on huge corpora.</td></tr><tr><td><strong>SFT</strong></td><td>Supervised fine-tuning on (instruction→answer) pairs; teaches request-following.</td></tr><tr><td><strong>Knowledge cutoff</strong></td><td>The date past which the model knows nothing; fix with tools/RAG.</td></tr><tr><td><strong>SFT</strong></td><td>Supervised fine-tuning on (instruction → answer) demonstrations.</td></tr><tr><td><strong>RLHF</strong></td><td>SFT → reward model → RL (PPO) with a KL leash to the reference model.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card"><p><strong>Pre-training</strong> learns language from raw text. <strong>SFT</strong> teaches chat format. <strong>RLHF/DPO</strong> aligns with human preferences (helpful, harmless, honest).</p><blockquote>System pipeline detail: <a href="../adaptation/rlhf.html">RLHF &amp; reward models</a>. Cheap adaptation: <a href="../adaptation/fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a>.</blockquote></div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Pre-training</td><td>Next-token CE on massive corpus</td><td>Stale facts; not your private data</td></tr><tr><td>SFT</td><td>Supervised instruction-response pairs</td><td>Quality &gt; quantity</td></tr><tr><td>RLHF</td><td>Reward model + PPO policy optimization</td><td>Complex; KL to base</td></tr><tr><td>DPO</td><td>Direct preference optimization</td><td>Simpler than PPO</td></tr><tr><td>Chinchilla</td><td>Optimal tokens per parameter</td><td>Most apps don't pre-train</td></tr><tr><td>Alignment tax</td><td>Capability tradeoff post-RLHF</td><td>May refuse valid tasks</td></tr></table></div>
 </section>
 <section id="api-surface">
-  <h2>04 &mdash; API Surface</h2>
+  <h2>05 &mdash; API Surface</h2>
 <div class="card"><pre># HuggingFace TRL — SFT
 from trl import SFTTrainer
 # trainer = SFTTrainer(model, train_dataset=..., peft_config=lora_config)
@@ -76,42 +84,42 @@ from trl import DPOTrainer
 # pairs: {prompt, chosen, rejected}</pre></div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card"><table><tr><th>Stage</th><th>You</th><th>Skip</th></tr><tr><td>Pre-train</td><td>Foundation lab only</td><td>Product teams</td></tr><tr><td>SFT</td><td>Custom tone/format</td><td>Prompt fixes enough</td></tr><tr><td>RLHF</td><td>Safety-critical deploy</td><td>Internal tools only</td></tr><tr><td>DPO</td><td>Preference data available</td><td>No ranking labels</td></tr></table></div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card highlight"><pre>Corpus -&gt; Pre-train (weeks, $M) -&gt; Base checkpoint
   -&gt; SFT JSONL (instruction, response) -&gt; Instruct model
   -&gt; Preference pairs -&gt; RM + PPO OR DPO -&gt; Aligned model -&gt; API</pre></div>
 </section>
 <section id="deep-dive-pre-training">
-  <h2>07 &mdash; Deep Dive: Pre-training</h2>
+  <h2>08 &mdash; Deep Dive: Pre-training</h2>
 <div class="card"><p>Self-supervised next-token prediction on web, books, code. Compute-heavy (Chinchilla: ~20 tokens/param). Output: base model that completes text but doesn't follow instructions well.</p></div>
 </section>
 <section id="deep-dive-sft">
-  <h2>08 &mdash; Deep Dive: SFT</h2>
+  <h2>09 &mdash; Deep Dive: SFT</h2>
 <div class="diagram"><img alt="SFT trains on instruction-response pairs with loss on assistant tokens only." src="../fundamentals/img/pretraining-sft-rlhf-sft-zoom.png"/></div><p class="diagram-caption">SFT trains on instruction-response pairs with loss on assistant tokens only.</p><div class="card"><p>10K–100K high-quality pairs. Mask user tokens in loss. Teaches markdown, tool syntax, refusal templates. Risk: overfit narrow demo style.</p></div>
 </section>
 <section id="deep-dive-rlhf-dpo">
-  <h2>09 &mdash; Deep Dive: RLHF &amp; DPO</h2>
+  <h2>10 &mdash; Deep Dive: RLHF &amp; DPO</h2>
 <div class="diagram"><img alt="RLHF: reward model from rankings + PPO with KL penalty. DPO: direct preference loss without explicit RM." src="../fundamentals/img/pretraining-sft-rlhf-rlhf-zoom.png"/></div><p class="diagram-caption">RLHF: reward model from rankings + PPO with KL penalty. DPO: direct preference loss without explicit RM.</p><div class="card"><p><strong>RLHF:</strong> human ranks A vs B → train reward model → PPO optimizes policy with KL to prevent collapse. <strong>DPO:</strong> optimize preference likelihood directly — stable, widely adopted.</p></div>
 </section>
 <section id="deep-dive-data-quality">
-  <h2>10 &mdash; Deep Dive: Data Quality</h2>
+  <h2>11 &mdash; Deep Dive: Data Quality</h2>
 <div class="card"><p>Poisoned or biased SFT data propagates to production. Filter PII, toxic pairs, benchmark leakage. Human review on edge cases. Version datasets like code.</p></div>
 </section>
 <section id="deep-dive-lora-for-sft">
-  <h2>11 &mdash; Deep Dive: LoRA for SFT</h2>
+  <h2>12 &mdash; Deep Dive: LoRA for SFT</h2>
 <div class="card"><p>Low-rank adapters train 0.1–1% of params on consumer GPUs. See <a href="../adaptation/fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a> for QLoRA, rank selection, merge vs adapter serving.</p></div>
 </section>
 <p class="part-divider">The full explanation</p>
 <section id="how-an-llm-is-made">
-  <h2>12 &mdash; How an LLM is made</h2>
+  <h2>13 &mdash; How an LLM is made</h2>
 <p>Why does ChatGPT follow instructions when a raw model just rambles? Three training stages explain it.</p>
 </section>
 <section id="stage-1-pre-training-learn-language-the-world">
-  <h2>13 &mdash; Stage 1 — Pre-training (learn language &amp; the world)</h2>
+  <h2>14 &mdash; Stage 1 — Pre-training (learn language &amp; the world)</h2>
 <p>The model is shown trillions of tokens of text (web, books, code) and trained to predict the next token. No labels, no instructions — just "predict what comes next." This is hugely expensive (months, many GPUs) and produces a <b>base model</b>: knowledgeable but undirected. Ask it a question and it might just continue with <i>more questions</i>, because that's a plausible continuation.</p>
 <p>What does a pre-training "example" literally look like? There isn't an instruction–answer pair at all — just raw text chopped into sequences, where every position is a training signal ("given everything up to here, predict the next token"):</p>
 <div class="code-block"><div class="code-file"><span>pretrain_example.json — a pre-training record is just text</span><span class="code-lang">json</span></div><pre>{
@@ -124,7 +132,7 @@ from trl import DPOTrainer
 <p>Scale, for intuition (illustrative but realistic orders of magnitude): a frontier pre-training run might consume ~15 trillion tokens. At ~4 characters per token that's ~60 TB of text — hundreds of millions of books' worth — pushed through the network multiple times on tens of thousands of GPUs for weeks to months. This single stage is where essentially all of the model's <i>knowledge</i> comes from, and it's why the <b>knowledge cutoff</b> exists: the world after the last training document simply isn't in the weights.</p>
 </section>
 <section id="stage-2-instruction-tuning-sft-learn-to-follow-requests">
-  <h2>14 &mdash; Stage 2 — Instruction tuning / SFT (learn to follow requests)</h2>
+  <h2>15 &mdash; Stage 2 — Instruction tuning / SFT (learn to follow requests)</h2>
 <p><b>Supervised Fine-Tuning</b>: train the base model on curated <i>(instruction → ideal response)</i> pairs written by humans (increasingly, drafted by models and edited by humans). Now it learns the <i>format</i> of "answer the user's request" instead of "continue the text." The dataset is tiny relative to pre-training — think tens of thousands to a few million examples versus trillions of tokens — because the model already knows the content; it's only learning the <i>behavior</i>.</p>
 <p>An SFT training example is literally a conversation with the "right answer" filled in:</p>
 <div class="code-block"><div class="code-file"><span>sft_example.json — one supervised fine-tuning record</span><span class="code-lang">json</span></div><pre>{
@@ -140,7 +148,7 @@ from trl import DPOTrainer
 <span class="cm">// produce exactly this response." The user/system tokens are context, not targets.</span></pre></div>
 </section>
 <section id="stage-3-alignment-rlhf-learn-to-be-helpful-honest-harmless">
-  <h2>15 &mdash; Stage 3 — Alignment / RLHF (learn to be helpful, honest, harmless)</h2>
+  <h2>16 &mdash; Stage 3 — Alignment / RLHF (learn to be helpful, honest, harmless)</h2>
 <p><b>Reinforcement Learning from Human Feedback</b>: humans rank multiple model answers; a reward model learns those preferences; the LLM is optimized to produce preferred answers. (Variants: <b>RLAIF</b> uses AI feedback, <b>DPO</b> is a simpler direct method that skips the separate reward model.) This is why chat models feel cooperative and refuse harmful requests.</p>
 <p>The raw material here is not "the right answer" but <b>a preference between two answers</b>:</p>
 <div class="code-block"><div class="code-file"><span>preference_example.json — one RLHF/DPO preference record</span><span class="code-lang">json</span></div><pre>{
@@ -161,7 +169,7 @@ from trl import DPOTrainer
                                  rambles)          requests)          aligned)</pre>
 </section>
 <section id="same-prompt-three-stages-watch-the-behavior-change">
-  <h2>16 &mdash; Same prompt, three stages: watch the behavior change</h2>
+  <h2>17 &mdash; Same prompt, three stages: watch the behavior change</h2>
 <p>The clearest way to feel what each stage adds is to give the same prompt to a model frozen after each stage. These outputs are illustrative (reconstructed from typical published base-model behavior), but the <i>shape</i> of the difference is exactly what you'd observe:</p>
 <table>
 <tr><th>Stage</th><th>Prompt: <code>"How do I reverse a list in Python?"</code></th><th>What's happening</th></tr>
@@ -174,7 +182,7 @@ from trl import DPOTrainer
 <p>You're at a startup with 200 internal product FAQs. Someone proposes: "fine-tune the model on our FAQs so it knows our product." You run SFT on 200 (question → answer) pairs, and the demo looks great — until users paraphrase. "Can I export my data?" (trained) works; "is there a way to get my stuff out of the app?" (untrained phrasing) triggers a confident, <i>invented</i> answer about an export API that doesn't exist. What went wrong: 200 examples is enough to teach <i>style</i>, nowhere near enough to reliably inject <i>facts</i> — the pre-training prior (millions of generic SaaS documents) still dominates, and your fine-tune mostly taught it to <i>sound</i> like your FAQ while hallucinating contents. The fix is RAG (<a href="../agents/tool-calling.html">Tool calling</a>): put the actual FAQ text in the context at answer time, and the model's strength — reading and rephrasing what's in front of it — does the rest. Fine-tune for tone/format; retrieve for facts.</p>
 </section>
 <section id="which-stage-does-what-a-decision-view">
-  <h2>17 &mdash; Which stage does what — a decision view</h2>
+  <h2>18 &mdash; Which stage does what — a decision view</h2>
 <table>
 <tr><th>Stage</th><th>Data</th><th>Typical scale</th><th>What it installs</th><th>Who does it</th></tr>
 <tr><td>Pre-training</td><td>Raw text/code</td><td>Trillions of tokens, months of GPU time</td><td>Knowledge, language, reasoning patterns, the cutoff date</td><td>Model providers only</td></tr>
@@ -206,7 +214,7 @@ from trl import DPOTrainer
 </ol></div>
 </section>
 <section id="pretraining">
-  <h2>18 &mdash; Pretraining</h2>
+  <h2>19 &mdash; Pretraining</h2>
 <p>The pipeline from raw web text to a helpful assistant, and how to tell whether a model is actually good.</p>
 <ul>
 <li><strong>Data</strong>: trillions of tokens of web, code, books, papers. Most of the work is filtering (quality classifiers, language ID), deduplication (MinHash near-dup), and removing toxic or private data. Data mix ratios matter enormously.</li>
@@ -217,11 +225,11 @@ from trl import DPOTrainer
 </ul>
 </section>
 <section id="supervised-fine-tuning-instruction-tuning">
-  <h2>19 &mdash; Supervised fine-tuning (instruction tuning)</h2>
+  <h2>20 &mdash; Supervised fine-tuning (instruction tuning)</h2>
 <p>Train the base model on (prompt, ideal response) pairs formatted as conversations. Same loss, but only on response tokens. Tens of thousands of high-quality examples are enough to teach format, tone and instruction-following; SFT teaches <em>how to answer</em>, it adds little new knowledge.</p>
 </section>
 <section id="chat-templates-and-special-tokens">
-  <h2>20 &mdash; Chat templates and special tokens</h2>
+  <h2>21 &mdash; Chat templates and special tokens</h2>
 <pre>&lt;|im_start|&gt;system
 You are a helpful assistant.&lt;|im_end|&gt;
 &lt;|im_start|&gt;user
@@ -232,11 +240,11 @@ What is 2+2?&lt;|im_end|&gt;
 <div class="callout warn"><p><strong>Trap</strong></p> a missing end-of-turn token in fine-tuning data makes the model ramble forever; a mismatched template quietly degrades quality.</div>
 </section>
 <section id="reasoning-models-and-rl-with-verifiable-rewards">
-  <h2>21 &mdash; Reasoning models and RL with verifiable rewards</h2>
+  <h2>22 &mdash; Reasoning models and RL with verifiable rewards</h2>
 <p>Recent models are trained with RL on tasks where correctness can be checked automatically (math answers, unit tests). The model learns to produce long chains of thought before answering; algorithms like GRPO compare a group of sampled answers to each other instead of training a value model. Takeaway: more test-time compute (longer thinking) buys accuracy.</p>
 </section>
 <section id="evaluating-llms">
-  <h2>22 &mdash; Evaluating LLMs</h2>
+  <h2>23 &mdash; Evaluating LLMs</h2>
 <ul>
 <li><strong>Benchmarks</strong>: MMLU (knowledge), GSM8K/MATH (math), HumanEval/SWE-bench (code), IFEval (instruction following). Useful but saturated and often contaminated (test data in pretraining).</li>
 <li><strong>LLM-as-judge</strong>: a strong model grades outputs. Cheap and scalable; biased toward longer answers, its own style, and first position. Randomize order, use rubrics, spot-check by hand.</li>
@@ -245,7 +253,7 @@ What is 2+2?&lt;|im_end|&gt;
 </ul>
 </section>
 <section id="prompting-vs-rag-vs-fine-tuning">
-  <h2>23 &mdash; Prompting vs RAG vs fine-tuning</h2>
+  <h2>24 &mdash; Prompting vs RAG vs fine-tuning</h2>
 <table>
 <tr><th>Problem</th><th>Reach for</th></tr>
 <tr><td>Model can do it, needs instructions or examples</td><td>Prompting, few-shot</td></tr>
@@ -257,19 +265,23 @@ What is 2+2?&lt;|im_end|&gt;
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>24 &mdash; Production &amp; Ops</h2>
+  <h2>25 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Most products consume aligned API models</li><li>Track base model version + alignment stage</li><li>Eval before/after SFT on golden set</li><li>Rollback checkpoint if regression</li></ul></div>
 </section>
 <section id="related-topics">
-  <h2>25 &mdash; Related topics</h2>
+  <h2>26 &mdash; Related topics</h2>
 <div class="card"><ul><li><a href="what-is-an-llm.html">What an LLM is</a></li><li><a href="../adaptation/rlhf.html">RLHF &amp; reward models</a></li><li><a href="../adaptation/fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a></li><li><a href="../adaptation/constitutional-ai.html">Constitutional AI &amp; red-teaming</a></li><li><a href="../production/eval-metrics.html">Evaluation metrics</a></li><li><a href="../production/security.html">Security &amp; guardrails</a></li></ul></div>
 </section>
-<section id="common-pitfalls">
-  <h2>26 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>27 &mdash; Where people get lost</h2>
 <div class="card"><ul><li>Benchmark examples in SFT data (eval leakage)</li><li>Skipping SFT and expecting base model to chat</li><li>RLHF without KL → gibberish reward hacking</li><li>Assuming fine-tune injects fresh facts (use RAG)</li></ul></div>
 </section>
+<section id="how-this-connects">
+  <h2>28 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="what-is-an-llm.html">What an LLM is</a> &mdash; A next-token predictor, the language-modeling objective, model families and scaling laws.</li></ul><h3>Where this shows up later</h3><ul><li><a href="../adaptation/fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a> &mdash; When to fine-tune, the LoRA math, a working QLoRA recipe, data, hyperparameters, evaluation and serving.</li><li><a href="../production/eval-metrics.html">Evaluation metrics</a> &mdash; Perplexity, BLEU/ROUGE, benchmarks, LLM-as-judge and human evaluation: what each measures.</li><li><a href="../production/security.html">Security &amp; guardrails</a> &mdash; How agents expand the attack surface, input and output guardrails, and the defences that hold.</li><li><a href="../projects/portfolio-projects.html">Portfolio projects</a> &mdash; Five projects from micrograd to a shipped service, and a weekend build that makes interview answers real.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>27 &mdash; Check yourself</h2>
+  <h2>29 &mdash; Check yourself</h2>
 <details><summary>Explain pre-training vs SFT vs RLHF.</summary><div class="answer">Pre-train: next-token on raw text, learns language. SFT: supervised pairs teach instruction following. RLHF/DPO: optimize human preferences for helpfulness/safety.</div></details>
 <details><summary>What is DPO vs RLHF?</summary><div class="answer">RLHF trains reward model then PPO policy optimization with KL penalty. DPO directly optimizes preference pairs without explicit RM — simpler, stable.</div></details>
 <details><summary>Why not skip SFT?</summary><div class="answer">Base models don't follow instructions or chat format reliably. SFT is the cheapest alignment step with biggest UX jump.</div></details>

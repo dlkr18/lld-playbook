@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MCP -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Tools &amp; agents" data-href="index.html">
+<meta name="ai-topic" content="agents/mcp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,30 +19,32 @@
   <h2>MCP</h2>
   <a href="index.html">&larr; Tools &amp; agents</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-interface-surface"><span class="num">04</span> API / Interface Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#deep-dive-transport-layer"><span class="num">07</span> Deep Dive: Transport Layer</a>
-  <a href="#deep-dive-resources-vs-tools"><span class="num">08</span> Deep Dive: Resources vs Tools</a>
-  <a href="#deep-dive-building-mcp-servers"><span class="num">09</span> Deep Dive: Building MCP Servers</a>
-  <a href="#deep-dive-security-model"><span class="num">10</span> Deep Dive: Security Model</a>
-  <a href="#deep-dive-ecosystem-hosts"><span class="num">11</span> Deep Dive: Ecosystem &amp; Hosts</a>
-  <a href="#mcp-a-standard-plug-for-tools-data"><span class="num">12</span> MCP: a standard plug for tools &amp; data</a>
-  <a href="#what-problem-it-solves"><span class="num">13</span> What problem it solves</a>
-  <a href="#a-real-server-in-30-lines"><span class="num">14</span> A real server in ~30 lines</a>
-  <a href="#what-the-client-does-with-it"><span class="num">15</span> What the client does with it</a>
-  <a href="#production-ops"><span class="num">16</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">17</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">18</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">19</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-interface-surface"><span class="num">05</span> API / Interface Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#deep-dive-transport-layer"><span class="num">08</span> Deep Dive: Transport Layer</a>
+  <a href="#deep-dive-resources-vs-tools"><span class="num">09</span> Deep Dive: Resources vs Tools</a>
+  <a href="#deep-dive-building-mcp-servers"><span class="num">10</span> Deep Dive: Building MCP Servers</a>
+  <a href="#deep-dive-security-model"><span class="num">11</span> Deep Dive: Security Model</a>
+  <a href="#deep-dive-ecosystem-hosts"><span class="num">12</span> Deep Dive: Ecosystem &amp; Hosts</a>
+  <a href="#mcp-a-standard-plug-for-tools-data"><span class="num">13</span> MCP: a standard plug for tools &amp; data</a>
+  <a href="#what-problem-it-solves"><span class="num">14</span> What problem it solves</a>
+  <a href="#a-real-server-in-30-lines"><span class="num">15</span> A real server in ~30 lines</a>
+  <a href="#what-the-client-does-with-it"><span class="num">16</span> What the client does with it</a>
+  <a href="#production-ops"><span class="num">17</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">18</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">19</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">20</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">21</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>MCP <span>// Tools &amp; agents</span></h1>
   <p>A standard plug for tools and data: servers, clients, resources and the ecosystem.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">15 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -56,9 +60,13 @@
 <img alt="MCP resources and tools discovery zoom" src="../stretch/img/mcp-protocol-resources-zoom.png"/>
 </div><p class="diagram-caption">Resources/tools zoom: host subscribes to <code>resources/list</code>, user @-mentions a resource URI, host prefetches content into context window. Tools require explicit schema match + optional approval gate before <code>tools/call</code>.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>MCP</strong></td><td>Model Context Protocol — open standard for exposing tools/data to agents.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card">
 <p><strong>Problem:</strong> Every AI product reinvented tool integration: bespoke plugins, ad-hoc REST wrappers, N different auth flows. MCP standardizes how an LLM application discovers and invokes external capabilities.</p>
 <h3>Functional</h3>
@@ -79,7 +87,7 @@
 </div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card">
 <table>
 <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
@@ -97,7 +105,7 @@
 </div>
 </section>
 <section id="api-interface-surface">
-  <h2>04 &mdash; API / Interface Surface</h2>
+  <h2>05 &mdash; API / Interface Surface</h2>
 <div class="card">
 <p>MCP uses <strong>JSON-RPC 2.0</strong> over stdio or HTTP/SSE. Methods are namespaced: <code>tools/list</code>, <code>tools/call</code>, <code>resources/list</code>, <code>resources/read</code>.</p>
 <pre># Client → Server (stdio, one JSON object per line)
@@ -151,7 +159,7 @@ if __name__ == "__main__":
 </div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card">
 <table>
 <tr><th>Scenario</th><th>Use MCP?</th><th>Alternative</th></tr>
@@ -166,7 +174,7 @@ if __name__ == "__main__":
 </div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card highlight">
 <pre>  ┌────────────── HOST (Cursor / Claude Desktop / Agent) ──────────────┐
   │  LLM ◄──► Tool Router ◄──► MCP Client(s)                          │
@@ -188,7 +196,7 @@ if __name__ == "__main__":
 </div>
 </section>
 <section id="deep-dive-transport-layer">
-  <h2>07 &mdash; Deep Dive: Transport Layer</h2>
+  <h2>08 &mdash; Deep Dive: Transport Layer</h2>
 <div class="card">
 <table>
 <tr><th>Transport</th><th>Pros</th><th>Cons</th></tr>
@@ -199,7 +207,7 @@ if __name__ == "__main__":
 </div>
 </section>
 <section id="deep-dive-resources-vs-tools">
-  <h2>08 &mdash; Deep Dive: Resources vs Tools</h2>
+  <h2>09 &mdash; Deep Dive: Resources vs Tools</h2>
 <div class="card">
 <table>
 <tr><th>Primitive</th><th>Purpose</th><th>Example</th></tr>
@@ -211,7 +219,7 @@ if __name__ == "__main__":
 </div>
 </section>
 <section id="deep-dive-building-mcp-servers">
-  <h2>09 &mdash; Deep Dive: Building MCP Servers</h2>
+  <h2>10 &mdash; Deep Dive: Building MCP Servers</h2>
 <div class="card">
 <ul>
 <li><strong>Scope narrowly:</strong> one domain per server (GitHub, not “everything”)</li>
@@ -232,7 +240,7 @@ if __name__ == "__main__":
 </div>
 </section>
 <section id="deep-dive-security-model">
-  <h2>10 &mdash; Deep Dive: Security Model</h2>
+  <h2>11 &mdash; Deep Dive: Security Model</h2>
 <div class="card">
 <ul>
 <li><strong>Trust boundary:</strong> MCP server runs with OS permissions of its process — use least privilege</li>
@@ -244,7 +252,7 @@ if __name__ == "__main__":
 </div>
 </section>
 <section id="deep-dive-ecosystem-hosts">
-  <h2>11 &mdash; Deep Dive: Ecosystem &amp; Hosts</h2>
+  <h2>12 &mdash; Deep Dive: Ecosystem &amp; Hosts</h2>
 <div class="card">
 <table>
 <tr><th>Host</th><th>MCP Role</th></tr>
@@ -257,11 +265,11 @@ if __name__ == "__main__":
 </section>
 <p class="part-divider">The full explanation</p>
 <section id="mcp-a-standard-plug-for-tools-data">
-  <h2>12 &mdash; MCP: a standard plug for tools &amp; data</h2>
+  <h2>13 &mdash; MCP: a standard plug for tools &amp; data</h2>
 <p>As tools proliferated, every app reinvented how to expose them. The <b>Model Context Protocol (MCP)</b> standardizes it.</p>
 </section>
 <section id="what-problem-it-solves">
-  <h2>13 &mdash; What problem it solves</h2>
+  <h2>14 &mdash; What problem it solves</h2>
 <p>Do the integration math. You have M agent apps (an IDE assistant, a support bot, an internal chat tool) and N systems to reach (GitHub, Postgres, Slack, the filesystem, an internal CRM). Bespoke integration is M×N adapters — 3 apps × 5 systems = 15 glue codebases, each with its own auth, error handling, and drift. A shared protocol makes it M+N: each system gets one server, each app one client, 8 components total. That arithmetic is the entire pitch.</p>
 <p>MCP is an open protocol: a <b>server</b> exposes tools, resources, and prompts; any MCP-compatible <b>client</b> (an IDE, a chat app, an agent) can discover and call them — without custom glue per integration. <em>Think "USB for AI tools": one connector, many devices.</em></p>
 <div class="tile-grid">
@@ -272,7 +280,7 @@ if __name__ == "__main__":
 <p>The three primitives a server can expose: <b>tools</b> (model-invoked actions — the function calling you already know), <b>resources</b> (application-read data addressed by URI, like <code>tickets://recent</code> — context the host can load without a tool call), and <b>prompts</b> (server-provided prompt templates the user can invoke). Under the hood it's JSON-RPC 2.0 over a transport — stdio for local servers (the client spawns your process), streamable HTTP for remote ones. Nothing about the model changes: the client translates MCP tool listings into the provider wire format from <a href="tool-calling.html">Tool calling</a>.</p>
 </section>
 <section id="a-real-server-in-30-lines">
-  <h2>14 &mdash; A real server in ~30 lines</h2>
+  <h2>15 &mdash; A real server in ~30 lines</h2>
 <p>Mini-scenario: your team's ticket system has no AI integration. One small MCP server makes it usable from every MCP client your company runs — the IDE, the chat assistant, the internal agent — simultaneously. The Python SDK's <code>FastMCP</code> turns typed functions into protocol-compliant tools (docstrings become descriptions, signatures become schemas — <a href="tool-calling.html">Tool calling</a>'s advice applies verbatim):</p>
 <div class="code-block"><div class="code-file"><span>tickets_server.py — one tool + one resource, python mcp SDK</span><span class="code-lang">python</span></div><pre><span class="kw">from</span> mcp.server.fastmcp <span class="kw">import</span> FastMCP
 
@@ -300,7 +308,7 @@ mcp = FastMCP(<span class="st">"tickets"</span>)                      <span clas
 <p>Note the split: <code>search_tickets</code> is a <b>tool</b> — the <i>model</i> decides to call it mid-conversation. <code>tickets://recent</code> is a <b>resource</b> — the <i>host application</i> (or user) attaches it as context, no model decision involved. A dashboard-style "what's on fire today" belongs in a resource; a targeted lookup belongs in a tool. Registering this server in a client is typically a couple of lines of config naming the command to run (e.g. <code>{"command": "python", "args": ["tickets_server.py"]}</code>).</p>
 </section>
 <section id="what-the-client-does-with-it">
-  <h2>15 &mdash; What the client does with it</h2>
+  <h2>16 &mdash; What the client does with it</h2>
 <p>The client-side flow is the wire format from 4.2 with a discovery step bolted on the front. In SDK code:</p>
 <div class="code-block"><div class="code-file"><span>client_flow.py — discover, bridge, call</span><span class="code-lang">python</span></div><pre><span class="kw">from</span> mcp <span class="kw">import</span> ClientSession, StdioServerParameters
 <span class="kw">from</span> mcp.client.stdio <span class="kw">import</span> stdio_client
@@ -352,7 +360,7 @@ params = StdioServerParameters(command=<span class="st">"python"</span>, args=[<
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>16 &mdash; Production &amp; Ops</h2>
+  <h2>17 &mdash; Production &amp; Ops</h2>
 <div class="card"><h3>Observability</h3>
 <ul>
 <li>Log every <code>tools/call</code>: server, tool name, latency, success/fail (not full PII args)</li>
@@ -375,7 +383,7 @@ params = StdioServerParameters(command=<span class="st">"python"</span>, args=[<
 </div>
 </section>
 <section id="related-topics">
-  <h2>17 &mdash; Related topics</h2>
+  <h2>18 &mdash; Related topics</h2>
 <div class="card">
 <ul>
 <li><a href="../tech/langgraph.html">LangGraph</a> — MCP client as a tool node in agent graphs</li>
@@ -387,8 +395,8 @@ params = StdioServerParameters(command=<span class="st">"python"</span>, args=[<
 </ul>
 </div>
 </section>
-<section id="common-pitfalls">
-  <h2>18 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>19 &mdash; Where people get lost</h2>
 <div class="card">
 <ul>
 <li><strong>God-server anti-pattern:</strong> one MCP server with 50 tools → split by domain</li>
@@ -400,8 +408,12 @@ params = StdioServerParameters(command=<span class="st">"python"</span>, args=[<
 </ul>
 </div>
 </section>
+<section id="how-this-connects">
+  <h2>20 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../fundamentals/what-is-an-llm.html">What an LLM is</a> &mdash; A next-token predictor, the language-modeling objective, model families and scaling laws.</li><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a> &mdash; Zero- and few-shot, chain of thought, decomposition, self-critique, injection defence.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="tool-calling.html">Tool calling</a> &mdash; Why tools, what goes over the wire, and designing schemas the model uses well.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>19 &mdash; Check yourself</h2>
+  <h2>21 &mdash; Check yourself</h2>
 <details>
 <summary>What problem does MCP solve that OpenAI function calling doesn’t?</summary>
 <div class="answer">Function calling defines <strong>how the model requests a tool</strong> (JSON schema in the API). MCP defines <strong>how your application connects to tool providers</strong> (discovery, transport, resources, lifecycle). MCP lets you swap hosts (Cursor, Claude, custom) without rewriting each integration. Function calling is the LLM API layer; MCP is the integration layer.</div>

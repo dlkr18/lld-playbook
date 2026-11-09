@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reasoning patterns -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Tools &amp; agents" data-href="index.html">
+<meta name="ai-topic" content="agents/reasoning">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,15 +19,16 @@
   <h2>Reasoning patterns</h2>
   <a href="index.html">&larr; Tools &amp; agents</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#how-agents-think-reasoning-patterns"><span class="num">02</span> How agents think: reasoning patterns</a>
-  <a href="#the-four-agentic-patterns-mechanically"><span class="num">03</span> The four agentic patterns, mechanically</a>
-  <a href="#the-workflow-patterns-too-often-better-than-a-full-agent"><span class="num">04</span> The workflow patterns too (often better than a full agent)</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#how-agents-think-reasoning-patterns"><span class="num">03</span> How agents think: reasoning patterns</a>
+  <a href="#the-four-agentic-patterns-mechanically"><span class="num">04</span> The four agentic patterns, mechanically</a>
+  <a href="#the-workflow-patterns-too-often-better-than-a-full-agent"><span class="num">05</span> The workflow patterns too (often better than a full agent)</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Reasoning patterns <span>// Tools &amp; agents</span></h1>
   <p>ReAct, plan-and-execute, reflection and the other ways agents think.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">13 min read</span><span class="tag">2 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -33,8 +36,12 @@
 <div class="diagram"><img src="../img/reasoning.png" alt="Three reasoning patterns side by side: ReAct interleaves thought and action, plan-and-execute separates planning from doing, reflection critiques and revises its own draft."></div><p class="diagram-caption">Three reasoning patterns side by side: ReAct interleaves thought and action, plan-and-execute separates planning from doing, reflection critiques and revises its own draft.</p>
 <div class="diagram"><img src="../fundamentals/img/ai-system-design-patterns-agent-zoom.png" alt="The ReAct loop: reason about the goal, act with a tool, observe the result, and repeat until the goal is met."></div><p class="diagram-caption">The ReAct loop: reason about the goal, act with a tool, observe the result, and repeat until the goal is met.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Reflection</strong></td><td>Self-critique and revise; basis of evaluator-optimizer.</td></tr><tr><td><strong>Orchestrator–workers</strong></td><td>Manager decomposes a task, workers do pieces, manager synthesizes.</td></tr><tr><td><strong>Voting / consensus</strong></td><td>Run a task N times, take the majority (reliability).</td></tr></tbody></table>
+</section>
 <section id="how-agents-think-reasoning-patterns">
-  <h2>02 &mdash; How agents think: reasoning patterns</h2>
+  <h2>03 &mdash; How agents think: reasoning patterns</h2>
 <p>The loop is the skeleton; these patterns are how good agents <i>use</i> it. Mix and match.</p>
 <div class="tile-grid">
 <div class="tile"><h4>ReAct (Reason + Act)</h4><p>Interleave a "thought" and a tool "action" each step: think → act → observe → think… The default tool-using pattern.</p></div>
@@ -44,7 +51,7 @@
 </div>
 </section>
 <section id="the-four-agentic-patterns-mechanically">
-  <h2>03 &mdash; The four agentic patterns, mechanically</h2>
+  <h2>04 &mdash; The four agentic patterns, mechanically</h2>
 <h3>1. ReAct — reason, act, observe, repeat</h3>
 <p><b>Mechanism.</b> Every step, the model emits a short natural-language <i>thought</i> ("the fixture file probably sets this value — let me read it") followed by an <i>action</i> (a tool call); the observation feeds the next thought. With native tool-use APIs you don't implement much — an earlier topic's loop <i>is</i> ReAct, provided you let the model think. The one implementation detail that matters:</p>
 <div class="code-block"><div class="code-file"><span>react.py — the pattern is mostly a system-prompt contract</span><span class="code-lang">python</span></div><pre>SYSTEM = <span class="st">"""</span><span class="st">Solve the task using the tools.</span>
@@ -98,7 +105,7 @@ done = []
 <p><b>Failure mode.</b> Cost explosion for nothing: depth 3 × k 4 × beam 2 ≈ 24+ generation calls plus 24 scoring calls — roughly 50× a single chain. And self-scored "promise" ratings are noisy; with a weak evaluator, ToT is an expensive random walk. Rule of thumb: if you can't write a scoring function you'd trust, don't buy the search.</p>
 </section>
 <section id="the-workflow-patterns-too-often-better-than-a-full-agent">
-  <h2>04 &mdash; The workflow patterns too (often better than a full agent)</h2>
+  <h2>05 &mdash; The workflow patterns too (often better than a full agent)</h2>
 <table>
 <tr><th>Pattern</th><th>Shape</th><th>Use when</th></tr>
 <tr><td><b>Prompt chaining</b></td><td>fixed sequence of LLM calls</td><td>steps are known</td></tr>

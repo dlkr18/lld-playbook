@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The math you need -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Math &amp; ML foundations" data-href="index.html">
+<meta name="ai-topic" content="foundations/math">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,40 +19,46 @@
   <h2>The math you need</h2>
   <a href="index.html">&larr; Math &amp; ML foundations</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#the-math-you-actually-need-and-no-more"><span class="num">02</span> The math you actually need (and no more)</a>
-  <a href="#linear-algebra-representation"><span class="num">03</span> Linear algebra: representation</a>
-  <a href="#calculus-learning"><span class="num">04</span> Calculus: learning</a>
-  <a href="#probability-uncertainty"><span class="num">05</span> Probability: uncertainty</a>
-  <a href="#statistics-signal-vs-luck"><span class="num">06</span> Statistics: signal vs luck</a>
-  <a href="#mini-scenario-the-similarity-bug-that-shipped"><span class="num">07</span> Mini-scenario: the similarity bug that shipped</a>
-  <a href="#which-math-when"><span class="num">08</span> Which math, when</a>
-  <a href="#vectors-and-the-dot-product"><span class="num">09</span> Vectors and the dot product</a>
-  <a href="#matrices-matmul-and-shapes"><span class="num">10</span> Matrices, matmul, and shapes</a>
-  <a href="#derivatives-and-gradients"><span class="num">11</span> Derivatives and gradients</a>
-  <a href="#the-chain-rule"><span class="num">12</span> The chain rule</a>
-  <a href="#probability-essentials"><span class="num">13</span> Probability essentials</a>
-  <a href="#log-likelihood-entropy-cross-entropy-kl"><span class="num">14</span> Log-likelihood, entropy, cross-entropy, KL</a>
-  <a href="#softmax-and-numerical-stability"><span class="num">15</span> Softmax and numerical stability</a>
-  <a href="#check-yourself"><span class="num">16</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#the-math-you-actually-need-and-no-more"><span class="num">03</span> The math you actually need (and no more)</a>
+  <a href="#linear-algebra-representation"><span class="num">04</span> Linear algebra: representation</a>
+  <a href="#calculus-learning"><span class="num">05</span> Calculus: learning</a>
+  <a href="#probability-uncertainty"><span class="num">06</span> Probability: uncertainty</a>
+  <a href="#statistics-signal-vs-luck"><span class="num">07</span> Statistics: signal vs luck</a>
+  <a href="#mini-scenario-the-similarity-bug-that-shipped"><span class="num">08</span> Mini-scenario: the similarity bug that shipped</a>
+  <a href="#which-math-when"><span class="num">09</span> Which math, when</a>
+  <a href="#vectors-and-the-dot-product"><span class="num">10</span> Vectors and the dot product</a>
+  <a href="#matrices-matmul-and-shapes"><span class="num">11</span> Matrices, matmul, and shapes</a>
+  <a href="#derivatives-and-gradients"><span class="num">12</span> Derivatives and gradients</a>
+  <a href="#the-chain-rule"><span class="num">13</span> The chain rule</a>
+  <a href="#probability-essentials"><span class="num">14</span> Probability essentials</a>
+  <a href="#log-likelihood-entropy-cross-entropy-kl"><span class="num">15</span> Log-likelihood, entropy, cross-entropy, KL</a>
+  <a href="#softmax-and-numerical-stability"><span class="num">16</span> Softmax and numerical stability</a>
+  <a href="#how-this-connects"><span class="num">17</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">18</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>The math you need <span>// Math &amp; ML foundations</span></h1>
   <p>Vectors, matrices, derivatives, the chain rule, probability, cross-entropy and softmax, each with worked numbers.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">15 min read</span><span class="tag">1 diagram</span></div>
 </div>
 
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
 <div class="diagram"><img src="../img/math.png" alt="Vectors and matrices represent, derivatives and the chain rule learn, probability and cross-entropy score. Each feeds the next."></div><p class="diagram-caption">Vectors and matrices represent, derivatives and the chain rule learn, probability and cross-entropy score. Each feeds the next.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Backpropagation</strong></td><td>Chain rule through the computation graph; computes the gradients.</td></tr><tr><td><strong>Cross-entropy</strong></td><td>−Σ y·log p — the next-token training loss.</td></tr><tr><td><strong>KL divergence</strong></td><td>Distance between distributions; the leash in RLHF/DPO.</td></tr></tbody></table>
+</section>
 <section id="the-math-you-actually-need-and-no-more">
-  <h2>02 &mdash; The math you actually need (and no more)</h2>
+  <h2>03 &mdash; The math you actually need (and no more)</h2>
 <p>Four ideas carry ~90% of applied AI: vectors, gradients, probabilities, and "is this signal or luck." Learn each, use it immediately, return for depth only when something forces you to.</p>
 <p>A warning before the ideas: the failure mode in AI math is not "didn't learn enough" — it's learning it as symbols instead of as operations you can run. Every formula in this topic has a five-line NumPy translation, and you should type each one. The symbols stick when your fingers have executed them.</p>
 </section>
 <section id="linear-algebra-representation">
-  <h2>03 &mdash; Linear algebra: representation</h2>
+  <h2>04 &mdash; Linear algebra: representation</h2>
 <p>A <b>vector</b> is an ordered list of numbers — one example, one token, one direction in feature space. A <b>matrix</b> is a table of numbers <i>and</i> a transformation: multiplying <code>W·x</code> maps a d-dimensional representation to an m-dimensional one. Neural nets are stacks of exactly this.</p>
 <pre class="ascii-diagram">dot product   x·y = Σ xᵢyᵢ          "weighted agreement" — big when they point the same way
 norm          ‖x‖ = √(x·x)           magnitude
@@ -86,7 +94,7 @@ top5 = np.argsort(-scores)[:<span class="nr">5</span>]</pre></div>
 </ul></div>
 </section>
 <section id="calculus-learning">
-  <h2>04 &mdash; Calculus: learning</h2>
+  <h2>05 &mdash; Calculus: learning</h2>
 <p>A <b>derivative</b> = how much the output moves for a tiny nudge of an input. A <b>gradient</b> collects that sensitivity for every parameter at once. Training is just:</p>
 <pre class="ascii-diagram">θ ← θ − η · ∇L(θ)        take a small step (η = learning rate) downhill on the loss L</pre>
 <p><b>Backpropagation</b> is not a separate learning algorithm — it's the chain rule applied efficiently through the computation graph to get that gradient. The optimizer (SGD, Adam) then uses it. That's the entire mystery.</p>
@@ -123,7 +131,7 @@ rel_err = np.abs(ga - gn).max() / (np.abs(ga).max() + <span class="nr">1e-12</sp
 <p>Note the cost asymmetry hiding in that snippet: the numeric gradient needed <b>two loss evaluations per parameter</b>. For a 7B-parameter model that would be 14 billion forward passes for one training step. Backprop gets the whole gradient for roughly the cost of <i>two</i> forward passes, regardless of parameter count. That factor — 2 vs 2n — is why deep learning is possible at all.</p>
 </section>
 <section id="probability-uncertainty">
-  <h2>05 &mdash; Probability: uncertainty</h2>
+  <h2>06 &mdash; Probability: uncertainty</h2>
 <pre class="ascii-diagram">Bayes:          P(A|B) = P(B|A)·P(A) / P(B)
 Cross-entropy:  H(y,p) = −Σ yᵢ log pᵢ      ← THE loss of language models:
                 punish the model when it gave low probability to the token that actually came next</pre>
@@ -156,16 +164,16 @@ p = softmax(logits)
 <p>Know also: expectation/variance, conditional probability, likelihood vs probability, sampling, and <b>KL divergence</b> — how different two distributions are. Tiny numeric example: let <code>P = [0.9, 0.1]</code> (a model that almost always says "yes") and <code>Q = [0.6, 0.4]</code> (a hedgier model). Then <code>KL(P‖Q) = 0.9·ln(0.9/0.6) + 0.1·ln(0.1/0.4) ≈ 0.365 − 0.139 = 0.226</code> nats. Reversed, <code>KL(Q‖P) ≈ 0.311</code> nats — <b>not the same number</b>. KL is asymmetric: it measures the surprise of seeing P's samples under Q's beliefs, not a distance. The intuition that matters for this guide: KL is a <i>leash length</i>. In RLHF (<a href="../adaptation/index.html">Fine-tuning &amp; alignment</a>) the objective includes a KL penalty between the tuned model and its reference — reward can pull the policy anywhere, but every nat of KL it spends moving away from the reference costs it, so it stays in the region where the reference model's sanity still applies. Small KL ≈ "still basically the same model"; large KL ≈ "reward hacking territory."</p>
 </section>
 <section id="statistics-signal-vs-luck">
-  <h2>06 &mdash; Statistics: signal vs luck</h2>
+  <h2>07 &mdash; Statistics: signal vs luck</h2>
 <p>The questions that save you in practice: is this improvement bigger than noise (confidence intervals, bootstrap)? Is the sample biased (selection bias)? Does correlation hide a confounder? Is the model <b>calibrated</b> — of predictions near 0.7, does the event happen ~70% of the time? A/B tests and eval comparisons (<a href="../production/index.html">Production &amp; evals</a>) are applied statistics, nothing more.</p>
 <p>One worked sanity check you'll reuse weekly. Your prompt change moved eval accuracy from 82% to 85% on 200 test questions. Real? The standard error of a proportion is <code>√(p(1−p)/n) = √(0.85·0.15/200) ≈ 0.025</code> — so the 95% interval on the new score is roughly <b>85% ± 5%</b>, i.e. [80%, 90%], which comfortably contains the old 82%. Six questions flipping by luck fully explains the "improvement." At n=200, differences under ~7 points are whispers, not signals; either grow the eval set or run a paired test on per-question flips before celebrating.</p>
 </section>
 <section id="mini-scenario-the-similarity-bug-that-shipped">
-  <h2>07 &mdash; Mini-scenario: the similarity bug that shipped</h2>
+  <h2>08 &mdash; Mini-scenario: the similarity bug that shipped</h2>
 <p>You're building support-ticket deduplication: embed each ticket, flag pairs above 0.9 similarity. It works in the demo and embarrasses you in week two — long, rambling tickets match <i>everything</i>. Root cause: the code used raw dot product from the vector library's default, and the embedding model produces larger-norm vectors for longer inputs. The fix is one line (normalize, or switch metric to cosine), but the diagnosis took two days because "similarity" looked like a black box. It isn't: it's the three formulas at the top of this topic, and printing <code>np.linalg.norm(v)</code> for five vectors would have exposed it in a minute. This is the recurring shape of math-debt in AI systems — the bug is never exotic, it's a definition you didn't internalize.</p>
 </section>
 <section id="which-math-when">
-  <h2>08 &mdash; Which math, when</h2>
+  <h2>09 &mdash; Which math, when</h2>
 <table>
 <tr><th>You are…</th><th>Math that's actually load-bearing</th><th>Safe to defer</th></tr>
 <tr><td>Building RAG / search (<a href="../rag/index.html">Knowledge &amp; RAG</a>)</td><td>dot/cosine, norms, normalization</td><td>eigendecompositions</td></tr>
@@ -191,7 +199,7 @@ p = softmax(logits)
 </ol></div>
 </section>
 <section id="vectors-and-the-dot-product">
-  <h2>09 &mdash; Vectors and the dot product</h2>
+  <h2>10 &mdash; Vectors and the dot product</h2>
 <p>Not a math course. Just the six ideas every later part leans on: vectors, matrix multiply, derivatives, the chain rule, probability, and cross-entropy. If you can do the worked numbers here by hand, the rest of the page reads easily.</p>
 <p>A vector is a list of numbers, read as a point or an arrow in d-dimensional space. In ML, everything becomes a vector: a pixel patch, a user, a word. Their geometry carries meaning.</p>
 <pre class="formula">a · b = Σ aᵢbᵢ = |a| |b| cos θ
@@ -201,7 +209,7 @@ cos_sim(a, b) = a·b / (|a| |b|)     # −1 … 1, direction only</pre>
 <p>Why it matters: a dot product is a <strong>similarity score</strong>. Attention (<a href="../fundamentals/transformers.html">Transformers &amp; attention</a>) is literally dot products between token vectors; embedding search (<a href="../rag/embeddings.html">Embeddings</a>) is cosine similarity; a neuron is a dot product of weights with inputs.</p>
 </section>
 <section id="matrices-matmul-and-shapes">
-  <h2>10 &mdash; Matrices, matmul, and shapes</h2>
+  <h2>11 &mdash; Matrices, matmul, and shapes</h2>
 <p>A matrix W (m×n) is a linear map: it turns an n-vector into an m-vector. Each output entry is the dot product of one row of W with the input.</p>
 <pre class="formula">(m×k) @ (k×n) → (m×n)          inner dims must match
 y = W x + b                      one linear layer
@@ -212,7 +220,7 @@ cost of (m×k)@(k×n) ≈ 2·m·k·n FLOPs</pre>
 <div class="callout warn"><p><strong>Trap</strong></p> the 2·m·k·n FLOP rule is why a model's compute scales with parameters × tokens (<a href="../fundamentals/how-llms-are-trained.html">How LLMs are trained</a>): each parameter does one multiply and one add per token on the forward pass.</div>
 </section>
 <section id="derivatives-and-gradients">
-  <h2>11 &mdash; Derivatives and gradients</h2>
+  <h2>12 &mdash; Derivatives and gradients</h2>
 <p>The derivative f′(x) is the slope: how much f changes for a tiny nudge in x. With many inputs, each partial derivative ∂f/∂xᵢ is the slope along one axis, and stacking them gives the <strong>gradient</strong> ∇f, a vector pointing in the direction of steepest increase.</p>
 <pre class="formula">d/dx x² = 2x      d/dx eˣ = eˣ      d/dx ln x = 1/x
 f(w₁, w₂) = w₁² + 3w₂  →  ∇f = [2w₁, 3]</pre>
@@ -220,14 +228,14 @@ f(w₁, w₂) = w₁² + 3w₂  →  ∇f = [2w₁, 3]</pre>
 <p>Numerical check you'll use for debugging: <code>f′(x) ≈ (f(x+h) − f(x−h)) / 2h</code> with h ≈ 1e-5.</p>
 </section>
 <section id="the-chain-rule">
-  <h2>12 &mdash; The chain rule</h2>
+  <h2>13 &mdash; The chain rule</h2>
 <p>If y depends on u and u depends on x, the sensitivities multiply:</p>
 <pre class="formula">dy/dx = dy/du · du/dx</pre>
 <p>Worked: y = (3x + 1)². Let u = 3x+1. dy/du = 2u, du/dx = 3 → dy/dx = 6(3x+1). At x = 1: 24.</p>
 <p>A neural network is a long chain of such compositions. Backpropagation (<a href="neural-networks.html">Neural networks</a>) is the chain rule applied from the output backwards, reusing each intermediate result so every weight's gradient costs about one extra pass. For vector functions the "derivative" is a matrix (the Jacobian), and the chain rule becomes matrix products.</p>
 </section>
 <section id="probability-essentials">
-  <h2>13 &mdash; Probability essentials</h2>
+  <h2>14 &mdash; Probability essentials</h2>
 <ul>
 <li><strong>Distribution</strong>: how probability is spread over outcomes. Discrete outcomes (next token, class label) use a <em>categorical</em> distribution: a vector of non-negative numbers summing to 1.</li>
 <li><strong>Expectation</strong> E[x] = Σ p(x)·x, the probability-weighted average. <strong>Variance</strong> = E[(x − E[x])²], spread.</li>
@@ -237,7 +245,7 @@ f(w₁, w₂) = w₁² + 3w₂  →  ∇f = [2w₁, 3]</pre>
 </ul>
 </section>
 <section id="log-likelihood-entropy-cross-entropy-kl">
-  <h2>14 &mdash; Log-likelihood, entropy, cross-entropy, KL</h2>
+  <h2>15 &mdash; Log-likelihood, entropy, cross-entropy, KL</h2>
 <p>To train a probabilistic model, maximize the probability it assigns to the observed data. Products of small probabilities underflow, so take logs and minimize the negative: <strong>negative log-likelihood</strong>.</p>
 <pre class="formula">entropy        H(p)    = −Σ p log p           # inherent uncertainty
 cross-entropy  H(p, q) = −Σ p log q           # cost of coding p using q
@@ -247,7 +255,7 @@ KL divergence  KL(p‖q) = H(p, q) − H(p) ≥ 0   # extra cost; 0 iff p = q</p
 <p>KL shows up in distillation (<a href="../inference/inference-internals.html">Inference internals</a>), RLHF and DPO (<a href="../fundamentals/how-llms-are-trained.html">How LLMs are trained</a>), and VAEs. Note it's asymmetric: KL(p‖q) ≠ KL(q‖p).</p>
 </section>
 <section id="softmax-and-numerical-stability">
-  <h2>15 &mdash; Softmax and numerical stability</h2>
+  <h2>16 &mdash; Softmax and numerical stability</h2>
 <p>Softmax turns arbitrary scores (logits) into a probability distribution:</p>
 <pre class="formula">softmax(z)ᵢ = e^{zᵢ} / Σⱼ e^{zⱼ}
 softmax(z − c) = softmax(z)            # shift-invariant
@@ -255,8 +263,12 @@ stable: subtract max(z) before exponentiating
 log Σ e^{zⱼ} = m + log Σ e^{zⱼ − m},   m = max(z)    # log-sum-exp</pre>
 <p>e^1000 overflows float32; e^(1000−1000) = 1 doesn't. Frameworks fuse softmax + log + NLL (<code>F.cross_entropy</code> takes raw logits) precisely to use this trick. Never compute <code>log(softmax(x))</code> by hand.</p>
 </section>
+<section id="how-this-connects">
+  <h2>17 &mdash; How this connects</h2>
+<h3>Where this shows up later</h3><ul><li><a href="../fundamentals/transformers.html">Transformers &amp; attention</a> &mdash; Embeddings, attention, multi-head and GQA, RoPE, the block, a mini-GPT, FLOPs and FlashAttention.</li><li><a href="../projects/portfolio-projects.html">Portfolio projects</a> &mdash; Five projects from micrograd to a shipped service, and a weekend build that makes interview answers real.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>16 &mdash; Check yourself</h2>
+  <h2>18 &mdash; Check yourself</h2>
 <details><summary>Shapes: X is (32, 512), W is (2048, 512). What's X @ W.T and its FLOPs?</summary><div class="answer">(32, 2048). FLOPs ≈ 2 · 32 · 512 · 2048 ≈ 67M.</div></details>
 <details><summary>Why do we minimize negative log-likelihood instead of maximizing likelihood directly?</summary><div class="answer">Logs turn products into sums (numerically stable, easy gradients); negating turns maximization into the minimization optimizers expect. Same optimum.</div></details>
 <details><summary>Cross-entropy at random init for a 50k-token vocabulary?</summary><div class="answer">Uniform prediction → −ln(1/50000) = ln 50000 ≈ 10.8. A great sanity check for your first training step.</div></details>
