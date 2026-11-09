@@ -117,6 +117,7 @@
 <section data-label="Step 7: what to keep, and for how long">
 <p>Full traces are large because they contain prompts. Our trace has four model calls with about 7,000 tokens of input each; stored as text with outputs, tool results and metadata, call it 125 KB per conversation. At 200,000 conversations a day that is <strong>25 GB a day</strong>, 750 GB a month, before indexing and replication. Keeping everything is possible but rarely sensible.</p>
 <p><strong>Head sampling</strong> decides at the start of a request (keep 5% at random). It is cheap but blind: it throws away 95% of errors too. <strong>Tail sampling</strong> buffers each trace until it finishes, then decides with full knowledge: keep every trace that errored, got negative feedback, failed a check or ran unusually long, plus a small random share of normal ones as a baseline. In a simulated day with 2% errors, 1.5% thumbs-down and 2.4% of conversations over 20 seconds, keeping all of those plus 5% of the rest retains about <strong>10% of traces (2.6 GB a day)</strong> and every single error.</p>
+<div class="diagram"><img src="../img/observability-tail-sampling.png" alt="Head sampling decides blind at the start and drops most errors; tail sampling waits for each trace to finish, keeps every error, thumbs-down and slow trace plus 5% of the rest, about 10% of traces in all."></div><p class="diagram-caption">Head sampling decides blind at the start and drops most errors; tail sampling waits for each trace to finish, keeps every error, thumbs-down and slow trace plus 5% of the rest, about 10% of traces in all.</p>
 <p>Two further savings: store the large repeated parts once (the 6,000-token system prompt is the same in every call, so store its version and hash, not its text), and keep different data for different periods (metrics for a year, sampled traces for a few weeks, raw prompts for days unless needed for evaluation sets).</p>
 </section>
 
@@ -153,6 +154,7 @@
 <li><strong>Fix</strong>: change the tool to filter by order ID and return the order with each charge; add a check in the refund tool that the charge matches the order in context.</li>
 <li><strong>Prevent</strong>: add this conversation, redacted, to the evaluation set, so the next prompt or model change is tested against it (<a href="@@production/evals@@">Evaluating LLM features</a>).</li>
 </ol>
+<div class="diagram"><img src="../img/observability-debug-loop.png" alt="The wrong-refund bug goes round the loop once: a complaint and an online check detect it, the trace locates and explains it, the tool is fixed, and the conversation joins the evaluation set."></div><p class="diagram-caption">The wrong-refund bug goes round the loop once: a complaint and an online check detect it, the trace locates and explains it, the tool is fixed, and the conversation joins the evaluation set.</p>
 <p>The last step is what makes observability pay for itself: production failures become test cases, and the test set comes to reflect what actually goes wrong rather than what the team imagined.</p>
 </section>
 

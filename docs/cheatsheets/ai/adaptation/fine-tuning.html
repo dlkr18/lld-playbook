@@ -75,7 +75,7 @@
 <div class="hero">
   <h1>Fine-tuning, LoRA &amp; QLoRA <span>// Fine-tuning &amp; alignment</span></h1>
   <p>When to fine-tune, the LoRA math, a working QLoRA recipe, data, hyperparameters, evaluation and serving.</p>
-  <div class="tags"><span class="tag">49 min read</span><span class="tag">3 diagrams</span></div>
+  <div class="tags"><span class="tag">49 min read</span><span class="tag">4 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -176,6 +176,7 @@
 </ul>
 <p>During the forward and backward passes, each 4-bit block is dequantized to 16-bit just in time for its matrix multiply. Gradients flow through those dequantized weights to the LoRA matrices, which are kept in 16-bit and trained normally. The base is never updated, so its quantization error is fixed, and the adapters learn to work with the quantized model.</p>
 <p>Memory for our model: about 6.98 billion parameters in linear layers at roughly 4.13 bits is about 3.6 GB; the embedding and output layers (about 1.05 billion parameters) usually stay in 16-bit, adding about 2.1 GB. So the base is around 5.7 GB, and the whole training run fits on a single 24 GB GPU. The costs: training is slower (dequantization on every step), and if you later merge the adapter into a 16-bit base for serving, the adapter was trained against the 4-bit version, a small mismatch that you should check in evaluation.</p>
+<div class="diagram"><img alt="Training memory for the 8B triage model: full fine-tuning keeps 16 bytes per parameter, LoRA freezes the 16-bit base and trains 41.9 million adapter weights, and QLoRA stores the frozen base in 4 bits so the run fits a 24 GB GPU." src="../img/fine-tuning-memory-three-ways.png"/></div><p class="diagram-caption">Training memory for the 8B triage model: full fine-tuning keeps 16 bytes per parameter, LoRA freezes the 16-bit base and trains 41.9 million adapter weights, and QLoRA stores the frozen base in 4 bits so the run fits a 24 GB GPU.</p>
 </section>
 <section id="step-7-data-is-the-real-lever">
   <h2>10 &mdash; Step 7: data is the real lever</h2>

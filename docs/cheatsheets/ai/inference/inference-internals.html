@@ -71,7 +71,7 @@
 <div class="hero">
   <h1>Inference internals <span>// Inference &amp; serving</span></h1>
   <p>Prefill vs decode, the KV cache, PagedAttention, continuous batching and speculative decoding.</p>
-  <div class="tags"><span class="tag">37 min read</span><span class="tag">4 diagrams</span></div>
+  <div class="tags"><span class="tag">37 min read</span><span class="tag">5 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -195,6 +195,7 @@
 <p>The probability that a draft token is accepted is \(\alpha = \sum_x \min(p(x), q(x))\), the overlap of the two distributions. If each of \(k\) draft tokens is accepted with probability \(\alpha\) independently, the expected number of tokens produced per target pass (including the replacement or bonus token) is</p>
 \[ E = \frac{1 - \alpha^{k+1}}{1 - \alpha} \]
 <p>With \(\alpha = 0.8\) and \(k = 4\): \(E = (1 - 0.8^5)/0.2 = 3.36\) tokens per pass. If the drafter costs 5% of a target step per token, one round costs \(1 + 4 \times 0.05 = 1.2\) target steps, so the speed-up is about \(3.36 / 1.2 = 2.8\times\). With \(\alpha = 0.5\) it is 1.6×; with \(\alpha = 0.3\), 1.2×, and drafting 8 tokens at \(\alpha = 0.3\) gains almost nothing. Acceptance is high for code, structured output and answers that quote the prompt; low for creative text at high temperature.</p>
+<div class="diagram"><img alt="A cheap drafter proposes k = 4 tokens and the target scores all of them in one pass; drafts are kept while accepted, so at α = 0.8 a round yields 3.36 tokens for the cost of 1.2 target steps, about 2.8× faster." src="../img/inference-internals-speculative-round.png"/></div><p class="diagram-caption">A cheap drafter proposes k = 4 tokens and the target scores all of them in one pass; drafts are kept while accepted, so at α = 0.8 a round yields 3.36 tokens for the cost of 1.2 target steps, about 2.8× faster.</p>
 <p>The verification pass is only "free" while decode is memory-bound. At large batch (Step 6) it costs real compute and the gain shrinks or reverses: speculation is a latency tool for lightly loaded servers, not a throughput tool for saturated ones.</p>
 </section>
 <section id="a-worked-example-sizing-one-gpu">
