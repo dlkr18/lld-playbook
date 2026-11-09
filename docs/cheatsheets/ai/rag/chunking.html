@@ -24,27 +24,27 @@
   <a href="index.html">&larr; Knowledge &amp; RAG</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
   <a href="#new-words"><span class="num">02</span> New words</a>
-  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
-  <a href="#api-surface"><span class="num">05</span> API Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">07</span> Architecture</a>
-  <a href="#deep-dive-fixed-recursive"><span class="num">08</span> Deep Dive: Fixed &amp; Recursive</a>
-  <a href="#deep-dive-semantic-chunking"><span class="num">09</span> Deep Dive: Semantic Chunking</a>
-  <a href="#deep-dive-document-aware"><span class="num">10</span> Deep Dive: Document-Aware</a>
-  <a href="#deep-dive-parent-child"><span class="num">11</span> Deep Dive: Parent-Child</a>
-  <a href="#deep-dive-overlap-eval"><span class="num">12</span> Deep Dive: Overlap &amp; Eval</a>
-  <a href="#the-question"><span class="num">13</span> The question</a>
-  <a href="#step-1-why-split-documents-at-all"><span class="num">14</span> Step 1: why split documents at all</a>
-  <a href="#step-2-the-size-trade-off-in-numbers"><span class="num">15</span> Step 2: the size trade-off in numbers</a>
-  <a href="#step-3-fixed-size-chunks-and-overlap"><span class="num">16</span> Step 3: fixed-size chunks and overlap</a>
-  <a href="#step-4-recursive-splitting-follow-the-natural-boundaries"><span class="num">17</span> Step 4: recursive splitting, follow the natural boundaries</a>
-  <a href="#step-5-structure-aware-chunks-with-heading-paths"><span class="num">18</span> Step 5: structure-aware chunks with heading paths</a>
-  <a href="#step-6-semantic-chunking-cut-where-the-meaning-shifts"><span class="num">19</span> Step 6: semantic chunking, cut where the meaning shifts</a>
-  <a href="#step-7-decoupling-what-you-search-from-what-you-show"><span class="num">20</span> Step 7: decoupling what you search from what you show</a>
-  <a href="#step-8-measuring-whether-chunking-is-good"><span class="num">21</span> Step 8: measuring whether chunking is good</a>
-  <a href="#a-recipe-that-works-for-most-corpora"><span class="num">22</span> A recipe that works for most corpora</a>
-  <a href="#in-code-fixed-versus-structure-aware-chunking"><span class="num">23</span> In code: fixed versus structure-aware chunking</a>
+  <a href="#the-question"><span class="num">03</span> The question</a>
+  <a href="#step-1-why-split-documents-at-all"><span class="num">04</span> Step 1: why split documents at all</a>
+  <a href="#step-2-the-size-trade-off-in-numbers"><span class="num">05</span> Step 2: the size trade-off in numbers</a>
+  <a href="#step-3-fixed-size-chunks-and-overlap"><span class="num">06</span> Step 3: fixed-size chunks and overlap</a>
+  <a href="#step-4-recursive-splitting-follow-the-natural-boundaries"><span class="num">07</span> Step 4: recursive splitting, follow the natural boundaries</a>
+  <a href="#step-5-structure-aware-chunks-with-heading-paths"><span class="num">08</span> Step 5: structure-aware chunks with heading paths</a>
+  <a href="#step-6-semantic-chunking-cut-where-the-meaning-shifts"><span class="num">09</span> Step 6: semantic chunking, cut where the meaning shifts</a>
+  <a href="#step-7-decoupling-what-you-search-from-what-you-show"><span class="num">10</span> Step 7: decoupling what you search from what you show</a>
+  <a href="#step-8-measuring-whether-chunking-is-good"><span class="num">11</span> Step 8: measuring whether chunking is good</a>
+  <a href="#a-recipe-that-works-for-most-corpora"><span class="num">12</span> A recipe that works for most corpora</a>
+  <a href="#in-code-fixed-versus-structure-aware-chunking"><span class="num">13</span> In code: fixed versus structure-aware chunking</a>
+  <a href="#what-why"><span class="num">14</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">15</span> Core Concepts</a>
+  <a href="#api-surface"><span class="num">16</span> API Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">17</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">18</span> Architecture</a>
+  <a href="#deep-dive-fixed-recursive"><span class="num">19</span> Deep Dive: Fixed &amp; Recursive</a>
+  <a href="#deep-dive-semantic-chunking"><span class="num">20</span> Deep Dive: Semantic Chunking</a>
+  <a href="#deep-dive-document-aware"><span class="num">21</span> Deep Dive: Document-Aware</a>
+  <a href="#deep-dive-parent-child"><span class="num">22</span> Deep Dive: Parent-Child</a>
+  <a href="#deep-dive-overlap-eval"><span class="num">23</span> Deep Dive: Overlap &amp; Eval</a>
   <a href="#chunking-query-rewriting-and-failure-modes"><span class="num">24</span> Chunking, query rewriting, and failure modes</a>
   <a href="#parsing-and-chunking"><span class="num">25</span> Parsing and chunking</a>
   <a href="#production-ops"><span class="num">26</span> Production &amp; Ops</a>
@@ -69,62 +69,9 @@
   <h2>02 &mdash; New words</h2>
 <table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Chunk</strong></td><td>A piece of a document that is embedded as one vector and retrieved as one unit.</td></tr><tr><td><strong>Chunk size</strong></td><td>The maximum length of a chunk, usually counted in tokens (often 200 to 800).</td></tr><tr><td><strong>Overlap</strong></td><td>Tokens repeated at the end of one chunk and the start of the next, so text cut at a boundary appears whole in at least one chunk.</td></tr><tr><td><strong>Fixed-size chunking</strong></td><td>Cutting every \(n\) tokens, regardless of sentences or sections.</td></tr><tr><td><strong>Recursive splitting</strong></td><td>Splitting on the coarsest natural boundary available (section, paragraph, line, sentence, word), and going finer only for pieces still too long.</td></tr><tr><td><strong>Structure-aware chunking</strong></td><td>Using the document's own structure (headings, list items, table rows, code blocks) to decide boundaries.</td></tr><tr><td><strong>Heading path</strong></td><td>The chain of headings above a chunk, such as "Refund policy &gt; Annual plans &gt; Enterprise plans", stored and often embedded with it.</td></tr><tr><td><strong>Semantic chunking</strong></td><td>Placing boundaries where the meaning shifts, detected by a drop in embedding similarity between adjacent sentences.</td></tr><tr><td><strong>Parent-child (small-to-big)</strong></td><td>Search over small chunks for precision, but hand the language model the larger section each belongs to.</td></tr><tr><td><strong>Contextual chunk text</strong></td><td>A short description of where a chunk sits in its document, added before embedding so the chunk makes sense alone.</td></tr><tr><td><strong>Dangling reference</strong></td><td>A chunk that says "it", "this plan" or "after that" while the thing referred to is in a different chunk.</td></tr><tr><td><strong>Chunking</strong></td><td>Splitting documents into overlapping pieces before embedding.</td></tr></tbody></table>
 </section>
-<p class="part-divider">Quick reference</p>
-<section id="what-why">
-  <h2>03 &mdash; What &amp; Why</h2>
-<div class="card"><p><strong>Chunking</strong> determines the atomic retrieval unit in RAG. Bad splits cannot be fixed downstream.</p><h3>Functional</h3><ul><li>Split PDF/HTML/Slack/code into searchable units</li><li>Preserve tables, headings, code blocks</li><li>Attach doc_id, section, page, ACL metadata</li><li>Re-chunk on update without orphan vectors</li></ul><h3>Non-functional</h3><ul><li>Deterministic chunk_ids on re-ingest</li><li>Gold passage contained in one chunk &gt;95%</li><li>10K docs/min CPU throughput</li></ul></div>
-</section>
-<section id="core-concepts">
-  <h2>04 &mdash; Core Concepts</h2>
-<div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Chunk size</td><td>Target tokens per unit (256–1024)</td><td>Count tokens not chars</td></tr><tr><td>Overlap</td><td>Shared tokens between neighbors</td><td>10% of chunk_size typical</td></tr><tr><td>Recursive</td><td>Split on headings then paragraphs</td><td>LangChain default</td></tr><tr><td>Semantic</td><td>Split when embedding similarity drops</td><td>Extra embed cost</td></tr><tr><td>Parent-child</td><td>Index small, return large parent</td><td>Sync on delete</td></tr></table></div>
-</section>
-<section id="api-surface">
-  <h2>05 &mdash; API Surface</h2>
-<div class="card"><pre>POST /v1/chunk/preview
-  body: { doc_id, text, strategy: "recursive", chunk_size: 512, overlap: 50 }
-  -&gt; { chunks: [{ chunk_id, text, token_count, metadata }] }
-
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)</pre></div>
-</section>
-<section id="when-to-use-when-not">
-  <h2>06 &mdash; When to Use / When NOT</h2>
-<div class="card"><table><tr><th>Strategy</th><th>Use When</th><th>Skip When</th></tr><tr><td>Fixed-size</td><td>Logs, chat exports, MVP</td><td>Structured PDFs</td></tr><tr><td>Recursive</td><td>Mixed markdown/HTML</td><td>Need table atomicity</td></tr><tr><td>Semantic</td><td>Long prose, topic shifts</td><td>Latency-sensitive ingest</td></tr><tr><td>Document-aware</td><td>PDFs, code, reports</td><td>Plain text only</td></tr><tr><td>Parent-child</td><td>Precision + broad context</td><td>Docs already &lt;512 tok</td></tr></table></div>
-</section>
-<section id="architecture">
-  <h2>07 &mdash; Architecture</h2>
-<div class="card"><pre>Raw Doc -&gt; Parser -&gt; Strategy Router
-  Fixed | Recursive | Doc-aware | Semantic
-       -&gt; Overlap pass -&gt; Metadata enricher
-       -&gt; Optional parent-child linker -&gt; Embed + Index</pre></div><div class="card"><div class="flow"><div class="step" data-num="1"><span class="label">Parse</span><div class="detail">OCR PDFs; strip HTML nav.</div></div><div class="step" data-num="2"><span class="label">Route</span><div class="detail">Mime-based strategy selection.</div></div><div class="step" data-num="3"><span class="label">Split</span><div class="detail">512 tok, 50 overlap; never mid-table.</div></div><div class="step" data-num="4"><span class="label">Validate</span><div class="detail">Min/max size; empty filter.</div></div><div class="step" data-num="5"><span class="label">Index</span><div class="detail">Upsert by content_hash.</div></div></div></div>
-</section>
-<section id="deep-dive-fixed-recursive">
-  <h2>08 &mdash; Deep Dive: Fixed &amp; Recursive</h2>
-<div class="card"><pre>splitter = RecursiveCharacterTextSplitter(
-    chunk_size=512, chunk_overlap=50,
-    separators=["\n## ", "\n### ", "\n\n", "\n", ". ", " "],
-)
-# Grid search {256,512,768,1024} on golden Recall@5</pre><p>Start <strong>512/50</strong>. Evaluate before tuning embeddings.</p></div>
-</section>
-<section id="deep-dive-semantic-chunking">
-  <h2>09 &mdash; Deep Dive: Semantic Chunking</h2>
-<div class="diagram"><img alt="Semantic split at embedding similarity drop threshold" src="../systems/img/chunking-strategies-semantic-zoom.png"/></div><p class="diagram-caption">Semantic split at embedding similarity drop threshold</p><div class="card"><p>Embed sentences; split when cosine similarity &lt; 0.75. Best for policies and long essays.</p></div>
-</section>
-<section id="deep-dive-document-aware">
-  <h2>10 &mdash; Deep Dive: Document-Aware</h2>
-<div class="card"><ul><li><strong>PDF:</strong> Unstructured/Docling — tables atomic</li><li><strong>Markdown:</strong> split on ##; prepend heading to each chunk</li><li><strong>Code:</strong> tree-sitter function/class boundaries</li></ul></div>
-</section>
-<section id="deep-dive-parent-child">
-  <h2>11 &mdash; Deep Dive: Parent-Child</h2>
-<div class="diagram"><img alt="Retrieve child chunk; inject parent section into LLM context" src="../systems/img/chunking-strategies-parent-child-zoom.png"/></div><p class="diagram-caption">Retrieve child chunk; inject parent section into LLM context</p><div class="card"><p>Index 128–256 tok children; store 1024 tok parent in metadata. Retrieve child, pass parent to LLM.</p></div>
-</section>
-<section id="deep-dive-overlap-eval">
-  <h2>12 &mdash; Deep Dive: Overlap &amp; Eval</h2>
-<div class="card"><p>Grid search chunk_size × overlap on golden set. Stop when Recall@5 gain &lt;2% for &gt;20% index growth.</p></div>
-</section>
-<p class="part-divider">The full explanation</p>
+<p class="part-divider">The lesson</p>
 <section id="the-question">
-  <h2>13 &mdash; The question</h2>
+  <h2>03 &mdash; The question</h2>
 <p>A retriever does not return documents; it returns chunks. Whatever boundaries you draw at ingestion become the only units the system can ever find and show to the language model. Draw them badly and the answer is split across two chunks, or buried in a chunk about something else, or separated from the words that say what it applies to. No embedding model, reranker or prompt downstream can repair that, because the right unit of text does not exist in the index.</p>
 <p>Interviewers ask:</p>
 <ol>
@@ -149,7 +96,7 @@ Open Billing, choose the invoice, and click Request refund. ...</pre>
 <p>The customer asks: <strong>"Can enterprise customers get a refund after 30 days?"</strong> The correct answer is yes, a prorated refund within 60 days, and it sits under a heading the answer sentence itself barely repeats. Right above it is a general rule that says the opposite. That is the trap we will watch each method fall into or avoid.</p>
 </section>
 <section id="step-1-why-split-documents-at-all">
-  <h2>14 &mdash; Step 1: why split documents at all</h2>
+  <h2>04 &mdash; Step 1: why split documents at all</h2>
 <p>Three separate reasons, each of which would be enough on its own.</p>
 <p><strong>The embedding model has an input limit.</strong> Often 512 tokens, sometimes 8,192. Text beyond the limit is usually dropped without an error, so the end of a long document never reaches its vector.</p>
 <p><strong>One vector cannot point at many topics.</strong> An embedding is one direction in space (see <a href="embeddings.html">embeddings</a>). Text covering several topics produces a vector near the average of their directions, and an average is far from each of its parts. In the idealised case of \(k\) unrelated topics (orthogonal unit vectors), the normalised average has cosine \(1/\sqrt{k}\) with each topic: 1.000 for one topic, 0.707 for two, 0.447 for five, 0.354 for eight. Our 1,800-token policy covers at least four distinct rules; embedded whole, it matches a question about any one of them only weakly, and loses to a shorter, single-topic page that is less useful.</p>
@@ -157,14 +104,14 @@ Open Billing, choose the invoice, and click Request refund. ...</pre>
 <p>So chunking is a trade: small enough that each vector means one thing and each retrieved chunk is mostly relevant; large enough that each chunk carries the context needed to understand it.</p>
 </section>
 <section id="step-2-the-size-trade-off-in-numbers">
-  <h2>15 &mdash; Step 2: the size trade-off in numbers</h2>
+  <h2>05 &mdash; Step 2: the size trade-off in numbers</h2>
 <p>Both ends of the size range fail in specific ways.</p>
 <p><strong>Too small</strong> (one sentence, about 20 to 50 tokens). The sentence "After that, the contract terms apply." is a perfectly good chunk by length, and useless alone: after what, which contract? Small chunks match queries sharply but often lack the subject of their own sentence. They also multiply the number of vectors: 9 million corpus tokens at 50 tokens per chunk is 180,000 vectors; at 400 tokens it is 22,500.</p>
 <p><strong>Too large</strong> (a whole section or page, 1,500+ tokens). Each chunk is diluted across topics, and every retrieved chunk costs context. Passing the top 5 chunks at 1,500 tokens is 7,500 prompt tokens per question; at 300 tokens it is 1,500. At 2 million questions a month, that difference is 12 billion input tokens a month.</p>
 <p>The usual starting range is 200 to 500 tokens for prose, adjusted per document type: FAQ entries are naturally one question and answer each; runbooks have numbered steps that belong together; legal text has clauses that must not be split. The right size is an empirical result on your own questions (Step 8), not a constant.</p>
 </section>
 <section id="step-3-fixed-size-chunks-and-overlap">
-  <h2>16 &mdash; Step 3: fixed-size chunks and overlap</h2>
+  <h2>06 &mdash; Step 3: fixed-size chunks and overlap</h2>
 <p>The simplest method cuts every \(s\) tokens. To soften the cuts, consecutive chunks share \(o\) tokens of overlap, so each new chunk starts \(s - o\) tokens after the previous one. A document of \(N\) tokens produces</p>
 \[ n = \left\lceil \frac{N - o}{s - o} \right\rceil \]
 <p>chunks. For our 1,800-token policy with \(s = 400\) and \(o = 50\): \(\lceil 1{,}750 / 350 \rceil = 5\) chunks, storing \(1{,}800 + 4 \times 50 = 2{,}000\) tokens, 11% more than the original. Overlap costs storage and embedding work in proportion to \(o / (s - o)\).</p>
@@ -180,13 +127,13 @@ Open Billing, choose the invoice, and click Request refund. ...</pre>
 <p>Overlap helps a sentence cut at a boundary appear whole somewhere, but it does nothing for the deeper issue: fixed windows ignore the document's structure. They are acceptable for unstructured text (transcripts, long emails) and as a baseline to beat.</p>
 </section>
 <section id="step-4-recursive-splitting-follow-the-natural-boundaries">
-  <h2>17 &mdash; Step 4: recursive splitting, follow the natural boundaries</h2>
+  <h2>07 &mdash; Step 4: recursive splitting, follow the natural boundaries</h2>
 <p><strong>Recursive splitting</strong> tries a list of separators from coarse to fine: section breaks, then blank lines (paragraphs), then line breaks, then sentence ends, then spaces. It splits on the coarsest separator present, greedily packs the pieces back together up to the size limit, and recurses with finer separators only into pieces that are still too long.</p>
 <p>The effect is that a chunk boundary falls on a paragraph end where possible, a sentence end otherwise, and mid-sentence only for a single sentence longer than the limit. Text that belongs together stays together as long as it fits. This is why recursive splitting with a few hundred tokens and modest overlap became the default in most RAG frameworks: it is cheap, needs no model, and avoids the worst cuts of fixed windows.</p>
 <p>It still knows nothing about what a heading is. It can keep "Enterprise customers ... may request a prorated refund within 60 days" as one sentence, but the chunk does not say this is a refund rule for enterprise annual plans, beyond the word "Enterprise" itself. For our question that is borderline; for a chunk that begins "This plan is not eligible", it is fatal.</p>
 </section>
 <section id="step-5-structure-aware-chunks-with-heading-paths">
-  <h2>18 &mdash; Step 5: structure-aware chunks with heading paths</h2>
+  <h2>08 &mdash; Step 5: structure-aware chunks with heading paths</h2>
 <p>Most business documents already carry structure: Markdown and HTML headings, numbered lists, tables, code blocks. A <strong>structure-aware</strong> chunker parses that structure first (see <a href="document-ingestion.html">document ingestion</a> for getting it out of PDFs and HTML), treats each section as a unit, and applies recursive splitting only inside sections that are too long. Two rules make the biggest difference:</p>
 <ol>
 <li><strong>Never cross a section boundary.</strong> A chunk belongs to exactly one section, so it is about one thing.</li>
@@ -204,13 +151,13 @@ Open Billing, choose the invoice, and click Request refund. ...</pre>
 <p><strong>Special content</strong> needs its own rules. Keep a table whole if it fits; if not, split by rows and repeat the header row in every piece, because a row of numbers without column names means nothing. Keep code blocks whole, and FAQ question-answer pairs together. Lists are kept with the sentence that introduces them.</p>
 </section>
 <section id="step-6-semantic-chunking-cut-where-the-meaning-shifts">
-  <h2>19 &mdash; Step 6: semantic chunking, cut where the meaning shifts</h2>
+  <h2>09 &mdash; Step 6: semantic chunking, cut where the meaning shifts</h2>
 <p>Some text has no reliable structure: transcripts, scraped pages, long emails. <strong>Semantic chunking</strong> finds boundaries from the content: embed every sentence, compute the cosine between each pair of neighbours, and start a new chunk wherever the similarity drops below a threshold (often a percentile of all the neighbour similarities in the document).</p>
 <p>A six-sentence toy: three sentences about refunds, two about passwords, one about invoices. Neighbour similarities come out as 0.990, 0.949, <strong>0.374</strong>, 0.966, <strong>0.630</strong>. With a threshold of 0.8, the cuts land after sentence 3 and after sentence 5, giving three chunks that each hold one topic.</p>
 <p>The trade-offs are real. It costs one embedding per sentence at ingestion. It produces uneven sizes (a long single-topic stretch becomes one huge chunk unless a size cap is also applied). And single sentences are noisy to embed, so boundaries wobble. Where documents have headings, structure-aware chunking usually does as well for far less work; use semantic chunking for unstructured text, and judge it by the evaluation in Step 8, not by how sensible the boundaries look.</p>
 </section>
 <section id="step-7-decoupling-what-you-search-from-what-you-show">
-  <h2>20 &mdash; Step 7: decoupling what you search from what you show</h2>
+  <h2>10 &mdash; Step 7: decoupling what you search from what you show</h2>
 <p>Everything so far uses one chunk for two jobs: matching the query and informing the model. Those jobs want different sizes. Matching wants small, focused text; informing wants enough surrounding context. <strong>Parent-child</strong> (also called small-to-big) retrieval gives each job its own unit:</p>
 <ol>
 <li>Split each section (the <em>parent</em>, say up to 1,000 tokens) into small <em>children</em> (100 to 200 tokens, or single sentences).</li>
@@ -222,14 +169,14 @@ Open Billing, choose the invoice, and click Request refund. ...</pre>
 <p>A related fix for dangling context is to <strong>write context into each chunk</strong> before embedding. The heading path is the cheap version. The expensive version asks a language model, for every chunk, to write one or two sentences situating it in its document ("This section of the refund policy covers exceptions for enterprise annual contracts"). For our corpus that is 30,000 calls, each sending its whole document (about 7,500 tokens on average) plus the chunk: roughly 234 million input tokens per full re-index, or about $234 at an illustrative $1 per million input tokens, and much less with prompt caching, since all chunks of a document share the same long prefix. Worth it when chunks are routinely ambiguous out of context; measure first.</p>
 </section>
 <section id="step-8-measuring-whether-chunking-is-good">
-  <h2>21 &mdash; Step 8: measuring whether chunking is good</h2>
+  <h2>11 &mdash; Step 8: measuring whether chunking is good</h2>
 <p>Chunking is tuned like any other retrieval setting: on a golden set of real questions with labelled answers (built as in <a href="embedding-models.html">choosing an embedding model</a>). Two details are specific to chunking.</p>
 <p><strong>Label answers, not chunk IDs.</strong> Every chunking change renumbers the chunks, so labels attached to chunk IDs break. Label each question with the answering passage (document plus a quoted span, or a section anchor), and count a retrieved chunk as a hit if it contains that span. Then any chunking can be scored against the same labels.</p>
 <p><strong>Compare at equal token budgets.</strong> Retrieving the top 5 of 800-token chunks gives the model 4,000 tokens; the top 5 of 200-token chunks gives 1,000. Bigger chunks will "win" on recall@5 simply because they show more text. Fair comparisons fix the budget (say 2,000 tokens: the top 10 of 200-token chunks against the top 2 or 3 of 800-token chunks) and ask which configuration puts the answer inside it more often.</p>
 <p>Then read failures. For each miss, look at the chunk that should have matched: was the answer split across a boundary, diluted in a long chunk, or missing its subject? The fix follows from the cause: different boundaries, smaller size, or added context.</p>
 </section>
 <section id="a-recipe-that-works-for-most-corpora">
-  <h2>22 &mdash; A recipe that works for most corpora</h2>
+  <h2>12 &mdash; A recipe that works for most corpora</h2>
 <table>
 <thead><tr><th>Content</th><th>Method</th><th>Size</th></tr></thead>
 <tbody>
@@ -244,7 +191,7 @@ Open Billing, choose the invoice, and click Request refund. ...</pre>
 <p>Store with every chunk: document ID, section anchor, heading path, position in the document, token count, a content hash (for incremental re-indexing), and access-control fields.</p>
 </section>
 <section id="in-code-fixed-versus-structure-aware-chunking">
-  <h2>23 &mdash; In code: fixed versus structure-aware chunking</h2>
+  <h2>13 &mdash; In code: fixed versus structure-aware chunking</h2>
 <p>A whitespace word count stands in for a tokenizer so the example runs anywhere; swap in a real tokenizer for production. Output matches the excerpts in Steps 3 and 5:</p>
 <pre><span class="kw">import</span> re
 <span class="kw">import</span> numpy <span class="kw">as</span> np
@@ -333,6 +280,60 @@ adjacent = [S[i] @ S[i + <span class="nr">1</span>] <span class="kw">for</span> 
 <span class="tp">print</span>(<span class="st">"</span><span class="st">cut after sentences:</span><span class="st">"</span>, [i + <span class="nr">1</span> <span class="kw">for</span> i, a in <span class="tp">enumerate</span>(adjacent) <span class="kw">if</span> a &lt; <span class="nr">0.8</span>])
 </pre>
 </section>
+<p class="part-divider">Quick reference</p>
+<section id="what-why">
+  <h2>14 &mdash; What &amp; Why</h2>
+<div class="card"><p><strong>Chunking</strong> determines the atomic retrieval unit in RAG. Bad splits cannot be fixed downstream.</p><h3>Functional</h3><ul><li>Split PDF/HTML/Slack/code into searchable units</li><li>Preserve tables, headings, code blocks</li><li>Attach doc_id, section, page, ACL metadata</li><li>Re-chunk on update without orphan vectors</li></ul><h3>Non-functional</h3><ul><li>Deterministic chunk_ids on re-ingest</li><li>Gold passage contained in one chunk &gt;95%</li><li>10K docs/min CPU throughput</li></ul></div>
+</section>
+<section id="core-concepts">
+  <h2>15 &mdash; Core Concepts</h2>
+<div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Chunk size</td><td>Target tokens per unit (256–1024)</td><td>Count tokens not chars</td></tr><tr><td>Overlap</td><td>Shared tokens between neighbors</td><td>10% of chunk_size typical</td></tr><tr><td>Recursive</td><td>Split on headings then paragraphs</td><td>LangChain default</td></tr><tr><td>Semantic</td><td>Split when embedding similarity drops</td><td>Extra embed cost</td></tr><tr><td>Parent-child</td><td>Index small, return large parent</td><td>Sync on delete</td></tr></table></div>
+</section>
+<section id="api-surface">
+  <h2>16 &mdash; API Surface</h2>
+<div class="card"><pre>POST /v1/chunk/preview
+  body: { doc_id, text, strategy: "recursive", chunk_size: 512, overlap: 50 }
+  -&gt; { chunks: [{ chunk_id, text, token_count, metadata }] }
+
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)</pre></div>
+</section>
+<section id="when-to-use-when-not">
+  <h2>17 &mdash; When to Use / When NOT</h2>
+<div class="card"><table><tr><th>Strategy</th><th>Use When</th><th>Skip When</th></tr><tr><td>Fixed-size</td><td>Logs, chat exports, MVP</td><td>Structured PDFs</td></tr><tr><td>Recursive</td><td>Mixed markdown/HTML</td><td>Need table atomicity</td></tr><tr><td>Semantic</td><td>Long prose, topic shifts</td><td>Latency-sensitive ingest</td></tr><tr><td>Document-aware</td><td>PDFs, code, reports</td><td>Plain text only</td></tr><tr><td>Parent-child</td><td>Precision + broad context</td><td>Docs already &lt;512 tok</td></tr></table></div>
+</section>
+<section id="architecture">
+  <h2>18 &mdash; Architecture</h2>
+<div class="card"><pre>Raw Doc -&gt; Parser -&gt; Strategy Router
+  Fixed | Recursive | Doc-aware | Semantic
+       -&gt; Overlap pass -&gt; Metadata enricher
+       -&gt; Optional parent-child linker -&gt; Embed + Index</pre></div><div class="card"><div class="flow"><div class="step" data-num="1"><span class="label">Parse</span><div class="detail">OCR PDFs; strip HTML nav.</div></div><div class="step" data-num="2"><span class="label">Route</span><div class="detail">Mime-based strategy selection.</div></div><div class="step" data-num="3"><span class="label">Split</span><div class="detail">512 tok, 50 overlap; never mid-table.</div></div><div class="step" data-num="4"><span class="label">Validate</span><div class="detail">Min/max size; empty filter.</div></div><div class="step" data-num="5"><span class="label">Index</span><div class="detail">Upsert by content_hash.</div></div></div></div>
+</section>
+<section id="deep-dive-fixed-recursive">
+  <h2>19 &mdash; Deep Dive: Fixed &amp; Recursive</h2>
+<div class="card"><pre>splitter = RecursiveCharacterTextSplitter(
+    chunk_size=512, chunk_overlap=50,
+    separators=["\n## ", "\n### ", "\n\n", "\n", ". ", " "],
+)
+# Grid search {256,512,768,1024} on golden Recall@5</pre><p>Start <strong>512/50</strong>. Evaluate before tuning embeddings.</p></div>
+</section>
+<section id="deep-dive-semantic-chunking">
+  <h2>20 &mdash; Deep Dive: Semantic Chunking</h2>
+<div class="diagram"><img alt="Semantic split at embedding similarity drop threshold" src="../systems/img/chunking-strategies-semantic-zoom.png"/></div><p class="diagram-caption">Semantic split at embedding similarity drop threshold</p><div class="card"><p>Embed sentences; split when cosine similarity &lt; 0.75. Best for policies and long essays.</p></div>
+</section>
+<section id="deep-dive-document-aware">
+  <h2>21 &mdash; Deep Dive: Document-Aware</h2>
+<div class="card"><ul><li><strong>PDF:</strong> Unstructured/Docling — tables atomic</li><li><strong>Markdown:</strong> split on ##; prepend heading to each chunk</li><li><strong>Code:</strong> tree-sitter function/class boundaries</li></ul></div>
+</section>
+<section id="deep-dive-parent-child">
+  <h2>22 &mdash; Deep Dive: Parent-Child</h2>
+<div class="diagram"><img alt="Retrieve child chunk; inject parent section into LLM context" src="../systems/img/chunking-strategies-parent-child-zoom.png"/></div><p class="diagram-caption">Retrieve child chunk; inject parent section into LLM context</p><div class="card"><p>Index 128–256 tok children; store 1024 tok parent in metadata. Retrieve child, pass parent to LLM.</p></div>
+</section>
+<section id="deep-dive-overlap-eval">
+  <h2>23 &mdash; Deep Dive: Overlap &amp; Eval</h2>
+<div class="card"><p>Grid search chunk_size × overlap on golden set. Stop when Recall@5 gain &lt;2% for &gt;20% index growth.</p></div>
+</section>
+<p class="part-divider">More detail</p>
 <section id="chunking-query-rewriting-and-failure-modes">
   <h2>24 &mdash; Chunking, query rewriting, and failure modes</h2>
 <ul>

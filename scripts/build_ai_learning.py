@@ -725,7 +725,7 @@ def sheet_unit(key, topic_of):
 #     "New words"             a <table> of term / meaning rows, merged into the
 #                             page's New words table
 #     "Where people get lost" merged with the page's pitfalls
-#   Everything else opens "The full explanation", before the source material.
+#   Everything else is "The lesson", the first block on the page, before the cheat sheet.
 #   Maths: \( inline \) and \[ display \] (KaTeX).
 # --------------------------------------------------------------------------
 
@@ -1021,11 +1021,10 @@ def build(units, labs):
                     for lab, inner in units[uid]:
                         add(body, "Recap" if lab.strip().lower() == title.lower() else lab, inner)
 
-        if deep:                                   # hand-written teaching opens the explanation
-            lesson = []
+        lesson = []
+        if deep:                                   # hand-written teaching comes first on the page
             for lab, inner in deep["sections"]:
                 add(lesson, lab, inner)
-            body[:0] = lesson
             qa[:0] = deep["qa"]
             if deep["lost"]:
                 add(tail, "Where people get lost", deep["lost"])
@@ -1042,9 +1041,10 @@ def build(units, labs):
         sections = []
         if glance:
             sections.append(("at-a-glance", "At a glance", "\n".join(glance)))
-        # overview and concepts, then the long-form depth, then production notes and pitfalls;
+        # the lesson, then the cheat sheet, then the source depth, then production notes and pitfalls;
         # a divider names each block once the page has more than one
-        blocks = [(b, lab) for b, lab in ((ref, "Quick reference"), (body, "The full explanation"),
+        blocks = [(b, lab) for b, lab in ((lesson, "The lesson"), (ref, "Quick reference"),
+                                          (body, "More detail" if lesson else "The full explanation"),
                                           (tail, "In production")) if b]
         for b, lab in blocks:
             if len(blocks) > 1:
@@ -1226,7 +1226,7 @@ def build(units, labs):
 <div class="container">
   <div class="breadcrumbs"><a href="../index.html">Cheat Sheets</a><span>/</span> AI</div>
   <header class="page-header"><h1>AI / LLMs / <span>Agents</span></h1>
-  <p class="subtitle">One map from first principles to a shipped agent. Work through the stages in order. Every topic is one page: a diagram at a glance, the quick reference, the full explanation with code and labs, and questions to check yourself.</p>
+  <p class="subtitle">One map from first principles to a shipped agent. Work through the stages in order. Every topic is one page: a diagram at a glance, a step-by-step lesson with worked numbers and code, the quick reference, and questions to check yourself.</p>
   <div class="stats"><span class="stat"><strong>{len(STAGES)}</strong> stages</span><span class="stat"><strong>{n_topics}</strong> topics</span></div></header>
   <div class="sub-grid">{stage_cards}
   </div></div><script src="../hub.js" defer></script>

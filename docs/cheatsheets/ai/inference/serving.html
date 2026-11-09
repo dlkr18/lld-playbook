@@ -24,29 +24,29 @@
   <a href="index.html">&larr; Inference &amp; serving</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
   <a href="#new-words"><span class="num">02</span> New words</a>
-  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
-  <a href="#api-interface-surface"><span class="num">05</span> API / Interface Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">07</span> Architecture</a>
-  <a href="#vllm-deep-dive"><span class="num">08</span> vLLM Deep Dive</a>
-  <a href="#ollama-deep-dive"><span class="num">09</span> Ollama Deep Dive</a>
-  <a href="#quantization"><span class="num">10</span> Quantization</a>
-  <a href="#gpu-sizing"><span class="num">11</span> GPU Sizing</a>
-  <a href="#vllm-vs-ollama"><span class="num">12</span> vLLM vs Ollama</a>
-  <a href="#full-client-example"><span class="num">13</span> Full Client Example</a>
-  <a href="#the-question"><span class="num">14</span> The question</a>
-  <a href="#step-1-the-parts-of-a-serving-system"><span class="num">15</span> Step 1: the parts of a serving system</a>
-  <a href="#step-2-from-requests-to-tokens-and-concurrency"><span class="num">16</span> Step 2: from requests to tokens and concurrency</a>
-  <a href="#step-3-what-one-replica-can-carry"><span class="num">17</span> Step 3: what one replica can carry</a>
-  <a href="#step-4-the-latency-curve-and-the-operating-point"><span class="num">18</span> Step 4: the latency curve and the operating point</a>
-  <a href="#step-5-scaling-out-replicas-versus-tensor-parallelism"><span class="num">19</span> Step 5: scaling out, replicas versus tensor parallelism</a>
-  <a href="#step-6-routing"><span class="num">20</span> Step 6: routing</a>
-  <a href="#step-7-autoscaling-and-cold-starts"><span class="num">21</span> Step 7: autoscaling and cold starts</a>
-  <a href="#step-8-benchmarking-honestly"><span class="num">22</span> Step 8: benchmarking honestly</a>
-  <a href="#step-9-disaggregation-adapters-and-choosing-an-engine"><span class="num">23</span> Step 9: disaggregation, adapters, and choosing an engine</a>
-  <a href="#a-worked-plan-you-can-defend"><span class="num">24</span> A worked plan you can defend</a>
-  <a href="#in-code-a-capacity-model-a-queue-and-a-launch"><span class="num">25</span> In code: a capacity model, a queue, and a launch</a>
+  <a href="#the-question"><span class="num">03</span> The question</a>
+  <a href="#step-1-the-parts-of-a-serving-system"><span class="num">04</span> Step 1: the parts of a serving system</a>
+  <a href="#step-2-from-requests-to-tokens-and-concurrency"><span class="num">05</span> Step 2: from requests to tokens and concurrency</a>
+  <a href="#step-3-what-one-replica-can-carry"><span class="num">06</span> Step 3: what one replica can carry</a>
+  <a href="#step-4-the-latency-curve-and-the-operating-point"><span class="num">07</span> Step 4: the latency curve and the operating point</a>
+  <a href="#step-5-scaling-out-replicas-versus-tensor-parallelism"><span class="num">08</span> Step 5: scaling out, replicas versus tensor parallelism</a>
+  <a href="#step-6-routing"><span class="num">09</span> Step 6: routing</a>
+  <a href="#step-7-autoscaling-and-cold-starts"><span class="num">10</span> Step 7: autoscaling and cold starts</a>
+  <a href="#step-8-benchmarking-honestly"><span class="num">11</span> Step 8: benchmarking honestly</a>
+  <a href="#step-9-disaggregation-adapters-and-choosing-an-engine"><span class="num">12</span> Step 9: disaggregation, adapters, and choosing an engine</a>
+  <a href="#a-worked-plan-you-can-defend"><span class="num">13</span> A worked plan you can defend</a>
+  <a href="#in-code-a-capacity-model-a-queue-and-a-launch"><span class="num">14</span> In code: a capacity model, a queue, and a launch</a>
+  <a href="#what-why"><span class="num">15</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">16</span> Core Concepts</a>
+  <a href="#api-interface-surface"><span class="num">17</span> API / Interface Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">18</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">19</span> Architecture</a>
+  <a href="#vllm-deep-dive"><span class="num">20</span> vLLM Deep Dive</a>
+  <a href="#ollama-deep-dive"><span class="num">21</span> Ollama Deep Dive</a>
+  <a href="#quantization"><span class="num">22</span> Quantization</a>
+  <a href="#gpu-sizing"><span class="num">23</span> GPU Sizing</a>
+  <a href="#vllm-vs-ollama"><span class="num">24</span> vLLM vs Ollama</a>
+  <a href="#full-client-example"><span class="num">25</span> Full Client Example</a>
   <a href="#serving-open-models-benchmarking-honestly"><span class="num">26</span> Serving open models &amp; benchmarking honestly</a>
   <a href="#your-options"><span class="num">27</span> Your options</a>
   <a href="#a-real-vllm-deployment-flag-by-flag"><span class="num">28</span> A real vLLM deployment, flag by flag</a>
@@ -84,199 +84,9 @@
   <h2>02 &mdash; New words</h2>
 <table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Inference engine</strong></td><td>The process that holds the model on a GPU and runs the scheduling loop: vLLM, SGLang, TensorRT-LLM, TGI, llama.cpp.</td></tr><tr><td><strong>Replica</strong></td><td>One complete copy of the model serving traffic, on one GPU or a group of GPUs. Throughput scales by adding replicas.</td></tr><tr><td><strong>SLO</strong></td><td>Service-level objective: a latency or availability target stated as a percentile, for example "p95 TTFT under 1 s".</td></tr><tr><td><strong>Goodput</strong></td><td>Requests per second that finish <em>within</em> the SLO. Throughput that misses the SLO does not count.</td></tr><tr><td><strong>Little's law</strong></td><td>Average items in a system = arrival rate × average time each spends in it. Turns traffic into concurrency.</td></tr><tr><td><strong>Utilisation \(\rho\)</strong></td><td>The fraction of time a resource is busy. Queueing delay grows sharply as \(\rho\) approaches 1.</td></tr><tr><td><strong>Tensor parallelism (TP)</strong></td><td>Splitting every layer's weight matrices across several GPUs that work on each token together.</td></tr><tr><td><strong>Open-loop / closed-loop load</strong></td><td>Open-loop sends requests on a schedule regardless of responses (like real users); closed-loop waits for each response before sending the next.</td></tr><tr><td><strong>Prefix-aware routing</strong></td><td>Sending requests that share a prompt prefix to the replica that already holds that prefix's KV cache.</td></tr><tr><td><strong>Cold start</strong></td><td>The time from "scale up" to a new replica serving traffic: machine, container, weight download, engine warm-up.</td></tr><tr><td><strong>Disaggregated serving</strong></td><td>Running prefill and decode on separate GPU pools and shipping the KV cache between them.</td></tr><tr><td><strong>Multi-LoRA serving</strong></td><td>Serving many small fine-tuned adapters on top of one shared base model in the same batch.</td></tr><tr><td><strong>TTFT / TPOT</strong></td><td>Time to first token / time per output token.</td></tr></tbody></table>
 </section>
-<p class="part-divider">Quick reference</p>
-<section id="what-why">
-  <h2>03 &mdash; What &amp; Why</h2>
-<div class="card"><p>Self-host Llama, Mistral, Qwen when <strong>data residency</strong>, <strong>cost at scale</strong>, or <strong>predictable latency</strong> beat closed APIs. <strong>vLLM</strong> is the production inference engine; <strong>Ollama</strong> is the developer UX layer for local iteration. Both expose OpenAI-shaped APIs so LangChain/LangGraph code swaps with a <code>base_url</code> change.</p>
-<h3>Functional requirements</h3>
-<ul>
-<li>Chat completions with streaming tokens</li>
-<li>Concurrent requests with batching (not one-at-a-time)</li>
-<li>Tool calling / JSON mode for agent graphs</li>
-<li>Configurable context length and temperature per model</li>
-<li>Embeddings served separately via TEI (not vLLM)</li>
-</ul>
-<h3>Non-functional requirements</h3>
-<ul>
-<li><strong>Throughput:</strong> maximize tokens/sec per GPU via continuous batching</li>
-<li><strong>Memory:</strong> fit model weights + KV cache in VRAM (quantization helps)</li>
-<li><strong>Latency:</strong> TTFT &lt; 500 ms; streaming for UX</li>
-<li><strong>Availability:</strong> health checks, rolling deploy, queue depth autoscale</li>
-</ul>
-<blockquote><strong>Not for embeddings:</strong> use TEI for <a href="../rag/embedding-models.html">Choosing an embedding model</a>. vLLM is LLM generation only.</blockquote></div>
-</section>
-<section id="core-concepts">
-  <h2>04 &mdash; Core Concepts</h2>
-<div class="card"><table>
-<tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
-<tr><td><strong>PagedAttention</strong></td><td>KV cache stored in non-contiguous fixed blocks</td><td>vLLM core; reduces fragmentation</td></tr>
-<tr><td><strong>Continuous batching</strong></td><td>Add/remove requests mid-forward-pass</td><td>vs static batching in naive HF</td></tr>
-<tr><td><strong>Prefix caching</strong></td><td>Reuse KV blocks for identical prompt prefixes</td><td>Big win for shared RAG system prompts</td></tr>
-<tr><td><strong>AWQ / GPTQ</strong></td><td>4-bit weight quantization</td><td>~1–3% quality loss; 4× memory savings</td></tr>
-<tr><td><strong>Tensor parallel (TP)</strong></td><td>Split layers across GPUs</td><td><code>--tensor-parallel-size 2</code> for 70B</td></tr>
-<tr><td><strong>OpenAI compat</strong></td><td><code>/v1/chat/completions</code> schema</td><td>Point SDK <code>base_url</code> at vLLM</td></tr>
-<tr><td><strong>Modelfile</strong></td><td>Ollama config for system prompt + params</td><td>Dev convenience; not prod multi-tenant</td></tr>
-</table></div>
-</section>
-<section id="api-interface-surface">
-  <h2>05 &mdash; API / Interface Surface</h2>
-<div class="card"><pre># Start vLLM OpenAI server
-python -m vllm.entrypoints.openai.api_server \
-  --model meta-llama/Llama-3.1-8B-Instruct \
-  --tensor-parallel-size 1 \
-  --gpu-memory-utilization 0.9 \
-  --max-model-len 8192 \
-  --enable-prefix-caching
-
-# Client — identical to OpenAI SDK
-from openai import OpenAI
-client = OpenAI(base_url="http://gpu-host:8000/v1", api_key="dummy")
-stream = client.chat.completions.create(
-    model="meta-llama/Llama-3.1-8B-Instruct",
-    messages=[{"role": "user", "content": "Summarize RAG in 3 bullets"}],
-    stream=True,
-)
-
-# Ollama — local dev
-# ollama pull llama3.1
-# ollama run llama3.1
-# curl http://localhost:11434/api/chat -d '{"model":"llama3.1","messages":[...]}'</pre>
-<table>
-<tr><th>Endpoint</th><th>Engine</th><th>Use</th></tr>
-<tr><td><code>/v1/chat/completions</code></td><td>vLLM, Ollama</td><td>Chat + agents</td></tr>
-<tr><td><code>/v1/completions</code></td><td>vLLM</td><td>Legacy completion</td></tr>
-<tr><td><code>/v1/models</code></td><td>vLLM</td><td>Health / model list</td></tr>
-<tr><td><code>/embed</code></td><td>TEI</td><td>Embeddings (separate service)</td></tr>
-</table></div>
-</section>
-<section id="when-to-use-when-not">
-  <h2>06 &mdash; When to Use / When NOT</h2>
-<div class="card"><table>
-<tr><th>Case</th><th>Self-host?</th><th>Alternative</th></tr>
-<tr><td>Data cannot leave VPC</td><td><strong>vLLM</strong></td><td>Azure OpenAI private</td></tr>
-<tr><td>Laptop prototype / demo</td><td><strong>Ollama</strong></td><td>OpenAI API for speed</td></tr>
-<tr><td>High QPS, 8B–70B open models</td><td><strong>vLLM cluster</strong></td><td>Closed API $/token at scale</td></tr>
-<tr><td>Frontier reasoning (GPT-4o, o1)</td><td><strong>No</strong></td><td>Cloud API still wins quality</td></tr>
-<tr><td>Hybrid router</td><td><strong>vLLM + OpenAI</strong></td><td>Easy queries local; hard to cloud</td></tr>
-</table></div>
-</section>
-<section id="architecture">
-  <h2>07 &mdash; Architecture</h2>
-<div class="card"><pre>          +------------------+
-          |  API Gateway     |
-          |  (auth, routing) |
-          +--------+---------+
-                   |
-       +-----------+-----------+
-       v                       v
-+-------------+         +-------------+
-| vLLM rep 1  |         | vLLM rep 2  |
-| GPU A10     |         | GPU A10     |
-+------+------+         +------+------+
-       |                       |
-       +-----------+-----------+
-                   v
-          +------------------+
-          |  Model weights   |
-          |  + KV cache RAM  |
-          +------------------+</pre><div class="flow"><div class="step" data-num="1"><span class="label">Route</span><div class="detail">Gateway picks model + GPU pool; optional cloud fallback</div></div><div class="step" data-num="2"><span class="label">Schedule</span><div class="detail">vLLM continuous batching merges concurrent requests</div></div><div class="step" data-num="3"><span class="label">Generate</span><div class="detail">PagedAttention KV blocks; stream tokens to client</div></div><div class="step" data-num="4"><span class="label">Observe</span><div class="detail">Log tokens/sec, queue depth, TTFT in <a href="../production/observability.html">Observability</a></div></div></div></div>
-</section>
-<section id="vllm-deep-dive">
-  <h2>08 &mdash; vLLM Deep Dive</h2>
-<div class="diagram"><img alt="PagedAttention: KV cache split into fixed-size blocks with block table (like OS virtual memory); continuous batching scheduler adds new requests without waiting for batch completion." src="../tech/img/model-serving-vllm-vllm-zoom.png"/></div><p class="diagram-caption">PagedAttention: KV cache split into fixed-size blocks with block table (like OS virtual memory); continuous batching scheduler adds new requests without waiting for batch completion.</p><div class="card"><p>Key flags for production <a href="../rag/rag-pipeline.html">The RAG pipeline</a>:</p>
-<pre>--enable-prefix-caching     # shared system prompts
---max-model-len 8192        # cap KV RAM; lower if OOM
---gpu-memory-utilization 0.9
---tensor-parallel-size 2    # 70B across 2 GPUs
---quantization awq          # 4-bit weights</pre>
-<ul>
-<li><strong>Prefix caching:</strong> identical RAG system prompt + tool defs cached across users</li>
-<li><strong>Speculative decoding:</strong> draft model + verify (advanced latency win)</li>
-<li><strong>Structured output:</strong> guided JSON for tool calls</li>
-</ul></div>
-</section>
-<section id="ollama-deep-dive">
-  <h2>09 &mdash; Ollama Deep Dive</h2>
-<div class="diagram"><img alt="Ollama stack: ollama pull → Modelfile (SYSTEM, PARAMETER temperature) → ollama serve :11434 → REST /api/chat. Single-user GPU; not multi-tenant production." src="../tech/img/model-serving-vllm-ollama-zoom.png"/></div><p class="diagram-caption">Ollama stack: ollama pull → Modelfile (SYSTEM, PARAMETER temperature) → ollama serve :11434 → REST /api/chat. Single-user GPU; not multi-tenant production.</p><div class="card"><pre># Modelfile example
-FROM llama3.1
-SYSTEM You are a helpful support bot. Cite sources.
-PARAMETER temperature 0.2
-PARAMETER num_ctx 8192
-
-# ollama create support-bot -f Modelfile
-# ollama run support-bot</pre>
-<p>Use Ollama for: local LangGraph dev, CI smoke tests, sales demos. Do <em>not</em> use for multi-tenant SaaS prod — no HA, queue, or autoscale story.</p></div>
-</section>
-<section id="quantization">
-  <h2>10 &mdash; Quantization</h2>
-<div class="card"><table>
-<tr><th>Method</th><th>Bits</th><th>VRAM (8B)</th><th>Quality</th></tr>
-<tr><td>FP16</td><td>16</td><td>~16 GB</td><td>Baseline</td></tr>
-<tr><td>AWQ / GPTQ</td><td>4</td><td>~5–6 GB</td><td>~1–3% task loss</td></tr>
-<tr><td>FP8</td><td>8</td><td>~8 GB</td><td>Minimal loss on H100</td></tr>
-</table>
-<p>Always benchmark on your eval harness before prod quant deploy. Perplexity alone is insufficient — run golden RAG/agent tasks.</p></div>
-</section>
-<section id="gpu-sizing">
-  <h2>11 &mdash; GPU Sizing</h2>
-<div class="card"><table>
-<tr><th>Model</th><th>Precision</th><th>GPU</th><th>Notes</th></tr>
-<tr><td>Llama-3-8B</td><td>FP16</td><td>1× A10/L4 24GB</td><td>Headroom for KV cache</td></tr>
-<tr><td>Llama-3-8B</td><td>AWQ 4-bit</td><td>1× T4 16GB</td><td>More concurrent users</td></tr>
-<tr><td>Llama-3-70B</td><td>AWQ</td><td>2× A100 80GB (TP=2)</td><td>tensor parallel required</td></tr>
-</table>
-<p>KV cache RAM scales with <code>max_model_len × concurrent_requests</code>. OOM usually from context too long, not weights.</p></div>
-</section>
-<section id="vllm-vs-ollama">
-  <h2>12 &mdash; vLLM vs Ollama</h2>
-<div class="card"><table>
-<tr><th>Dimension</th><th>vLLM</th><th>Ollama</th></tr>
-<tr><td>Target</td><td>Production GPU cluster</td><td>Local dev / demo</td></tr>
-<tr><td>Throughput</td><td>Very high (continuous batch)</td><td>Moderate (single user)</td></tr>
-<tr><td>Setup</td><td>Docker/K8s, flags tuning</td><td><code>ollama pull</code></td></tr>
-<tr><td>Multi-tenant</td><td>Yes with LB + replicas</td><td>No</td></tr>
-<tr><td>OpenAI API</td><td>Full compat</td><td>Similar /api/chat</td></tr>
-<tr><td>Observability</td><td>Prometheus metrics</td><td>Minimal</td></tr>
-</table></div>
-</section>
-<section id="full-client-example">
-  <h2>13 &mdash; Full Client Example</h2>
-<div class="card highlight"><p>Point LangChain / OpenAI SDK at vLLM for a RAG generation node. Embeddings still go to OpenAI or TEI per <a href="../rag/embedding-models.html">Choosing an embedding model</a>.</p></div><div class="card"><pre>from openai import OpenAI
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage
-
-# Direct OpenAI SDK against vLLM
-vllm = OpenAI(base_url="http://gpu-cluster:8000/v1", api_key="dummy")
-
-def generate_answer(query: str, context_chunks: list[str]) -&gt; str:
-    context = "\n\n".join(f"[{i+1}] {c}" for i, c in enumerate(context_chunks))
-    resp = vllm.chat.completions.create(
-        model="meta-llama/Llama-3.1-8B-Instruct",
-        messages=[
-            {"role": "system", "content": "Answer using only the context. Cite [n]."},
-            {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {query}"},
-        ],
-        temperature=0.2,
-        max_tokens=512,
-        stream=False,
-    )
-    return resp.choices[0].message.content
-
-# LangChain — same base_url swap for LangGraph nodes
-llm = ChatOpenAI(
-    model="meta-llama/Llama-3.1-8B-Instruct",
-    openai_api_base="http://gpu-cluster:8000/v1",
-    openai_api_key="dummy",
-    temperature=0.2,
-)
-
-# Ollama dev equivalent
-# llm = ChatOpenAI(model="llama3.1", openai_api_base="http://localhost:11434/v1", ...)</pre>
-<p>Enable prefix caching on vLLM when system prompt + tool defs are identical across users. Monitor TTFT and tokens/sec in <a href="../production/observability.html">Observability</a>.</p></div>
-</section>
-<p class="part-divider">The full explanation</p>
+<p class="part-divider">The lesson</p>
 <section id="the-question">
-  <h2>14 &mdash; The question</h2>
+  <h2>03 &mdash; The question</h2>
 <p><a href="inference-internals.html">Inference internals</a> explains what one GPU does with one batch. Serving is the next layer up: turning a traffic forecast and a latency target into a number of GPUs, a way to spread requests across them, a rule for adding and removing them, and a benchmark you can trust. It is classic capacity planning, with two twists: the unit of work is the token rather than the request, and each request occupies memory for its whole lifetime.</p>
 <p>The questions interviewers ask:</p>
 <ol>
@@ -288,7 +98,7 @@ llm = ChatOpenAI(
 <p><strong>Running example.</strong> An internal assistant runs the 8B model from Inference internals (16 GB of BF16 weights, 128 KiB of KV cache per token) on H100 80 GB GPUs. At the daily peak it receives <strong>12 requests per second</strong>; an average request has a <strong>1,500-token prompt</strong> and a <strong>250-token answer</strong>. The SLO is <strong>p95 TTFT under 1 s</strong> and <strong>p95 TPOT under 40 ms</strong>. Off-peak traffic averages 4 requests per second. As before, hardware figures are datasheet values (989 TFLOP/s BF16, 3.35 TB/s) and every result is a napkin estimate to be confirmed by load testing.</p>
 </section>
 <section id="step-1-the-parts-of-a-serving-system">
-  <h2>15 &mdash; Step 1: the parts of a serving system</h2>
+  <h2>04 &mdash; Step 1: the parts of a serving system</h2>
 <p>A request passes through four layers, each with one job:</p>
 <pre class="ascii-diagram">client ──► gateway ──────► router ──────────► engine replica (GPU)
            auth, quotas,   picks a replica:   scheduler: who runs this step
@@ -303,7 +113,7 @@ llm = ChatOpenAI(
 <p>The engine is where performance is won or lost, but the layers around it decide whether the system survives real traffic. Treat the engine as a stateful service: in-flight generations die with the process, so deploys must drain replicas before restarting them.</p>
 </section>
 <section id="step-2-from-requests-to-tokens-and-concurrency">
-  <h2>16 &mdash; Step 2: from requests to tokens and concurrency</h2>
+  <h2>05 &mdash; Step 2: from requests to tokens and concurrency</h2>
 <p>Requests per second is the wrong unit, because two requests can differ in cost by a factor of a hundred. Convert to tokens:</p>
 <ul>
 <li>Prefill load: 12 × 1,500 = <strong>18,000 prompt tokens/s</strong>, which costs compute.</li>
@@ -315,7 +125,7 @@ llm = ChatOpenAI(
 <p>Little's law also shows a feedback loop. If the server slows down, \(W\) grows, so more requests are in flight, so the batch is bigger, so each step is slower. Overloaded LLM servers do not degrade gently; they spiral until memory runs out and the scheduler starts preempting.</p>
 </section>
 <section id="step-3-what-one-replica-can-carry">
-  <h2>17 &mdash; Step 3: what one replica can carry</h2>
+  <h2>06 &mdash; Step 3: what one replica can carry</h2>
 <p>One replica has a fixed budget of GPU time per second, shared by two kinds of work:</p>
 <ul>
 <li><strong>Prefill</strong> costs \(2 \times 8.03\times10^{9} \times 1{,}500\) FLOPs per request; at half of peak compute, about <strong>48.7 ms</strong> of GPU time. At \(\lambda\) requests per second it occupies a fraction \(\rho_{\text{pre}} = \lambda \times 0.0487\) of the GPU.</li>
@@ -334,7 +144,7 @@ llm = ChatOpenAI(
 <p>The model is optimistic (real kernels rarely sustain 50% of peak, and it ignores queueing), which is exactly why the next step matters.</p>
 </section>
 <section id="step-4-the-latency-curve-and-the-operating-point">
-  <h2>18 &mdash; Step 4: the latency curve and the operating point</h2>
+  <h2>07 &mdash; Step 4: the latency curve and the operating point</h2>
 <p>Averages hide queues. Requests do not arrive evenly; they arrive in random bursts, and a burst that lands while the GPU is busy waits. Queueing theory gives the shape: for a single busy resource, the expected wait grows like</p>
 \[ \text{wait} \propto \frac{\rho}{1 - \rho} \]
 <p>At \(\rho = 0.5\) the factor is 1; at 0.9 it is 9; at 0.95 it is 19. Simulating random (Poisson) arrivals into the prefill queue of one replica, assuming waiting prefills run ahead of decode steps (decode absorbs whatever time is left, as Step 3 modelled), gives p95 TTFT of:</p>
@@ -351,7 +161,7 @@ llm = ChatOpenAI(
 <p>Latency is nearly flat up to about 60% busy, then climbs steeply: the "knee". The last 10% of capacity is bought with a tenfold rise in tail latency. This is the reason capacity plans target 60 to 70% utilisation at peak instead of 100%, and why the number that matters is <strong>goodput</strong>, the rate the system sustains <em>while meeting the SLO</em>, not its maximum throughput. A benchmark that reports "9,000 tokens/s" without the latency at which it was measured is reporting the far side of the knee.</p>
 </section>
 <section id="step-5-scaling-out-replicas-versus-tensor-parallelism">
-  <h2>19 &mdash; Step 5: scaling out, replicas versus tensor parallelism</h2>
+  <h2>08 &mdash; Step 5: scaling out, replicas versus tensor parallelism</h2>
 <p>There are two ways to add GPUs, and they buy different things.</p>
 <p><strong>More replicas</strong> (data parallelism for serving) multiply throughput. Each replica is independent, so there is no communication cost, failures are isolated, and capacity grows linearly. They do nothing for single-request latency: a replica serving one user is as fast as it was.</p>
 <p><strong>Tensor parallelism</strong> splits each layer across \(t\) GPUs. Each GPU holds and reads \(1/t\) of the weights per step, so decode steps get faster, and the combined memory can hold a model too big for one GPU. The price is two all-reduce operations per layer per step, which is fast over NVLink inside one server and slow across servers, so TP normally stays within a node.</p>
@@ -364,7 +174,7 @@ llm = ChatOpenAI(
 <p>The rule: use the <em>smallest</em> TP degree that fits the model with healthy KV room and meets the TPOT target, then scale throughput with replicas of that unit. For our 8B model the unit is one GPU. Spreading it over two GPUs would cut TPOT a little but waste a second GPU's worth of capacity on communication.</p>
 </section>
 <section id="step-6-routing">
-  <h2>20 &mdash; Step 6: routing</h2>
+  <h2>09 &mdash; Step 6: routing</h2>
 <p>A plain load balancer distributes requests evenly by count. For LLMs that is a poor proxy for load: one request may carry a 20,000-token prompt and ask for 2,000 tokens, the next 200 and 20. Two routing signals work better:</p>
 <ul>
 <li><strong>Least outstanding work.</strong> Route to the replica with the fewest queued plus running tokens (or the lowest KV-cache usage), read from each engine's metrics. This keeps one replica from collecting all the heavy requests by chance.</li>
@@ -373,7 +183,7 @@ llm = ChatOpenAI(
 <p>The two signals conflict: affinity concentrates load, balancing spreads it. Production routers use affinity until the preferred replica is noticeably busier than the others, then spill over. The router is also where model and adapter selection happen when one fleet serves several models.</p>
 </section>
 <section id="step-7-autoscaling-and-cold-starts">
-  <h2>21 &mdash; Step 7: autoscaling and cold starts</h2>
+  <h2>10 &mdash; Step 7: autoscaling and cold starts</h2>
 <p>Traffic for our assistant swings from 4 requests per second off-peak to 12 at peak. Sizing for peak all day leaves two-thirds of the fleet idle whenever traffic is at its off-peak level, so the fleet should scale. Two problems make LLM autoscaling different from scaling a web service.</p>
 <p><strong>The signal.</strong> CPU utilisation is meaningless (the work is on the GPU), and GPU compute utilisation is misleading (decode is memory-bound, so it looks low even under heavy load). Scale on the quantities that predict SLO violations: the number of <em>waiting</em> requests in each engine's queue, KV-cache usage, and measured p95 TTFT. A replica with requests waiting and KV usage near 90% is full regardless of what the utilisation gauge says.</p>
 <p><strong>The delay.</strong> A new replica must start a machine, pull a container, load 16 GB of weights (at an illustrative 1 GB/s from network storage, 16 s; a 140 GB model takes minutes), allocate the KV pool and warm up kernels. A minute or more from decision to serving is common. Traffic that doubles in thirty seconds outruns that. The consequences:</p>
@@ -385,7 +195,7 @@ llm = ChatOpenAI(
 </ul>
 </section>
 <section id="step-8-benchmarking-honestly">
-  <h2>22 &mdash; Step 8: benchmarking honestly</h2>
+  <h2>11 &mdash; Step 8: benchmarking honestly</h2>
 <p>Most published serving numbers cannot be compared with each other, because the benchmark decided the answer. The rules that make a benchmark mean something:</p>
 <ol>
 <li><strong>Use open-loop load for capacity questions.</strong> A closed-loop tester with 32 virtual users sends a new request only when one finishes. If the server slows down, the tester slows down with it, so queues never build and tail latency looks fine. Real users do not wait for each other. An open-loop tester sends requests at a set rate (ideally random, Poisson-distributed gaps) and so reproduces the knee from Step 4. Closed-loop numbers are useful for "how fast is one request" and misleading for "how many users can we serve".</li>
@@ -396,13 +206,13 @@ llm = ChatOpenAI(
 </ol>
 </section>
 <section id="step-9-disaggregation-adapters-and-choosing-an-engine">
-  <h2>23 &mdash; Step 9: disaggregation, adapters, and choosing an engine</h2>
+  <h2>12 &mdash; Step 9: disaggregation, adapters, and choosing an engine</h2>
 <p><strong>Disaggregated prefill and decode.</strong> Step 3 showed prefill and decode competing for the same GPU, and chunked prefill only softens that. Disaggregated serving runs them on separate pools: prefill GPUs process prompts and hand the KV cache to decode GPUs, which only generate. Each pool can be sized and tuned for its own bottleneck, and long prompts never stall anyone's stream. The cost is moving the cache: 1,500 tokens × 128 KiB ≈ 197 MB per request, about 2.4 GB/s at our peak, which needs a fast interconnect. It pays off at large scale with strict TPOT targets, not for a two-GPU fleet.</p>
 <p><strong>Multi-LoRA serving.</strong> If ten teams each fine-tune the model with LoRA, ten separate deployments would need ten sets of 16 GB weights. A rank-16 adapter on the attention projections of this model is about 13.6 million parameters, roughly 27 MB. Engines that support multi-LoRA keep one base model and many adapters in memory and batch requests for different adapters together, so ten fine-tunes cost little more than one deployment. See <a href="../adaptation/fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a> for the adapter maths.</p>
 <p><strong>Engines.</strong> vLLM and SGLang are the general-purpose open-source choices (paged KV cache, continuous batching, prefix caching, an OpenAI-compatible API); TensorRT-LLM trades setup effort for peak performance on NVIDIA hardware; llama.cpp and Ollama target laptops and single users. Pick on the features your workload needs and on your own benchmark, run as in Step 8, not on someone else's chart.</p>
 </section>
 <section id="a-worked-plan-you-can-defend">
-  <h2>24 &mdash; A worked plan you can defend</h2>
+  <h2>13 &mdash; A worked plan you can defend</h2>
 <p><strong>"Serve the internal assistant: 12 req/s at peak, 1,500 in / 250 out, p95 TTFT &lt; 1 s, p95 TPOT &lt; 40 ms."</strong></p>
 <ol>
 <li><strong>Load in tokens:</strong> 18,000 prompt and 3,000 output tokens per second at peak; about 62 requests in flight by Little's law.</li>
@@ -415,7 +225,7 @@ llm = ChatOpenAI(
 </ol>
 </section>
 <section id="in-code-a-capacity-model-a-queue-and-a-launch">
-  <h2>25 &mdash; In code: a capacity model, a queue, and a launch</h2>
+  <h2>14 &mdash; In code: a capacity model, a queue, and a launch</h2>
 <p>The steady-state model behind Step 3. It solves the loop "batch depends on TPOT, TPOT depends on batch" by iteration.</p>
 <pre>P, W = <span class="nr">8.03e9</span>, <span class="nr">16.06e9</span> <span class="cm"># params, weight bytes (BF16)</span>
 KV_TOK = <span class="nr">131_072</span> <span class="cm"># bytes per token (32 layers, 8 KV heads, dim 128, BF16)</span>
@@ -475,6 +285,197 @@ PROMPT, OUT = <span class="nr">1500</span>, <span class="nr">250</span>
 </span><span class="cm"># KV-cache usage and TTFT/TPOT histograms are the autoscaling and alerting inputs
 </span></pre>
 </section>
+<p class="part-divider">Quick reference</p>
+<section id="what-why">
+  <h2>15 &mdash; What &amp; Why</h2>
+<div class="card"><p>Self-host Llama, Mistral, Qwen when <strong>data residency</strong>, <strong>cost at scale</strong>, or <strong>predictable latency</strong> beat closed APIs. <strong>vLLM</strong> is the production inference engine; <strong>Ollama</strong> is the developer UX layer for local iteration. Both expose OpenAI-shaped APIs so LangChain/LangGraph code swaps with a <code>base_url</code> change.</p>
+<h3>Functional requirements</h3>
+<ul>
+<li>Chat completions with streaming tokens</li>
+<li>Concurrent requests with batching (not one-at-a-time)</li>
+<li>Tool calling / JSON mode for agent graphs</li>
+<li>Configurable context length and temperature per model</li>
+<li>Embeddings served separately via TEI (not vLLM)</li>
+</ul>
+<h3>Non-functional requirements</h3>
+<ul>
+<li><strong>Throughput:</strong> maximize tokens/sec per GPU via continuous batching</li>
+<li><strong>Memory:</strong> fit model weights + KV cache in VRAM (quantization helps)</li>
+<li><strong>Latency:</strong> TTFT &lt; 500 ms; streaming for UX</li>
+<li><strong>Availability:</strong> health checks, rolling deploy, queue depth autoscale</li>
+</ul>
+<blockquote><strong>Not for embeddings:</strong> use TEI for <a href="../rag/embedding-models.html">Choosing an embedding model</a>. vLLM is LLM generation only.</blockquote></div>
+</section>
+<section id="core-concepts">
+  <h2>16 &mdash; Core Concepts</h2>
+<div class="card"><table>
+<tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+<tr><td><strong>PagedAttention</strong></td><td>KV cache stored in non-contiguous fixed blocks</td><td>vLLM core; reduces fragmentation</td></tr>
+<tr><td><strong>Continuous batching</strong></td><td>Add/remove requests mid-forward-pass</td><td>vs static batching in naive HF</td></tr>
+<tr><td><strong>Prefix caching</strong></td><td>Reuse KV blocks for identical prompt prefixes</td><td>Big win for shared RAG system prompts</td></tr>
+<tr><td><strong>AWQ / GPTQ</strong></td><td>4-bit weight quantization</td><td>~1–3% quality loss; 4× memory savings</td></tr>
+<tr><td><strong>Tensor parallel (TP)</strong></td><td>Split layers across GPUs</td><td><code>--tensor-parallel-size 2</code> for 70B</td></tr>
+<tr><td><strong>OpenAI compat</strong></td><td><code>/v1/chat/completions</code> schema</td><td>Point SDK <code>base_url</code> at vLLM</td></tr>
+<tr><td><strong>Modelfile</strong></td><td>Ollama config for system prompt + params</td><td>Dev convenience; not prod multi-tenant</td></tr>
+</table></div>
+</section>
+<section id="api-interface-surface">
+  <h2>17 &mdash; API / Interface Surface</h2>
+<div class="card"><pre># Start vLLM OpenAI server
+python -m vllm.entrypoints.openai.api_server \
+  --model meta-llama/Llama-3.1-8B-Instruct \
+  --tensor-parallel-size 1 \
+  --gpu-memory-utilization 0.9 \
+  --max-model-len 8192 \
+  --enable-prefix-caching
+
+# Client — identical to OpenAI SDK
+from openai import OpenAI
+client = OpenAI(base_url="http://gpu-host:8000/v1", api_key="dummy")
+stream = client.chat.completions.create(
+    model="meta-llama/Llama-3.1-8B-Instruct",
+    messages=[{"role": "user", "content": "Summarize RAG in 3 bullets"}],
+    stream=True,
+)
+
+# Ollama — local dev
+# ollama pull llama3.1
+# ollama run llama3.1
+# curl http://localhost:11434/api/chat -d '{"model":"llama3.1","messages":[...]}'</pre>
+<table>
+<tr><th>Endpoint</th><th>Engine</th><th>Use</th></tr>
+<tr><td><code>/v1/chat/completions</code></td><td>vLLM, Ollama</td><td>Chat + agents</td></tr>
+<tr><td><code>/v1/completions</code></td><td>vLLM</td><td>Legacy completion</td></tr>
+<tr><td><code>/v1/models</code></td><td>vLLM</td><td>Health / model list</td></tr>
+<tr><td><code>/embed</code></td><td>TEI</td><td>Embeddings (separate service)</td></tr>
+</table></div>
+</section>
+<section id="when-to-use-when-not">
+  <h2>18 &mdash; When to Use / When NOT</h2>
+<div class="card"><table>
+<tr><th>Case</th><th>Self-host?</th><th>Alternative</th></tr>
+<tr><td>Data cannot leave VPC</td><td><strong>vLLM</strong></td><td>Azure OpenAI private</td></tr>
+<tr><td>Laptop prototype / demo</td><td><strong>Ollama</strong></td><td>OpenAI API for speed</td></tr>
+<tr><td>High QPS, 8B–70B open models</td><td><strong>vLLM cluster</strong></td><td>Closed API $/token at scale</td></tr>
+<tr><td>Frontier reasoning (GPT-4o, o1)</td><td><strong>No</strong></td><td>Cloud API still wins quality</td></tr>
+<tr><td>Hybrid router</td><td><strong>vLLM + OpenAI</strong></td><td>Easy queries local; hard to cloud</td></tr>
+</table></div>
+</section>
+<section id="architecture">
+  <h2>19 &mdash; Architecture</h2>
+<div class="card"><pre>          +------------------+
+          |  API Gateway     |
+          |  (auth, routing) |
+          +--------+---------+
+                   |
+       +-----------+-----------+
+       v                       v
++-------------+         +-------------+
+| vLLM rep 1  |         | vLLM rep 2  |
+| GPU A10     |         | GPU A10     |
++------+------+         +------+------+
+       |                       |
+       +-----------+-----------+
+                   v
+          +------------------+
+          |  Model weights   |
+          |  + KV cache RAM  |
+          +------------------+</pre><div class="flow"><div class="step" data-num="1"><span class="label">Route</span><div class="detail">Gateway picks model + GPU pool; optional cloud fallback</div></div><div class="step" data-num="2"><span class="label">Schedule</span><div class="detail">vLLM continuous batching merges concurrent requests</div></div><div class="step" data-num="3"><span class="label">Generate</span><div class="detail">PagedAttention KV blocks; stream tokens to client</div></div><div class="step" data-num="4"><span class="label">Observe</span><div class="detail">Log tokens/sec, queue depth, TTFT in <a href="../production/observability.html">Observability</a></div></div></div></div>
+</section>
+<section id="vllm-deep-dive">
+  <h2>20 &mdash; vLLM Deep Dive</h2>
+<div class="diagram"><img alt="PagedAttention: KV cache split into fixed-size blocks with block table (like OS virtual memory); continuous batching scheduler adds new requests without waiting for batch completion." src="../tech/img/model-serving-vllm-vllm-zoom.png"/></div><p class="diagram-caption">PagedAttention: KV cache split into fixed-size blocks with block table (like OS virtual memory); continuous batching scheduler adds new requests without waiting for batch completion.</p><div class="card"><p>Key flags for production <a href="../rag/rag-pipeline.html">The RAG pipeline</a>:</p>
+<pre>--enable-prefix-caching     # shared system prompts
+--max-model-len 8192        # cap KV RAM; lower if OOM
+--gpu-memory-utilization 0.9
+--tensor-parallel-size 2    # 70B across 2 GPUs
+--quantization awq          # 4-bit weights</pre>
+<ul>
+<li><strong>Prefix caching:</strong> identical RAG system prompt + tool defs cached across users</li>
+<li><strong>Speculative decoding:</strong> draft model + verify (advanced latency win)</li>
+<li><strong>Structured output:</strong> guided JSON for tool calls</li>
+</ul></div>
+</section>
+<section id="ollama-deep-dive">
+  <h2>21 &mdash; Ollama Deep Dive</h2>
+<div class="diagram"><img alt="Ollama stack: ollama pull → Modelfile (SYSTEM, PARAMETER temperature) → ollama serve :11434 → REST /api/chat. Single-user GPU; not multi-tenant production." src="../tech/img/model-serving-vllm-ollama-zoom.png"/></div><p class="diagram-caption">Ollama stack: ollama pull → Modelfile (SYSTEM, PARAMETER temperature) → ollama serve :11434 → REST /api/chat. Single-user GPU; not multi-tenant production.</p><div class="card"><pre># Modelfile example
+FROM llama3.1
+SYSTEM You are a helpful support bot. Cite sources.
+PARAMETER temperature 0.2
+PARAMETER num_ctx 8192
+
+# ollama create support-bot -f Modelfile
+# ollama run support-bot</pre>
+<p>Use Ollama for: local LangGraph dev, CI smoke tests, sales demos. Do <em>not</em> use for multi-tenant SaaS prod — no HA, queue, or autoscale story.</p></div>
+</section>
+<section id="quantization">
+  <h2>22 &mdash; Quantization</h2>
+<div class="card"><table>
+<tr><th>Method</th><th>Bits</th><th>VRAM (8B)</th><th>Quality</th></tr>
+<tr><td>FP16</td><td>16</td><td>~16 GB</td><td>Baseline</td></tr>
+<tr><td>AWQ / GPTQ</td><td>4</td><td>~5–6 GB</td><td>~1–3% task loss</td></tr>
+<tr><td>FP8</td><td>8</td><td>~8 GB</td><td>Minimal loss on H100</td></tr>
+</table>
+<p>Always benchmark on your eval harness before prod quant deploy. Perplexity alone is insufficient — run golden RAG/agent tasks.</p></div>
+</section>
+<section id="gpu-sizing">
+  <h2>23 &mdash; GPU Sizing</h2>
+<div class="card"><table>
+<tr><th>Model</th><th>Precision</th><th>GPU</th><th>Notes</th></tr>
+<tr><td>Llama-3-8B</td><td>FP16</td><td>1× A10/L4 24GB</td><td>Headroom for KV cache</td></tr>
+<tr><td>Llama-3-8B</td><td>AWQ 4-bit</td><td>1× T4 16GB</td><td>More concurrent users</td></tr>
+<tr><td>Llama-3-70B</td><td>AWQ</td><td>2× A100 80GB (TP=2)</td><td>tensor parallel required</td></tr>
+</table>
+<p>KV cache RAM scales with <code>max_model_len × concurrent_requests</code>. OOM usually from context too long, not weights.</p></div>
+</section>
+<section id="vllm-vs-ollama">
+  <h2>24 &mdash; vLLM vs Ollama</h2>
+<div class="card"><table>
+<tr><th>Dimension</th><th>vLLM</th><th>Ollama</th></tr>
+<tr><td>Target</td><td>Production GPU cluster</td><td>Local dev / demo</td></tr>
+<tr><td>Throughput</td><td>Very high (continuous batch)</td><td>Moderate (single user)</td></tr>
+<tr><td>Setup</td><td>Docker/K8s, flags tuning</td><td><code>ollama pull</code></td></tr>
+<tr><td>Multi-tenant</td><td>Yes with LB + replicas</td><td>No</td></tr>
+<tr><td>OpenAI API</td><td>Full compat</td><td>Similar /api/chat</td></tr>
+<tr><td>Observability</td><td>Prometheus metrics</td><td>Minimal</td></tr>
+</table></div>
+</section>
+<section id="full-client-example">
+  <h2>25 &mdash; Full Client Example</h2>
+<div class="card highlight"><p>Point LangChain / OpenAI SDK at vLLM for a RAG generation node. Embeddings still go to OpenAI or TEI per <a href="../rag/embedding-models.html">Choosing an embedding model</a>.</p></div><div class="card"><pre>from openai import OpenAI
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
+
+# Direct OpenAI SDK against vLLM
+vllm = OpenAI(base_url="http://gpu-cluster:8000/v1", api_key="dummy")
+
+def generate_answer(query: str, context_chunks: list[str]) -&gt; str:
+    context = "\n\n".join(f"[{i+1}] {c}" for i, c in enumerate(context_chunks))
+    resp = vllm.chat.completions.create(
+        model="meta-llama/Llama-3.1-8B-Instruct",
+        messages=[
+            {"role": "system", "content": "Answer using only the context. Cite [n]."},
+            {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {query}"},
+        ],
+        temperature=0.2,
+        max_tokens=512,
+        stream=False,
+    )
+    return resp.choices[0].message.content
+
+# LangChain — same base_url swap for LangGraph nodes
+llm = ChatOpenAI(
+    model="meta-llama/Llama-3.1-8B-Instruct",
+    openai_api_base="http://gpu-cluster:8000/v1",
+    openai_api_key="dummy",
+    temperature=0.2,
+)
+
+# Ollama dev equivalent
+# llm = ChatOpenAI(model="llama3.1", openai_api_base="http://localhost:11434/v1", ...)</pre>
+<p>Enable prefix caching on vLLM when system prompt + tool defs are identical across users. Monitor TTFT and tokens/sec in <a href="../production/observability.html">Observability</a>.</p></div>
+</section>
+<p class="part-divider">More detail</p>
 <section id="serving-open-models-benchmarking-honestly">
   <h2>26 &mdash; Serving open models &amp; benchmarking honestly</h2>
 <p>Hosted API vs self-hosted is a real decision; and every serving claim is meaningless without its workload. Here's the vocabulary and the method.</p>

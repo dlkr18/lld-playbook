@@ -24,27 +24,27 @@
   <a href="index.html">&larr; Knowledge &amp; RAG</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
   <a href="#new-words"><span class="num">02</span> New words</a>
-  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
-  <a href="#api-surface"><span class="num">05</span> API Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">07</span> Architecture</a>
-  <a href="#deep-dive-parsing-ocr"><span class="num">08</span> Deep Dive: Parsing &amp; OCR</a>
-  <a href="#deep-dive-dedup-cdc"><span class="num">09</span> Deep Dive: Dedup &amp; CDC</a>
-  <a href="#deep-dive-queue-design"><span class="num">10</span> Deep Dive: Queue Design</a>
-  <a href="#deep-dive-embed-workers"><span class="num">11</span> Deep Dive: Embed Workers</a>
-  <a href="#deep-dive-freshness"><span class="num">12</span> Deep Dive: Freshness</a>
-  <a href="#the-question"><span class="num">13</span> The question</a>
-  <a href="#step-1-the-pipeline-and-its-output-contract"><span class="num">14</span> Step 1: the pipeline and its output contract</a>
-  <a href="#step-2-why-pdfs-are-hard"><span class="num">15</span> Step 2: why PDFs are hard</a>
-  <a href="#step-3-tables-scans-and-ocr"><span class="num">16</span> Step 3: tables, scans and OCR</a>
-  <a href="#step-4-html-and-cleaning"><span class="num">17</span> Step 4: HTML and cleaning</a>
-  <a href="#step-5-duplicates-and-near-duplicates"><span class="num">18</span> Step 5: duplicates and near-duplicates</a>
-  <a href="#step-6-keeping-the-index-fresh-without-re-embedding-everythi"><span class="num">19</span> Step 6: keeping the index fresh without re-embedding everything</a>
-  <a href="#step-7-permissions-belong-in-the-index"><span class="num">20</span> Step 7: permissions belong in the index</a>
-  <a href="#step-8-running-it-reliably"><span class="num">21</span> Step 8: running it reliably</a>
-  <a href="#a-worked-example-one-edit-end-to-end"><span class="num">22</span> A worked example: one edit, end to end</a>
-  <a href="#in-code-parsing-a-two-column-pdf-then-hashing-and-deduplicat"><span class="num">23</span> In code: parsing a two-column PDF, then hashing and deduplicating</a>
+  <a href="#the-question"><span class="num">03</span> The question</a>
+  <a href="#step-1-the-pipeline-and-its-output-contract"><span class="num">04</span> Step 1: the pipeline and its output contract</a>
+  <a href="#step-2-why-pdfs-are-hard"><span class="num">05</span> Step 2: why PDFs are hard</a>
+  <a href="#step-3-tables-scans-and-ocr"><span class="num">06</span> Step 3: tables, scans and OCR</a>
+  <a href="#step-4-html-and-cleaning"><span class="num">07</span> Step 4: HTML and cleaning</a>
+  <a href="#step-5-duplicates-and-near-duplicates"><span class="num">08</span> Step 5: duplicates and near-duplicates</a>
+  <a href="#step-6-keeping-the-index-fresh-without-re-embedding-everythi"><span class="num">09</span> Step 6: keeping the index fresh without re-embedding everything</a>
+  <a href="#step-7-permissions-belong-in-the-index"><span class="num">10</span> Step 7: permissions belong in the index</a>
+  <a href="#step-8-running-it-reliably"><span class="num">11</span> Step 8: running it reliably</a>
+  <a href="#a-worked-example-one-edit-end-to-end"><span class="num">12</span> A worked example: one edit, end to end</a>
+  <a href="#in-code-parsing-a-two-column-pdf-then-hashing-and-deduplicat"><span class="num">13</span> In code: parsing a two-column PDF, then hashing and deduplicating</a>
+  <a href="#what-why"><span class="num">14</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">15</span> Core Concepts</a>
+  <a href="#api-surface"><span class="num">16</span> API Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">17</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">18</span> Architecture</a>
+  <a href="#deep-dive-parsing-ocr"><span class="num">19</span> Deep Dive: Parsing &amp; OCR</a>
+  <a href="#deep-dive-dedup-cdc"><span class="num">20</span> Deep Dive: Dedup &amp; CDC</a>
+  <a href="#deep-dive-queue-design"><span class="num">21</span> Deep Dive: Queue Design</a>
+  <a href="#deep-dive-embed-workers"><span class="num">22</span> Deep Dive: Embed Workers</a>
+  <a href="#deep-dive-freshness"><span class="num">23</span> Deep Dive: Freshness</a>
   <a href="#production-ops"><span class="num">24</span> Production &amp; Ops</a>
   <a href="#related-topics"><span class="num">25</span> Related topics</a>
   <a href="#where-people-get-lost"><span class="num">26</span> Where people get lost</a>
@@ -67,58 +67,9 @@
   <h2>02 &mdash; New words</h2>
 <table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Ingestion pipeline</strong></td><td>The offline process that turns source documents into indexed chunks: fetch, parse, clean, deduplicate, chunk, embed, store.</td></tr><tr><td><strong>Text layer</strong></td><td>The machine-readable characters inside a PDF. Scanned PDFs have none; they are only pictures of text.</td></tr><tr><td><strong>Reading order</strong></td><td>The order a person reads a page in. A PDF stores drawing order, which can differ (columns, sidebars, footers).</td></tr><tr><td><strong>OCR</strong></td><td>Optical character recognition: reading text from an image of a page.</td></tr><tr><td><strong>Boilerplate</strong></td><td>Text repeated on every page or screen that is not content: navigation menus, cookie banners, running headers, page numbers.</td></tr><tr><td><strong>Unicode normalisation (NFKC)</strong></td><td>Rewriting characters that look alike but are encoded differently (ligatures, non-breaking spaces, full-width digits) into one standard form.</td></tr><tr><td><strong>Content hash</strong></td><td>A fingerprint (such as SHA-256) of normalised text. Same text, same hash; any change, a different hash.</td></tr><tr><td><strong>Shingles</strong></td><td>All runs of \(n\) consecutive words in a text. Two texts sharing most shingles are near-duplicates.</td></tr><tr><td><strong>Jaccard similarity</strong></td><td>Size of the overlap of two sets divided by the size of their union: 1 for identical sets, 0 for disjoint ones.</td></tr><tr><td><strong>MinHash</strong></td><td>A compact signature (say 128 numbers) per document whose agreement rate estimates Jaccard similarity without comparing full shingle sets.</td></tr><tr><td><strong>Provenance</strong></td><td>Where a chunk came from: source URL, document ID, section anchor, version and date. Needed for citations and debugging.</td></tr><tr><td><strong>ACL</strong></td><td>Access control list: which users or groups may see a document. Carried onto every chunk and enforced at retrieval time.</td></tr><tr><td><strong>Idempotent</strong></td><td>Safe to run twice: processing the same document again leaves the index exactly as it was.</td></tr></tbody></table>
 </section>
-<p class="part-divider">Quick reference</p>
-<section id="what-why">
-  <h2>03 &mdash; What &amp; Why</h2>
-<div class="card"><p>RAG quality ceiling is set at ingest. Parsing failures, bad OCR, and stale indexes cause retrieval misses before the query path runs.</p></div>
-</section>
-<section id="core-concepts">
-  <h2>04 &mdash; Core Concepts</h2>
-<div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>CDC</td><td>Change data capture from sources</td><td>Miss deletes without webhooks</td></tr><tr><td>content_hash</td><td>SHA256 of normalized text</td><td>Skip re-embed if unchanged</td></tr><tr><td>Near-line</td><td>Minutes freshness via streaming ingest</td><td>Higher cost than batch</td></tr></table></div>
-</section>
-<section id="api-surface">
-  <h2>05 &mdash; API Surface</h2>
-<div class="card"><pre>POST /v1/documents { source_url, org_id, metadata }
-  -&gt; 202 { job_id, status: "QUEUED" }
-GET  /v1/documents/{doc_id} -&gt; { status, chunk_count, content_hash }
-DELETE /v1/documents/{doc_id} -&gt; 204 tombstone</pre></div>
-</section>
-<section id="when-to-use-when-not">
-  <h2>06 &mdash; When to Use / When NOT</h2>
-<div class="card"><table><tr><th>Mode</th><th>Use When</th><th>Skip When</th></tr><tr><td>Batch nightly</td><td>Stable docs, cost-sensitive</td><td>Need minute freshness</td></tr><tr><td>Near-line CDC</td><td>Confluence/Notion live sync</td><td>Static PDF archive</td></tr></table></div>
-</section>
-<section id="architecture">
-  <h2>07 &mdash; Architecture</h2>
-<div class="card"><pre>Sources -&gt; Kafka -&gt; Parser -&gt; Dedup -&gt; Chunker -&gt; Embed -&gt; [Vector + Sparse + Postgres meta]</pre></div>
-</section>
-<section id="deep-dive-parsing-ocr">
-  <h2>08 &mdash; Deep Dive: Parsing &amp; OCR</h2>
-<div class="diagram"><img alt="Parser routing: PDF to OCR/unstructured, HTML to trafilatura, Slack JSON to thread builder" src="../systems/img/document-ingestion-parse-zoom.png"/></div><p class="diagram-caption">Parser routing: PDF to OCR/unstructured, HTML to trafilatura, Slack JSON to thread builder</p><div class="card"><p>Unstructured, Docling, Tesseract OCR. Preserve tables. Strip boilerplate nav/footer.</p></div>
-</section>
-<section id="deep-dive-dedup-cdc">
-  <h2>09 &mdash; Deep Dive: Dedup &amp; CDC</h2>
-<div class="card"><ul><li><strong>Dedup</strong>: hash each document's normalized content. If the hash is unchanged since the last ingest, skip parsing and re-embedding entirely. Near-duplicates (MinHash/SimHash) can be collapsed too.</li>
-<li><strong>Change data capture</strong>: subscribe to change webhooks from the sources (Confluence, Drive, S3 events) instead of re-crawling everything on a schedule.</li>
-<li><strong>Deletes</strong>: write a tombstone when a source document is deleted, then purge its chunks from every index asynchronously. Without this, deleted content keeps being retrieved.</li></ul></div>
-</section>
-<section id="deep-dive-queue-design">
-  <h2>10 &mdash; Deep Dive: Queue Design</h2>
-<div class="diagram"><img alt="Kafka partitioned by org_id; consumer groups for parser, chunker, embed stages with DLQ" src="../systems/img/document-ingestion-queue-zoom.png"/></div><p class="diagram-caption">Kafka partitioned by org_id; consumer groups for parser, chunker, embed stages with DLQ</p><div class="card"><p>Kafka/SQS with DLQ. Backpressure when embed GPU saturated. Priority queue for user-triggered refresh.</p></div>
-</section>
-<section id="deep-dive-embed-workers">
-  <h2>11 &mdash; Deep Dive: Embed Workers</h2>
-<div class="card"><ul><li>A pool of GPU workers (or an embedding API) consumes chunks from the queue and embeds them in batches, typically a few hundred chunks per call, which is far cheaper than one call per chunk.</li>
-<li>Upserts are idempotent, keyed by chunk_id, so a retried batch never creates duplicates.</li>
-<li>Rate-limit per tenant so one large import cannot starve everyone else's freshness.</li>
-<li>Record the embedding model version on every chunk; changing models means re-embedding, ideally into a new index you swap in.</li></ul></div>
-</section>
-<section id="deep-dive-freshness">
-  <h2>12 &mdash; Deep Dive: Freshness</h2>
-<div class="card"><p>Target: new doc searchable &lt;5 min. Monitor ingest lag p99. Reconciliation job nightly for missed CDC events.</p></div>
-</section>
-<p class="part-divider">The full explanation</p>
+<p class="part-divider">The lesson</p>
 <section id="the-question">
-  <h2>13 &mdash; The question</h2>
+  <h2>03 &mdash; The question</h2>
 <p>Every RAG demo starts from clean text. Real knowledge lives in PDFs with two columns and page numbers, HTML pages wrapped in navigation menus, scanned contracts, wiki pages copied into three spaces, and documents edited every day. Whatever the parser gets wrong is wrong in the index forever: a table flattened into a stream of numbers, a footer embedded into every chunk, last year's policy sitting next to this year's. Teams that measure where their RAG errors come from usually find a large share starting here, before any model runs.</p>
 <p>Interviewers ask:</p>
 <ol>
@@ -130,7 +81,7 @@ DELETE /v1/documents/{doc_id} -&gt; 204 tombstone</pre></div>
 <p>The running example is the course's support assistant. Its 1,200 source documents are 800 Markdown pages exported from a wiki, 300 HTML help-centre pages, and 100 PDFs (plan sheets and contracts), 15 of them scanned. Documents change daily; an edit to the refund policy should be answerable within minutes, and a deleted page must stop being cited at once. We will follow one document, the refund policy (about 1,800 tokens, six chunks once indexed), through the pipeline: first as the PDF export customers download, which is where parsing goes wrong (Step 2), and later as the wiki page it is exported from, when someone edits it (the worked example).</p>
 </section>
 <section id="step-1-the-pipeline-and-its-output-contract">
-  <h2>14 &mdash; Step 1: the pipeline and its output contract</h2>
+  <h2>04 &mdash; Step 1: the pipeline and its output contract</h2>
 <p>Ingestion is a chain of stages, each with one job:</p>
 <pre class="ascii-diagram">source change (webhook / nightly listing)
    -&gt; fetch bytes + metadata
@@ -156,7 +107,7 @@ DELETE /v1/documents/{doc_id} -&gt; 204 tombstone</pre></div>
 <p>The point of the contract is that everything downstream (retrieval filters, citations, freshness checks, rebuilds) depends on these fields, and they are cheap to capture at ingestion and expensive or impossible to reconstruct later.</p>
 </section>
 <section id="step-2-why-pdfs-are-hard">
-  <h2>15 &mdash; Step 2: why PDFs are hard</h2>
+  <h2>05 &mdash; Step 2: why PDFs are hard</h2>
 <p>A PDF is not a document format in the sense a Markdown file is. It is a program that draws a page: "use this font at this size, put these characters at coordinates (50, 120)". It has no paragraphs, no headings and no reading order, only glyphs at positions, emitted in whatever order the generating software chose.</p>
 <p>Take our refund policy as a two-page, two-column PDF whose generator drew the page line by line across both columns, footer first. The text layer, read in stored order, comes out as:</p>
 <pre class="ascii-diagram">Page 1 of 2
@@ -181,13 +132,13 @@ renewal date.</pre>
 <p>Real layouts are messier than this toy, so production systems usually rely on a dedicated layout parser (rule-based libraries, or layout-detection models that label regions as title, paragraph, table, figure). The engineering habit that matters more than the tool: <strong>look at the parsed output of a sample of every document type</strong> before indexing, because parse failures are silent.</p>
 </section>
 <section id="step-3-tables-scans-and-ocr">
-  <h2>16 &mdash; Step 3: tables, scans and OCR</h2>
+  <h2>06 &mdash; Step 3: tables, scans and OCR</h2>
 <p><strong>Tables</strong> carry the facts users ask about most (prices, limits, plan features) and are the content naive extraction destroys most thoroughly: a 4 × 6 pricing table becomes 24 numbers in a row with no idea which column each belongs to. Extract tables as tables (layout parsers detect them; HTML and Markdown tables are explicit), then serialise them in a form that keeps the header with every value: Markdown table text, or one line per row such as "Plan: Pro | Seats: 25 | Monthly price: 49". Store the table's caption and heading path with it.</p>
 <p><strong>Scanned PDFs</strong> have no text layer at all, so text extraction returns almost nothing. Detect this per page: if a page yields fewer than about 50 characters but contains an image covering most of it, send it to OCR. Ingestion must check this explicitly, because a scanned contract otherwise enters the index as an empty document and simply never matches anything.</p>
 <p>OCR has its own error profile, and it lands on the content RAG cares about. It confuses 0 and O, 1 and l, 5 and S; it drops decimal points; it misreads small fonts and stamps. "Plan code P10-OS" read as "PIO-0S" will never match a query for the code. Mitigations: keep the OCR engine's per-word confidence and flag low-confidence pages for review; run a spell or dictionary check on identifiers; and for high-value documents, use a vision-language model to transcribe complex pages (tables, forms) into Markdown, at a cost per page that is orders of magnitude above plain text extraction. For our 15 scanned contracts, that cost is trivial; for a million scanned pages it is the main budget line.</p>
 </section>
 <section id="step-4-html-and-cleaning">
-  <h2>17 &mdash; Step 4: HTML and cleaning</h2>
+  <h2>07 &mdash; Step 4: HTML and cleaning</h2>
 <p>HTML has the opposite problem from PDF: structure is explicit (<code>h1</code> to <code>h6</code>, <code>ul</code>, <code>table</code>) but buried in boilerplate. A help-centre page typically contains its article inside a page shell of navigation, related-article lists, cookie notices and a footer, often with more boilerplate words than article words. Embedded naively, every chunk of every page carries the same menu text, which makes unrelated pages look similar to each other.</p>
 <p>The fix is to extract the main content element (the article body, found by a known CSS selector for your own site, or by a content-extraction heuristic for arbitrary pages), then convert its tags to Markdown so headings, lists and tables survive into chunking.</p>
 <p>After parsing, every document type goes through the same <strong>normalisation</strong>:</p>
@@ -200,7 +151,7 @@ renewal date.</pre>
 <p>Normalise before hashing (Step 6): otherwise a change in whitespace or a re-export with different line endings looks like a content change and triggers pointless re-embedding.</p>
 </section>
 <section id="step-5-duplicates-and-near-duplicates">
-  <h2>18 &mdash; Step 5: duplicates and near-duplicates</h2>
+  <h2>08 &mdash; Step 5: duplicates and near-duplicates</h2>
 <p>Knowledge bases are full of copies: a policy pasted into three wiki spaces, a page exported to PDF and also kept as HTML, the 2024 and 2025 versions side by side. Duplicates hurt retrieval directly: the top 5 results become three copies of one passage, crowding out the other two passages the model needed.</p>
 <p><strong>Exact duplicates</strong> are easy: equal content hashes after normalisation. Keep one, record the others as aliases (so permissions and links from every copy still work).</p>
 <p><strong>Near-duplicates</strong> differ by a date, a footer or one sentence. Compare their <strong>5-word shingles</strong> with Jaccard similarity. Take a 52-word paragraph of the refund policy and a copy in another space where one fact changed, "60 days" to "90 days". Each text has 48 shingles; changing one word changes the 5 shingles that contain it, so they share 43 of 53 distinct shingles: Jaccard = 43/53 = 0.811. A password-reset paragraph shares none: Jaccard 0.000.</p>
@@ -208,7 +159,7 @@ renewal date.</pre>
 <div class="callout warn"><p><strong>Near-duplicates may disagree.</strong> Our two "duplicates" differ in exactly the fact a customer will ask about: 60 days or 90? Deleting one at random can keep the wrong one. Resolve near-duplicate clusters by authority and recency (the canonical space, the newest version), mark superseded versions in metadata, and route genuine conflicts to the content owners. Retrieval should prefer current versions explicitly, via a filter or a score boost.</p></div>
 </section>
 <section id="step-6-keeping-the-index-fresh-without-re-embedding-everythi">
-  <h2>19 &mdash; Step 6: keeping the index fresh without re-embedding everything</h2>
+  <h2>09 &mdash; Step 6: keeping the index fresh without re-embedding everything</h2>
 <p>The naive refresh is "re-ingest everything nightly". For our corpus that is 30,000 chunks, cheap in embedding fees but slow, wasteful, and too late for a policy edited at 10am. The better design is incremental, driven by content hashes at two levels:</p>
 <ol>
 <li><strong>Document level.</strong> When a source reports a change (a webhook from the wiki, or a nightly listing compared with the last), fetch the document and hash its normalised text. Same hash as last time: stop. A re-save without edits costs nothing.</li>
@@ -220,7 +171,7 @@ renewal date.</pre>
 <p>Some changes force a <strong>full rebuild</strong>: a new parser version (every chunk may change), a new chunking strategy, or a new embedding model. Build into a new index alongside the live one, evaluate, then switch, as described in <a href="embedding-models.html">choosing an embedding model</a>.</p>
 </section>
 <section id="step-7-permissions-belong-in-the-index">
-  <h2>20 &mdash; Step 7: permissions belong in the index</h2>
+  <h2>10 &mdash; Step 7: permissions belong in the index</h2>
 <p>Some help-centre pages are for enterprise admins only; internal runbooks are for support staff. If retrieval can return a chunk, the model can quote it, and no instruction in a prompt reliably prevents that. So permissions are enforced at <strong>retrieval</strong>, as a filter:</p>
 <ul>
 <li>At ingestion, copy the source document's ACL (the groups allowed to read it) onto every chunk.</li>
@@ -230,7 +181,7 @@ renewal date.</pre>
 <p>Two practical wrinkles: permission changes must propagate as quickly as content changes (a revoked page is a security issue), and per-user filters are often highly selective, which brings in the filtered-search behaviour covered in <a href="vector-search.html">vector search</a>. More on access control in <a href="../production/security.html">security</a>.</p>
 </section>
 <section id="step-8-running-it-reliably">
-  <h2>21 &mdash; Step 8: running it reliably</h2>
+  <h2>11 &mdash; Step 8: running it reliably</h2>
 <p>An ingestion pipeline is a batch and streaming system like any other, and fails like one. The standard shape:</p>
 <ul>
 <li><strong>One message per document</strong> on a queue, so a slow or broken document does not block others, and work spreads across workers.</li>
@@ -241,7 +192,7 @@ renewal date.</pre>
 <p>And because parse failures are silent, the pipeline needs <strong>content metrics</strong>, not just error counts: characters extracted per page by document type (a sudden drop means a parser broke or scans arrived), the share of documents with zero chunks, the chunk-size distribution, the duplicate rate, and the freshness lag from source edit to searchable chunk. Alert on changes in these, the way you would alert on error rates.</p>
 </section>
 <section id="a-worked-example-one-edit-end-to-end">
-  <h2>22 &mdash; A worked example: one edit, end to end</h2>
+  <h2>12 &mdash; A worked example: one edit, end to end</h2>
 <ol>
 <li>10:02:00. A billing manager changes the enterprise refund window from 60 to 90 days in the wiki. The wiki fires a webhook; the pipeline enqueues the document ID.</li>
 <li>A worker fetches the page, converts it to Markdown, normalises it, and hashes it: the hash differs from the stored one, so it continues.</li>
@@ -252,7 +203,7 @@ renewal date.</pre>
 </ol>
 </section>
 <section id="in-code-parsing-a-two-column-pdf-then-hashing-and-deduplicat">
-  <h2>23 &mdash; In code: parsing a two-column PDF, then hashing and deduplicating</h2>
+  <h2>13 &mdash; In code: parsing a two-column PDF, then hashing and deduplicating</h2>
 <p>The PDF part uses PyMuPDF (<code>fitz</code>), which is installed in the course sandbox. It builds the two-column PDF from Step 2, shows the naive text layer, then rebuilds structure from positions and font sizes:</p>
 <pre><span class="kw">import</span> re
 <span class="kw">from</span> collections <span class="kw">import</span> Counter
@@ -352,6 +303,55 @@ fresh = {chunk_hash(t): t <span class="kw">for</span> t in [<span class="st">"</
 <span class="tp">print</span>(<span class="st">"</span><span class="st">delete:</span><span class="st">"</span>, [stored[h] <span class="kw">for</span> h in stored.keys() - fresh.keys()])
 <span class="tp">print</span>(<span class="st">"</span><span class="st">unchanged:</span><span class="st">"</span>, <span class="tp">len</span>(fresh.keys() &amp; stored.keys()))
 </pre>
+</section>
+<p class="part-divider">Quick reference</p>
+<section id="what-why">
+  <h2>14 &mdash; What &amp; Why</h2>
+<div class="card"><p>RAG quality ceiling is set at ingest. Parsing failures, bad OCR, and stale indexes cause retrieval misses before the query path runs.</p></div>
+</section>
+<section id="core-concepts">
+  <h2>15 &mdash; Core Concepts</h2>
+<div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>CDC</td><td>Change data capture from sources</td><td>Miss deletes without webhooks</td></tr><tr><td>content_hash</td><td>SHA256 of normalized text</td><td>Skip re-embed if unchanged</td></tr><tr><td>Near-line</td><td>Minutes freshness via streaming ingest</td><td>Higher cost than batch</td></tr></table></div>
+</section>
+<section id="api-surface">
+  <h2>16 &mdash; API Surface</h2>
+<div class="card"><pre>POST /v1/documents { source_url, org_id, metadata }
+  -&gt; 202 { job_id, status: "QUEUED" }
+GET  /v1/documents/{doc_id} -&gt; { status, chunk_count, content_hash }
+DELETE /v1/documents/{doc_id} -&gt; 204 tombstone</pre></div>
+</section>
+<section id="when-to-use-when-not">
+  <h2>17 &mdash; When to Use / When NOT</h2>
+<div class="card"><table><tr><th>Mode</th><th>Use When</th><th>Skip When</th></tr><tr><td>Batch nightly</td><td>Stable docs, cost-sensitive</td><td>Need minute freshness</td></tr><tr><td>Near-line CDC</td><td>Confluence/Notion live sync</td><td>Static PDF archive</td></tr></table></div>
+</section>
+<section id="architecture">
+  <h2>18 &mdash; Architecture</h2>
+<div class="card"><pre>Sources -&gt; Kafka -&gt; Parser -&gt; Dedup -&gt; Chunker -&gt; Embed -&gt; [Vector + Sparse + Postgres meta]</pre></div>
+</section>
+<section id="deep-dive-parsing-ocr">
+  <h2>19 &mdash; Deep Dive: Parsing &amp; OCR</h2>
+<div class="diagram"><img alt="Parser routing: PDF to OCR/unstructured, HTML to trafilatura, Slack JSON to thread builder" src="../systems/img/document-ingestion-parse-zoom.png"/></div><p class="diagram-caption">Parser routing: PDF to OCR/unstructured, HTML to trafilatura, Slack JSON to thread builder</p><div class="card"><p>Unstructured, Docling, Tesseract OCR. Preserve tables. Strip boilerplate nav/footer.</p></div>
+</section>
+<section id="deep-dive-dedup-cdc">
+  <h2>20 &mdash; Deep Dive: Dedup &amp; CDC</h2>
+<div class="card"><ul><li><strong>Dedup</strong>: hash each document's normalized content. If the hash is unchanged since the last ingest, skip parsing and re-embedding entirely. Near-duplicates (MinHash/SimHash) can be collapsed too.</li>
+<li><strong>Change data capture</strong>: subscribe to change webhooks from the sources (Confluence, Drive, S3 events) instead of re-crawling everything on a schedule.</li>
+<li><strong>Deletes</strong>: write a tombstone when a source document is deleted, then purge its chunks from every index asynchronously. Without this, deleted content keeps being retrieved.</li></ul></div>
+</section>
+<section id="deep-dive-queue-design">
+  <h2>21 &mdash; Deep Dive: Queue Design</h2>
+<div class="diagram"><img alt="Kafka partitioned by org_id; consumer groups for parser, chunker, embed stages with DLQ" src="../systems/img/document-ingestion-queue-zoom.png"/></div><p class="diagram-caption">Kafka partitioned by org_id; consumer groups for parser, chunker, embed stages with DLQ</p><div class="card"><p>Kafka/SQS with DLQ. Backpressure when embed GPU saturated. Priority queue for user-triggered refresh.</p></div>
+</section>
+<section id="deep-dive-embed-workers">
+  <h2>22 &mdash; Deep Dive: Embed Workers</h2>
+<div class="card"><ul><li>A pool of GPU workers (or an embedding API) consumes chunks from the queue and embeds them in batches, typically a few hundred chunks per call, which is far cheaper than one call per chunk.</li>
+<li>Upserts are idempotent, keyed by chunk_id, so a retried batch never creates duplicates.</li>
+<li>Rate-limit per tenant so one large import cannot starve everyone else's freshness.</li>
+<li>Record the embedding model version on every chunk; changing models means re-embedding, ideally into a new index you swap in.</li></ul></div>
+</section>
+<section id="deep-dive-freshness">
+  <h2>23 &mdash; Deep Dive: Freshness</h2>
+<div class="card"><p>Target: new doc searchable &lt;5 min. Monitor ingest lag p99. Reconciliation job nightly for missed CDC events.</p></div>
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
