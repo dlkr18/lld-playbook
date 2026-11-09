@@ -1,0 +1,352 @@
+<!-- Deep lesson: LlamaIndex. Merged into tech/llamaindex by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Document</td><td>One loaded source (a PDF, a wiki page, a row) as text, metadata and an id. Not yet split.</td></tr>
+<tr><td>Node</td><td>The unit that is embedded, stored and retrieved: a chunk of a Document with its own id, metadata and links to its source and neighbours.</td></tr>
+<tr><td>Metadata mode</td><td>Which metadata keys are prepended to a node's text for the embedding model or the LLM, set per key with exclude lists.</td></tr>
+<tr><td>Transformation</td><td>Any step that maps a list of nodes to a list of nodes: splitter, metadata extractor, embedding model.</td></tr>
+<tr><td>Node parser</td><td>A transformation that turns Documents into nodes, such as <code>SentenceSplitter</code>.</td></tr>
+<tr><td>IngestionPipeline</td><td>Runs transformations over Documents, with a cache and docstore so unchanged inputs are skipped next time.</td></tr>
+<tr><td>Docstore</td><td>A key-value store of Documents or nodes; in ingestion it remembers each document's content hash.</td></tr>
+<tr><td>StorageContext</td><td>The bundle of stores an index lives in: vector store, docstore, index store (bookkeeping), optional graph store.</td></tr>
+<tr><td>VectorStoreIndex</td><td>The default index: node embeddings in a vector store (in memory or a database), queried by nearest-neighbour search.</td></tr>
+<tr><td>Retriever</td><td>Takes a query and returns a ranked list of nodes with scores (<code>NodeWithScore</code>).</td></tr>
+<tr><td>Node postprocessor</td><td>A step between retrieval and the LLM that filters, reranks or rewrites nodes.</td></tr>
+<tr><td>Response synthesizer</td><td>Turns a question plus nodes into an answer with one or many LLM calls, depending on its response mode.</td></tr>
+<tr><td>Query engine</td><td>Retriever, postprocessors and synthesizer behind one <code>query()</code> call returning the answer and its <code>source_nodes</code>.</td></tr>
+<tr><td>Settings</td><td>A process-wide object of defaults (LLM, embedding model, splitter) used for anything not passed explicitly.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>A retrieval-augmented generation (RAG) app has two halves. At <em>ingest time</em> you load files from many sources, split them, attach metadata, embed them and store them, and redo it whenever files change. At <em>query time</em> you embed a question, fetch and maybe rerank chunks, and have an LLM answer from them with citations. Most of the effort and most of the bugs live in that plumbing, not in the prompt.</p>
+<p>LlamaIndex is a Python (and TypeScript) library built around that plumbing. Where <a href="@@tech/langchain@@">LangChain</a> starts from a chain of steps, LlamaIndex starts from your data: documents, nodes, indexes and the engines that query them. Interviewers ask:</p>
+<ol>
+<li>What is the data model (Document, Node, Index) and what actually gets embedded?</li>
+<li>Walk through the write path and the query path. Where does each object live, and what happens when a source file changes?</li>
+<li>What do the response modes (<code>compact</code>, <code>refine</code>, <code>tree_summarize</code>) do, and what does each cost in LLM calls and latency?</li>
+<li>When would you choose LlamaIndex over LangChain, LangGraph, or plain code?</li>
+</ol>
+<p>The running example is one concrete app: an internal <strong>policy assistant</strong> for a company with offices in several countries. The corpus is 800 documents: 300 PDF handbooks averaging 7,200 tokens each and 500 wiki pages averaging 1,500 tokens, 2.91 million tokens in total. About 3% of documents change on a typical day. Each chunk carries roughly 30 tokens of metadata (country, document title, section heading). The question we will follow end to end is:</p>
+<p><em>"I'm in the Berlin office. Can I carry unused vacation days into next year?"</em></p>
+<p>The right answer needs two German chunks (up to 5 days carry over until 31 March; carry-over needs manager approval) and must not be confused by a global page (unused vacation expires 31 December) or the US rule (no carry-over).</p>
+</section>
+
+<section data-label="Step 1: the mental model, two pipelines meeting at a store">
+<p>Everything in LlamaIndex belongs to one of two pipelines, and they meet only at the storage layer:</p>
+<pre class="ascii-diagram">INGEST (batch, minutes)                         QUERY (online, seconds)
+
+ Readers --&gt; Documents                           question
+               |                                    |
+     [Transformations]                        embed query
+   splitter -&gt; extractors -&gt; embedder               |
+               |                                Retriever ----+
+             Nodes                                  |         |
+               |                          Node postprocessors |  (rerank, filter,
+               v                                    |         |   window swap)
+   +---------------------------+                    v         |
+   | StorageContext            | &lt;----- reads --- Synthesizer |
+   |  vector store (vectors)   |                    |         |
+   |  docstore     (text, hash)|              Response + source_nodes
+   |  index store  (bookkeeping)|
+   +---------------------------+</pre>
+<p>The left side is a batch job run on a schedule or on change events. The right side is a request handler that should never embed a document. The classic mistake blurs them: calling <code>VectorStoreIndex.from_documents(docs)</code> in server startup, which re-splits and re-embeds the whole corpus (about 3.5 million tokens for ours) on every deploy.</p>
+<p>With this picture every class has a home. Readers and node parsers are ingest; retrievers are query; an <em>index</em> is the thin object that knows which stores hold its nodes and hands you a retriever or query engine over them.</p>
+</section>
+
+<section data-label="Step 2: Documents, nodes, and what actually gets embedded">
+<p>A <strong>Document</strong> is text plus a metadata dict plus an id. A <strong>node</strong> (concretely a <code>TextNode</code>) is a slice of a Document's text with four more things attached:</p>
+<ul>
+<li>its own <code>id_</code>, a unique id for that chunk;</li>
+<li>a copy of the parent Document's metadata (plus anything added later);</li>
+<li><strong>relationships</strong>: a link to the source Document (exposed as <code>ref_doc_id</code>) and to the previous and next nodes, and, for hierarchical parsers, to parent and child nodes;</li>
+<li>two exclude lists, <code>excluded_embed_metadata_keys</code> and <code>excluded_llm_metadata_keys</code>.</li>
+</ul>
+<p>The exclude lists exist because the embedding model and the LLM see more than the chunk text. To embed a node, LlamaIndex writes one <code>key: value</code> line per non-excluded metadata key, a blank line, then the chunk text, and embeds that whole string; prompts are built the same way with the LLM exclude list. Print <code>node.get_content(metadata_mode=MetadataMode.EMBED)</code> (and <code>MetadataMode.LLM</code>) once on every new corpus to see exactly what each one gets.</p>
+<p>Why embed metadata? A chunk saying "up to 5 days may be carried over" does not say which country it is about; prefixing <code>country: DE</code> moves its vector toward questions about Germany or Berlin. But bookkeeping metadata (file paths, sizes, dates) moves the vector too, with noise repeated in every chunk of a file. Exclude it from the embedding and keep it for filtering and citations.</p>
+<div class="callout"><p><strong>Metadata does two different jobs.</strong> A filter (only chunks where <code>country</code> is DE or ALL) is a hard constraint inside the vector store. Embedded metadata only nudges similarity. The assistant needs both: the filter guarantees no US chunk appears; the embedded country ranks German chunks above the global one.</p></div>
+</section>
+
+<section data-label="Step 3: splitting, and why the chunk count went up 9%">
+<p>The default node parser, <code>SentenceSplitter</code>, splits text into sentences and packs whole sentences into chunks up to <code>chunk_size</code> tokens, repeating about <code>chunk_overlap</code> tokens at each boundary so a fact that straddles two chunks appears whole in at least one. We use <code>chunk_size=512</code> and <code>chunk_overlap=64</code>.</p>
+<p>Here is the detail people miss: the splitter is <em>metadata-aware</em>. Since the metadata string is embedded with the chunk, it subtracts the metadata's token length from the budget, so the text part of each chunk is smaller than <code>chunk_size</code>. It measures the <em>longer</em> of the two metadata strings (embed mode and LLM mode), so a key you excluded from the embedding still eats the budget if the LLM sees it. (If the metadata is longer than the chunk size, it raises an error rather than produce empty chunks.) The effect on our corpus, using the approximation \(n = \lceil (L - o) / (s - o) \rceil\) for a document of \(L\) tokens, text budget \(s\) and overlap \(o\):</p>
+<table>
+<thead><tr><th></th><th>Text budget \(s\)</th><th>Stride \(s - o\)</th><th>Chunks per handbook (7,200)</th><th>Chunks per wiki page (1,500)</th><th>Total chunks</th></tr></thead>
+<tbody>
+<tr><td>No metadata</td><td>512</td><td>448</td><td>\(\lceil 7136/448 \rceil = 16\)</td><td>\(\lceil 1436/448 \rceil = 4\)</td><td>6,800</td></tr>
+<tr><td>30 tokens of metadata</td><td>482</td><td>418</td><td>\(\lceil 7136/418 \rceil = 18\)</td><td>\(\lceil 1436/418 \rceil = 4\)</td><td>7,400</td></tr>
+</tbody>
+</table>
+<p>Thirty tokens of metadata produced 8.8% more chunks, vectors and embedding calls (the real splitter cuts at sentences, so actual counts land near these). The full embedding bill is about 3.55 million tokens: 2.91 million of text, 0.42 million of overlap (6,600 boundaries × 64) and 0.22 million of metadata (7,400 × 30). At an illustrative $0.02 per million tokens that is about seven cents: embedding cost is rarely the problem; time, duplicates and staleness are.</p>
+<p>Other parsers split Markdown and HTML on headings, cut where adjacent-sentence embeddings diverge (semantic splitting), or build the windows and hierarchies of Step 8. Choosing a chunk size is the subject of <a href="@@rag/chunking@@">Chunking</a>.</p>
+</section>
+
+<section data-label="Step 4: the ingestion pipeline and incremental updates">
+<p>An <code>IngestionPipeline</code> applies a list of transformations in order, for example <code>[SentenceSplitter(...), TitleExtractor(), embed_model]</code>. All share one signature, nodes in and nodes out: a splitter turns a Document into nodes, an extractor adds metadata, an embedding model fills each node's <code>embedding</code>. Steps can be reordered or removed independently. Two optional parts make it safe to run nightly.</p>
+<p><strong>The transformation cache</strong> stores each step's output under a hash of its input nodes plus the transformation's configuration. Same inputs and settings: read from cache. Change <code>chunk_size</code>: the hash changes and the cache correctly misses.</p>
+<p><strong>The docstore</strong>, attached together with a vector store, records a content hash per Document id. On the next run, for each incoming document:</p>
+<ol>
+<li>Id not seen before: process and insert it.</li>
+<li>Id seen, same hash: skip it entirely. No splitting, no embedding.</li>
+<li>Id seen, different hash: with the <em>upserts</em> strategy, delete that document's old nodes from the vector store (found through <code>ref_doc_id</code>), then process and insert the new version.</li>
+</ol>
+<p>That is the default strategy, <em>upserts</em>. There are two others: <em>duplicates only</em> skips any document whose hash was seen before, ignoring ids (it never deletes, so a changed document is added next to its old version), and <em>upserts and delete</em> also removes documents missing from the input, which you need when policies are retired. All of it rests on <strong>stable document ids</strong>. Documents built without ids get fresh random ones, so every run sees only "new" documents: nothing is skipped and nothing old is deleted.</p>
+<p>For the policy assistant (numbers from the model in the code section): the first run embeds 7,400 nodes. A daily refresh with 24 changed documents (9 handbooks, 15 wiki pages) re-embeds 9 × 18 + 15 × 4 = 222 nodes, 3% of the work, and the store still holds 7,400. The same refresh with random ids doubles the store to 14,800: every chunk is retrieved twice, and retired policy text stays retrievable next to the new text.</p>
+<p><strong>Extractors are where ingestion gets expensive.</strong> <code>TitleExtractor</code>, <code>SummaryExtractor</code> and <code>QuestionsAnsweredExtractor</code> call an LLM per node or per document. One call per node is 7,400 calls; at an illustrative 2 seconds each with 8 in flight, about 31 minutes per full run. Add them when a measured retrieval gain justifies it. Scheduling, change detection and PII handling belong to <a href="@@rag/document-ingestion@@">Document ingestion</a>.</p>
+</section>
+
+<section data-label="Step 5: storage, where the vectors and the text live">
+<p>An index does not hold data; its <code>StorageContext</code> does. There are three stores, and knowing which holds what explains most persistence bugs:</p>
+<table>
+<thead><tr><th>Store</th><th>Holds</th><th>Default (in memory)</th><th>Production choice</th></tr></thead>
+<tbody>
+<tr><td>Vector store</td><td>Node embeddings, usually the node text and metadata too</td><td><code>SimpleVectorStore</code>: a dict, brute-force search</td><td>pgvector, Qdrant, Pinecone, Weaviate, Chroma and others via integration packages</td></tr>
+<tr><td>Docstore</td><td>Documents or nodes by id, plus ingestion hashes</td><td><code>SimpleDocumentStore</code></td><td>Redis, Postgres, MongoDB, Firestore docstores</td></tr>
+<tr><td>Index store</td><td>Small bookkeeping: which node ids belong to which index</td><td><code>SimpleIndexStore</code></td><td>Same backends as the docstore</td></tr>
+</tbody>
+</table>
+<p>With the in-memory defaults, <code>storage_context.persist("./storage")</code> writes each store as JSON and <code>load_index_from_storage</code> reads it back: right for a notebook, wrong for production. Vectors become JSON numbers, roughly 33 KB per 1,536-dimension vector, so our 7,400 nodes are about 250 MB of JSON parsed at every process start (45 MB as raw float32). Brute-force search, 7,400 × 1,536 ≈ 11.4 million multiply-adds per query, takes milliseconds, so speed is not the issue; durability, concurrent writers and several processes sharing one index are.</p>
+<p>With an external vector database the index is a thin client. Most integrations store node text and metadata in the row beside the vector, so querying needs no docstore, and <code>VectorStoreIndex.from_vector_store(vector_store)</code> attaches without re-embedding. The ingestion docstore (the hashes) still needs persistent storage, ideally the same database. For our app: one Postgres table of 7,400 rows, an HNSW index on the vector column, and metadata in a JSONB column that the <code>country</code> filter reads (<a href="@@tech/pgvector@@">pgvector</a>).</p>
+<div class="callout warn"><p><strong>The embedding model is part of the index.</strong> Vectors are only comparable with vectors from the same model. When you attach to a stored index you must configure the same embedding model you ingested with. If you forget, LlamaIndex falls back to its default embedding model, an OpenAI model that also produces 1,536-dimensional vectors. If the dimensions differ you get an error; if they match, as they do here, you get no error and confident nonsense. Put the model name in the table or collection name (<code>policy_chunks_e3small_v1</code>) so a mismatch is visible.</p></div>
+</section>
+
+<section data-label="Step 6: the query path, retriever to response">
+<p><code>index.as_query_engine()</code> builds a <code>RetrieverQueryEngine</code> from three parts, and <code>engine.query(q)</code> runs them in order:</p>
+<ol>
+<li><strong>Retriever.</strong> <code>VectorIndexRetriever</code> embeds the question with the configured embedding model and asks the vector store for the <code>similarity_top_k</code> nearest nodes, passing any <code>MetadataFilters</code> along. With a database backend the filter is translated into the database's own filter (a SQL <code>WHERE</code> for pgvector) and runs inside the search, so filtered-out nodes never come back. Result: a list of <code>NodeWithScore</code>. One database-level catch: an approximate index such as pgvector's HNSW collects a fixed number of candidates (40 by default) and then applies the <code>WHERE</code> clause, so a selective filter can return fewer than <code>similarity_top_k</code> rows. Raise <code>hnsw.ef_search</code> or enable iterative scans (pgvector 0.8 and later) when filters are tight.</li>
+<li><strong>Node postprocessors</strong>, in list order: drop nodes below a score threshold, rerank with a cross-encoder (<a href="@@rag/reranking@@">Reranking</a>), swap a sentence for its surrounding window, and so on.</li>
+<li><strong>Response synthesizer.</strong> Formats the surviving nodes into prompts (using the LLM metadata mode), calls the LLM according to the response mode, and returns a <code>Response</code> with <code>.response</code> (the text) and <code>.source_nodes</code> (exactly what the LLM saw, with scores).</li>
+</ol>
+<p><strong>The default <code>similarity_top_k</code> is 2.</strong> For our question that is fatal in a quiet way. In the toy model in the code section, with the filter <code>country IN (DE, ALL)</code>, the cosine scores are 0.978 for the German carry-over chunk, 0.965 for the global "expires 31 December" page and 0.924 for the German approval-step chunk. Top-2 returns the first two: the answer says "5 days until 31 March" next to a conflicting global rule and never mentions approval. Top-3 includes the approval chunk. Always set <code>similarity_top_k</code> explicitly, usually somewhere between 5 and 20, followed by a reranker if you retrieve wide.</p>
+<p>Scores are raw similarities on the embedding model's own scale. A <code>SimilarityPostprocessor(similarity_cutoff=0.7)</code> copied from a tutorial can drop every node for a model whose good matches score 0.4 to 0.6, and the synthesizer then answers from nothing. Derive cutoffs from your own labelled queries, or use a reranker.</p>
+<p><code>source_nodes</code> drives citations, and it is what a retrieval eval checks: is the expected document among them for each golden question? That separates "retrieval missed" from "the LLM ignored good context" (<a href="@@production/evals@@">Evals</a>).</p>
+</section>
+
+<section data-label="Step 7: response modes and what they cost">
+<p>The synthesizer's <code>response_mode</code> decides how many LLM calls one query makes. The three that matter:</p>
+<ul>
+<li><strong><code>refine</code></strong>: answer from the first node, then for each further node send "here is the existing answer, here is more context, refine it". One call per node, strictly sequential, because each call needs the previous answer.</li>
+<li><strong><code>compact</code></strong> (the default): first concatenate all node texts and repack them into as few prompts as fit the model's context window, then refine across those packs. If everything fits, it is one call.</li>
+<li><strong><code>tree_summarize</code></strong>: repack the same way, answer each pack independently, then treat the answers as new text and summarise them together, recursively, until one answer remains.</li>
+</ul>
+<p>For our question with six 512-token nodes, a 250-token template and a 150-token answer, using illustrative speeds (0.3 s fixed overhead per call, prefill 10,000 tokens/s, decode 80 tokens/s):</p>
+<table>
+<thead><tr><th>Mode</th><th>LLM calls</th><th>Input tokens</th><th>Output tokens</th><th>Latency</th></tr></thead>
+<tbody>
+<tr><td>compact</td><td>1</td><td>3,342</td><td>150</td><td>≈ 2.5 s</td></tr>
+<tr><td>refine</td><td>6, sequential</td><td>5,442</td><td>900</td><td>≈ 13.6 s</td></tr>
+<tr><td>tree_summarize</td><td>1</td><td>3,342</td><td>150</td><td>≈ 2.5 s</td></tr>
+</tbody>
+</table>
+<p>Refine is slower by the number of nodes because decode dominates each call and calls cannot overlap. It also drifts: each step rewrites the answer, and a weak late chunk can talk the model out of a correct one. Compact with a reranked top-k is the default for question answering.</p>
+<p>The modes diverge when the context does not fit, as in "summarise the whole Germany handbook". It is one of the longest handbooks, 18,000 tokens rather than the 7,200 average, so it is 43 nodes and 20,688 tokens once overlap is counted (2,688 tokens are repeated). With an 8,192-token window minus 1,000 reserved for the answer and 300 for the template, each pack holds 6,892 tokens:</p>
+<table>
+<thead><tr><th>Mode</th><th>Calls</th><th>Sequential rounds</th></tr></thead>
+<tbody>
+<tr><td>refine</td><td>43</td><td>43</td></tr>
+<tr><td>compact</td><td>\(\lceil 20688 / 6892 \rceil = 4\)</td><td>4</td></tr>
+<tr><td>tree_summarize</td><td>4 pack summaries + 1 combine = 5</td><td>2</td></tr>
+</tbody>
+</table>
+<p>Tree summarize makes one more call than compact but can finish in two rounds instead of four, and every pack gets equal weight rather than the last having the final word. The two rounds need concurrency switched on: pass <code>use_async=True</code> (or call <code>aquery</code>). With the synchronous default the four pack calls run one after another, so it takes five sequential calls, still with the equal weighting. It is the usual mode over a <code>SummaryIndex</code>, an index that returns all its nodes, for whole-document questions.</p>
+</section>
+
+<section data-label="Step 8: retrieval shapes beyond plain top-k">
+<p>Most of LlamaIndex's surface area is retrieval patterns built from the same parts. Three are worth knowing by mechanism.</p>
+<p><strong>Sentence window.</strong> Small chunks embed precisely; large chunks give the LLM context. The sentence-window parser makes each node one sentence and keeps the surrounding sentences (three either side by default) in a <code>window</code> metadata key excluded from the embedding. A <code>MetadataReplacementPostProcessor</code> swaps each hit for its window: a 25-token sentence is matched, about 175 tokens reach the LLM.</p>
+<p><strong>Auto-merging.</strong> A hierarchical parser splits at several sizes (say 2,048, 512, 128), linked as parents and children; only leaves are embedded. If more than a ratio (0.5 by default) of one parent's children are retrieved, they are replaced by the parent: three of four 128-token leaves gives \(0.75 &gt; 0.5\), so 384 tokens of fragments become one 512-token passage. Parents live in the docstore.</p>
+<p><strong>Routing and decomposition.</strong> A <code>RouterQueryEngine</code> has an LLM pick one engine by description (vector engine for specifics, summary engine for "summarise X"), adding one call before retrieval. A <code>SubQuestionQueryEngine</code> turns "compare carry-over in Germany and the US" into two sub-questions: 1 + 2 + 1 = 4 LLM calls. Measure both against one well-filtered retrieval before adopting them. Hybrid retrieval (<a href="@@rag/hybrid-search@@">Hybrid search</a>) and graph indexes (<a href="@@rag/graphrag@@">GraphRAG</a>) plug into the same retriever slot.</p>
+</section>
+
+<section data-label="Step 9: workflows and agents, the orchestration layer">
+<p>Query engines are fixed pipelines. For loops, branches and tool use, LlamaIndex has <strong>Workflows</strong>: methods marked as steps, each declaring by type annotation the event it consumes and the event it emits. A run starts with a <code>StartEvent</code> and ends when a step returns a <code>StopEvent</code>; it is an async, event-driven state machine, and the library's agents (<code>FunctionAgent</code>, <code>ReActAgent</code>, <code>AgentWorkflow</code>) are built on it. Any query engine becomes an agent tool with <code>QueryEngineTool</code>. <a href="@@tech/langgraph@@">LangGraph</a> makes the same explicit-state trade-off with more emphasis on checkpoints and human approval, and a common split is LlamaIndex retrieval exposed as a tool inside whatever runs the <a href="@@agents/agent-loop@@">agent loop</a>; see <a href="@@tech/frameworks@@">Choosing an agent framework</a>.</p>
+</section>
+
+<section data-label="A worked example: one request, every hop">
+<p>The production configuration for the policy assistant: pgvector store, filter <code>country IN (DE, ALL)</code> derived from the user's profile (not from the question text), retrieve 20, rerank to 6, compact synthesis. Latencies are illustrative.</p>
+<table>
+<thead><tr><th>Hop</th><th>What happens</th><th>Size</th><th>Time</th></tr></thead>
+<tbody>
+<tr><td>Embed question</td><td>One embedding call, same model as ingest</td><td>~20 tokens</td><td>~80 ms</td></tr>
+<tr><td>Vector search</td><td>HNSW over 7,400 rows with the country filter in SQL</td><td>top 20 nodes</td><td>~15 ms</td></tr>
+<tr><td>Rerank</td><td>Cross-encoder scores 20 (question, node) pairs, keeps 6</td><td>6 nodes</td><td>~120 ms</td></tr>
+<tr><td>Synthesize</td><td>compact: one prompt of 3,342 tokens, 150-token answer</td><td>1 LLM call</td><td>~2.5 s</td></tr>
+<tr><td>Return</td><td>Answer plus <code>source_nodes</code> for citations and logging</td><td>6 citations</td><td>~0</td></tr>
+</tbody>
+</table>
+<p>About 2.7 seconds end to end, over 90% of it in the LLM call; framework overhead is milliseconds. The answer cites the German carry-over and approval chunks, and the prompt states that country policy overrides global policy, since the global page may also be retrieved.</p>
+<p>Each hop fails visibly somewhere else: the wrong embedding model gives irrelevant chunks, a missing filter lets the US rule in, top-k of 2 drops the approval step, a high cutoff empties the context, refine multiplies latency by six. Logging node ids and scores per request is how you tell them apart (<a href="@@production/observability@@">Observability</a>).</p>
+</section>
+
+<section data-label="Choosing LlamaIndex">
+<table>
+<thead><tr><th>Situation</th><th>Choice</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Many sources and formats, incremental re-indexing, citations</td><td>LlamaIndex for ingestion and retrieval</td><td>Readers, parsers, the pipeline's hash-based upserts and <code>source_nodes</code> are exactly this job.</td></tr>
+<tr><td>Advanced retrieval experiments (windows, auto-merging, routing, sub-questions)</td><td>LlamaIndex</td><td>Each is a few lines over the same node model, so you can measure them quickly.</td></tr>
+<tr><td>One source, one vector table, one prompt</td><td>Plain code, or the database client directly</td><td>Fifty lines you fully understand beat a dependency tree; see <a href="@@rag/rag-pipeline@@">The RAG pipeline</a>.</td></tr>
+<tr><td>App is mostly glue across many model providers and tools</td><td><a href="@@tech/langchain@@">LangChain</a></td><td>Its common interface is aimed at composing calls, not at managing documents.</td></tr>
+<tr><td>Long-running, stateful agent with approvals and resumption</td><td><a href="@@tech/langgraph@@">LangGraph</a>, with LlamaIndex retrieval as a tool</td><td>Checkpointed state and interrupts are its core; retrieval is one node.</td></tr>
+</tbody>
+</table>
+<p>Costs to weigh: a core package plus many separately versioned integration packages, and APIs that have moved (<code>ServiceContext</code> replaced by <code>Settings</code>, agents rebuilt on workflows), so pin versions and wrap what you use behind your own small interface. Defaults suit a demo, not production. The value is real when ingestion complexity dominates; otherwise you carry abstraction you do not use.</p>
+</section>
+
+<section data-label="In code: the real API, and a model of it">
+<p>The policy assistant's ingestion job and the query engine of the worked example (filter, retrieve 20, rerank to 6, compact), written against the documented 2025 API:</p>
+<pre data-lang="python"># Not run here: needs llama-index-core, the OpenAI and Postgres integration packages, sentence-transformers, API keys and a database.
+# Written against LlamaIndex's documented Python API (2025).
+import os
+from llama_index.core import SimpleDirectoryReader, VectorStoreIndex
+from llama_index.core.ingestion import IngestionPipeline, DocstoreStrategy
+from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.postprocessor import SentenceTransformerRerank
+from llama_index.core.storage.docstore import SimpleDocumentStore
+from llama_index.core.vector_stores import MetadataFilters, MetadataFilter, FilterOperator
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.llms.openai import OpenAI
+from llama_index.vector_stores.postgres import PGVectorStore
+
+embed = OpenAIEmbedding(model="text-embedding-3-small")    # the SAME model at ingest and at query time
+llm = OpenAI(model="gpt-4o-mini", temperature=0.1)
+
+def file_meta(path):                                       # reader hook: file path -&gt; metadata dict
+    return {"country": "DE" if "/de/" in path else "ALL", "file_name": os.path.basename(path)}
+
+docs = SimpleDirectoryReader("./policies", recursive=True, filename_as_id=True,   # stable doc ids
+                             file_metadata=file_meta).load_data()
+for d in docs:                                             # file names are bookkeeping: cite them, do not embed them
+    d.excluded_embed_metadata_keys = ["file_name"]
+
+vector_store = PGVectorStore.from_params(
+    host="localhost", port="5432", database="kb", user="app", password=os.environ["PGPASSWORD"],
+    table_name="policy_chunks_e3small_v1", embed_dim=1536,   # model name in the table name
+    hnsw_kwargs={"hnsw_m": 16, "hnsw_ef_construction": 64,
+                 "hnsw_ef_search": 40, "hnsw_dist_method": "vector_cosine_ops"})
+
+pipeline = IngestionPipeline(
+    transformations=[SentenceSplitter(chunk_size=512, chunk_overlap=64), embed],
+    docstore=SimpleDocumentStore(),                        # doc_id -&gt; hash; Redis/Postgres docstore in prod
+    vector_store=vector_store,
+    docstore_strategy=DocstoreStrategy.UPSERTS)
+if os.path.exists("./pipeline_state"):
+    pipeline.load("./pipeline_state")
+pipeline.run(documents=docs)                               # embeds only new or changed documents
+pipeline.persist("./pipeline_state")
+
+index = VectorStoreIndex.from_vector_store(vector_store, embed_model=embed)   # no re-embedding
+rerank = SentenceTransformerRerank(model="cross-encoder/ms-marco-MiniLM-L-6-v2", top_n=6)
+engine = index.as_query_engine(
+    llm=llm, similarity_top_k=20, response_mode="compact", # never rely on the default top_k of 2
+    node_postprocessors=[rerank],                          # retrieve 20, keep the best 6
+    filters=MetadataFilters(filters=[                      # countries come from the user's profile
+        MetadataFilter(key="country", value=["DE", "ALL"], operator=FilterOperator.IN)]))
+
+resp = engine.query("I'm in the Berlin office. Can I carry unused vacation days into next year?")
+print(resp.response)
+for n in resp.source_nodes:                                # citations and retrieval evals start here
+    print(round(n.score, 3), n.node.metadata["file_name"], n.node.ref_doc_id)</pre>
+<p>The mechanisms in plain Python, runnable anywhere: metadata-aware splitting, the docstore's hash-based upserts (and what random ids do), filter-then-rank retrieval, and LLM call counts per response mode.</p>
+<pre data-lang="python">import hashlib, math, uuid
+import numpy as np
+
+# --- 1. metadata-aware splitting (tokens modelled as list items) ---
+def split(n_tokens, meta_len, size=512, overlap=64):
+    eff = size - meta_len                     # metadata is embedded too, so it eats the budget
+    if eff &lt;= overlap:
+        raise ValueError("metadata leaves no room for text")
+    stride = eff - overlap
+    return [(s, min(s + eff, n_tokens)) for s in range(0, max(1, n_tokens - overlap), stride)]
+
+corpus = {f"handbook-{i:03d}.pdf": 7200 for i in range(300)}
+corpus.update({f"wiki-{i:03d}": 1500 for i in range(500)})
+for meta in (0, 30):
+    print("metadata", meta, "-&gt; chunks", sum(len(split(n, meta)) for n in corpus.values()))
+
+# --- 2. ingestion with a docstore: stable ids + content hash = incremental updates ---
+class Pipeline:
+    def __init__(self):
+        self.docstore, self.vectors, self.embed_calls = {}, {}, 0   # doc_id -&gt; hash ; node_id -&gt; ref_doc_id
+    def run(self, docs):                                            # docs: {doc_id: (text_version, n_tokens)}
+        for doc_id, (version, n) in docs.items():
+            h = hashlib.sha256(f"{doc_id}:{version}".encode()).hexdigest()
+            if self.docstore.get(doc_id) == h:
+                continue                                            # unchanged: skip, no embedding
+            self.vectors = {k: v for k, v in self.vectors.items() if v != doc_id}  # upsert: drop old nodes
+            for j, _ in enumerate(split(n, 30)):
+                self.vectors[f"{doc_id}#{j}"] = doc_id
+                self.embed_calls += 1
+            self.docstore[doc_id] = h
+
+docs = {d: (1, n) for d, n in corpus.items()}
+p = Pipeline(); p.run(docs); first = p.embed_calls
+changed = [f"handbook-{i:03d}.pdf" for i in range(9)] + [f"wiki-{i:03d}" for i in range(15)]
+for d in changed:
+    docs[d] = (2, docs[d][1])
+p.run(docs)
+print("first run embeds", first, "| refresh embeds", p.embed_calls - first, "| nodes stored", len(p.vectors))
+
+q = Pipeline(); q.run(docs)
+q.run({str(uuid.uuid4()): v for v in docs.values()})              # random ids every run
+print("random ids, second run -&gt; nodes stored", len(q.vectors))
+
+# --- 3. retrieve: filter first, then top-k by cosine ---
+nodes = [  # (text, country, vector)
+    ("DE: up to 5 unused days carry over to 31 March", "DE", [0.9, 0.3, 0.1]),
+    ("Global: unused vacation expires 31 December",     "ALL", [0.8, 0.5, 0.1]),
+    ("US: PTO does not carry over",                     "US", [0.85, 0.4, 0.1]),
+    ("DE: carry-over needs manager approval in HR tool", "DE", [0.7, 0.2, 0.6]),
+]
+query = np.array([0.88, 0.35, 0.3])
+def retrieve(k, countries):
+    rows = [(t, np.dot(v, query) / (np.linalg.norm(v) * np.linalg.norm(query)))
+            for t, c, v in nodes if c in countries]
+    return [(t[:24], round(float(s), 3)) for t, s in sorted(rows, key=lambda r: -r[1])[:k]]
+print("top-2:", retrieve(2, {"DE", "ALL"}))
+print("top-3:", retrieve(3, {"DE", "ALL"}))
+
+# --- 4. how many LLM calls each response mode makes ---
+def llm_calls(chunk_tokens, mode, usable=6892, summary_tokens=300):
+    if mode == "refine":
+        return len(chunk_tokens), len(chunk_tokens)                 # (calls, sequential rounds)
+    packs = math.ceil(sum(chunk_tokens) / usable)                   # compact repacks text to fill the window
+    if mode == "compact":
+        return packs, packs                                         # refine across packs
+    calls, rounds, level = 0, 0, packs                              # tree_summarize
+    while True:
+        calls += level; rounds += 1
+        if level == 1:
+            return calls, rounds
+        level = math.ceil(level * summary_tokens / usable)
+
+top6 = [512] * 6
+handbook = [e - s for s, e in split(18000, 30)]
+print("handbook nodes", len(handbook), "tokens", sum(handbook))
+for mode in ("compact", "refine", "tree_summarize"):
+    print(f"{mode:15s} top-6 {llm_calls(top6, mode)}  whole handbook {llm_calls(handbook, mode)}")</pre>
+<p>It prints 6,800 and 7,400 chunks (Step 3); 7,400 nodes on the first run, 222 re-embedded on refresh with the store still at 7,400, and 14,800 when ids are random (Step 4); top-2 missing the approval chunk that top-3 finds (Step 6); and for the response modes, 1 call for compact and tree summarize versus 6 for refine on the top-6 query, then 4, 43 and 5 calls for the whole 43-node handbook, in 4, 43 and 2 sequential rounds, the last assuming tree summarize runs its pack calls concurrently (Step 7).</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"LlamaIndex is a vector database."</strong> It is a library that talks to one. Its built-in <code>SimpleVectorStore</code> is an in-memory dict saved as JSON; production data belongs in a real store that LlamaIndex attaches to.</li>
+<li><strong>"Call <code>from_documents</code> at startup."</strong> That re-embeds the corpus every deploy. Ingest in a separate job with an <code>IngestionPipeline</code>, and have the server attach with <code>from_vector_store</code>.</li>
+<li><strong>"Re-running ingestion is safe."</strong> Only with stable document ids and a persisted docstore. Random ids add a full copy of the corpus on every run and leave retired text retrievable.</li>
+<li><strong>"The defaults are sensible."</strong> Default top-k is 2, default stores are in memory, and unset models fall back to library defaults. Set top-k, stores, LLM and embedding model explicitly.</li>
+<li><strong>"Metadata is only for filtering."</strong> Non-excluded metadata is embedded and sent to the LLM, and it shrinks each chunk's text budget. Check <code>get_content</code> in both metadata modes and exclude bookkeeping keys.</li>
+<li><strong>"Refine is more thorough, so it is better."</strong> It makes one sequential call per node, so latency scales with top-k, and late weak chunks can corrupt a good answer. Use compact for Q&amp;A and tree summarize for summaries.</li>
+<li><strong>"<code>Settings</code> is harmless config."</strong> It is global mutable state. Two tenants with different models, or a test that sets a mock LLM, will leak into each other. Pass <code>llm</code> and <code>embed_model</code> explicitly in shared code.</li>
+<li><strong>"A similarity cutoff of 0.7 is standard."</strong> Score scales differ by embedding model. A borrowed cutoff can drop every node; derive thresholds from your own labelled queries.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>With <code>chunk_size=512</code>, <code>chunk_overlap=64</code> and 60 tokens of embedded metadata, roughly how many chunks does a 10,000-token document produce, and how many without metadata?</summary><div class="answer">Text budget 452, stride 388: \(\lceil 9936 / 388 \rceil = 26\). Without metadata, stride 448: \(\lceil 9936 / 448 \rceil = 23\). Three extra chunks, 13% more vectors, for metadata that may not help retrieval.</div></details>
+<details><summary>After a week of nightly ingestion, answers cite the same paragraph several times, sometimes next to an outdated version. Why, and what do you change?</summary><div class="answer">Documents get new ids each run (or the docstore is not persisted), so every document looks new: nothing is skipped and old nodes are never deleted. Use stable ids (source path, page id), persist the docstore in a shared database, use the upserts (or upserts-and-delete) strategy, and rebuild the table once to clear duplicates.</div></details>
+<details><summary>A query retrieves 10 nodes of 400 tokens; template 270 tokens, answer 150. With 0.3 s overhead per call, 10,000 tokens/s prefill and 80 tokens/s decode, estimate compact versus refine latency.</summary><div class="answer">Compact: one call, about 4,270 input tokens: \(0.3 + 0.43 + 1.875 \approx 2.6\) s. Refine: ten sequential calls of about \(0.3 + 0.08 + 1.875 \approx 2.26\) s each, about 22.6 s. Decode dominates and refine cannot overlap its calls.</div></details>
+<details><summary>Users get "I could not find that in the policies" for covered questions, with empty <code>source_nodes</code>, though retrieval works in a notebook. Where do you look first?</summary><div class="answer">Something emptying the list after retrieval: a similarity cutoff above the embedding model's score range, or a filter value that does not match stored metadata ("de" versus "DE"). Log node scores before and after each postprocessor and compare filter values with stored ones.</div></details>
+<details><summary>You switch to a newer embedding model with the same dimension and redeploy only the query service. What happens, and how should it be done?</summary><div class="answer">Queries land in a different vector space from the stored vectors. No error, because dimensions match, but similarities are meaningless. Ingest into a new table named after the new model, check recall on the golden set, switch store and model together, keep the old table for rollback.</div></details>
+<details><summary>A team building a single-source FAQ bot (one Postgres table, one prompt) asks whether to adopt LlamaIndex. What do you advise?</summary><div class="answer">Not yet. Its value is multi-source ingestion, incremental updates and retrieval patterns; this app is one embed call, one SQL query and one LLM call, about fifty lines they fully control. Revisit when sources multiply or they want windowed or hierarchical retrieval.</div></details>
+<details><summary>Why does <code>tree_summarize</code> finish a 4-pack summary in fewer sequential rounds than <code>compact</code>, despite more calls?</summary><div class="answer">Compact refines across packs, so each of its 4 calls waits for the previous answer: 4 rounds. Tree summarize answers the 4 packs independently, so with <code>use_async=True</code> (or <code>aquery</code>) they run in parallel, then combines them in one call: 5 calls in 2 rounds, and every pack gets equal weight. With the synchronous default the pack calls run one by one, so the round advantage disappears.</div></details>
+</section>
