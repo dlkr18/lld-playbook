@@ -1,6 +1,6 @@
 # elevator - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/elevator/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py elevator`.
+> Generated from `src/main/java/com/you/lld/problems/elevator/` on 2026-11-09. Re-run `python3 scripts/generate-code-md.py elevator`.
 
 ## Project Structure (12 files)
 
@@ -189,6 +189,10 @@ public class Elevator {
     }
     
     public void moveToNextFloor() {
+        // A request for the floor the car is on is served without moving.
+        if (destinationFloors.remove(currentFloor)) {
+            System.out.println("  [Elevator " + id + "] Already at floor " + currentFloor);
+        }
         if (destinationFloors.isEmpty()) {
             status = ElevatorStatus.IDLE;
             direction = Direction.IDLE;

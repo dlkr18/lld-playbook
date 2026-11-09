@@ -180,6 +180,10 @@ public class EnhancedBookingService implements BookingService {
      * Confirm a PENDING booking.
      *
      * Uses synchronized(booking) for per-booking locking (not global).
+     * Before confirming, re-checks that the caller still holds every seat lock
+     * (it may have expired after createBooking) and claims each seat with
+     * Set.add, which is atomic: if another booking already claimed a seat,
+     * the claims are rolled back and nothing is confirmed.
      * State pattern validates the transition; this method handles side effects:
      *   - Mark seats as permanently booked
      *   - Release the temporary locks
@@ -188,19 +192,38 @@ public class EnhancedBookingService implements BookingService {
     @Override
     public boolean confirmBooking(String bookingId, Payment payment) {
         Booking booking = getBooking(bookingId);
+        String showId = booking.getShowId();
+        List<String> seatIds = booking.getSeats().stream()
+            .map(Seat::getId).collect(Collectors.toList());
 
         synchronized (booking) {
-            booking.confirm(payment);
-
-            Set<String> booked = bookedSeats.computeIfAbsent(
-                booking.getShowId(), k -> ConcurrentHashMap.newKeySet());
-            for (Seat seat : booking.getSeats()) {
-                booked.add(seat.getId());
+            if (booking.getStatus() != BookingStatus.PENDING) {
+                booking.confirm(payment); // State pattern rejects: already confirmed / cancelled / expired
+            }
+            for (String seatId : seatIds) {
+                if (!seatLockManager.isLockedByUser(showId, seatId, booking.getUserId())) {
+                    throw new SeatNotAvailableException(
+                        "Seat lock for " + seatId + " expired or was taken -- booking not confirmed");
+                }
             }
 
-            List<String> seatIds = booking.getSeats().stream()
-                .map(Seat::getId).collect(Collectors.toList());
-            seatLockManager.unlockSeats(booking.getShowId(), seatIds, booking.getUserId());
+            Set<String> booked = bookedSeats.computeIfAbsent(showId, k -> ConcurrentHashMap.newKeySet());
+            List<String> claimed = new ArrayList<>();
+            for (String seatId : seatIds) {
+                if (!booked.add(seatId)) {
+                    booked.removeAll(claimed);
+                    throw new SeatNotAvailableException("Seat already booked: " + seatId);
+                }
+                claimed.add(seatId);
+            }
+
+            try {
+                booking.confirm(payment);
+            } catch (RuntimeException e) {
+                booked.removeAll(claimed);
+                throw e;
+            }
+            seatLockManager.unlockSeats(showId, seatIds, booking.getUserId());
         }
 
         System.out.println("[BookingService] Booking confirmed: " + bookingId);

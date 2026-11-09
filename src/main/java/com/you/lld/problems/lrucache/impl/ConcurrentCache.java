@@ -54,9 +54,24 @@ public final class ConcurrentCache<K, V> implements Cache<K, V> {
         try { return delegate.size(); } finally { lock.unlock(); }
     }
 
-    @Override public int capacity()     { return delegate.capacity(); }
-    @Override public CacheStats stats() { return delegate.stats(); }
-    @Override public void addListener(CacheEventListener<K, V> l)    { delegate.addListener(l); }
-    @Override public void removeListener(CacheEventListener<K, V> l) { delegate.removeListener(l); }
+    @Override public int capacity() { return delegate.capacity(); }
+
+    // stats() reads counters that put/get mutate, and the delegate's listener list is
+    // iterated during put/get: both need the same lock, or a concurrent addListener
+    // throws ConcurrentModificationException in the writer.
+    @Override public CacheStats stats() {
+        lock.lock();
+        try { return delegate.stats(); } finally { lock.unlock(); }
+    }
+
+    @Override public void addListener(CacheEventListener<K, V> l) {
+        lock.lock();
+        try { delegate.addListener(l); } finally { lock.unlock(); }
+    }
+
+    @Override public void removeListener(CacheEventListener<K, V> l) {
+        lock.lock();
+        try { delegate.removeListener(l); } finally { lock.unlock(); }
+    }
     @Override public String toString() { return "Concurrent(" + delegate + ")"; }
 }

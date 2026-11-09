@@ -36,12 +36,12 @@
 <!-- HERO -->
 <div class="hero">
   <h1>Movie Booking System <span>// BookMyShow</span></h1>
-  <p>SDE3-level low-level design with per-seat locking, Strategy pricing, Observer notifications, and concurrent booking safety. 23 files, production-ready concurrency.</p>
+  <p>SDE3-level low-level design with per-seat locking, Strategy pricing, Observer notifications, and concurrent booking safety. 38 files, production-ready concurrency.</p>
   <div class="tags">
     <span class="tag">Per-Seat Locking</span>
     <span class="tag blue">Strategy Pattern</span>
     <span class="tag green">Observer Pattern</span>
-    <span class="tag pink">Singleton Pattern</span>
+    <span class="tag pink">State Pattern</span>
     <span class="tag purple">ConcurrentHashMap</span>
   </div>
 </div>
@@ -94,7 +94,7 @@
       <tr>
         <td><span class="inline-code">Screen</span></td>
         <td>Entity</td>
-        <td>id, name, theaterId, List&lt;Seat&gt;</td>
+        <td>id, name, theaterId, capacity, List&lt;Seat&gt;</td>
       </tr>
       <tr>
         <td><span class="inline-code">Show</span></td>
@@ -109,7 +109,7 @@
       <tr>
         <td><span class="inline-code">Booking</span></td>
         <td>Entity</td>
-        <td>id, userId, showId, List&lt;Seat&gt;, totalAmount, <strong>status: BookingStatus</strong>, payment, bookingTime</td>
+        <td>id, userId, showId, List&lt;Seat&gt;, totalAmount, <strong>state: BookingState</strong> (getStatus() &rarr; BookingStatus), payment, bookingTime, observers</td>
       </tr>
       <tr>
         <td><span class="inline-code">Payment</span></td>
@@ -145,27 +145,27 @@
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
     <div class="card highlight">
       <h3 style="color:var(--accent);margin-top:0;">Strategy Pattern</h3>
-      <p>Different <strong>payment methods</strong> (Card, UPI, Wallet) and <strong>pricing strategies</strong>. Easy to add new payment gateways without changing booking logic.</p>
+      <p><strong>PricingStrategy</strong> (Simple / Dynamic) and <strong>NotificationStrategy</strong> (Email / SMS) are injected into <span class="inline-code">EnhancedBookingService</span>. Easy to add new pricing models or channels without changing booking logic.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent2);">
       <h3 style="color:var(--accent2);margin-top:0;">Observer Pattern</h3>
-      <p>Notify users on <strong>booking confirmation</strong>, cancellation, payment status. Decoupled notification system &mdash; swap email for SMS or push without touching booking code.</p>
+      <p><span class="inline-code">BookingNotifier</span> (a <span class="inline-code">BookingObserver</span>) notifies users on <strong>booking confirmation</strong>, cancellation, expiry. Decoupled notification system &mdash; swap email for SMS or push without touching booking code.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent3);">
       <h3 style="color:var(--accent3);margin-top:0;">Singleton Pattern</h3>
-      <p><strong>SeatLockManager</strong> &mdash; single point of lock coordination across all shows. Ensures consistent lock state and prevents split-brain locking scenarios.</p>
+      <p><strong>Booking states</strong> are stateless singletons (<span class="inline-code">PendingState.INSTANCE</span>, <span class="inline-code">ConfirmedState.INSTANCE</span>, &hellip;). All mutable data lives on <span class="inline-code">Booking</span>, so one instance per state is shared safely. (<span class="inline-code">SeatLockManager</span> is a plain instance owned by the service, not a singleton.)</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent4);">
-      <h3 style="color:var(--accent4);margin-top:0;">Factory Pattern</h3>
-      <p>Create different <strong>seat types</strong> with preconfigured base prices. Centralized seat creation logic keeps pricing consistent across theaters.</p>
+      <h3 style="color:var(--accent4);margin-top:0;">Composite Pattern</h3>
+      <p><strong>MultiChannelNotificationStrategy</strong> is itself a <span class="inline-code">NotificationStrategy</span> that fans out to a list of channels (<span class="inline-code">addChannel</span>). The service sees one strategy either way.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent5);">
-      <h3 style="color:var(--accent5);margin-top:0;">Template Method</h3>
-      <p>Booking flow with hooks &mdash; <strong>validate &rarr; lock &rarr; pay &rarr; confirm</strong>. Subclasses override individual steps (e.g., VIP booking with lounge access).</p>
+      <h3 style="color:var(--accent5);margin-top:0;">State Pattern</h3>
+      <p><span class="inline-code">Booking</span> delegates <strong>confirm / cancel / expire</strong> to its <span class="inline-code">BookingState</span>. Each state returns the next state or throws <span class="inline-code">IllegalStateException</span> on an illegal move.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--text);">
-      <h3 style="color:var(--heading);margin-top:0;">Repository Pattern</h3>
-      <p>Data access layer abstracts <strong>ConcurrentHashMap</strong> stores. In production, swap for JPA/Hibernate repositories with zero business logic changes.</p>
+      <h3 style="color:var(--heading);margin-top:0;">Cache-Aside</h3>
+      <p><strong>MovieCache</strong> (LRU + TTL) sits in front of the <strong>ConcurrentHashMap</strong> movie store. <span class="inline-code">getMovieById</span> checks the cache, falls back to the map, then populates the cache.</p>
     </div>
   </div>
 </section>
@@ -189,20 +189,26 @@
       <tr>
         <td><span class="inline-code">PENDING</span></td>
         <td><span class="inline-code">CONFIRMED</span></td>
-        <td>confirmBooking(payment)</td>
-        <td>Process payment, mark seats BOOKED, release locks, send confirmation</td>
+        <td>confirmBooking(bookingId, payment)</td>
+        <td>Re-check caller still holds locks, require payment SUCCESS, mark seats BOOKED, release locks, notify</td>
       </tr>
       <tr>
         <td><span class="inline-code">PENDING</span></td>
         <td><span class="inline-code">EXPIRED</span></td>
-        <td>Lock timeout (5 min)</td>
-        <td>Release seat locks, seats &rarr; AVAILABLE, notify user</td>
+        <td>booking.expire() (lock timeout)</td>
+        <td>Terminal state, notify user (seat locks already freed by forceUnlock)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">PENDING</span></td>
+        <td><span class="inline-code">CANCELLED</span></td>
+        <td>cancelBooking()</td>
+        <td>Release seat locks, notify user</td>
       </tr>
       <tr>
         <td><span class="inline-code">CONFIRMED</span></td>
         <td><span class="inline-code">CANCELLED</span></td>
         <td>cancelBooking()</td>
-        <td>Refund payment, seats &rarr; AVAILABLE, notify user</td>
+        <td>Remove seats from bookedSeats &rarr; AVAILABLE, notify user (refund: hypothetical follow-up)</td>
       </tr>
     </table>
   </div>
@@ -219,15 +225,30 @@
     <h3>Confirm Booking &mdash; State Guard</h3>
 <pre><span class="kw">public boolean</span> <span class="fn">confirmBooking</span>(<span class="tp">String</span> bookingId, <span class="tp">Payment</span> payment) {
     <span class="tp">Booking</span> booking = <span class="fn">getBooking</span>(bookingId);
+    <span class="tp">String</span> showId = booking.<span class="fn">getShowId</span>();
 
-    <span class="kw">if</span> (booking.<span class="fn">getStatus</span>() != <span class="tp">BookingStatus</span>.PENDING) {
-        <span class="kw">throw new</span> <span class="tp">IllegalStateException</span>(<span class="st">"Booking not in PENDING state"</span>);
+    <span class="kw">synchronized</span> (booking) {                     <span class="cm">// per-booking lock, not global</span>
+        <span class="tp">Set</span>&lt;<span class="tp">String</span>&gt; booked = bookedSeats.<span class="fn">computeIfAbsent</span>(
+            showId, k -&gt; <span class="tp">ConcurrentHashMap</span>.<span class="fn">newKeySet</span>());
+
+        <span class="cm">// Re-check: lock may have expired, or the seat was booked meanwhile</span>
+        <span class="kw">for</span> (<span class="tp">Seat</span> seat : booking.<span class="fn">getSeats</span>()) {
+            <span class="kw">if</span> (!seatLockManager.<span class="fn">isLockedByUser</span>(showId, seat.<span class="fn">getId</span>(), booking.<span class="fn">getUserId</span>())
+                    || booked.<span class="fn">contains</span>(seat.<span class="fn">getId</span>())) {
+                <span class="kw">throw new</span> <span class="tp">SeatNotAvailableException</span>(<span class="st">"Seat no longer held: "</span> + seat.<span class="fn">getId</span>());
+            }
+        }
+
+        booking.<span class="fn">confirm</span>(payment);   <span class="cm">// State guard: only PendingState allows it (payment must be SUCCESS)</span>
+
+        <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; seatIds = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();
+        <span class="kw">for</span> (<span class="tp">Seat</span> seat : booking.<span class="fn">getSeats</span>()) {
+            booked.<span class="fn">add</span>(seat.<span class="fn">getId</span>());
+            seatIds.<span class="fn">add</span>(seat.<span class="fn">getId</span>());
+        }
+        seatLockManager.<span class="fn">unlockSeats</span>(showId, seatIds, booking.<span class="fn">getUserId</span>());
+        <span class="cm">// Seats move from lock map to booked set; BookingNotifier fires via Observer</span>
     }
-
-    <span class="fn">processPayment</span>(payment);
-    booking.<span class="fn">setStatus</span>(<span class="tp">BookingStatus</span>.CONFIRMED);
-    seatLockManager.<span class="fn">unlockSeats</span>(showId, seatIds, userId);
-    <span class="cm">// Seats move from lock map to booked set</span>
     <span class="kw">return true</span>;
 }</pre>
   </div>
@@ -276,8 +297,8 @@
 <pre><span class="kw">public class</span> <span class="tp">SeatLockManager</span> {
     <span class="cm">// Key: "showId:seatId" &rarr; LockInfo</span>
     <span class="kw">private final</span> <span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">String</span>, <span class="tp">LockInfo</span>&gt; seatLocks = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
-    <span class="kw">private final</span> <span class="tp">ScheduledExecutorService</span> scheduler = <span class="tp">Executors</span>.<span class="fn">newScheduledThreadPool</span>(<span class="nr">4</span>);
-    <span class="kw">private static final long</span> LOCK_TIMEOUT_MS = <span class="nr">300000</span>; <span class="cm">// 5 minutes</span>
+    <span class="kw">private final</span> <span class="tp">ScheduledExecutorService</span> scheduler = <span class="tp">Executors</span>.<span class="fn">newScheduledThreadPool</span>(<span class="nr">2</span>);
+    <span class="kw">private static final long</span> LOCK_TIMEOUT_MS = <span class="nr">300_000</span>; <span class="cm">// 5 minutes</span>
 
     <span class="kw">static class</span> <span class="tp">LockInfo</span> {
         <span class="kw">final</span> <span class="tp">String</span> userId;
@@ -289,28 +310,41 @@
   </div>
 
   <div class="card" style="border-left:3px solid var(--accent2);">
-    <h3 style="color:var(--accent2);margin-top:0;">Two-Phase Lock Acquisition</h3>
+    <h3 style="color:var(--accent2);margin-top:0;">All-or-Nothing Lock Acquisition</h3>
 <pre><span class="kw">public boolean</span> <span class="fn">lockSeats</span>(<span class="tp">String</span> showId, <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; seatIds, <span class="tp">String</span> userId) {
     <span class="cm">// 1. Sort seat IDs to prevent deadlock</span>
     <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; sorted = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;(seatIds);
     <span class="tp">Collections</span>.<span class="fn">sort</span>(sorted);
+    <span class="kw">long</span> expiry = <span class="tp">System</span>.<span class="fn">currentTimeMillis</span>() + LOCK_TIMEOUT_MS;
+    <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; acquiredKeys = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();
 
-    <span class="cm">// Phase 1: Check all seats are available</span>
-    <span class="kw">for</span> (<span class="tp">String</span> key : seatKeys) {
-        <span class="tp">LockInfo</span> existing = seatLocks.<span class="fn">get</span>(key);
-        <span class="kw">if</span> (existing != <span class="kw">null</span> &amp;&amp; existing.expiryTime &gt; now)
-            <span class="kw">return false</span>; <span class="cm">// seat unavailable</span>
-    }
+    <span class="kw">try</span> {
+        <span class="kw">for</span> (<span class="tp">String</span> seatId : sorted) {
+            <span class="tp">String</span> key = <span class="fn">seatKey</span>(showId, seatId);
+            <span class="fn">cleanExpiredLock</span>(key);             <span class="cm">// drop a stale lock first</span>
+            <span class="tp">ScheduledFuture</span>&lt;?&gt; task = scheduler.<span class="fn">schedule</span>(
+                () -&gt; <span class="fn">forceUnlock</span>(showId, seatId), LOCK_TIMEOUT_MS, <span class="tp">TimeUnit</span>.MILLISECONDS);
 
-    <span class="cm">// Phase 2: Atomically lock all seats</span>
-    <span class="kw">for</span> (<span class="tp">String</span> key : seatKeys) {
-        <span class="tp">LockInfo</span> prev = seatLocks.<span class="fn">putIfAbsent</span>(key, lockInfo);
-        <span class="kw">if</span> (prev != <span class="kw">null</span>) {
-            <span class="fn">rollback</span>(); <span class="cm">// undo locks acquired so far</span>
-            <span class="kw">return false</span>;
+            <span class="tp">LockInfo</span> lock = <span class="kw">new</span> <span class="tp">LockInfo</span>(userId, expiry, task);
+            <span class="tp">LockInfo</span> existing = seatLocks.<span class="fn">putIfAbsent</span>(key, lock); <span class="cm">// atomic check-and-set</span>
+            <span class="kw">if</span> (existing != <span class="kw">null</span>) {
+                task.<span class="fn">cancel</span>(<span class="kw">false</span>);
+                <span class="kw">throw new</span> <span class="tp">IllegalStateException</span>(<span class="st">"Seat "</span> + seatId + <span class="st">" is locked by another user"</span>);
+            }
+            acquiredKeys.<span class="fn">add</span>(key);
         }
+        <span class="kw">return true</span>;
+    } <span class="kw">catch</span> (<span class="tp">Exception</span> e) {
+        <span class="cm">// Roll back every lock acquired so far (owner-only, remove(key, lock))</span>
+        <span class="kw">for</span> (<span class="tp">String</span> key : acquiredKeys) {
+            <span class="tp">LockInfo</span> lock = seatLocks.<span class="fn">get</span>(key);
+            <span class="kw">if</span> (lock != <span class="kw">null</span> &amp;&amp; lock.userId.<span class="fn">equals</span>(userId)) {
+                lock.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>);
+                seatLocks.<span class="fn">remove</span>(key, lock);
+            }
+        }
+        <span class="kw">return false</span>;
     }
-    <span class="kw">return true</span>;
 }</pre>
   </div>
 
@@ -328,13 +362,13 @@
     <h3 style="color:var(--accent4);margin-top:0;">Auto-Expiry with ScheduledExecutorService</h3>
 <pre><span class="cm">// Schedule auto-unlock when lock is acquired</span>
 <span class="tp">ScheduledFuture</span>&lt;?&gt; task = scheduler.<span class="fn">schedule</span>(
-    () -> <span class="fn">unlockSeat</span>(showId, seatId, userId),
+    () -> <span class="fn">forceUnlock</span>(showId, seatId),
     LOCK_TIMEOUT_MS,
     <span class="tp">TimeUnit</span>.MILLISECONDS
 );
 
-<span class="cm">// Cancel the scheduled task if payment completes before timeout</span>
-lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>);</pre>
+<span class="cm">// Cancel the scheduled task if the booking is confirmed / seats unlocked before timeout</span>
+lock.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>);</pre>
   </div>
 </section>
 
@@ -389,28 +423,28 @@ lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>
       <tr><th>Modifier</th><th>Logic</th><th>Pattern</th></tr>
       <tr>
         <td>Base price</td>
-        <td>SeatType.getBasePrice()</td>
-        <td>Enum-based</td>
+        <td>Per-SeatType Money map inside each strategy</td>
+        <td>Strategy: SimplePricingStrategy (flat)</td>
       </tr>
       <tr>
-        <td>Peak hours (6-9 PM)</td>
-        <td>1.3x multiplier</td>
-        <td>Decorator wrapping base</td>
+        <td>Evening show (after 6 PM)</td>
+        <td>1.2x multiplier</td>
+        <td>DynamicPricingStrategy</td>
       </tr>
       <tr>
         <td>Weekend pricing</td>
-        <td>1.2x multiplier</td>
-        <td>Decorator, composable</td>
+        <td>1.3x multiplier</td>
+        <td>DynamicPricingStrategy</td>
       </tr>
       <tr>
         <td>First-day-first-show</td>
         <td>1.5x multiplier</td>
-        <td>Decorator</td>
+        <td>Decorator (hypothetical follow-up)</td>
       </tr>
       <tr>
         <td>Offers &amp; coupons</td>
         <td>Flat discount or %</td>
-        <td>Strategy: CouponPricingStrategy</td>
+        <td>Strategy: CouponPricingStrategy (hypothetical follow-up)</td>
       </tr>
     </table>
     <p style="margin-top:12px;font-size:13px;color:var(--text-dim);">"In production I'd stack decorators: <span class="inline-code">new WeekendPricing(new PeakHourPricing(baseStrategy))</span>"</p>
@@ -444,9 +478,11 @@ lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>
         .<span class="fn">filter</span>(show -> show.<span class="fn">getMovieId</span>().<span class="fn">equals</span>(movieId))
         .<span class="fn">filter</span>(show -> {
             <span class="tp">Screen</span> screen = screens.<span class="fn">get</span>(show.<span class="fn">getScreenId</span>());
+            <span class="kw">if</span> (screen == <span class="kw">null</span>) <span class="kw">return false</span>;
             <span class="tp">Theater</span> theater = theaters.<span class="fn">get</span>(screen.<span class="fn">getTheaterId</span>());
-            <span class="kw">return</span> theater.<span class="fn">getCity</span>() == city;
+            <span class="kw">return</span> theater != <span class="kw">null</span> &amp;&amp; (city == <span class="kw">null</span> || theater.<span class="fn">getCity</span>() == city);
         })
+        .<span class="fn">sorted</span>(<span class="tp">Comparator</span>.<span class="fn">comparing</span>(<span class="tp">Show</span>::getStartTime))
         .<span class="fn">collect</span>(<span class="tp">Collectors</span>.<span class="fn">toList</span>());
 }
 <span class="cm">// Traversal: Show &rarr; Screen &rarr; Theater &rarr; City</span></pre>
@@ -454,11 +490,12 @@ lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>
 
   <div class="card">
     <h3>Booking Amount Calculation</h3>
-<pre><span class="kw">double</span> totalAmount = <span class="nr">0.0</span>;
-<span class="kw">for</span> (<span class="tp">String</span> seatId : seatIds) {
-    <span class="tp">Seat</span> seat = screenSeats.<span class="fn">get</span>(seatId);
-    totalAmount += seat.<span class="fn">getPrice</span>(); <span class="cm">// price set at Seat creation from SeatType.basePrice</span>
-}
+<pre><span class="cm">// In createBooking(): delegate to the injected PricingStrategy</span>
+<span class="tp">Money</span> totalMoney = pricingStrategy.<span class="fn">calculatePrice</span>(show, selectedSeats);
+<span class="kw">double</span> totalAmount = totalMoney.<span class="fn">toBigDecimal</span>().<span class="fn">doubleValue</span>();
+
+<span class="cm">// SimplePricingStrategy: sum of per-SeatType Money prices</span>
+<span class="cm">// DynamicPricingStrategy: base x weekend (1.3) x evening (1.2) per seat</span>
 <span class="cm">// O(m) where m = selected seats</span></pre>
   </div>
 
@@ -516,6 +553,11 @@ lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>
         <td>lockSeats()</td>
         <td>Prevents deadlock when two users select overlapping seats</td>
       </tr>
+      <tr>
+        <td><span class="inline-code">synchronized(booking)</span></td>
+        <td>confirmBooking() / cancelBooking()</td>
+        <td>Per-booking state transitions (not a global lock); confirm re-checks lock ownership inside it</td>
+      </tr>
     </table>
   </div>
   <blockquote>"I use <strong>per-seat locking</strong> with composite keys <span class="inline-code">showId:seatId</span>. Two users booking different seats for the same show proceed in parallel. Only overlapping seat selections contend. Combined with <strong>sorted acquisition order</strong>, deadlocks are impossible."</blockquote>
@@ -523,20 +565,24 @@ lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>
   <div class="card">
     <h3>Double-Booking Prevention</h3>
 <pre><span class="cm">// In lockSeats() -- atomic check-and-set</span>
-<span class="tp">LockInfo</span> previous = seatLocks.<span class="fn">putIfAbsent</span>(seatKey, lockInfo);
+<span class="tp">LockInfo</span> existing = seatLocks.<span class="fn">putIfAbsent</span>(key, lock);
 
-<span class="kw">if</span> (previous != <span class="kw">null</span>) {
-    <span class="cm">// Race condition: someone locked between check and lock</span>
+<span class="kw">if</span> (existing != <span class="kw">null</span>) {
+    <span class="cm">// Someone else holds the seat: cancel our timer, catch block rolls back acquiredKeys</span>
     task.<span class="fn">cancel</span>(<span class="kw">false</span>);
-    <span class="fn">rollbackAllAcquiredLocks</span>();
-    <span class="kw">return false</span>;
+    <span class="kw">throw new</span> <span class="tp">IllegalStateException</span>(<span class="st">"Seat "</span> + seatId + <span class="st">" is locked by another user"</span>);
 }
 
-<span class="cm">// In unlockSeat() -- owner-only release</span>
-<span class="kw">if</span> (lockInfo != <span class="kw">null</span> &amp;&amp; lockInfo.userId.<span class="fn">equals</span>(userId)) {
-    lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>);
-    seatLocks.<span class="fn">remove</span>(seatKey, lockInfo); <span class="cm">// only removes if same object</span>
-}</pre>
+<span class="cm">// In unlockSeats() -- owner-only release</span>
+<span class="tp">LockInfo</span> lock = seatLocks.<span class="fn">get</span>(key);
+<span class="kw">if</span> (lock != <span class="kw">null</span> &amp;&amp; lock.userId.<span class="fn">equals</span>(userId)) {
+    lock.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>);
+    seatLocks.<span class="fn">remove</span>(key, lock); <span class="cm">// only removes if same object -- never a newer owner's lock</span>
+}
+
+<span class="cm">// In confirmBooking() -- re-verify ownership before committing</span>
+<span class="kw">if</span> (!seatLockManager.<span class="fn">isLockedByUser</span>(showId, seatId, userId) || booked.<span class="fn">contains</span>(seatId))
+    <span class="kw">throw new</span> <span class="tp">SeatNotAvailableException</span>(<span class="st">"Seat no longer held: "</span> + seatId);</pre>
   </div>
 </section>
 
@@ -577,7 +623,7 @@ lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>
   <div class="flow">
     <div class="step" data-num="1">
       <div class="label">Search Movies</div>
-      shows = searchMovies("Interstellar", City.BANGALORE, Language.ENGLISH)
+      movies = searchMovies("Interstellar", City.BANGALORE, Language.ENGLISH)
       <div class="detail">Stream filter on movies map by title + language. Returns matching Movie objects.</div>
     </div>
     <div class="step" data-num="2">
@@ -598,17 +644,17 @@ lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>
     <div class="step" data-num="5">
       <div class="label">Create Booking</div>
       booking = createBooking(userId, showId, [S1, S2])
-      <div class="detail">Validates user + seats, calculates total from seat prices. Booking created in PENDING status.</div>
+      <div class="detail">Validates user, verifies the caller holds each seat lock (<span class="inline-code">isLockedByUser</span>), prices via <span class="inline-code">PricingStrategy.calculatePrice</span>, attaches a <span class="inline-code">BookingNotifier</span>. Booking created in PENDING status.</div>
     </div>
     <div class="step" data-num="6">
       <div class="label">Process Payment</div>
       confirmBooking(bookingId, payment)
-      <div class="detail">Processes payment via gateway. On success: booking &rarr; CONFIRMED, seats added to bookedSeats set, locks released, scheduled tasks cancelled.</div>
+      <div class="detail">Under <span class="inline-code">synchronized(booking)</span>: re-checks the caller still holds every seat lock and no seat is booked, then <span class="inline-code">booking.confirm(payment)</span> (PendingState requires payment SUCCESS) &rarr; CONFIRMED, seats added to bookedSeats set, locks released, scheduled tasks cancelled.</div>
     </div>
     <div class="step" data-num="7">
       <div class="label">Confirmation</div>
-      Booking CONFIRMED, ticket ID generated
-      <div class="detail">Payment status &rarr; SUCCESS. User receives booking confirmation with seat numbers and showtime.</div>
+      Booking CONFIRMED, observers notified
+      <div class="detail"><span class="inline-code">BookingNotifier</span> routes the CONFIRMED event to the <span class="inline-code">NotificationStrategy</span> (Email / SMS / MultiChannel) with seat numbers and showtime.</div>
     </div>
   </div>
 
@@ -623,13 +669,13 @@ lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>
       </tr>
       <tr>
         <td>Payment fails</td>
-        <td>Gateway error (5% simulated)</td>
-        <td>Payment &rarr; FAILED, throw PaymentFailedException</td>
+        <td>Payment status != SUCCESS</td>
+        <td>PendingState.confirm throws IllegalStateException; booking stays PENDING</td>
       </tr>
       <tr>
         <td>Lock timeout</td>
         <td>5 min elapsed without confirmation</td>
-        <td>ScheduledExecutorService auto-unlocks seats &rarr; AVAILABLE</td>
+        <td>ScheduledExecutorService runs forceUnlock &rarr; seats AVAILABLE; a later confirmBooking fails the lock re-check (SeatNotAvailableException)</td>
       </tr>
       <tr>
         <td>Seat already booked</td>
@@ -656,12 +702,12 @@ lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>
 <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Set</span>&lt;<span class="tp">String</span>&gt;&gt; bookedSeats = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
 <span class="cm">//  showId &rarr; Set of booked seatIds (ConcurrentHashMap.newKeySet())</span>
 
-<span class="cm">// Seat Lock Manager (singleton)</span>
+<span class="cm">// SeatLockManager (one instance, owned by EnhancedBookingService)</span>
 <span class="tp">ConcurrentHashMap</span>&lt;<span class="tp">String</span>, <span class="tp">LockInfo</span>&gt; seatLocks;
-<span class="cm">//  "showId:seatId" &rarr; LockInfo { userId, expiryTime, scheduledTask }</span>
+<span class="cm">//  "showId:seatId" &rarr; LockInfo { userId, expiryTime, unlockTask }</span>
 
 <span class="cm">// Background cleanup</span>
-<span class="tp">ScheduledExecutorService</span> scheduler = <span class="tp">Executors</span>.<span class="fn">newScheduledThreadPool</span>(<span class="nr">4</span>);
+<span class="tp">ScheduledExecutorService</span> scheduler = <span class="tp">Executors</span>.<span class="fn">newScheduledThreadPool</span>(<span class="nr">2</span>);
 <span class="cm">//  auto-unlocks seats after LOCK_TIMEOUT_MS</span></pre>
   </div>
 </section>
@@ -677,12 +723,12 @@ lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>
 
   <details>
     <summary>How would you implement distributed locking for production?</summary>
-    <div class="answer">Replace the in-memory <span class="inline-code">ConcurrentHashMap</span> with <strong>Redis</strong> using <span class="inline-code">SET key value NX EX 300</span> (set-if-not-exists with 5-min TTL). For stronger guarantees, use <strong>Redlock</strong> across multiple Redis nodes. The <span class="inline-code">SeatLockManager</span> interface stays the same &mdash; swap <span class="inline-code">InMemorySeatLockManager</span> for <span class="inline-code">RedisSeatLockManager</span>.</div>
+    <div class="answer">Replace the in-memory <span class="inline-code">ConcurrentHashMap</span> with <strong>Redis</strong> using <span class="inline-code">SET key value NX EX 300</span> (set-if-not-exists with 5-min TTL). For stronger guarantees, use <strong>Redlock</strong> across multiple Redis nodes. Hypothetical follow-up: extract an interface from the concrete <span class="inline-code">SeatLockManager</span> class so callers stay the same, then swap the in-memory version for a <span class="inline-code">RedisSeatLockManager</span>.</div>
   </details>
 
   <details>
     <summary>What happens if a user's seat lock expires before payment?</summary>
-    <div class="answer">The <span class="inline-code">ScheduledExecutorService</span> fires the auto-unlock task after 5 minutes. Seats move back to AVAILABLE. If the user then tries to confirm, <span class="inline-code">confirmBooking()</span> checks that the booking is still in PENDING state and the seats are still locked. If locks expired, confirmation fails and the user must restart the booking flow.</div>
+    <div class="answer">The <span class="inline-code">ScheduledExecutorService</span> fires the <span class="inline-code">forceUnlock</span> task after 5 minutes. Seats move back to AVAILABLE. If the user then tries to confirm, <span class="inline-code">confirmBooking()</span> checks (via <span class="inline-code">isLockedByUser</span>) that the caller still holds every seat lock and no seat is in bookedSeats, and the State pattern rejects anything not PENDING. If locks expired, confirmation fails and the user must restart the booking flow.</div>
   </details>
 
   <details>
@@ -692,7 +738,7 @@ lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>
 
   <details>
     <summary>How would you implement different pricing tiers (peak hours, weekends, offers)?</summary>
-    <div class="answer">Use the <strong>Decorator pattern</strong> on top of a base PricingStrategy. Stack decorators at runtime: <span class="inline-code">new WeekendPricing(new PeakHourPricing(basePricing))</span>. For coupons, create a <span class="inline-code">CouponPricingStrategy</span> that applies flat or percentage discounts after base calculation. The SeatType enum already carries base prices.</div>
+    <div class="answer">Today <span class="inline-code">DynamicPricingStrategy</span> hard-codes weekend (1.3x) and evening (1.2x) multipliers. Hypothetical follow-up: use the <strong>Decorator pattern</strong> on top of a base PricingStrategy and stack decorators at runtime: <span class="inline-code">new WeekendPricing(new PeakHourPricing(basePricing))</span>. For coupons, create a <span class="inline-code">CouponPricingStrategy</span> that applies flat or percentage discounts after base calculation. The SeatType enum already carries base prices.</div>
   </details>
 
   <details>
@@ -702,7 +748,7 @@ lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>
 
   <details>
     <summary>How would you handle cancellation refunds?</summary>
-    <div class="answer">Tiered refund policy based on time before showtime: <strong>&gt;24h</strong> = full refund, <strong>2-24h</strong> = 50% refund, <strong>&lt;2h</strong> = no refund. In <span class="inline-code">cancelBooking()</span>, calculate the time delta, determine refund amount, update Payment status to REFUNDED, and release seats back to AVAILABLE. A <span class="inline-code">RefundPolicy</span> Strategy makes this extensible.</div>
+    <div class="answer">Tiered refund policy based on time before showtime: <strong>&gt;24h</strong> = full refund, <strong>2-24h</strong> = 50% refund, <strong>&lt;2h</strong> = no refund. Hypothetical follow-up (today <span class="inline-code">cancelBooking()</span> only releases seats): in <span class="inline-code">cancelBooking()</span>, calculate the time delta, determine refund amount, update Payment status to REFUNDED, and release seats back to AVAILABLE. A <span class="inline-code">RefundPolicy</span> Strategy makes this extensible.</div>
   </details>
 
   <details>
@@ -717,7 +763,7 @@ lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>
 
   <details>
     <summary>How would you handle the "phantom read" problem in seat selection?</summary>
-    <div class="answer">Between checking availability and locking, another user might book the seat. The two-phase approach handles this: Phase 1 checks availability (optimistic), Phase 2 uses <span class="inline-code">putIfAbsent</span> (pessimistic). If Phase 2 fails, all Phase 2 locks acquired so far are rolled back atomically. The user sees an "seats no longer available" error and can retry with different seats.</div>
+    <div class="answer">Between checking availability and locking, another user might grab the seat. There is no separate check phase: <span class="inline-code">lockSeats</span> clears a stale lock (<span class="inline-code">cleanExpiredLock</span>) and then does a single <span class="inline-code">putIfAbsent</span> per seat, so check and acquire are one atomic step. If any seat fails, every lock acquired so far is rolled back with <span class="inline-code">remove(key, lock)</span>. The user sees an "seats no longer available" error and can retry with different seats.</div>
   </details>
 
   <details>
@@ -737,17 +783,30 @@ lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>
   <div class="card">
 <pre>bookmyshow/
 ├── api/
-│   └── <span class="tp">BookingService</span>.java             <span class="cm">-- service interface (12 methods)</span>
+│   ├── <span class="tp">BookingService</span>.java             <span class="cm">-- service interface (13 methods)</span>
+│   ├── <span class="tp">PricingStrategy</span>.java            <span class="cm">-- calculatePrice(show, seats) &rarr; Money</span>
+│   └── <span class="tp">NotificationStrategy</span>.java       <span class="cm">-- confirmed / cancelled / reminder</span>
 ├── impl/
-│   ├── <span class="tp">BookingServiceImpl</span>.java         <span class="cm">-- full business logic</span>
-│   └── <span class="tp">SeatLockManager</span>.java            <span class="cm">-- per-seat locking with timeouts</span>
+│   ├── <span class="tp">EnhancedBookingService</span>.java     <span class="cm">-- full business logic (implements BookingService)</span>
+│   ├── <span class="tp">SeatLockManager</span>.java            <span class="cm">-- per-seat locking with timeouts</span>
+│   ├── <span class="tp">SimplePricingStrategy</span>.java      <span class="cm">-- flat price per SeatType</span>
+│   ├── <span class="tp">DynamicPricingStrategy</span>.java     <span class="cm">-- weekend / evening multipliers</span>
+│   ├── <span class="tp">EmailNotificationStrategy</span>.java
+│   ├── <span class="tp">SMSNotificationStrategy</span>.java
+│   ├── <span class="tp">MultiChannelNotificationStrategy</span>.java <span class="cm">-- Composite: fans out to channels</span>
+│   └── <span class="tp">BookingNotifier</span>.java            <span class="cm">-- BookingObserver &rarr; NotificationStrategy</span>
+├── cache/
+│   └── <span class="tp">MovieCache</span>.java                 <span class="cm">-- LRU + TTL cache-aside for movies</span>
 ├── model/
 │   ├── <span class="tp">Movie</span>.java                       <span class="cm">-- title, genre, language, duration, rating</span>
 │   ├── <span class="tp">Theater</span>.java                     <span class="cm">-- name, city, List&lt;Screen&gt;</span>
-│   ├── <span class="tp">Screen</span>.java                      <span class="cm">-- name, theaterId, List&lt;Seat&gt;</span>
+│   ├── <span class="tp">Screen</span>.java                      <span class="cm">-- name, theaterId, capacity, List&lt;Seat&gt;</span>
 │   ├── <span class="tp">Show</span>.java                        <span class="cm">-- movieId, screenId, startTime, endTime</span>
 │   ├── <span class="tp">Seat</span>.java                        <span class="cm">-- seatNumber, type, price</span>
-│   ├── <span class="tp">Booking</span>.java                     <span class="cm">-- userId, showId, seats, status, payment</span>
+│   ├── <span class="tp">Booking</span>.java                     <span class="cm">-- userId, showId, seats, state, payment, observers</span>
+│   ├── <span class="tp">BookingState</span>.java                <span class="cm">-- State interface: confirm / cancel / expire</span>
+│   ├── <span class="tp">PendingState</span>, <span class="tp">ConfirmedState</span>, <span class="tp">CancelledBookingState</span>, <span class="tp">ExpiredState</span>
+│   ├── <span class="tp">BookingObserver</span>.java             <span class="cm">-- update(booking)</span>
 │   ├── <span class="tp">Payment</span>.java                     <span class="cm">-- amount, method, status</span>
 │   ├── <span class="tp">User</span>.java                        <span class="cm">-- name, email, phone</span>
 │   └── Enums:
@@ -775,33 +834,33 @@ lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>
       <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
       <tr>
         <td><span style="color:var(--accent);">Strategy</span></td>
-        <td>PaymentMethod, PricingStrategy (extensible)</td>
-        <td>Swap payment gateways and pricing algorithms without changing booking logic</td>
+        <td>PricingStrategy, NotificationStrategy</td>
+        <td>Swap pricing algorithms and notification channels without changing booking logic</td>
       </tr>
       <tr>
         <td><span style="color:var(--accent2);">Observer</span></td>
-        <td>Booking confirmation / cancellation notifications</td>
+        <td>BookingObserver / BookingNotifier on every state change</td>
         <td>Decoupled notification &mdash; swap email/SMS/push with zero code changes</td>
       </tr>
       <tr>
         <td><span style="color:var(--accent3);">Singleton</span></td>
-        <td>SeatLockManager instance</td>
-        <td>Single point of lock coordination prevents split-brain locking</td>
+        <td>Stateless BookingState instances (PendingState.INSTANCE, &hellip;)</td>
+        <td>No per-booking state objects; mutable data stays on Booking</td>
       </tr>
       <tr>
-        <td><span style="color:var(--accent4);">Factory</span></td>
-        <td>Seat creation with SeatType pricing</td>
-        <td>Centralized seat instantiation with consistent base prices</td>
+        <td><span style="color:var(--accent4);">Composite</span></td>
+        <td>MultiChannelNotificationStrategy</td>
+        <td>One strategy fans out to many channels</td>
       </tr>
       <tr>
-        <td><span style="color:var(--accent5);">Template Method</span></td>
-        <td>Booking flow: validate &rarr; lock &rarr; pay &rarr; confirm</td>
-        <td>Standardized flow with overridable steps (e.g., VIP booking)</td>
+        <td><span style="color:var(--accent5);">State</span></td>
+        <td>Booking &rarr; BookingState: Pending / Confirmed / Cancelled / Expired</td>
+        <td>Illegal transitions throw; no status if-chains in the service</td>
       </tr>
       <tr>
-        <td><span style="color:var(--heading);">Repository</span></td>
-        <td>ConcurrentHashMap data stores</td>
-        <td>Abstract storage &mdash; swap for JPA/Hibernate in production</td>
+        <td><span style="color:var(--heading);">Cache-Aside</span></td>
+        <td>MovieCache in front of the ConcurrentHashMap movie store</td>
+        <td>Read-heavy movie lookups skip the store on a hit</td>
       </tr>
       <tr>
         <td><span style="color:var(--text);">Value Object</span></td>
@@ -815,14 +874,14 @@ lockInfo.unlockTask.<span class="fn">cancel</span>(<span class="kw">false</span>
     <h3>Key Takeaways for the Interview</h3>
     <ul>
       <li><strong>Seat locking is the hardest part</strong> &mdash; per-seat granularity with composite keys, sorted acquisition, atomic putIfAbsent, auto-expiry</li>
-      <li><strong>Two-phase lock</strong> &mdash; check availability (optimistic), then acquire (pessimistic with rollback)</li>
+      <li><strong>All-or-nothing lock</strong> &mdash; atomic putIfAbsent per seat, rollback on partial failure; confirm re-checks ownership</li>
       <li><strong>Deadlock prevention</strong> &mdash; always sort seat IDs before locking</li>
       <li><strong>Failure recovery</strong> &mdash; rollback on partial lock failure, auto-release on timeout, refund on cancellation</li>
       <li><strong>Scale path</strong> &mdash; in-memory &rarr; Redis locks, single DB &rarr; sharded, monolith &rarr; microservices</li>
     </ul>
   </div>
 
-  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">23 files &middot; per-seat concurrency &middot; production-ready booking system</p>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">38 files &middot; per-seat concurrency &middot; production-ready booking system</p>
 </section>
 
 </div>

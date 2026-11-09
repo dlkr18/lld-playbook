@@ -1,6 +1,6 @@
 # taskscheduler - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/taskscheduler/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py taskscheduler`.
+> Generated from `src/main/java/com/you/lld/problems/taskscheduler/` on 2026-11-09. Re-run `python3 scripts/generate-code-md.py taskscheduler`.
 
 ## Project Structure (13 files)
 
@@ -807,9 +807,14 @@ public class PriorityTaskScheduler implements TaskSchedulerService {
             return false;
         }
         synchronized (taskQueue) {
-            taskQueue.remove(task);
+            // Only a task still waiting in the queue goes back in. A task that is
+            // running is not in the queue; re-offering it would run it twice
+            // (and a recurring one would be scheduled twice forever).
+            boolean queued = taskQueue.remove(task);
             task.setPriority(priority);
-            taskQueue.offer(task);
+            if (queued) {
+                taskQueue.offer(task);
+            }
         }
         return true;
     }

@@ -36,11 +36,11 @@
 <!-- HERO -->
 <div class="hero">
   <h1>Elevator System <span>// Multi-Elevator</span></h1>
-  <p>SDE3-level low-level design with SCAN algorithm, Strategy-based scheduling, Observer notifications, and step-based simulation. 9 files, clean separation.</p>
+  <p>SDE3-level low-level design with SCAN and LOOK schedulers, Strategy-based dispatch, an <span class="inline-code">ElevatorSystem</span> facade, and step-based simulation. 12 files, clean separation.</p>
   <div class="tags">
     <span class="tag">SCAN Algorithm</span>
     <span class="tag blue">Strategy Pattern</span>
-    <span class="tag green">Observer Pattern</span>
+    <span class="tag green">Facade</span>
     <span class="tag pink">State Machine</span>
     <span class="tag purple">ConcurrentHashMap</span>
   </div>
@@ -97,7 +97,12 @@
       <tr>
         <td><span class="inline-code">OptimalElevatorController</span></td>
         <td>Implementation</td>
-        <td>elevators (<span class="inline-code">ConcurrentHashMap</span>), pendingRequests (<span class="inline-code">Queue</span>), minFloor, maxFloor, findBestElevator()</td>
+        <td>elevators (<span class="inline-code">ConcurrentHashMap</span>), pendingRequests (<span class="inline-code">Queue</span>), scheduler (<span class="inline-code">ElevatorScheduler</span>), dispatch(request)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ElevatorSystem</span></td>
+        <td>Facade</td>
+        <td>controller; request(floor, direction), selectFloor(id, floor), step(), status(id) &mdash; <span class="inline-code">useLook</span> flag picks the scheduler</td>
       </tr>
       <tr>
         <td><span class="inline-code">Request</span></td>
@@ -108,6 +113,11 @@
         <td><span class="inline-code">ElevatorScheduler</span></td>
         <td>Strategy Interface</td>
         <td>selectElevator(request, elevators) &mdash; pluggable algorithm</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ScanElevatorScheduler</span> / <span class="inline-code">LookElevatorScheduler</span></td>
+        <td>Strategy Impls</td>
+        <td>SCAN: same-direction-approaching first, else nearest idle. LOOK: lowest <span class="inline-code">distance * 10 + (idle ? 0 : 1)</span></td>
       </tr>
       <tr>
         <td><span class="inline-code">ElevatorMetrics</span></td>
@@ -137,11 +147,11 @@
     </div>
     <div class="card" style="border-left:3px solid var(--accent2);">
       <h3 style="color:var(--accent2);margin-top:0;">Strategy Pattern</h3>
-      <p><strong>ElevatorScheduler</strong> interface: pluggable dispatch algorithms. Current impl uses SCAN. Swap to FCFS, LOOK, or SSTF by providing a new <span class="inline-code">selectElevator()</span> implementation.</p>
+      <p><strong>ElevatorScheduler</strong> interface: pluggable dispatch algorithms. <span class="inline-code">ScanElevatorScheduler</span> is the default; <span class="inline-code">LookElevatorScheduler</span> is the alternative. FCFS or SSTF would be a new <span class="inline-code">selectElevator()</span> implementation.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent3);">
-      <h3 style="color:var(--accent3);margin-top:0;">Observer Pattern</h3>
-      <p>Floor display boards and waiting passengers are notified when an elevator arrives. The controller broadcasts arrival events. Decouples elevator movement from notification logic.</p>
+      <h3 style="color:var(--accent3);margin-top:0;">Observer Pattern (follow-up)</h3>
+      <p>Not in the code yet &mdash; a natural extension. Floor display boards and waiting passengers are notified when an elevator arrives. The controller broadcasts arrival events. Decouples elevator movement from notification logic.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent5);">
       <h3 style="color:var(--accent5);margin-top:0;">Step Simulation</h3>
@@ -160,7 +170,7 @@
   <div class="diagram">
     <img src="img/elevator-state-dispatch.png" alt="Elevator state machine and SCAN dispatch whiteboard diagram">
   </div>
-  <p class="diagram-caption">The elevator lifecycle: IDLE waits for a call &rarr; MOVING_UP / MOVING_DOWN sweep in floor order (SCAN, reversing at boundary destinations) &rarr; queue empties &rarr; back to IDLE; emergency &rarr; MAINTENANCE &rarr; restored. Below, the dispatch machinery: an Elevator entity (ConcurrentSkipListSet destinations), the two-tier findBestElevator(), and the pluggable ElevatorScheduler Strategy.</p>
+  <p class="diagram-caption">The elevator lifecycle: IDLE waits for a call &rarr; MOVING_UP / MOVING_DOWN sweep in floor order (SCAN, reversing at boundary destinations) &rarr; queue empties &rarr; back to IDLE; emergency &rarr; MAINTENANCE &rarr; restored. Below, the dispatch machinery: an Elevator entity (ConcurrentSkipListSet destinations), the two-tier ScanElevatorScheduler.selectElevator(), and the pluggable ElevatorScheduler Strategy.</p>
 
   <div class="card">
     <h3>State Transitions in Elevator.moveToNextFloor()</h3>
@@ -168,6 +178,15 @@
     <span class="kw">if</span> (destinationFloors.<span class="fn">isEmpty</span>()) {
         status = <span class="tp">ElevatorStatus</span>.IDLE;
         direction = <span class="tp">Direction</span>.IDLE;
+        <span class="kw">return</span>;
+    }
+
+    <span class="cm">// Request at the current floor: serve it here (doors open), don't move</span>
+    <span class="kw">if</span> (destinationFloors.<span class="fn">remove</span>(currentFloor)) {
+        <span class="kw">if</span> (destinationFloors.<span class="fn">isEmpty</span>()) {
+            direction = <span class="tp">Direction</span>.IDLE;
+            status = <span class="tp">ElevatorStatus</span>.IDLE;
+        }
         <span class="kw">return</span>;
     }
 
@@ -295,7 +314,7 @@ Floor  0: ────────────▼ │ │ │
                         └─┴─┴─┘
 
 Order: 5 &rarr; 6 &rarr; 8 &rarr; 10 &rarr; 2 &rarr; 0</pre>
-    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Elevator at floor 5 going UP: serves 6, 8 first. At top, reverses to serve 2. LOOK variant would reverse at 8 (last UP request) instead of going to 10.</p>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Elevator at floor 5 going UP: serves 6, 8 first. At top, reverses to serve 2. LOOK variant would reverse at 8 (last UP request) instead of going to 10. (In this code, <span class="inline-code">LookElevatorScheduler</span> only changes which car is dispatched; car movement is the same <span class="inline-code">moveToNextFloor()</span>.)</p>
   </div>
 
   <div class="card">
@@ -303,7 +322,7 @@ Order: 5 &rarr; 6 &rarr; 8 &rarr; 10 &rarr; 2 &rarr; 0</pre>
 <pre><span class="kw">public interface</span> <span class="tp">ElevatorScheduler</span> {
     <span class="tp">Elevator</span> <span class="fn">selectElevator</span>(<span class="tp">Request</span> request, <span class="tp">List</span>&lt;<span class="tp">Elevator</span>&gt; elevators);
 }</pre>
-    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">"In production I'd add <span class="inline-code">ScanScheduler</span>, <span class="inline-code">LookScheduler</span>, and <span class="inline-code">SstfScheduler</span> &mdash; all implementing this interface."</p>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Implemented: <span class="inline-code">ScanElevatorScheduler</span> and <span class="inline-code">LookElevatorScheduler</span>. "An <span class="inline-code">SstfScheduler</span> would be one more class implementing this interface" (hypothetical follow-up).</p>
   </div>
 </section>
 
@@ -311,7 +330,7 @@ Order: 5 &rarr; 6 &rarr; 8 &rarr; 10 &rarr; 2 &rarr; 0</pre>
 <section id="dispatch">
   <h2>06 &mdash; Dispatch Strategy</h2>
   <blockquote>
-    <strong>Core question:</strong> When a floor button is pressed, which elevator should respond? The <span class="inline-code">findBestElevator()</span> method implements a two-tier priority system.
+    <strong>Core question:</strong> When a floor button is pressed, which elevator should respond? <span class="inline-code">OptimalElevatorController.dispatch()</span> asks the injected <span class="inline-code">ElevatorScheduler</span>; the default <span class="inline-code">ScanElevatorScheduler.selectElevator()</span> implements a two-tier priority system.
   </blockquote>
 
   <div class="card highlight">
@@ -333,32 +352,58 @@ Order: 5 &rarr; 6 &rarr; 8 &rarr; 10 &rarr; 2 &rarr; 0</pre>
   </div>
 
   <div class="card">
-    <h3>findBestElevator() Implementation</h3>
-<pre><span class="kw">private</span> <span class="tp">Elevator</span> <span class="fn">findBestElevator</span>(<span class="kw">int</span> floor, <span class="tp">Direction</span> direction) {
-    <span class="tp">Elevator</span> bestMoving = <span class="kw">null</span>;
-    <span class="kw">int</span> bestMovingDistance = <span class="tp">Integer</span>.MAX_VALUE;
-    <span class="tp">Elevator</span> bestIdle = <span class="kw">null</span>;
-    <span class="kw">int</span> bestIdleDistance = <span class="tp">Integer</span>.MAX_VALUE;
+    <h3>ScanElevatorScheduler.selectElevator() Implementation</h3>
+<pre><span class="kw">public class</span> <span class="tp">ScanElevatorScheduler</span> <span class="kw">implements</span> <span class="tp">ElevatorScheduler</span> {
+    <span class="kw">public</span> <span class="tp">Elevator</span> <span class="fn">selectElevator</span>(<span class="tp">Request</span> request, <span class="tp">List</span>&lt;<span class="tp">Elevator</span>&gt; elevators) {
+        <span class="tp">Elevator</span> bestMoving = <span class="kw">null</span>;
+        <span class="kw">int</span> bestMovingDistance = <span class="tp">Integer</span>.MAX_VALUE;
+        <span class="tp">Elevator</span> bestIdle = <span class="kw">null</span>;
+        <span class="kw">int</span> bestIdleDistance = <span class="tp">Integer</span>.MAX_VALUE;
 
-    <span class="kw">for</span> (<span class="tp">Elevator</span> elevator : elevators.<span class="fn">values</span>()) {
-        <span class="kw">int</span> distance = elevator.<span class="fn">distanceToFloor</span>(floor);
+        <span class="kw">for</span> (<span class="tp">Elevator</span> elevator : elevators) {
+            <span class="kw">int</span> distance = elevator.<span class="fn">distanceToFloor</span>(request.<span class="fn">getFloor</span>());
 
-        <span class="kw">if</span> (elevator.<span class="fn">isIdle</span>()) {
-            <span class="kw">if</span> (distance < bestIdleDistance) {
-                bestIdle = elevator;
-                bestIdleDistance = distance;
-            }
-        } <span class="kw">else if</span> (elevator.<span class="fn">getDirection</span>() == direction) {
-            <span class="kw">boolean</span> movingToward =
-                (direction == <span class="tp">Direction</span>.UP && elevator.<span class="fn">getCurrentFloor</span>() <= floor) ||
-                (direction == <span class="tp">Direction</span>.DOWN && elevator.<span class="fn">getCurrentFloor</span>() >= floor);
-            <span class="kw">if</span> (movingToward && distance < bestMovingDistance) {
-                bestMoving = elevator;
-                bestMovingDistance = distance;
+            <span class="kw">if</span> (elevator.<span class="fn">isIdle</span>()) {
+                <span class="kw">if</span> (distance &lt; bestIdleDistance) {
+                    bestIdle = elevator;
+                    bestIdleDistance = distance;
+                }
+            } <span class="kw">else if</span> (elevator.<span class="fn">getDirection</span>() == request.<span class="fn">getDirection</span>()) {
+                <span class="kw">boolean</span> toward =
+                    (request.<span class="fn">getDirection</span>() == <span class="tp">Direction</span>.UP && elevator.<span class="fn">getCurrentFloor</span>() &lt;= request.<span class="fn">getFloor</span>()) ||
+                    (request.<span class="fn">getDirection</span>() == <span class="tp">Direction</span>.DOWN && elevator.<span class="fn">getCurrentFloor</span>() &gt;= request.<span class="fn">getFloor</span>());
+                <span class="kw">if</span> (toward && distance &lt; bestMovingDistance) {
+                    bestMoving = elevator;
+                    bestMovingDistance = distance;
+                }
             }
         }
+        <span class="kw">return</span> bestMoving != <span class="kw">null</span> ? bestMoving : bestIdle;
     }
-    <span class="kw">return</span> bestMoving != <span class="kw">null</span> ? bestMoving : bestIdle;
+}</pre>
+  </div>
+
+  <div class="card">
+    <h3>LookElevatorScheduler &mdash; Alternative Strategy</h3>
+<pre><span class="kw">public class</span> <span class="tp">LookElevatorScheduler</span> <span class="kw">implements</span> <span class="tp">ElevatorScheduler</span> {
+    <span class="kw">public</span> <span class="tp">Elevator</span> <span class="fn">selectElevator</span>(<span class="tp">Request</span> request, <span class="tp">List</span>&lt;<span class="tp">Elevator</span>&gt; elevators) {
+        <span class="tp">Elevator</span> best = <span class="kw">null</span>;
+        <span class="kw">int</span> bestScore = <span class="tp">Integer</span>.MAX_VALUE;
+        <span class="kw">for</span> (<span class="tp">Elevator</span> elevator : elevators) {
+            <span class="kw">int</span> distance = elevator.<span class="fn">distanceToFloor</span>(request.<span class="fn">getFloor</span>());
+            <span class="kw">int</span> penalty = elevator.<span class="fn">isIdle</span>() ? <span class="nr">0</span> : <span class="nr">1</span>;   <span class="cm">// tie-break toward idle cars</span>
+            <span class="kw">int</span> score = distance * <span class="nr">10</span> + penalty;
+            <span class="kw">if</span> (score &lt; bestScore) { bestScore = score; best = elevator; }
+        }
+        <span class="kw">return</span> best;
+    }
+}
+
+<span class="cm">// OptimalElevatorController delegates to whichever strategy was injected</span>
+<span class="kw">private void</span> <span class="fn">dispatch</span>(<span class="tp">Request</span> request) {
+    <span class="tp">Elevator</span> best = scheduler.<span class="fn">selectElevator</span>(request, <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;<span class="tp">Elevator</span>&gt;(elevators.<span class="fn">values</span>()));
+    <span class="kw">if</span> (best != <span class="kw">null</span>) best.<span class="fn">addDestination</span>(request.<span class="fn">getFloor</span>());
+    <span class="kw">else</span> pendingRequests.<span class="fn">offer</span>(request);
 }</pre>
   </div>
 </section>
@@ -421,11 +466,10 @@ Order: 5 &rarr; 6 &rarr; 8 &rarr; 10 &rarr; 2 &rarr; 0</pre>
     <span class="cm">// 2. Re-evaluate queued requests</span>
     <span class="kw">while</span> (!pendingRequests.<span class="fn">isEmpty</span>()) {
         <span class="tp">Request</span> request = pendingRequests.<span class="fn">peek</span>();
-        <span class="tp">Elevator</span> best = <span class="fn">findBestElevator</span>(request.<span class="fn">getFloor</span>(), request.<span class="fn">getDirection</span>());
-        <span class="kw">if</span> (best != <span class="kw">null</span>) {
-            pendingRequests.<span class="fn">poll</span>();
-            best.<span class="fn">addDestination</span>(request.<span class="fn">getFloor</span>());
-        } <span class="kw">else break</span>;
+        <span class="tp">Elevator</span> best = scheduler.<span class="fn">selectElevator</span>(request, <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;<span class="tp">Elevator</span>&gt;(elevators.<span class="fn">values</span>()));
+        <span class="kw">if</span> (best == <span class="kw">null</span>) <span class="kw">break</span>;
+        pendingRequests.<span class="fn">poll</span>();
+        best.<span class="fn">addDestination</span>(request.<span class="fn">getFloor</span>());
     }
 }</pre>
   </div>
@@ -527,7 +571,7 @@ Order: 5 &rarr; 6 &rarr; 8 &rarr; 10 &rarr; 2 &rarr; 0</pre>
     <div class="step" data-num="2">
       <div class="label">External Request</div>
       controller.requestElevator(5, Direction.UP)
-      <div class="detail">Request created with timestamp. <strong>findBestElevator(5, UP)</strong> &rarr; nearest idle elevator (Elevator 0). Floor 5 added to Elevator 0's destinations.</div>
+      <div class="detail">Request created with timestamp. <strong>scheduler.selectElevator(request, elevators)</strong> (SCAN by default) &rarr; nearest idle elevator (Elevator 0). Floor 5 added to Elevator 0's destinations.</div>
     </div>
     <div class="step" data-num="3">
       <div class="label">Simulation Steps</div>
@@ -557,7 +601,7 @@ Order: 5 &rarr; 6 &rarr; 8 &rarr; 10 &rarr; 2 &rarr; 0</pre>
     <div class="step" data-num="8">
       <div class="label">Concurrent Requests</div>
       Multiple requests arrive &mdash; dispatched to different elevators
-      <div class="detail">findBestElevator distributes load: moving-same-direction elevators preferred, then idle. Unserviceable requests queued and re-evaluated each step().</div>
+      <div class="detail">The scheduler distributes load: moving-same-direction elevators preferred, then idle. Unserviceable requests queued and re-evaluated each step().</div>
     </div>
   </div>
 </section>
@@ -569,13 +613,15 @@ Order: 5 &rarr; 6 &rarr; 8 &rarr; 10 &rarr; 2 &rarr; 0</pre>
 <pre><span class="cm">// Controller stores</span>
 <span class="tp">Map</span>&lt;<span class="tp">Integer</span>, <span class="tp">Elevator</span>&gt; elevators = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
 <span class="tp">Queue</span>&lt;<span class="tp">Request</span>&gt; pendingRequests = <span class="kw">new</span> <span class="tp">LinkedList</span>&lt;&gt;();
+<span class="kw">final</span> <span class="tp">ElevatorScheduler</span> scheduler;   <span class="cm">// injected: Scan (default) or Look</span>
 
 <span class="cm">// Elevator destinations (sorted + thread-safe)</span>
 <span class="tp">Set</span>&lt;<span class="tp">Integer</span>&gt; destinationFloors = <span class="kw">new</span> <span class="tp">ConcurrentSkipListSet</span>&lt;&gt;();
 <span class="cm">// ^ sorted order gives SCAN behavior for free</span>
 <span class="cm">// ^ concurrent: multiple button presses don't race</span>
 
-<span class="cm">// Metrics (production: AtomicInteger/AtomicLong for thread safety)</span>
+<span class="cm">// Metrics &mdash; standalone class, not yet wired into the controller</span>
+<span class="cm">// (production: AtomicInteger/AtomicLong for thread safety)</span>
 <span class="tp">ElevatorMetrics</span> metrics = <span class="kw">new</span> <span class="tp">ElevatorMetrics</span>();
 <span class="cm">// totalTrips, totalWaitTime, floorsTraversed</span></pre>
   </div>
@@ -605,7 +651,7 @@ Order: 5 &rarr; 6 &rarr; 8 &rarr; 10 &rarr; 2 &rarr; 0</pre>
 
   <details>
     <summary>How do you handle multiple elevators efficiently?</summary>
-    <div class="answer">The <span class="inline-code">findBestElevator()</span> method uses a two-tier dispatch: first prefer an elevator already moving in the same direction toward the request floor (zero detour), then fall back to the nearest idle elevator. This minimizes both wait time and unnecessary travel. At scale, you'd add a <span class="inline-code">WeightedScoreScheduler</span> that factors in current load, remaining stops, and estimated arrival time.</div>
+    <div class="answer"><span class="inline-code">ScanElevatorScheduler.selectElevator()</span> uses a two-tier dispatch: first prefer an elevator already moving in the same direction toward the request floor (zero detour), then fall back to the nearest idle elevator. This minimizes both wait time and unnecessary travel. At scale, you'd add a (hypothetical) <span class="inline-code">WeightedScoreScheduler</span> that factors in current load, remaining stops, and estimated arrival time.</div>
   </details>
 
   <details>
@@ -665,19 +711,22 @@ Order: 5 &rarr; 6 &rarr; 8 &rarr; 10 &rarr; 2 &rarr; 0</pre>
   <div class="card">
 <pre>elevator/
 ├── api/
-│   └── <span class="tp">ElevatorController</span>.java       <span class="cm">-- service interface (4 methods)</span>
+│   └── <span class="tp">ElevatorController</span>.java          <span class="cm">-- service interface (4 methods)</span>
 ├── impl/
-│   └── <span class="tp">OptimalElevatorController</span>      <span class="cm">-- SCAN-based implementation</span>
+│   └── <span class="tp">OptimalElevatorController</span>.java   <span class="cm">-- dispatch via injected ElevatorScheduler</span>
 ├── model/
-│   ├── <span class="tp">Elevator</span>                       <span class="cm">-- core entity (state-aware, thread-safe)</span>
-│   ├── <span class="tp">Request</span>                        <span class="cm">-- immutable value object (floor + direction)</span>
-│   ├── <span class="tp">Direction</span>                      <span class="cm">-- enum: UP, DOWN, IDLE</span>
-│   └── <span class="tp">ElevatorStatus</span>                 <span class="cm">-- enum: IDLE, MOVING_UP, MOVING_DOWN, MAINTENANCE</span>
+│   ├── <span class="tp">Elevator</span>.java                    <span class="cm">-- core entity (state-aware, thread-safe)</span>
+│   ├── <span class="tp">Request</span>.java                     <span class="cm">-- immutable value object (floor + direction)</span>
+│   ├── <span class="tp">Direction</span>.java                   <span class="cm">-- enum: UP, DOWN, IDLE</span>
+│   └── <span class="tp">ElevatorStatus</span>.java              <span class="cm">-- enum: IDLE, MOVING_UP, MOVING_DOWN, MAINTENANCE</span>
 ├── scheduler/
-│   └── <span class="tp">ElevatorScheduler</span>              <span class="cm">-- strategy interface: selectElevator()</span>
+│   ├── <span class="tp">ElevatorScheduler</span>.java           <span class="cm">-- strategy interface: selectElevator()</span>
+│   ├── <span class="tp">ScanElevatorScheduler</span>.java       <span class="cm">-- same-direction-approaching, else nearest idle</span>
+│   └── <span class="tp">LookElevatorScheduler</span>.java       <span class="cm">-- min distance score, idle tie-break</span>
 ├── metrics/
-│   └── <span class="tp">ElevatorMetrics</span>                <span class="cm">-- trip count, wait time, floors traversed</span>
-└── <span class="fn">ElevatorDemo</span>.java                 <span class="cm">-- 4 scenarios: single, multi, internal, rush hour</span></pre>
+│   └── <span class="tp">ElevatorMetrics</span>.java             <span class="cm">-- trip count, wait time, floors traversed</span>
+├── <span class="tp">ElevatorSystem</span>.java                  <span class="cm">-- facade: picks SCAN or LOOK, wraps controller</span>
+└── <span class="fn">ElevatorDemo</span>.java                    <span class="cm">-- SCAN run (3 cars) vs LOOK run (2 cars)</span></pre>
   </div>
 </section>
 
@@ -694,12 +743,12 @@ Order: 5 &rarr; 6 &rarr; 8 &rarr; 10 &rarr; 2 &rarr; 0</pre>
       </tr>
       <tr>
         <td><span style="color:var(--accent2);">Strategy</span></td>
-        <td>ElevatorScheduler interface, findBestElevator()</td>
+        <td>ElevatorScheduler &rarr; ScanElevatorScheduler, LookElevatorScheduler</td>
         <td>Swap FCFS/SCAN/LOOK/SSTF without changing controller</td>
       </tr>
       <tr>
         <td><span style="color:var(--accent3);">Observer</span></td>
-        <td>Floor displays, arrival notifications</td>
+        <td>Floor displays, arrival notifications (follow-up, not in code)</td>
         <td>Decouple notification from movement logic</td>
       </tr>
       <tr>
@@ -724,7 +773,7 @@ Order: 5 &rarr; 6 &rarr; 8 &rarr; 10 &rarr; 2 &rarr; 0</pre>
       </tr>
     </table>
   </div>
-  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">9 files &middot; SCAN algorithm &middot; thread-safe &middot; strategy-pluggable &middot; step-simulated</p>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">12 files &middot; SCAN + LOOK schedulers &middot; thread-safe &middot; strategy-pluggable &middot; step-simulated</p>
 </section>
 
 </div>

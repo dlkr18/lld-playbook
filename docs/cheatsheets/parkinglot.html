@@ -36,7 +36,7 @@
 <!-- HERO -->
 <div class="hero">
   <h1>Parking Lot System <span>// LLD</span></h1>
-  <p>Production-grade low-level design with Strategy (pricing + allocation), State Machine (ticket lifecycle), and thread-safe concurrent operations. 25 files, full working demo.</p>
+  <p>Production-grade low-level design with Strategy (pricing + allocation), State Machine (ticket lifecycle), and thread-safe concurrent operations. 32 files, full working demo.</p>
   <div class="tags">
     <span class="tag">Strategy Pattern</span>
     <span class="tag orange">Pricing Strategy</span>
@@ -54,7 +54,7 @@
     <ul>
       <li><strong>Vehicle Entry</strong> &mdash; validate vehicle type, find suitable space via allocation strategy, generate unique ticket with entry time, update occupancy in real-time</li>
       <li><strong>Vehicle Exit</strong> &mdash; calculate fee based on duration + pricing strategy, process payment, free parking space, generate receipt</li>
-      <li><strong>Space Management</strong> &mdash; support MOTORCYCLE, COMPACT, LARGE, DISABLED space types mapped to vehicle types (Motorcycle &rarr; Motorcycle/Compact, Car &rarr; Compact/Large, Truck/Bus &rarr; Large)</li>
+      <li><strong>Space Management</strong> &mdash; support MOTORCYCLE, COMPACT, LARGE, DISABLED space types mapped to vehicle types (Motorcycle &rarr; Motorcycle/Compact/Large, Car &rarr; Compact/Large, Truck/Bus &rarr; Large)</li>
       <li><strong>Flexible Pricing</strong> &mdash; hourly with grace period, flat daily rate, peak/off-peak differential, weekend vs weekday, early bird specials</li>
       <li><strong>Payment Processing</strong> &mdash; multiple methods (Cash, Credit Card, Debit Card, Mobile), validate before exit, handle failures gracefully</li>
       <li><strong>Reporting</strong> &mdash; real-time occupancy per space type, revenue analytics, average duration per vehicle type, peak utilization tracking</li>
@@ -82,12 +82,17 @@
       <tr>
         <td><span class="inline-code">ParkingSpace</span></td>
         <td>Entity (final)</td>
-        <td>spaceId, spaceType, floorNumber, isOccupied, currentVehicle &mdash; synchronized occupy()/vacate()</td>
+        <td>spaceId, spaceType, floorNumber, occupied (AtomicBoolean), currentVehicle (volatile) &mdash; CAS tryOccupy()/vacate(), canAccept()</td>
       </tr>
       <tr>
         <td><span class="inline-code">ParkingTicket</span></td>
         <td>Entity (final)</td>
-        <td>ticketId, vehicle, parkingSpace, entryTime, exitTime, isActive &mdash; calculateDuration(), markExit()</td>
+        <td>ticketId, vehicle, parkingSpace, entryTime, exitTime, status (ACTIVE/CLOSED/CANCELLED) &mdash; duration(), markExit(), markCancelled()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ParkingLot</span> / <span class="inline-code">Floor</span></td>
+        <td>Composite (final)</td>
+        <td>lotId, name, floors, allSpaces / floorNumber, spaces &mdash; availableFor(vehicle), occupiedCount(), totalSpaces()</td>
       </tr>
       <tr>
         <td><span class="inline-code">Vehicle</span></td>
@@ -125,19 +130,19 @@
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
     <div class="card highlight">
       <h3 style="color:var(--accent);margin-top:0;">Strategy &mdash; Pricing</h3>
-      <p><strong>PricingStrategy</strong> interface with pluggable implementations: HourlyPricing, FlatRate, PeakOffPeak, EarlyBird. Injected at construction, swappable at runtime. Different locations need different pricing.</p>
+      <p><strong>PricingStrategy</strong> interface with pluggable implementations: HourlyPricingStrategy, FlatRatePricingStrategy (PeakOffPeak / EarlyBird are follow-ups). Injected at construction, swappable at runtime. Different locations need different pricing.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent3);">
       <h3 style="color:var(--accent3);margin-top:0;">Strategy &mdash; Allocation</h3>
-      <p><strong>SpaceAllocationStrategy</strong> interface for space selection: NearestFirst (minimize walking), CompactFirst (maximize utilization), CheapestFirst, FloorBalanced. Easy to A/B test.</p>
+      <p><strong>SpaceAllocationStrategy</strong> interface for space selection: NearestSpaceAllocationStrategy (smallest fit, lowest floor), FirstAvailableAllocationStrategy (valet-style). CheapestFirst / FloorBalanced are follow-ups. Easy to A/B test.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent4);">
       <h3 style="color:var(--accent4);margin-top:0;">State Machine</h3>
-      <p>Ticket lifecycle: <strong>ACTIVE &rarr; PAID / CANCELLED / LOST</strong>. Prevents double-payment, handles lost ticket penalties. Clear terminal states.</p>
+      <p>Ticket lifecycle: <strong>ACTIVE &rarr; CLOSED / CANCELLED</strong> (<span class="inline-code">ParkingTicket.Status</span>). Prevents double-payment; LOST is a follow-up state. Clear terminal states.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent5);">
       <h3 style="color:var(--accent5);margin-top:0;">Repository Pattern</h3>
-      <p><strong>ConcurrentHashMap</strong> stores for spaces, tickets, payments. In-memory implementation easily swappable for database-backed persistence.</p>
+      <p><strong>ConcurrentHashMap</strong> stores for activeTickets, closedTickets, plateToActiveTicketId. In-memory implementation easily swappable for database-backed persistence.</p>
     </div>
   </div>
 </section>
@@ -153,32 +158,36 @@
     <div class="diagram">
   <img src="img/parkinglot-ticket-lifecycle.png" alt="Parking Lot ticket lifecycle and structure">
 </div>
-<p class="diagram-caption">Ticket state machine (ACTIVE &rarr; PAID / CANCELLED / LOST) plus the structure it rides on: the Lot&rarr;Floor&rarr;Space Composite, the two Strategies (pricing + allocation), Observer events, and CAS-based space allocation.</p>
+<p class="diagram-caption">Ticket state machine (ACTIVE &rarr; PAID / CANCELLED / LOST; in code <span class="inline-code">ParkingTicket.Status</span> is ACTIVE &rarr; CLOSED / CANCELLED, LOST is a follow-up) plus the structure it rides on: the Lot&rarr;Floor&rarr;Space Composite, the two Strategies (pricing + allocation), Observer events, and CAS-based space allocation.</p>
   </div>
 
   <div class="card">
     <h3>Ticket Lifecycle in Code</h3>
 <pre><span class="kw">public final class</span> <span class="tp">ParkingTicket</span> {
+    <span class="kw">public enum</span> <span class="tp">Status</span> { ACTIVE, CLOSED, CANCELLED }
+
     <span class="kw">private final</span> <span class="tp">String</span> ticketId;
     <span class="kw">private final</span> <span class="tp">Vehicle</span> vehicle;
     <span class="kw">private final</span> <span class="tp">ParkingSpace</span> parkingSpace;
     <span class="kw">private final</span> <span class="tp">LocalDateTime</span> entryTime;
-    <span class="kw">private</span> <span class="tp">LocalDateTime</span> exitTime;
-    <span class="kw">private boolean</span> isActive;
+    <span class="kw">private volatile</span> <span class="tp">LocalDateTime</span> exitTime;
+    <span class="kw">private volatile</span> <span class="tp">Status</span> status = <span class="tp">Status</span>.ACTIVE;
 
-    <span class="kw">public void</span> <span class="fn">markExit</span>(<span class="tp">LocalDateTime</span> exitTime) {
-        <span class="kw">if</span> (!isActive) <span class="kw">throw new</span> <span class="tp">IllegalStateException</span>(<span class="st">"Ticket already inactive"</span>);
+    <span class="kw">public synchronized void</span> <span class="fn">markExit</span>(<span class="tp">LocalDateTime</span> exitTime) {
+        <span class="kw">if</span> (status != <span class="tp">Status</span>.ACTIVE) <span class="kw">throw new</span> <span class="tp">IllegalStateException</span>(<span class="st">"ticket " + ticketId + " is " + status</span>);
         <span class="kw">if</span> (exitTime.<span class="fn">isBefore</span>(entryTime)) <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(...);
         <span class="kw">this</span>.exitTime = exitTime;
-        <span class="kw">this</span>.isActive = <span class="kw">false</span>;
+        <span class="kw">this</span>.status = <span class="tp">Status</span>.CLOSED;
     }
 
-    <span class="kw">public</span> <span class="tp">Duration</span> <span class="fn">calculateDuration</span>() {
-        <span class="tp">LocalDateTime</span> endTime = exitTime != <span class="kw">null</span> ? exitTime : <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();
-        <span class="kw">return</span> <span class="tp">Duration</span>.<span class="fn">between</span>(entryTime, endTime);
+    <span class="kw">public synchronized void</span> <span class="fn">markCancelled</span>() { <span class="cm">/* ACTIVE -> CANCELLED, same guard */</span> }
+
+    <span class="kw">public</span> <span class="tp">Duration</span> <span class="fn">duration</span>() {
+        <span class="tp">LocalDateTime</span> end = (exitTime != <span class="kw">null</span>) ? exitTime : <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();
+        <span class="kw">return</span> <span class="tp">Duration</span>.<span class="fn">between</span>(entryTime, end);
     }
 
-    <span class="kw">public boolean</span> <span class="fn">isValid</span>() { <span class="kw">return</span> isActive && exitTime == <span class="kw">null</span>; }
+    <span class="kw">public boolean</span> <span class="fn">isActive</span>() { <span class="kw">return</span> status == <span class="tp">Status</span>.ACTIVE; }
 }</pre>
   </div>
 
@@ -195,12 +204,13 @@
   </div>
 
   <div class="card">
-    <h3>Lost Ticket Handling</h3>
-<pre><span class="kw">public</span> <span class="tp">Money</span> <span class="fn">calculateFeeForLostTicket</span>(<span class="tp">VehicleType</span> vehicleType) {
-    <span class="cm">// Charge for maximum duration (24 hours)</span>
-    <span class="tp">LocalDateTime</span> now = <span class="tp">LocalDateTime</span>.<span class="fn">now</span>();
-    <span class="tp">LocalDateTime</span> assumed = now.<span class="fn">minusHours</span>(<span class="nr">24</span>);
-    <span class="kw">return</span> pricingStrategy.<span class="fn">calculateFee</span>(assumed, now, <span class="fn">getSpaceType</span>(vehicleType));
+    <h3>Lost Ticket Handling (hypothetical follow-up &mdash; not in src)</h3>
+<pre><span class="cm">// Not implemented in src. Reuses the real PricingStrategy seam:</span>
+<span class="cm">// bill a lost ticket as if the vehicle had been parked for 24 hours.</span>
+<span class="tp">Money</span> <span class="fn">lostTicketFee</span>(<span class="tp">ParkingTicket</span> ticket) {
+    <span class="tp">ParkingTicket</span> assumed = <span class="kw">new</span> <span class="tp">ParkingTicket</span>(ticket.<span class="fn">getTicketId</span>(), ticket.<span class="fn">getVehicle</span>(),
+        ticket.<span class="fn">getParkingSpace</span>(), <span class="tp">LocalDateTime</span>.<span class="fn">now</span>().<span class="fn">minusHours</span>(<span class="nr">24</span>));
+    <span class="kw">return</span> pricing.<span class="fn">calculateFee</span>(assumed);
 }</pre>
   </div>
 </section>
@@ -221,9 +231,9 @@
     <table>
       <tr><th>Implementation</th><th>Logic</th></tr>
       <tr><td><span class="inline-code">HourlyPricingStrategy</span></td><td>Per-type rates: Motorcycle $10/hr, Car $20/hr, Truck $40/hr, Bus $50/hr. 15-min grace period. Min charge $5. Rounds up partial hours.</td></tr>
-      <tr><td><span class="inline-code">FlatRate</span></td><td>$20/day regardless of duration</td></tr>
-      <tr><td><span class="inline-code">PeakOffPeakPricing</span></td><td>$5/hr peak (17:00-21:00), $2/hr off-peak</td></tr>
-      <tr><td><span class="inline-code">EarlyBirdSpecial</span></td><td>$15 flat if enter before 9am and exit before 6pm</td></tr>
+      <tr><td><span class="inline-code">FlatRatePricingStrategy</span></td><td>Per-type daily rate &times; ceil(hours / 24), minimum 1 day</td></tr>
+      <tr><td><span class="inline-code">PeakOffPeakPricing</span> (follow-up)</td><td>$5/hr peak (17:00-21:00), $2/hr off-peak</td></tr>
+      <tr><td><span class="inline-code">EarlyBirdSpecial</span> (follow-up)</td><td>$15 flat if enter before 9am and exit before 6pm</td></tr>
     </table>
   </div>
 
@@ -233,19 +243,21 @@
     <span class="kw">private final</span> <span class="tp">Map</span>&lt;<span class="tp">VehicleType</span>, <span class="tp">Money</span>&gt; hourlyRates;
     <span class="kw">private final</span> <span class="tp">Money</span> minimumCharge;           <span class="cm">// $5.00</span>
     <span class="kw">private final</span> <span class="tp">Duration</span> gracePeriod;          <span class="cm">// 15 minutes</span>
+    <span class="kw">private final</span> <span class="tp">Currency</span> currency;
 
     <span class="kw">public</span> <span class="tp">Money</span> <span class="fn">calculateFee</span>(<span class="tp">ParkingTicket</span> ticket) {
-        <span class="tp">Duration</span> duration = ticket.<span class="fn">calculateDuration</span>();
+        <span class="tp">Duration</span> d = ticket.<span class="fn">duration</span>();
 
         <span class="cm">// Free if within grace period</span>
-        <span class="kw">if</span> (duration.<span class="fn">compareTo</span>(gracePeriod) &lt;= <span class="nr">0</span>)
+        <span class="kw">if</span> (d.<span class="fn">compareTo</span>(gracePeriod) &lt;= <span class="nr">0</span>)
             <span class="kw">return</span> <span class="tp">Money</span>.<span class="fn">ofMinor</span>(<span class="nr">0</span>, currency);
 
-        <span class="kw">long</span> minutes = duration.<span class="fn">toMinutes</span>();
+        <span class="tp">Money</span> rate = hourlyRates.<span class="fn">get</span>(ticket.<span class="fn">getVehicle</span>().<span class="fn">getVehicleType</span>());
+        <span class="kw">long</span> minutes = d.<span class="fn">toMinutes</span>();
         <span class="kw">long</span> hours = (minutes + <span class="nr">59</span>) / <span class="nr">60</span>; <span class="cm">// Round up</span>
 
-        <span class="tp">Money</span> totalFee = hourlyRate.<span class="fn">times</span>(hours);
-        <span class="kw">return</span> totalFee.<span class="fn">compareTo</span>(minimumCharge) &lt; <span class="nr">0</span> ? minimumCharge : totalFee;
+        <span class="tp">Money</span> total = rate.<span class="fn">times</span>(hours);
+        <span class="kw">return</span> total.<span class="fn">compareTo</span>(minimumCharge) &lt; <span class="nr">0</span> ? minimumCharge : total;
     }
 }</pre>
   </div>
@@ -254,37 +266,46 @@
     <h3>Space Allocation Strategy</h3>
 <pre><span class="kw">interface</span> <span class="tp">SpaceAllocationStrategy</span> {
     <span class="tp">Optional</span>&lt;<span class="tp">ParkingSpace</span>&gt; <span class="fn">selectSpace</span>(<span class="tp">List</span>&lt;<span class="tp">ParkingSpace</span>&gt; availableSpaces,
-                                        <span class="tp">VehicleType</span> vehicleType);
+                                        <span class="tp">Vehicle</span> vehicle);
     <span class="tp">String</span> <span class="fn">getDescription</span>();
 }</pre>
     <table>
       <tr><th>Implementation</th><th>Logic</th></tr>
-      <tr><td><span class="inline-code">NearestSpaceAllocation</span></td><td>Prioritizes lower floor, then space type preference: Motorcycle &rarr; [MC, COMPACT, LARGE], Car &rarr; [COMPACT, LARGE], Truck/Bus &rarr; [LARGE]</td></tr>
-      <tr><td><span class="inline-code">CompactFirst</span></td><td>Fill smallest compatible space first (maximize utilization)</td></tr>
-      <tr><td><span class="inline-code">CheapestFirst</span></td><td>Select space with lowest hourly rate</td></tr>
-      <tr><td><span class="inline-code">FloorBalanced</span></td><td>Distribute load evenly across floors</td></tr>
+      <tr><td><span class="inline-code">NearestSpaceAllocationStrategy</span></td><td>Disabled-permit holders try DISABLED first; then space type preference: Motorcycle &rarr; [MC, COMPACT, LARGE], Car &rarr; [COMPACT, LARGE], Truck/Bus &rarr; [LARGE]; within a type, lowest floor then spaceId</td></tr>
+      <tr><td><span class="inline-code">FirstAvailableAllocationStrategy</span></td><td>First candidate in iteration order (valet-style); still prefers DISABLED for permit holders</td></tr>
+      <tr><td><span class="inline-code">CheapestFirst</span> (follow-up)</td><td>Select space with lowest hourly rate</td></tr>
+      <tr><td><span class="inline-code">FloorBalanced</span> (follow-up)</td><td>Distribute load evenly across floors</td></tr>
     </table>
   </div>
 
   <div class="card">
     <h3>Nearest Allocation &mdash; Space Priority Map</h3>
-<pre><span class="kw">static final</span> <span class="tp">Map</span>&lt;<span class="tp">VehicleType</span>, <span class="tp">List</span>&lt;<span class="tp">SpaceType</span>&gt;&gt; SPACE_PRIORITY;
+<pre><span class="kw">private static final</span> <span class="tp">Map</span>&lt;<span class="tp">VehicleType</span>, <span class="tp">List</span>&lt;<span class="tp">SpaceType</span>&gt;&gt; PREFERENCE;
 <span class="kw">static</span> {
-    SPACE_PRIORITY.<span class="fn">put</span>(<span class="tp">VehicleType</span>.MOTORCYCLE,
+    PREFERENCE = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+    PREFERENCE.<span class="fn">put</span>(<span class="tp">VehicleType</span>.MOTORCYCLE,
         <span class="tp">Arrays</span>.<span class="fn">asList</span>(<span class="tp">SpaceType</span>.MOTORCYCLE, <span class="tp">SpaceType</span>.COMPACT, <span class="tp">SpaceType</span>.LARGE));
-    SPACE_PRIORITY.<span class="fn">put</span>(<span class="tp">VehicleType</span>.CAR,
+    PREFERENCE.<span class="fn">put</span>(<span class="tp">VehicleType</span>.CAR,
         <span class="tp">Arrays</span>.<span class="fn">asList</span>(<span class="tp">SpaceType</span>.COMPACT, <span class="tp">SpaceType</span>.LARGE));
-    SPACE_PRIORITY.<span class="fn">put</span>(<span class="tp">VehicleType</span>.TRUCK,
-        <span class="tp">Collections</span>.<span class="fn">singletonList</span>(<span class="tp">SpaceType</span>.LARGE));
-    SPACE_PRIORITY.<span class="fn">put</span>(<span class="tp">VehicleType</span>.BUS,
-        <span class="tp">Collections</span>.<span class="fn">singletonList</span>(<span class="tp">SpaceType</span>.LARGE));
+    PREFERENCE.<span class="fn">put</span>(<span class="tp">VehicleType</span>.TRUCK, <span class="tp">Arrays</span>.<span class="fn">asList</span>(<span class="tp">SpaceType</span>.LARGE));
+    PREFERENCE.<span class="fn">put</span>(<span class="tp">VehicleType</span>.BUS,   <span class="tp">Arrays</span>.<span class="fn">asList</span>(<span class="tp">SpaceType</span>.LARGE));
 }
 
-<span class="cm">// Try preferred types in order, then fallback to any compatible</span>
-<span class="kw">for</span> (<span class="tp">SpaceType</span> preferred : preferredTypes) {
-    <span class="tp">Optional</span>&lt;<span class="tp">ParkingSpace</span>&gt; space = <span class="fn">findNearestSpaceOfType</span>(available, preferred);
-    <span class="kw">if</span> (space.<span class="fn">isPresent</span>()) <span class="kw">return</span> space;
-}</pre>
+<span class="cm">// selectSpace(): permit holders try DISABLED first, then preferred types in order</span>
+<span class="kw">if</span> (vehicle.<span class="fn">hasDisabledPermit</span>()) {
+    <span class="tp">Optional</span>&lt;<span class="tp">ParkingSpace</span>&gt; reserved = <span class="fn">pickFromType</span>(availableSpaces, <span class="tp">SpaceType</span>.DISABLED);
+    <span class="kw">if</span> (reserved.<span class="fn">isPresent</span>()) <span class="kw">return</span> reserved;
+}
+<span class="kw">for</span> (<span class="tp">SpaceType</span> preferred : prefs) {
+    <span class="tp">Optional</span>&lt;<span class="tp">ParkingSpace</span>&gt; picked = <span class="fn">pickFromType</span>(availableSpaces, preferred);
+    <span class="kw">if</span> (picked.<span class="fn">isPresent</span>()) <span class="kw">return</span> picked;
+}
+<span class="kw">return</span> <span class="tp">Optional</span>.<span class="fn">empty</span>();
+
+<span class="cm">// pickFromType: lowest floor, then spaceId</span>
+spaces.<span class="fn">stream</span>().<span class="fn">filter</span>(s -&gt; s.<span class="fn">getSpaceType</span>() == type)
+      .<span class="fn">min</span>(<span class="tp">Comparator</span>.<span class="fn">comparingInt</span>(<span class="tp">ParkingSpace</span>::getFloorNumber)
+          .<span class="fn">thenComparing</span>(<span class="tp">ParkingSpace</span>::getSpaceId));</pre>
   </div>
 </section>
 
@@ -294,22 +315,20 @@
 
   <div class="card">
     <h3>1. Find Available Space</h3>
-<pre><span class="cm">Algorithm: FindAvailableSpace(vehicleType, allocationStrategy)</span>
+<pre><span class="cm">Algorithm: FindAvailableSpace(vehicle, allocation)</span>
 
-<span class="nr">1.</span> compatibleTypes = <span class="fn">getCompatibleSpaceTypes</span>(vehicleType)
-   <span class="cm">// e.g. CAR -> [COMPACT, REGULAR]</span>
+<span class="nr">1.</span> <span class="cm">// compatibility = SpaceType.canAccommodate(vehicleType) + DISABLED permit</span>
+   <span class="cm">// e.g. CAR -> [COMPACT, LARGE, DISABLED if permit]</span>
 
-<span class="nr">2.</span> candidates = allSpaces.<span class="fn">stream</span>()
-       .<span class="fn">filter</span>(space -> !space.<span class="fn">isOccupied</span>() && space.<span class="fn">canFit</span>(vehicle))
-       .<span class="fn">collect</span>(<span class="tp">Collectors</span>.<span class="fn">toList</span>())
+<span class="nr">2.</span> candidates = lot.<span class="fn">availableFor</span>(vehicle)
+       <span class="cm">// allSpaces.stream().filter(s -> s.isAvailable() && s.canAccept(vehicle))</span>
 
 <span class="nr">3.</span> <span class="kw">if</span> candidates is empty:
-       <span class="kw">throw</span> <span class="tp">ParkingFullException</span>(vehicleType)
+       <span class="kw">return null</span>   <span class="cm">// caller fires onLotFull, throws ParkingFullException</span>
 
-<span class="nr">4.</span> optimalSpace = allocationStrategy.<span class="fn">selectSpace</span>(candidates, vehicleType)
-   <span class="cm">// Nearest: min floor, then spaceId</span>
-   <span class="cm">// Compact: smallest compatible space</span>
-   <span class="cm">// Cheapest: lowest hourly rate</span>
+<span class="nr">4.</span> optimalSpace = allocation.<span class="fn">selectSpace</span>(candidates, vehicle)
+   <span class="cm">// Nearest: preferred type, then min floor, then spaceId</span>
+   <span class="cm">// FirstAvailable: first candidate</span>
 
 <span class="nr">5.</span> <span class="kw">return</span> optimalSpace
 
@@ -323,36 +342,38 @@
 
 <span class="nr">1.</span> <span class="fn">validateVehicle</span>(vehicle)  <span class="cm">// null check, license plate check</span>
 
-<span class="nr">2.</span> <span class="cm">// Prevent duplicate parking</span>
-   <span class="kw">if</span> activeTickets.<span class="fn">anyMatch</span>(t -> t.vehicle.license == vehicle.license):
-       <span class="kw">throw</span> <span class="tp">InvalidVehicleException</span>(<span class="st">"Already parked"</span>)
+<span class="nr">2.</span> <span class="cm">// Prevent duplicate parking (fast path)</span>
+   <span class="kw">if</span> plateToActiveTicketId.<span class="fn">containsKey</span>(vehicle.licenseNumber):
+       <span class="kw">throw</span> <span class="tp">InvalidVehicleException</span>(<span class="st">"vehicle already inside"</span>)
 
-<span class="nr">3.</span> availableSpaces = allSpaces.<span class="fn">filter</span>(!occupied && canFit(vehicle))
+<span class="nr">3.</span> space = <span class="fn">claimSpaceFor</span>(vehicle)   <span class="cm">// CAS retry loop, MAX_ALLOCATION_RETRIES = 8</span>
+       candidates = lot.<span class="fn">availableFor</span>(vehicle)
+       chosen = allocation.<span class="fn">selectSpace</span>(candidates, vehicle)
+       <span class="kw">if</span> chosen.<span class="fn">tryOccupy</span>(vehicle): <span class="kw">return</span> chosen  <span class="cm">// lost the race -> retry</span>
 
-<span class="nr">4.</span> space = allocationStrategy.<span class="fn">selectSpace</span>(availableSpaces, vehicleType)
+<span class="nr">4.</span> <span class="kw">if</span> space == <span class="kw">null</span>: <span class="fn">fire</span>(onLotFull); <span class="kw">throw</span> <span class="tp">ParkingFullException</span>(vehicleType)
 
-<span class="nr">5.</span> <span class="kw">synchronized</span>(space) {       <span class="cm">// Prevent double-booking</span>
-       space.<span class="fn">occupy</span>(vehicle);    <span class="cm">// returns false if race condition</span>
-   }
+<span class="nr">5.</span> ticket = <span class="kw">new</span> <span class="tp">ParkingTicket</span>(<span class="fn">nextTicketId</span>(), vehicle, space, now())
 
-<span class="nr">6.</span> ticket = <span class="kw">new</span> <span class="tp">ParkingTicket</span>(generateId(), vehicle, space, now())
-   activeTickets.<span class="fn">put</span>(ticket.id, ticket)
+<span class="nr">6.</span> <span class="kw">if</span> plateToActiveTicketId.<span class="fn">putIfAbsent</span>(plate, ticketId) != <span class="kw">null</span>:
+       space.<span class="fn">vacate</span>(); <span class="kw">throw</span> <span class="tp">InvalidVehicleException</span>  <span class="cm">// same plate raced in</span>
+   activeTickets.<span class="fn">put</span>(ticketId, ticket)
 
-<span class="nr">7.</span> <span class="kw">return</span> ticket
+<span class="nr">7.</span> <span class="fn">fire</span>(onVehicleEntered); <span class="kw">return new</span> <span class="tp">ParkingTicketResult</span>(ticket)
 
-<span class="cm">Time: O(log k) with PQ, O(k) with set | Space: O(1)</span></pre>
+<span class="cm">Time: O(n) scan of spaces per attempt | Space: O(k) candidates</span></pre>
   </div>
 
   <div class="card">
     <h3>3. Calculate Parking Fee</h3>
 <pre><span class="cm">Algorithm: CalculateParkingFee(ticketId)</span>
 
-<span class="nr">1.</span> ticket = activeTickets.<span class="fn">get</span>(ticketId)
-   <span class="kw">if</span> ticket == <span class="kw">null</span>: <span class="kw">throw</span> <span class="tp">InvalidTicketException</span>
+<span class="nr">1.</span> ticket = <span class="fn">requireActiveTicket</span>(ticketId)
+   <span class="cm">// activeTickets.get(ticketId) == null -> InvalidTicketException</span>
 
-<span class="nr">2.</span> <span class="kw">if</span> !ticket.<span class="fn">isValid</span>(): <span class="kw">throw</span> <span class="tp">IllegalStateException</span>(<span class="st">"Already processed"</span>)
+<span class="nr">2.</span> <span class="cm">// closed tickets live in closedTickets, so they fail step 1</span>
 
-<span class="nr">3.</span> fee = pricingStrategy.<span class="fn">calculateFee</span>(ticket)
+<span class="nr">3.</span> fee = pricing.<span class="fn">calculateFee</span>(ticket)
    <span class="cm">// Internally: duration = between(entry, now)</span>
    <span class="cm">// If duration <= 15min grace -> $0</span>
    <span class="cm">// Else: ceil(hours) * hourlyRate[vehicleType]</span>
@@ -367,27 +388,28 @@
     <h3>4. Vehicle Exit</h3>
 <pre><span class="cm">Algorithm: ExitVehicle(ticketId, paymentMethod)</span>
 
-<span class="nr">1.</span> ticket = activeTickets.<span class="fn">get</span>(ticketId)
-   <span class="fn">validateTicket</span>(ticket)
+<span class="nr">1.</span> ticket = <span class="fn">requireActiveTicket</span>(ticketId)
+   <span class="kw">synchronized</span>(ticket) {         <span class="cm">// one exit per ticket</span>
+   <span class="kw">if</span> !ticket.<span class="fn">isActive</span>(): <span class="kw">throw</span> <span class="tp">InvalidTicketException</span>(<span class="st">"already closed"</span>)
 
-<span class="nr">2.</span> fee = pricingStrategy.<span class="fn">calculateFee</span>(ticket)
+<span class="nr">2.</span> fee = pricing.<span class="fn">calculateFee</span>(ticket)
 
-<span class="nr">3.</span> payment = <span class="kw">new</span> <span class="tp">Payment</span>(generateId(), ticket, fee, paymentMethod)
+<span class="nr">3.</span> payment = <span class="kw">new</span> <span class="tp">Payment</span>(<span class="fn">nextPaymentId</span>(), ticket, fee, paymentMethod)
 
 <span class="nr">4.</span> success = paymentProcessor.<span class="fn">processPayment</span>(payment)
    <span class="kw">if</span> !success: payment.<span class="fn">markFailed</span>(); <span class="kw">throw</span> <span class="tp">PaymentFailedException</span>
    payment.<span class="fn">markCompleted</span>(<span class="st">"TXN-"</span> + timestamp)
 
-<span class="nr">5.</span> ticket.<span class="fn">markExit</span>(<span class="tp">LocalDateTime</span>.<span class="fn">now</span>())  <span class="cm">// ACTIVE -> PAID</span>
+<span class="nr">5.</span> ticket.<span class="fn">markExit</span>(<span class="tp">LocalDateTime</span>.<span class="fn">now</span>())  <span class="cm">// ACTIVE -> CLOSED</span>
 
-<span class="nr">6.</span> <span class="kw">synchronized</span>(space) {
-       space.<span class="fn">vacate</span>();  <span class="cm">// clears vehicle, sets occupied=false</span>
-   }
+<span class="nr">6.</span> ticket.<span class="fn">getParkingSpace</span>().<span class="fn">vacate</span>();  <span class="cm">// clears vehicle, occupied.set(false)</span>
 
 <span class="nr">7.</span> activeTickets.<span class="fn">remove</span>(ticketId)
-   completedTickets.<span class="fn">put</span>(ticketId, ticket)
+   closedTickets.<span class="fn">put</span>(ticketId, ticket)
+   plateToActiveTicketId.<span class="fn">remove</span>(plate)
+   }  <span class="cm">// end synchronized(ticket)</span>
 
-<span class="nr">8.</span> <span class="kw">return</span> payment
+<span class="nr">8.</span> <span class="fn">fire</span>(onVehicleExited); <span class="kw">return</span> payment
 
 <span class="cm">Key: Payment processed BEFORE freeing space (fraud prevention)</span>
 <span class="cm">Time: O(1) + payment latency | Space: O(1)</span></pre>
@@ -397,20 +419,18 @@
     <h3>5. Occupancy Report</h3>
 <pre><span class="cm">Algorithm: GenerateOccupancyReport()</span>
 
-<span class="nr">1.</span> <span class="kw">for each</span> spaceType <span class="kw">in</span> [MOTORCYCLE, COMPACT, LARGE, DISABLED]:
-       available = allSpaces.<span class="fn">count</span>(type == spaceType && !occupied)
-       occupied  = allSpaces.<span class="fn">count</span>(type == spaceType && occupied)
-       availableByType.<span class="fn">put</span>(spaceType, available)
-       occupiedByType.<span class="fn">put</span>(spaceType, occupied)
+<span class="nr">1.</span> <span class="kw">for each</span> space <span class="kw">in</span> lot.<span class="fn">getAllSpaces</span>():   <span class="cm">// single pass</span>
+       <span class="kw">if</span> space.<span class="fn">isOccupied</span>(): occupiedByType.<span class="fn">merge</span>(type, <span class="nr">1</span>, Integer::sum)
+       <span class="kw">else</span>:                  availableByType.<span class="fn">merge</span>(type, <span class="nr">1</span>, Integer::sum)
 
-<span class="nr">2.</span> overallRate = totalOccupied / totalSpaces
+<span class="nr">2.</span> overallRate = report.<span class="fn">getOccupancyRate</span>()  <span class="cm">// occupied / total</span>
 
 <span class="nr">3.</span> <span class="kw">return new</span> <span class="tp">OccupancyReport</span>(timestamp, total, occupied, maps)
 
 <span class="cm">Time: O(n) where n = total spaces | Space: O(1)</span>
 <span class="cm">Output example:</span>
 <span class="cm">  COMPACT:  45/50 available  (10% utilization)</span>
-<span class="cm">  REGULAR:  12/100 available (88% utilization)</span>
+<span class="cm">  DISABLED: 3/10 available   (70% utilization)</span>
 <span class="cm">  LARGE:    5/20 available   (75% utilization)</span>
 <span class="cm">  Overall:  28% utilization</span></pre>
   </div>
@@ -424,18 +444,28 @@
       <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
       <tr>
         <td><span class="inline-code">ConcurrentHashMap</span></td>
-        <td>allSpaces, activeTickets, completedTickets</td>
-        <td>Safe concurrent reads/writes for all data stores</td>
+        <td>activeTickets, closedTickets, plateToActiveTicketId</td>
+        <td>Safe concurrent reads/writes; <span class="inline-code">putIfAbsent</span> on the plate map stops the same vehicle entering twice</td>
       </tr>
       <tr>
-        <td><span class="inline-code">synchronized(space)</span></td>
-        <td>occupy(), vacate() on ParkingSpace</td>
-        <td>Fine-grained lock per space &mdash; prevents double-booking same space</td>
+        <td><span class="inline-code">AtomicBoolean</span> CAS</td>
+        <td>ParkingSpace.tryOccupy()</td>
+        <td>Lock-free claim per space &mdash; <span class="inline-code">compareAndSet(false, true)</span>, exactly one racer wins</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">synchronized(ticket)</span></td>
+        <td>InMemoryParkingService.exitVehicle()</td>
+        <td>One exit/payment per ticket; space vacated only after payment succeeds</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">CopyOnWriteArrayList</span></td>
+        <td>listeners</td>
+        <td>Safe iteration while listeners are added/removed</td>
       </tr>
       <tr>
         <td><span class="inline-code">AtomicLong</span></td>
         <td>ticketCounter, paymentCounter</td>
-        <td>Lock-free unique ID generation: TICKET-00000001, PAY-00000001</td>
+        <td>Lock-free unique ID generation: TKT-00000001, PAY-00000001</td>
       </tr>
       <tr>
         <td><span class="inline-code">Objects.requireNonNull</span></td>
@@ -444,29 +474,33 @@
       </tr>
       <tr>
         <td><span class="inline-code">final fields</span></td>
-        <td>Vehicle, ParkingTicket, Payment</td>
-        <td>Immutable identity fields, thread-safe by design</td>
+        <td>Vehicle, ParkingTicket, Payment, ParkingLot, Floor</td>
+        <td>Immutable identity fields and structure, thread-safe by design</td>
       </tr>
     </table>
   </div>
-  <blockquote>"I use <strong>fine-grained locking</strong> on the ParkingSpace object, not a global lock. Two different spaces can be occupied/vacated concurrently. Only concurrent operations on the <strong>same space</strong> are serialized."</blockquote>
+  <blockquote>"I use a <strong>lock-free CAS</strong> on each ParkingSpace, not a global lock. Two different spaces can be claimed concurrently. When two threads pick the <strong>same space</strong>, one <span class="inline-code">compareAndSet</span> fails and that thread re-runs allocation."</blockquote>
   <div class="card">
     <h3>Double-Booking Prevention</h3>
-<pre><span class="cm">// In ParkingSpace.java -- synchronized on the individual space</span>
-<span class="kw">public synchronized boolean</span> <span class="fn">occupy</span>(<span class="tp">Vehicle</span> vehicle) {
-    <span class="kw">if</span> (isOccupied || !<span class="fn">canFit</span>(vehicle.<span class="fn">getVehicleType</span>())) {
-        <span class="kw">return false</span>;  <span class="cm">// Race condition guard</span>
+<pre><span class="cm">// In ParkingSpace.java -- atomic claim, no lock on the hot path</span>
+<span class="kw">private final</span> <span class="tp">AtomicBoolean</span> occupied = <span class="kw">new</span> <span class="tp">AtomicBoolean</span>(<span class="kw">false</span>);
+<span class="kw">private volatile</span> <span class="tp">Vehicle</span> currentVehicle;
+
+<span class="kw">public boolean</span> <span class="fn">tryOccupy</span>(<span class="tp">Vehicle</span> vehicle) {
+    <span class="tp">Objects</span>.<span class="fn">requireNonNull</span>(vehicle, <span class="st">"vehicle"</span>);
+    <span class="kw">if</span> (!<span class="fn">canAccept</span>(vehicle)) <span class="kw">return false</span>;      <span class="cm">// size + DISABLED permit</span>
+    <span class="kw">if</span> (occupied.<span class="fn">compareAndSet</span>(<span class="kw">false</span>, <span class="kw">true</span>)) {  <span class="cm">// only one thread wins</span>
+        <span class="kw">this</span>.currentVehicle = vehicle;
+        <span class="kw">return true</span>;
     }
-    <span class="kw">this</span>.isOccupied = <span class="kw">true</span>;
-    <span class="kw">this</span>.currentVehicle = vehicle;
-    <span class="kw">return true</span>;
+    <span class="kw">return false</span>;                                <span class="cm">// lost the race</span>
 }
 
-<span class="kw">public synchronized</span> <span class="tp">Vehicle</span> <span class="fn">vacate</span>() {
-    <span class="kw">if</span> (!isOccupied) <span class="kw">return null</span>;
+<span class="cm">// Safe to call when already free (no-op)</span>
+<span class="kw">public</span> <span class="tp">Vehicle</span> <span class="fn">vacate</span>() {
     <span class="tp">Vehicle</span> v = <span class="kw">this</span>.currentVehicle;
-    <span class="kw">this</span>.isOccupied = <span class="kw">false</span>;
     <span class="kw">this</span>.currentVehicle = <span class="kw">null</span>;
+    occupied.<span class="fn">set</span>(<span class="kw">false</span>);
     <span class="kw">return</span> v;
 }</pre>
   </div>
@@ -479,7 +513,7 @@
   <div class="card">
 <pre><span class="kw">interface</span> <span class="tp">ParkingService</span> {
     <span class="cm">// Vehicle lifecycle</span>
-    <span class="tp">ParkingTicket</span> <span class="fn">enterVehicle</span>(<span class="tp">Vehicle</span> vehicle)
+    <span class="tp">ParkingTicketResult</span> <span class="fn">enterVehicle</span>(<span class="tp">Vehicle</span> vehicle)
         <span class="kw">throws</span> <span class="tp">ParkingFullException</span>, <span class="tp">InvalidVehicleException</span>;
 
     <span class="tp">Payment</span> <span class="fn">exitVehicle</span>(<span class="tp">String</span> ticketId, <span class="tp">PaymentMethod</span> method)
@@ -490,10 +524,14 @@
         <span class="kw">throws</span> <span class="tp">InvalidTicketException</span>;
 
     <span class="cm">// Availability</span>
-    <span class="kw">boolean</span> <span class="fn">checkAvailability</span>(<span class="tp">VehicleType</span> vehicleType);
+    <span class="kw">boolean</span> <span class="fn">checkAvailability</span>(<span class="tp">Vehicle</span> vehicle);
 
     <span class="cm">// Reporting</span>
     <span class="tp">OccupancyReport</span> <span class="fn">getOccupancyReport</span>();
+
+    <span class="cm">// Observer registration</span>
+    <span class="kw">void</span> <span class="fn">addEventListener</span>(<span class="tp">ParkingEventListener</span> listener);
+    <span class="kw">void</span> <span class="fn">removeEventListener</span>(<span class="tp">ParkingEventListener</span> listener);
 }
 
 <span class="kw">interface</span> <span class="tp">PaymentProcessor</span> {
@@ -525,45 +563,45 @@
   <div class="flow">
     <div class="step" data-num="1">
       <div class="label">Initialize Parking Lot</div>
-      Create 30 ParkingSpaces across 3 floors: F0 (3 MC, 4 Compact, 2 Large, 1 Disabled), F1 (2 MC, 5 Compact, 2 Large, 1 Disabled), F2 (2 MC, 4 Compact, 3 Large, 1 Disabled)
+      new ParkingLot("LOT-001", ..., floors): 18 ParkingSpaces across 3 Floors: F0 (2 MC, 3 Compact, 1 Large, 1 Disabled), F1 (1 MC, 4 Compact, 2 Large), F2 (1 MC, 2 Compact, 1 Large)
     </div>
     <div class="step" data-num="2">
       <div class="label">Configure Strategies</div>
-      service = new InMemoryParkingService(spaces, HourlyPricingStrategy, NearestSpaceAllocation, SimplePaymentProcessor)
+      service = new InMemoryParkingService(lot, HourlyPricingStrategy, NearestSpaceAllocationStrategy, SimplePaymentProcessor)
       <div class="detail">All four dependencies injected via constructor (DI principle)</div>
     </div>
     <div class="step" data-num="3">
       <div class="label">Check Initial Occupancy</div>
-      getOccupancyReport() &rarr; Total: 30, Occupied: 0, Available: 30, Rate: 0.0%
+      getOccupancyReport() &rarr; Total: 18, Occupied: 0, Available: 18, Rate: 0.0%
     </div>
     <div class="step" data-num="4">
       <div class="label">Park Motorcycle</div>
       enterVehicle(Vehicle("MH-01-1234", MOTORCYCLE))
-      <div class="detail">NearestStrategy: MOTORCYCLE &rarr; prefers MC spaces &rarr; selects F0-MC-1 (lowest floor). synchronized(space) { space.occupy() }. Returns TICKET-00000001.</div>
+      <div class="detail">NearestSpaceAllocationStrategy: MOTORCYCLE &rarr; prefers MC spaces &rarr; selects F0-MC-1 (lowest floor). space.tryOccupy() wins the CAS. Returns TKT-00000001.</div>
     </div>
     <div class="step" data-num="5">
       <div class="label">Park Car</div>
       enterVehicle(Vehicle("MH-02-5678", CAR))
-      <div class="detail">NearestStrategy: CAR &rarr; prefers COMPACT &rarr; selects F0-C-1. Returns TICKET-00000002.</div>
+      <div class="detail">NearestSpaceAllocationStrategy: CAR &rarr; prefers COMPACT &rarr; selects F0-C-1. Returns TKT-00000002.</div>
     </div>
     <div class="step" data-num="6">
       <div class="label">Park Truck</div>
       enterVehicle(Vehicle("MH-04-7777", TRUCK))
-      <div class="detail">NearestStrategy: TRUCK &rarr; only LARGE &rarr; selects F0-L-1. Returns TICKET-00000004.</div>
+      <div class="detail">NearestSpaceAllocationStrategy: TRUCK &rarr; only LARGE &rarr; selects F0-L-1. Returns TKT-00000003.</div>
     </div>
     <div class="step" data-num="7">
       <div class="label">Calculate Fee</div>
-      calculateParkingFee("TICKET-00000001") &rarr; $0.00 (within 15-min grace period)
+      calculateParkingFee("TKT-00000001") &rarr; $0.00 (within 15-min grace period)
       <div class="detail">duration = Duration.between(entry, now). If &le; gracePeriod &rarr; free.</div>
     </div>
     <div class="step" data-num="8">
       <div class="label">Exit Motorcycle</div>
-      exitVehicle("TICKET-00000001", CREDIT_CARD)
-      <div class="detail">1. calculateFee &rarr; $0.00. 2. Payment(PAY-00000001, $0, CREDIT_CARD). 3. processPayment() &rarr; true. 4. payment.markCompleted(). 5. ticket.markExit(). 6. synchronized(space) { space.vacate() }. 7. Move ticket to completedTickets.</div>
+      exitVehicle("TKT-00000001", CREDIT_CARD)
+      <div class="detail">1. calculateFee &rarr; $0.00. 2. Payment(PAY-00000001, $0, CREDIT_CARD). 3. processPayment() &rarr; true. 4. payment.markCompleted(). 5. ticket.markExit(). 6. space.vacate(). 7. Move ticket to closedTickets, drop plate from plateToActiveTicketId. All inside synchronized(ticket).</div>
     </div>
     <div class="step" data-num="9">
       <div class="label">Final Occupancy</div>
-      getOccupancyReport() &rarr; Total: 30, Occupied: 2, Available: 28, Rate: 6.7%
+      getOccupancyReport() &rarr; Total: 18, Occupied: 2, Available: 16, Rate: 11.1%
     </div>
   </div>
 </section>
@@ -573,39 +611,45 @@
   <h2>10 &mdash; Key Data Structures</h2>
   <div class="card">
 <pre><span class="cm">// In-memory stores (InMemoryParkingService)</span>
-<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">ParkingSpace</span>&gt;  allSpaces        = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
-<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">ParkingTicket</span>&gt; activeTickets    = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
-<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">ParkingTicket</span>&gt; completedTickets = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">ParkingTicket</span>&gt; activeTickets         = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">ParkingTicket</span>&gt; closedTickets         = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt;        plateToActiveTicketId = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
+<span class="tp">List</span>&lt;<span class="tp">ParkingEventListener</span>&gt;     listeners             = <span class="kw">new</span> <span class="tp">CopyOnWriteArrayList</span>&lt;&gt;();
 
-<span class="cm">// Injected strategies (constructor injection)</span>
-<span class="tp">PricingStrategy</span>          pricingStrategy;
-<span class="tp">SpaceAllocationStrategy</span>  allocationStrategy;
+<span class="cm">// Injected (constructor injection); spaces live in the Lot -> Floor -> Space composite</span>
+<span class="tp">ParkingLot</span>               lot;
+<span class="tp">PricingStrategy</span>          pricing;
+<span class="tp">SpaceAllocationStrategy</span>  allocation;
 <span class="tp">PaymentProcessor</span>         paymentProcessor;
 
 <span class="cm">// Lock-free counters</span>
-<span class="tp">AtomicLong</span> ticketCounter  = <span class="kw">new</span> <span class="tp">AtomicLong</span>(<span class="nr">1</span>);  <span class="cm">// TICKET-00000001</span>
+<span class="tp">AtomicLong</span> ticketCounter  = <span class="kw">new</span> <span class="tp">AtomicLong</span>(<span class="nr">1</span>);  <span class="cm">// TKT-00000001</span>
 <span class="tp">AtomicLong</span> paymentCounter = <span class="kw">new</span> <span class="tp">AtomicLong</span>(<span class="nr">1</span>);  <span class="cm">// PAY-00000001</span>
+<span class="kw">static final int</span> MAX_ALLOCATION_RETRIES = <span class="nr">8</span>;       <span class="cm">// CAS retry budget</span>
 
-<span class="cm">// On ParkingSpace (fine-grained locking target):</span>
-<span class="kw">synchronized boolean</span> <span class="fn">occupy</span>(<span class="tp">Vehicle</span>)  <span class="cm">// per-space lock</span>
-<span class="kw">synchronized</span> <span class="tp">Vehicle</span> <span class="fn">vacate</span>()        <span class="cm">// per-space lock</span>
+<span class="cm">// On ParkingSpace (lock-free claim target):</span>
+<span class="tp">AtomicBoolean</span> occupied;                <span class="cm">// tryOccupy(): compareAndSet(false, true)</span>
+<span class="kw">volatile</span> <span class="tp">Vehicle</span> currentVehicle;       <span class="cm">// cleared by vacate()</span>
 
-<span class="cm">// Space type compatibility (static map in NearestStrategy):</span>
-<span class="tp">Map</span>&lt;<span class="tp">VehicleType</span>, <span class="tp">List</span>&lt;<span class="tp">SpaceType</span>&gt;&gt; SPACE_PRIORITY;
+<span class="cm">// Space type preference (static map in NearestSpaceAllocationStrategy):</span>
+<span class="tp">Map</span>&lt;<span class="tp">VehicleType</span>, <span class="tp">List</span>&lt;<span class="tp">SpaceType</span>&gt;&gt; PREFERENCE;
 <span class="cm">// MOTORCYCLE -> [MOTORCYCLE, COMPACT, LARGE]</span>
 <span class="cm">// CAR        -> [COMPACT, LARGE]</span>
-<span class="cm">// TRUCK/BUS  -> [LARGE]</span></pre>
+<span class="cm">// TRUCK/BUS  -> [LARGE]</span>
+<span class="cm">// + DISABLED tried first for hasDisabledPermit() vehicles</span></pre>
   </div>
   <div class="card">
-    <h3>Alternative: Optimized Availability Tracking</h3>
-<pre><span class="cm">// For O(1) availability check and O(log k) space selection</span>
-<span class="tp">Map</span>&lt;<span class="tp">SpaceType</span>, <span class="tp">Set</span>&lt;<span class="tp">ParkingSpace</span>&gt;&gt; availableSpaces;
-<span class="tp">Map</span>&lt;<span class="tp">SpaceType</span>, <span class="tp">Set</span>&lt;<span class="tp">ParkingSpace</span>&gt;&gt; occupiedSpaces;
+    <h3>Alternative: Optimized Availability Tracking (hypothetical follow-up &mdash; not in src)</h3>
+<pre><span class="cm">// Not in src: today checkAvailability() scans lot.availableFor(vehicle), O(n).</span>
+<span class="cm">// Index free spaces by type for an O(#types) check and O(log k) selection.</span>
+<span class="tp">Map</span>&lt;<span class="tp">SpaceType</span>, <span class="tp">Set</span>&lt;<span class="tp">ParkingSpace</span>&gt;&gt; freeByType;
+<span class="tp">Map</span>&lt;<span class="tp">SpaceType</span>, <span class="tp">Set</span>&lt;<span class="tp">ParkingSpace</span>&gt;&gt; occupiedByType;
 
-<span class="kw">public boolean</span> <span class="fn">hasAvailability</span>(<span class="tp">VehicleType</span> vehicleType) {
-    <span class="kw">for</span> (<span class="tp">SpaceType</span> compatible : <span class="fn">getCompatibleTypes</span>(vehicleType)) {
-        <span class="kw">if</span> (!availableSpaces.<span class="fn">get</span>(compatible).<span class="fn">isEmpty</span>())
-            <span class="kw">return true</span>;         <span class="cm">// O(1) check!</span>
+<span class="kw">public boolean</span> <span class="fn">checkAvailability</span>(<span class="tp">Vehicle</span> vehicle) {
+    <span class="kw">for</span> (<span class="tp">SpaceType</span> t : <span class="tp">SpaceType</span>.<span class="fn">values</span>()) {
+        <span class="kw">if</span> (t == <span class="tp">SpaceType</span>.DISABLED &amp;&amp; !vehicle.<span class="fn">hasDisabledPermit</span>()) <span class="kw">continue</span>;
+        <span class="kw">if</span> (t.<span class="fn">canAccommodate</span>(vehicle.<span class="fn">getVehicleType</span>()) &amp;&amp; !freeByType.<span class="fn">get</span>(t).<span class="fn">isEmpty</span>())
+            <span class="kw">return true</span>;         <span class="cm">// no scan of spaces</span>
     }
     <span class="kw">return false</span>;
 }
@@ -660,13 +704,14 @@
       <tr><td>Car, 2h 45m</td><td>2h 45m</td><td>ceil(2.75) = 3 hours &times; $20</td><td><strong style="color:var(--accent2);">$60</strong></td></tr>
       <tr><td>Motorcycle, 1h</td><td>1h</td><td>1 hour &times; $10</td><td><strong style="color:var(--accent2);">$10</strong></td></tr>
       <tr><td>Truck, 30min</td><td>30m</td><td>ceil(0.5) = 1 hour &times; $40</td><td><strong style="color:var(--accent4);">$40</strong></td></tr>
-      <tr><td>Lost ticket (Car)</td><td>24h</td><td>24 hours &times; $20</td><td><strong style="color:var(--accent4);">$480</strong></td></tr>
+      <tr><td>Lost ticket (Car, follow-up)</td><td>24h</td><td>24 hours &times; $20</td><td><strong style="color:var(--accent4);">$480</strong></td></tr>
     </table>
   </div>
 
   <div class="card">
     <h3>Peak/Off-Peak Example</h3>
-<pre><span class="cm">Entry: 16:00 (off-peak: $2/hour)</span>
+<pre><span class="cm">// Hypothetical PeakOffPeakPricing -- not in src</span>
+<span class="cm">Entry: 16:00 (off-peak: $2/hour)</span>
 <span class="cm">Exit:  19:00 (peak starts at 17:00: $5/hour)</span>
 
 <span class="cm">Duration in off-peak: 1 hour  -> $2</span>
@@ -693,14 +738,14 @@
   <details>
     <summary>How would you extend to support multiple floors?</summary>
     <div class="answer">
-      Already supported &mdash; each <span class="inline-code">ParkingSpace</span> has a <span class="inline-code">floorNumber</span> field. The <span class="inline-code">NearestSpaceAllocationStrategy</span> sorts by floor number (lower first). To make floors explicit: create a <span class="inline-code">ParkingFloor</span> class with its own space map, and <span class="inline-code">ParkingLot</span> iterates floors ground-up. Optimization: use elevator proximity for allocation priority.
+      Already supported &mdash; each <span class="inline-code">ParkingSpace</span> has a <span class="inline-code">floorNumber</span> field. The <span class="inline-code">NearestSpaceAllocationStrategy</span> sorts by floor number (lower first). Floors are already explicit: <span class="inline-code">ParkingLot</span> &rarr; <span class="inline-code">Floor</span> &rarr; <span class="inline-code">ParkingSpace</span> is a Composite, and <span class="inline-code">Floor</span> rejects spaces whose floorNumber doesn't match. Optimization: use elevator proximity for allocation priority.
     </div>
   </details>
 
   <details>
     <summary>How would you implement real-time display boards?</summary>
     <div class="answer">
-      Three approaches: <strong>Push-based (Observer)</strong> &mdash; DisplayBoard implements an observer interface, ParkingService notifies all boards on entry/exit. <strong>Pull-based (Polling)</strong> &mdash; DisplayBoard uses ScheduledExecutorService to call getOccupancyReport() every 5 seconds. <strong>Message Queue (Scalable)</strong> &mdash; ParkingService publishes events to Kafka topic, display boards consume asynchronously. For LLD interview, Observer is the cleanest answer.
+      Three approaches: <strong>Push-based (Observer)</strong> &mdash; DisplayBoard implements <span class="inline-code">ParkingEventListener</span> (onVehicleEntered / onVehicleExited / onLotFull), registered via addEventListener. <strong>Pull-based (Polling)</strong> &mdash; DisplayBoard uses ScheduledExecutorService to call getOccupancyReport() every 5 seconds. <strong>Message Queue (Scalable)</strong> &mdash; ParkingService publishes events to Kafka topic, display boards consume asynchronously. For LLD interview, Observer is the cleanest answer.
     </div>
   </details>
 
@@ -721,14 +766,14 @@
   <details>
     <summary>How do you prevent two vehicles from getting the same space?</summary>
     <div class="answer">
-      <span class="inline-code">ParkingSpace.occupy()</span> is <strong>synchronized</strong>. Even if two threads select the same space from the available list, only the first to enter the synchronized block will succeed (returns true). The second thread finds <span class="inline-code">isOccupied=true</span> and returns false, triggering the service to throw ParkingFullException or retry with another space. This is fine-grained locking &mdash; two different spaces can be occupied concurrently.
+      <span class="inline-code">ParkingSpace.tryOccupy()</span> does <span class="inline-code">occupied.compareAndSet(false, true)</span>. Even if two threads select the same space from the available list, only one CAS succeeds (returns true). The loser gets false and <span class="inline-code">claimSpaceFor()</span> re-runs allocation, up to <span class="inline-code">MAX_ALLOCATION_RETRIES</span> (8), before throwing ParkingFullException. Lock-free &mdash; two different spaces can be claimed concurrently.
     </div>
   </details>
 
   <details>
     <summary>How would you handle disabled/handicapped parking?</summary>
     <div class="answer">
-      Already implemented. <span class="inline-code">SpaceType.DISABLED</span> has capacity 2 (fits car-size vehicles). <span class="inline-code">ParkingSpace.canFit(Vehicle)</span> checks <span class="inline-code">vehicle.hasDisabledPermit()</span> for DISABLED spaces &mdash; only vehicles with a permit can park there. The <span class="inline-code">Vehicle</span> constructor accepts an optional <span class="inline-code">hasDisabledPermit</span> boolean. Regulatory compliance: maintain minimum handicapped spaces per local code.
+      Already implemented. <span class="inline-code">SpaceType.DISABLED</span> has capacity 2 (fits car-size vehicles). <span class="inline-code">ParkingSpace.canAccept(Vehicle)</span> checks <span class="inline-code">vehicle.hasDisabledPermit()</span> for DISABLED spaces &mdash; only vehicles with a permit can park there. The <span class="inline-code">Vehicle</span> constructor accepts an optional <span class="inline-code">hasDisabledPermit</span> boolean. Regulatory compliance: maintain minimum handicapped spaces per local code.
     </div>
   </details>
 
@@ -749,14 +794,14 @@
   <details>
     <summary>Why Strategy over simple if/else for pricing?</summary>
     <div class="answer">
-      (1) Open/Closed Principle: new pricing model = new class, zero changes to InMemoryParkingService. (2) Runtime swappable: switch from hourly to flat rate without restart. (3) Testable: each strategy is unit-testable in isolation. (4) Composable: wrap HourlyPricing with DynamicPricing (Decorator). (5) Different lots can use different strategies simultaneously.
+      (1) Open/Closed Principle: new pricing model = new class, zero changes to InMemoryParkingService. (2) Runtime swappable: switch from hourly to flat rate without restart. (3) Testable: each strategy is unit-testable in isolation. (4) Composable: wrap HourlyPricingStrategy with a DynamicPricing decorator (follow-up). (5) Different lots can use different strategies simultaneously.
     </div>
   </details>
 
   <details>
     <summary>What are the tradeoffs of your occupancy tracking design?</summary>
     <div class="answer">
-      Current approach streams allSpaces to count availability: <strong>simple but O(n)</strong>. Alternative: maintain <span class="inline-code">Map&lt;SpaceType, Set&lt;ParkingSpace&gt;&gt;</span> for available and occupied sets separately. Tradeoffs: <strong>O(1) availability check</strong> and <strong>O(1) count</strong>, but must keep two sets synchronized on every entry/exit. In production with 1000+ spaces, the set-based approach is strictly better. For the interview, mention both and explain the migration path.
+      Current approach streams <span class="inline-code">lot.getAllSpaces()</span> via <span class="inline-code">availableFor(vehicle)</span> to check availability: <strong>simple but O(n)</strong>. Alternative: maintain <span class="inline-code">Map&lt;SpaceType, Set&lt;ParkingSpace&gt;&gt;</span> for available and occupied sets separately. Tradeoffs: <strong>O(1) availability check</strong> and <strong>O(1) count</strong>, but must keep two sets synchronized on every entry/exit. In production with 1000+ spaces, the set-based approach is strictly better. For the interview, mention both and explain the migration path.
     </div>
   </details>
 
@@ -780,37 +825,44 @@
   <h2>13 &mdash; Package Structure</h2>
   <div class="card">
 <pre>parkinglot/
+├── <span class="fn">ParkingLotDemo</span>.java              <span class="cm">-- end-to-end demo incl. concurrent CAS entries</span>
 ├── api/
-│   ├── <span class="tp">ParkingService</span>.java            <span class="cm">-- main service interface (5 methods)</span>
+│   ├── <span class="tp">ParkingService</span>.java            <span class="cm">-- main service interface (7 methods)</span>
+│   ├── <span class="tp">ParkingTicketResult</span>.java       <span class="cm">-- wrapper returned by enterVehicle()</span>
 │   ├── <span class="tp">PricingStrategy</span>.java           <span class="cm">-- strategy interface: calculateFee(ticket)</span>
-│   ├── <span class="tp">SpaceAllocationStrategy</span>.java   <span class="cm">-- strategy interface: selectSpace(spaces, type)</span>
+│   ├── <span class="tp">SpaceAllocationStrategy</span>.java   <span class="cm">-- strategy interface: selectSpace(spaces, vehicle)</span>
+│   ├── <span class="tp">ParkingEventListener</span>.java      <span class="cm">-- observer: entered / exited / lot full</span>
 │   ├── <span class="tp">PaymentProcessor</span>.java          <span class="cm">-- process/refund payments</span>
 │   └── exceptions/
 │       ├── <span class="tp">ParkingException</span>            <span class="cm">-- base (abstract, errorCode + msg)</span>
 │       ├── <span class="tp">ParkingFullException</span>        <span class="cm">-- no space for vehicle type</span>
 │       ├── <span class="tp">InvalidVehicleException</span>     <span class="cm">-- bad vehicle data / already parked</span>
-│       ├── <span class="tp">InvalidTicketException</span>      <span class="cm">-- non-existent / expired ticket</span>
+│       ├── <span class="tp">InvalidTicketException</span>      <span class="cm">-- non-existent / closed ticket</span>
 │       ├── <span class="tp">PaymentFailedException</span>      <span class="cm">-- payment gateway failure</span>
 │       ├── <span class="tp">PaymentProcessingException</span>  <span class="cm">-- technical processing error</span>
 │       └── <span class="tp">RefundException</span>             <span class="cm">-- refund failure</span>
 ├── impl/
-│   ├── <span class="fn">InMemoryParkingService</span>         <span class="cm">-- full implementation (thread-safe)</span>
-│   ├── <span class="fn">HourlyPricingStrategy</span>          <span class="cm">-- per-type rates + grace period</span>
-│   ├── <span class="fn">NearestSpaceAllocationStrategy</span> <span class="cm">-- prioritize lower floors + type pref</span>
-│   ├── <span class="fn">SimplePaymentProcessor</span>         <span class="cm">-- in-memory payment sim</span>
-│   └── <span class="fn">ParkingLotDemo</span>                <span class="cm">-- showcases all features</span>
+│   ├── <span class="fn">InMemoryParkingService</span>           <span class="cm">-- full implementation (thread-safe)</span>
+│   ├── <span class="fn">HourlyPricingStrategy</span>            <span class="cm">-- per-type rates + grace period</span>
+│   ├── <span class="fn">FlatRatePricingStrategy</span>          <span class="cm">-- per-type daily rate</span>
+│   ├── <span class="fn">NearestSpaceAllocationStrategy</span>   <span class="cm">-- type preference, then lowest floor</span>
+│   ├── <span class="fn">FirstAvailableAllocationStrategy</span> <span class="cm">-- first candidate (valet-style)</span>
+│   ├── <span class="fn">SimplePaymentProcessor</span>           <span class="cm">-- in-memory payment sim</span>
+│   └── <span class="fn">LoggingEventListener</span>             <span class="cm">-- prints lifecycle events</span>
 ├── model/
-│   ├── <span class="tp">ParkingSpace</span>                   <span class="cm">-- synchronized occupy/vacate</span>
-│   ├── <span class="tp">ParkingTicket</span>                  <span class="cm">-- entry/exit lifecycle</span>
+│   ├── <span class="tp">ParkingLot</span>                     <span class="cm">-- composite root: lot -> floors</span>
+│   ├── <span class="tp">Floor</span>                          <span class="cm">-- fixed list of spaces on one floor</span>
+│   ├── <span class="tp">ParkingSpace</span>                   <span class="cm">-- CAS tryOccupy / vacate</span>
+│   ├── <span class="tp">ParkingTicket</span>                  <span class="cm">-- ACTIVE -> CLOSED / CANCELLED</span>
 │   ├── <span class="tp">Vehicle</span>                        <span class="cm">-- immutable value object</span>
 │   ├── <span class="tp">Payment</span>                        <span class="cm">-- payment lifecycle entity</span>
 │   ├── <span class="tp">OccupancyReport</span>                <span class="cm">-- immutable report snapshot</span>
 │   ├── <span class="tp">VehicleType</span>                    <span class="cm">-- MOTORCYCLE(1), CAR(2), TRUCK(3), BUS(4)</span>
 │   ├── <span class="tp">SpaceType</span>                      <span class="cm">-- MOTORCYCLE(1), COMPACT(2), LARGE(4), DISABLED(2)</span>
-│   ├── <span class="tp">PaymentMethod</span>                  <span class="cm">-- CASH, CREDIT_CARD, DEBIT_CARD, MOBILE</span>
+│   ├── <span class="tp">PaymentMethod</span>                  <span class="cm">-- CASH, CREDIT_CARD, DEBIT_CARD, MOBILE_PAYMENT</span>
 │   └── <span class="tp">PaymentStatus</span>                  <span class="cm">-- PENDING, COMPLETED, FAILED, REFUNDED, CANCELLED</span></pre>
   </div>
-  <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--text-dim);">25 files &middot; ~1200 lines of code &middot; full working demo</p>
+  <p style="text-align:center;margin-top:12px;font-size:13px;color:var(--text-dim);">32 files &middot; full working demo</p>
 </section>
 
 <!-- 14. SUMMARY -->
@@ -821,22 +873,32 @@
       <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
       <tr>
         <td><span style="color:var(--accent);">Strategy</span></td>
-        <td>PricingStrategy (Hourly, Flat, Peak, EarlyBird)</td>
+        <td>PricingStrategy (HourlyPricingStrategy, FlatRatePricingStrategy)</td>
         <td>Swap pricing algorithms without modifying service</td>
       </tr>
       <tr>
         <td><span style="color:var(--accent3);">Strategy</span></td>
-        <td>SpaceAllocationStrategy (Nearest, Compact, Cheapest)</td>
+        <td>SpaceAllocationStrategy (NearestSpaceAllocationStrategy, FirstAvailableAllocationStrategy)</td>
         <td>Pluggable space selection logic, A/B testable</td>
       </tr>
       <tr>
         <td><span style="color:var(--accent4);">State Machine</span></td>
-        <td>ParkingTicket (ACTIVE &rarr; PAID/CANCELLED/LOST), Payment (PENDING &rarr; COMPLETED/FAILED/REFUNDED)</td>
+        <td>ParkingTicket (ACTIVE &rarr; CLOSED/CANCELLED), Payment (PENDING &rarr; COMPLETED/FAILED/REFUNDED)</td>
         <td>Validated lifecycle transitions, prevents double-processing</td>
       </tr>
       <tr>
+        <td><span style="color:var(--accent);">Composite</span></td>
+        <td>ParkingLot &rarr; Floor &rarr; ParkingSpace</td>
+        <td>Structure fixed at construction; queries like availableFor() walk the tree</td>
+      </tr>
+      <tr>
+        <td><span style="color:var(--accent3);">Observer</span></td>
+        <td>ParkingEventListener (LoggingEventListener)</td>
+        <td>Display boards / metrics react to entry, exit, lot-full without touching the service</td>
+      </tr>
+      <tr>
         <td><span style="color:var(--accent5);">Repository</span></td>
-        <td>ConcurrentHashMap stores (allSpaces, activeTickets, completedTickets)</td>
+        <td>ConcurrentHashMap stores (activeTickets, closedTickets, plateToActiveTicketId)</td>
         <td>In-memory, easy to swap for database-backed persistence</td>
       </tr>
       <tr>
@@ -856,7 +918,7 @@
       </tr>
     </table>
   </div>
-  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">25 files &middot; 4 interfaces &middot; 10 models &middot; 7 exceptions &middot; every class earns its place</p>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">32 files &middot; 5 interfaces &middot; 12 models &middot; 7 exceptions &middot; every class earns its place</p>
 </section>
 
 </div>

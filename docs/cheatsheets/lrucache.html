@@ -34,13 +34,13 @@
 <!-- HERO -->
 <div class="hero">
   <h1>LRU Cache <span>// O(1) Everything</span></h1>
-  <p>HashMap + Doubly Linked List for O(1) get, put, and evict. Thread-safe variant with ReadWriteLock. Strategy pattern for pluggable eviction policies.</p>
+  <p>HashMap + Doubly Linked List for O(1) get, put, and evict. Thread-safe Decorator with one ReentrantLock, TTL as a second Decorator. LRU and LFU behind one <span class="inline-code">Cache</span> interface.</p>
   <div class="tags">
     <span class="tag">HashMap + DLL</span>
     <span class="tag blue">Strategy Pattern</span>
     <span class="tag green">Sentinel Nodes</span>
     <span class="tag pink">Decorator Pattern</span>
-    <span class="tag orange">ReadWriteLock</span>
+    <span class="tag orange">ReentrantLock</span>
   </div>
 </div>
 
@@ -65,8 +65,8 @@
       <li><strong>O(1)</strong> time for get, put, evict &mdash; no scanning, no sorting</li>
       <li><strong>O(capacity)</strong> space &mdash; HashMap + DLL nodes</li>
       <li><strong>Exact LRU</strong> &mdash; always evict true least-recently-used, not approximate</li>
-      <li><strong>Thread safety</strong> &mdash; base impl is single-threaded; <span class="inline-code">ConcurrentLRUCache</span> wraps with locks</li>
-      <li><strong>Extensible</strong> &mdash; pluggable eviction policies (LRU, LFU, FIFO) via Strategy</li>
+      <li><strong>Thread safety</strong> &mdash; base impl is single-threaded; <span class="inline-code">ConcurrentCache</span> wraps with a lock</li>
+      <li><strong>Extensible</strong> &mdash; pluggable eviction policies (<span class="inline-code">LRUCache</span>, <span class="inline-code">LFUCache</span>) behind the <span class="inline-code">Cache</span> interface</li>
       <li><strong>Generic &lt;K, V&gt;</strong> &mdash; any hashable key, any value type</li>
     </ul>
   </div>
@@ -75,7 +75,7 @@
     <ul>
       <li>Distributed caching across multiple nodes</li>
       <li>Persistent storage (in-memory only)</li>
-      <li>Time-based expiration (TTL) &mdash; discussed as extension</li>
+      <li>Background TTL sweeper &mdash; <span class="inline-code">TtlCache</span> expires lazily; call <span class="inline-code">purgeExpired()</span> from a scheduler if needed</li>
       <li>Cache warming strategies</li>
     </ul>
   </div>
@@ -94,8 +94,8 @@
   <div class="card highlight">
     <h3 style="color:var(--accent);margin-top:0;">HashMap + Doubly Linked List</h3>
 <pre><span class="cm">// The two data structures work together:</span>
-<span class="tp">HashMap</span>&lt;<span class="tp">K</span>, <span class="tp">CacheNode</span>&gt;  <span class="cm">&rarr;  O(1) key lookup, returns node reference</span>
-<span class="tp">DoublyLinkedList</span>        <span class="cm">&rarr;  O(1) order tracking (MRU at head, LRU at tail)</span>
+<span class="tp">HashMap</span>&lt;<span class="tp">K</span>, <span class="tp">Node</span>&gt;       <span class="cm">&rarr;  O(1) key lookup, returns node reference</span>
+<span class="tp">Node</span>.prev/next       <span class="cm">&rarr;  O(1) order tracking (MRU at head, LRU at tail)</span>
 
 <span class="cm">// Visual layout (capacity=3, items A, B, C):</span>
 
@@ -146,7 +146,7 @@ head.next = newNode;</pre>
     <div class="flow">
       <div class="step" data-num="1">
         <div class="label">HashMap Lookup</div>
-        <span class="inline-code">node = cache.get(key)</span> &mdash; O(1) direct access
+        <span class="inline-code">node = map.get(key)</span> &mdash; O(1) direct access
       </div>
       <div class="step" data-num="2">
         <div class="label">Remove from Current Position</div>
@@ -158,7 +158,7 @@ head.next = newNode;</pre>
       </div>
       <div class="step" data-num="4">
         <div class="label">Return Value</div>
-        <span class="inline-code">statistics.recordHit()</span>, return <span class="inline-code">Optional.of(node.value)</span>
+        <span class="inline-code">hits++</span>, fire <span class="inline-code">onHit</span>, return <span class="inline-code">Optional.of(node.value)</span>
       </div>
     </div>
 <pre><span class="cm">// Example:</span>
@@ -172,15 +172,15 @@ Result:   Head &#8592;&#8594; <span class="st">A</span> &#8592;&#8594; C &#8592;
     <div class="flow">
       <div class="step" data-num="1">
         <div class="label">Check Existing</div>
-        <span class="inline-code">node = cache.get(key)</span> &mdash; if exists, update value and moveToHead
+        <span class="inline-code">existing = map.get(key)</span> &mdash; if exists, update value and moveToHead
       </div>
       <div class="step" data-num="2">
         <div class="label">Check Capacity</div>
-        If <span class="inline-code">cache.size() == capacity</span>, evict LRU: <span class="inline-code">tail.prev</span>
+        If <span class="inline-code">map.size() &gt;= capacity</span>, evict LRU: <span class="inline-code">tail.prev</span>
       </div>
       <div class="step" data-num="3">
         <div class="label">Evict LRU</div>
-        Remove <span class="inline-code">tail.prev</span> from DLL and HashMap. <span class="inline-code">statistics.recordEviction()</span>
+        Remove <span class="inline-code">tail.prev</span> from DLL and HashMap. <span class="inline-code">evictions++</span>, fire <span class="inline-code">onEvict</span>
       </div>
       <div class="step" data-num="4">
         <div class="label">Insert New</div>
@@ -207,7 +207,7 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
   <div class="diagram">
     <img src="img/lrucache-class-diagram.png" alt="LRU Cache class design whiteboard diagram: interface, core impl, decorators, and the HashMap plus doubly-linked-list mechanism">
   </div>
-  <p class="diagram-caption">The full picture: the <code>LRUCache</code> interface (seam) &rarr; <code>LRUCacheImpl</code> = HashMap + doubly-linked list giving O(1) get/put and tail-eviction (with sentinel head/tail nodes) &rarr; <code>ConcurrentLRUCache</code> / <code>TtlLRUCache</code> as Decorators over the same seam. <code>CacheNode</code>, <code>CacheStatistics</code>, and <code>EvictionPolicy</code> round out the model. This is the whiteboard diagram at minute ~10.</p>
+  <p class="diagram-caption">The full picture: the <code>Cache</code> interface (seam) &rarr; <code>LRUCache</code> = HashMap + doubly-linked list giving O(1) get/put and tail-eviction (with sentinel head/tail nodes) &rarr; <code>ConcurrentCache</code> / <code>TtlCache</code> as Decorators over the same seam. <code>CacheStats</code>, <code>CacheEventListener</code> and <code>LFUCache</code> round out the model. This is the whiteboard diagram at minute ~10.</p>
 
   <div class="card">
     <table>
@@ -215,60 +215,60 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
         <th>Entity</th><th>Type</th><th>Key Fields</th>
       </tr>
       <tr>
-        <td><span class="inline-code">LRUCache&lt;K,V&gt;</span></td>
-        <td>Interface</td>
-        <td>get, put, size, capacity, containsKey, clear, getStatistics</td>
-      </tr>
-      <tr>
-        <td><span class="inline-code">CacheNode&lt;K,V&gt;</span></td>
-        <td>Value Object</td>
-        <td><strong>key</strong> (final), value, prev, next &mdash; DLL node with key for reverse-lookup on eviction</td>
-      </tr>
-      <tr>
-        <td><span class="inline-code">LRUCacheImpl&lt;K,V&gt;</span></td>
-        <td>Core Impl</td>
-        <td>capacity, HashMap&lt;K, CacheNode&gt;, head/tail sentinels, CacheStatistics</td>
-      </tr>
-      <tr>
-        <td><span class="inline-code">ConcurrentLRUCache&lt;K,V&gt;</span></td>
-        <td>Decorator</td>
-        <td>ReadWriteLock, delegates to LRUCache impl</td>
-      </tr>
-      <tr>
-        <td><span class="inline-code">CacheStatistics</span></td>
-        <td>Value Object</td>
-        <td>AtomicLong hits/misses/evictions, getHitRate() = hits/(hits+misses)</td>
-      </tr>
-      <tr>
-        <td><span class="inline-code">EvictionPolicy</span></td>
-        <td>Enum</td>
-        <td>LRU, LFU, FIFO</td>
-      </tr>
-      <tr>
-        <td><span class="inline-code">CacheEntry&lt;K,V&gt;</span></td>
-        <td>Model</td>
-        <td>key, value, accessTime, accessCount &mdash; for LFU/TTL extensions</td>
-      </tr>
-      <tr>
         <td><span class="inline-code">Cache&lt;K,V&gt;</span></td>
         <td>Interface</td>
-        <td>get, put, remove, clear, size &mdash; generic cache contract</td>
+        <td>get, put, remove, containsKey, clear, size, capacity, stats, addListener, removeListener</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">LRUCache&lt;K,V&gt;</span></td>
+        <td>Core Impl</td>
+        <td>capacity, HashMap&lt;K, Node&gt;, head/tail sentinels, long hits/misses/evictions, listeners</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">Node&lt;K,V&gt;</span></td>
+        <td>Nested class</td>
+        <td><strong>key</strong> (final), value, prev, next &mdash; private static inside LRUCache; key kept for reverse-lookup on eviction</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">LFUCache&lt;K,V&gt;</span></td>
+        <td>Alt Impl</td>
+        <td>keyToNode, freqBuckets (freq &rarr; LinkedHashSet), minFreq &mdash; O(1) LFU, LRU tie-break</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">ConcurrentCache&lt;K,V&gt;</span></td>
+        <td>Decorator</td>
+        <td>ReentrantLock, delegates to any Cache</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">TtlCache&lt;K,V&gt;</span></td>
+        <td>Decorator</td>
+        <td>expiresAt map, ttlMillis, Clock &mdash; lazy expiry on get/containsKey, purgeExpired()</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">CacheStats</span></td>
+        <td>Value Object</td>
+        <td>immutable snapshot: hits(), misses(), evictions(), hitRate() = hits/(hits+misses)</td>
+      </tr>
+      <tr>
+        <td><span class="inline-code">CacheEventListener&lt;K,V&gt;</span></td>
+        <td>Observer</td>
+        <td>default onPut, onHit, onMiss, onEvict, onRemove, onClear</td>
       </tr>
     </table>
   </div>
 
   <div class="card">
-    <h3>CacheNode &mdash; The DLL Node</h3>
-<pre><span class="kw">class</span> <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; {
+    <h3>Node &mdash; The DLL Node</h3>
+<pre><span class="cm">// private static nested class inside LRUCache</span>
+<span class="kw">private static final class</span> <span class="tp">Node</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; {
     <span class="kw">final</span> <span class="tp">K</span> key;         <span class="cm">// immutable &mdash; needed for HashMap removal on eviction</span>
     <span class="tp">V</span> value;              <span class="cm">// mutable &mdash; updated on put(existingKey, newValue)</span>
-    <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; prev;
-    <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; next;
+    <span class="tp">Node</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; prev, next;
 
-    <span class="tp">CacheNode</span>(<span class="tp">K</span> key, <span class="tp">V</span> value) { <span class="kw">this</span>.key = key; <span class="kw">this</span>.value = value; }
-    <span class="tp">CacheNode</span>() { <span class="kw">this</span>.key = <span class="kw">null</span>; <span class="kw">this</span>.value = <span class="kw">null</span>; } <span class="cm">// sentinel constructor</span>
-}</pre>
-    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Why store key in node?</strong> When evicting <span class="inline-code">tail.prev</span>, we need the key to call <span class="inline-code">cache.remove(lruNode.key)</span> on the HashMap.</p>
+    <span class="tp">Node</span>(<span class="tp">K</span> key, <span class="tp">V</span> value) { <span class="kw">this</span>.key = key; <span class="kw">this</span>.value = value; }
+}
+<span class="cm">// sentinels are just new Node&lt;&gt;(null, null)</span></pre>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>Why store key in node?</strong> When evicting <span class="inline-code">tail.prev</span>, we need the key to call <span class="inline-code">map.remove(victim.key)</span> on the HashMap.</p>
   </div>
 </section>
 
@@ -279,15 +279,15 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
     <div class="card highlight">
       <h3 style="color:var(--accent);margin-top:0;">Strategy Pattern</h3>
-      <p><strong>EvictionPolicy</strong> determines which item to evict. Different policies (LRU, LFU, FIFO) implement the same interface. Injected at construction, swappable at runtime.</p>
+      <p><strong>Cache&lt;K,V&gt;</strong> is the seam: <span class="inline-code">LRUCache</span> and <span class="inline-code">LFUCache</span> are interchangeable eviction policies behind it. Chosen at construction; callers never know which one they hold.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent4);">
       <h3 style="color:var(--accent4);margin-top:0;">Decorator Pattern</h3>
-      <p><strong>ConcurrentLRUCache</strong> wraps any <span class="inline-code">LRUCache</span> to add thread-safety. Composable: you can wrap any implementation without modifying it.</p>
+      <p><strong>ConcurrentCache</strong> wraps any <span class="inline-code">Cache</span> to add thread-safety; <strong>TtlCache</strong> adds expiry. Composable: <span class="inline-code">new ConcurrentCache&lt;&gt;(new TtlCache&lt;&gt;(new LRUCache&lt;&gt;(100), ttl))</span>.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent2);">
-      <h3 style="color:var(--accent2);margin-top:0;">Template Method</h3>
-      <p><strong>Cache&lt;K,V&gt;</strong> interface defines the contract. <span class="inline-code">LRUCacheImpl</span> provides the HashMap+DLL skeleton. Subclasses or decorators extend behavior.</p>
+      <h3 style="color:var(--accent2);margin-top:0;">Observer</h3>
+      <p><strong>CacheEventListener</strong> receives onPut / onHit / onMiss / onEvict / onRemove / onClear. All methods are <span class="inline-code">default</span>, so a listener overrides only what it needs. <span class="inline-code">LoggingCacheListener</span> is the demo impl.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent3);">
       <h3 style="color:var(--accent3);margin-top:0;">Sentinel Pattern</h3>
@@ -306,16 +306,18 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
   <div class="card highlight">
     <h3 style="color:var(--accent);margin-top:0;">get(key) &mdash; Retrieve &amp; Promote</h3>
 <pre><span class="kw">public</span> <span class="tp">Optional</span>&lt;<span class="tp">V</span>&gt; <span class="fn">get</span>(<span class="tp">K</span> key) {
-    <span class="fn">validateKey</span>(key);
+    <span class="fn">requireNonNull</span>(key, <span class="st">"key"</span>);
 
-    <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; node = cache.<span class="fn">get</span>(key);   <span class="cm">// O(1) HashMap lookup</span>
+    <span class="tp">Node</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; node = map.<span class="fn">get</span>(key);        <span class="cm">// O(1) HashMap lookup</span>
     <span class="kw">if</span> (node == <span class="kw">null</span>) {
-        statistics.<span class="fn">recordMiss</span>();
+        misses++;
+        <span class="fn">fireEvent</span>(l -&gt; l.<span class="fn">onMiss</span>(key));
         <span class="kw">return</span> <span class="tp">Optional</span>.<span class="fn">empty</span>();
     }
 
     <span class="fn">moveToHead</span>(node);                          <span class="cm">// O(1) promote to MRU</span>
-    statistics.<span class="fn">recordHit</span>();
+    hits++;
+    <span class="fn">fireEvent</span>(l -&gt; l.<span class="fn">onHit</span>(key, node.value));
     <span class="kw">return</span> <span class="tp">Optional</span>.<span class="fn">of</span>(node.value);
 }</pre>
   </div>
@@ -323,41 +325,45 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
   <div class="card" style="border-left:3px solid var(--accent2);">
     <h3 style="color:var(--accent2);margin-top:0;">put(key, value) &mdash; Insert/Update &amp; Evict</h3>
 <pre><span class="kw">public void</span> <span class="fn">put</span>(<span class="tp">K</span> key, <span class="tp">V</span> value) {
-    <span class="fn">validateKey</span>(key);
-    <span class="fn">validateValue</span>(value);
+    <span class="fn">requireNonNull</span>(key, <span class="st">"key"</span>);
+    <span class="fn">requireNonNull</span>(value, <span class="st">"value"</span>);
 
-    <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; node = cache.<span class="fn">get</span>(key);
-
-    <span class="kw">if</span> (node != <span class="kw">null</span>) {
+    <span class="tp">Node</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; existing = map.<span class="fn">get</span>(key);
+    <span class="kw">if</span> (existing != <span class="kw">null</span>) {
         <span class="cm">// Update existing: change value, promote to MRU</span>
-        node.value = value;
-        <span class="fn">moveToHead</span>(node);
-    } <span class="kw">else</span> {
-        <span class="cm">// New key: create node, add to cache and DLL head</span>
-        <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; newNode = <span class="kw">new</span> <span class="tp">CacheNode</span>&lt;&gt;(key, value);
-        cache.<span class="fn">put</span>(key, newNode);
-        <span class="fn">addToHead</span>(newNode);
-
-        <span class="cm">// Evict LRU if over capacity</span>
-        <span class="kw">if</span> (cache.<span class="fn">size</span>() > capacity) {
-            <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; lru = <span class="fn">removeTail</span>();  <span class="cm">// O(1)</span>
-            cache.<span class="fn">remove</span>(lru.key);                <span class="cm">// O(1)</span>
-            statistics.<span class="fn">recordEviction</span>();
-        }
+        existing.value = value;
+        <span class="fn">moveToHead</span>(existing);
+        <span class="fn">fireEvent</span>(l -&gt; l.<span class="fn">onPut</span>(key, value));
+        <span class="kw">return</span>;
     }
+
+    <span class="cm">// Full: evict LRU (tail.prev) BEFORE inserting</span>
+    <span class="kw">if</span> (map.<span class="fn">size</span>() &gt;= capacity) {
+        <span class="tp">Node</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; victim = tail.prev;     <span class="cm">// O(1)</span>
+        <span class="fn">unlink</span>(victim);
+        map.<span class="fn">remove</span>(victim.key);                <span class="cm">// O(1)</span>
+        evictions++;
+        <span class="fn">fireEvent</span>(l -&gt; l.<span class="fn">onEvict</span>(victim.key, victim.value));
+    }
+
+    <span class="cm">// New key: create node, add to map and DLL head</span>
+    <span class="tp">Node</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; node = <span class="kw">new</span> <span class="tp">Node</span>&lt;&gt;(key, value);
+    map.<span class="fn">put</span>(key, node);
+    <span class="fn">addAfterHead</span>(node);
+    <span class="fn">fireEvent</span>(l -&gt; l.<span class="fn">onPut</span>(key, value));
 }</pre>
   </div>
 
   <div class="card" style="border-left:3px solid var(--accent3);">
     <h3 style="color:var(--accent3);margin-top:0;">Pointer Manipulation Helpers</h3>
 <pre><span class="cm">// Remove node from its current position in DLL</span>
-<span class="kw">private void</span> <span class="fn">removeNode</span>(<span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; node) {
+<span class="kw">private void</span> <span class="fn">unlink</span>(<span class="tp">Node</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; node) {
     node.prev.next = node.next;    <span class="cm">// prev skips over node</span>
     node.next.prev = node.prev;    <span class="cm">// next skips back over node</span>
 }
 
 <span class="cm">// Insert node right after head sentinel (MRU position)</span>
-<span class="kw">private void</span> <span class="fn">addToHead</span>(<span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; node) {
+<span class="kw">private void</span> <span class="fn">addAfterHead</span>(<span class="tp">Node</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; node) {
     node.next = head.next;         <span class="cm">// node points to old first</span>
     node.prev = head;              <span class="cm">// node points back to sentinel</span>
     head.next.prev = node;         <span class="cm">// old first points back to node</span>
@@ -365,39 +371,33 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
 }
 
 <span class="cm">// Promote: unlink + relink at head</span>
-<span class="kw">private void</span> <span class="fn">moveToHead</span>(<span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; node) {
-    <span class="fn">removeNode</span>(node);
-    <span class="fn">addToHead</span>(node);
+<span class="kw">private void</span> <span class="fn">moveToHead</span>(<span class="tp">Node</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; node) {
+    <span class="fn">unlink</span>(node);
+    <span class="fn">addAfterHead</span>(node);
 }
 
-<span class="cm">// Evict: remove LRU node (before tail sentinel)</span>
-<span class="kw">private</span> <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; <span class="fn">removeTail</span>() {
-    <span class="tp">CacheNode</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; lru = tail.prev;  <span class="cm">// actual LRU (not sentinel)</span>
-    <span class="fn">removeNode</span>(lru);
-    <span class="kw">return</span> lru;                        <span class="cm">// caller removes from HashMap</span>
-}</pre>
+<span class="cm">// Evict: no helper &mdash; put() unlinks tail.prev inline (see above)</span></pre>
   </div>
 
   <div class="card" style="border-left:3px solid var(--accent4);">
     <h3 style="color:var(--accent4);margin-top:0;">Constructor &mdash; Sentinel Initialization</h3>
-<pre><span class="kw">public</span> <span class="tp">LRUCacheImpl</span>(<span class="kw">int</span> capacity) {
+<pre><span class="kw">public</span> <span class="tp">LRUCache</span>(<span class="kw">int</span> capacity) {
     <span class="kw">if</span> (capacity &lt;= <span class="nr">0</span>)
-        <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Capacity must be positive"</span>);
+        <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"capacity must be &gt; 0"</span>);
 
     <span class="kw">this</span>.capacity = capacity;
-    <span class="kw">this</span>.cache = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
-    <span class="kw">this</span>.statistics = <span class="kw">new</span> <span class="tp">CacheStatistics</span>();
+    <span class="kw">this</span>.map = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
 
     <span class="cm">// Sentinel nodes: head &#8592;&#8594; tail (empty list)</span>
-    <span class="kw">this</span>.head = <span class="kw">new</span> <span class="tp">CacheNode</span>&lt;&gt;();
-    <span class="kw">this</span>.tail = <span class="kw">new</span> <span class="tp">CacheNode</span>&lt;&gt;();
+    head = <span class="kw">new</span> <span class="tp">Node</span>&lt;&gt;(<span class="kw">null</span>, <span class="kw">null</span>);
+    tail = <span class="kw">new</span> <span class="tp">Node</span>&lt;&gt;(<span class="kw">null</span>, <span class="kw">null</span>);
     head.next = tail;
     tail.prev = head;
 }</pre>
   </div>
 
   <div class="card">
-    <h3>Alternative: Encapsulated DoublyLinkedList</h3>
+    <h3>Alternative (hypothetical, not in src): Encapsulated DoublyLinkedList</h3>
 <pre><span class="kw">private static class</span> <span class="tp">DoublyLinkedList</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; {
     <span class="kw">private</span> <span class="tp">Node</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; head, tail;
 
@@ -414,7 +414,7 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
     <span class="tp">Node</span> <span class="fn">removeTail</span>()         { <span class="cm">/* remove tail.prev */</span> }
     <span class="kw">void</span> <span class="fn">clear</span>()              { head.next = tail; tail.prev = head; }
 }</pre>
-    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Both approaches are valid. The encapsulated DLL is cleaner; inline is fewer allocations.</p>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-dim);">Both approaches are valid. <span class="inline-code">LRUCache</span> keeps the pointer ops inline (fewer types); an encapsulated DLL is cleaner if you reuse it.</p>
   </div>
 </section>
 
@@ -423,36 +423,33 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
   <h2>07 &mdash; Thread Safety</h2>
 
   <div class="card highlight">
-    <h3 style="color:var(--accent);margin-top:0;">ConcurrentLRUCache (Decorator Pattern)</h3>
-<pre><span class="kw">public class</span> <span class="tp">ConcurrentLRUCache</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; <span class="kw">implements</span> <span class="tp">LRUCache</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; {
-    <span class="kw">private final</span> <span class="tp">LRUCache</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; delegate;
-    <span class="kw">private final</span> <span class="tp">ReadWriteLock</span> lock = <span class="kw">new</span> <span class="tp">ReentrantReadWriteLock</span>();
+    <h3 style="color:var(--accent);margin-top:0;">ConcurrentCache (Decorator Pattern)</h3>
+<pre><span class="kw">public final class</span> <span class="tp">ConcurrentCache</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; <span class="kw">implements</span> <span class="tp">Cache</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; {
+    <span class="kw">private final</span> <span class="tp">Cache</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; delegate;
+    <span class="kw">private final</span> <span class="tp">ReentrantLock</span> lock = <span class="kw">new</span> <span class="tp">ReentrantLock</span>();
 
     <span class="kw">public</span> <span class="tp">Optional</span>&lt;<span class="tp">V</span>&gt; <span class="fn">get</span>(<span class="tp">K</span> key) {
-        lock.<span class="fn">writeLock</span>().<span class="fn">lock</span>();     <span class="cm">// WRITE lock! get() modifies order</span>
-        <span class="kw">try</span> {
-            <span class="kw">return</span> delegate.<span class="fn">get</span>(key);
-        } <span class="kw">finally</span> {
-            lock.<span class="fn">writeLock</span>().<span class="fn">unlock</span>();
-        }
+        lock.<span class="fn">lock</span>();                 <span class="cm">// exclusive: get() moves the node</span>
+        <span class="kw">try</span> { <span class="kw">return</span> delegate.<span class="fn">get</span>(key); } <span class="kw">finally</span> { lock.<span class="fn">unlock</span>(); }
     }
 
     <span class="kw">public void</span> <span class="fn">put</span>(<span class="tp">K</span> key, <span class="tp">V</span> value) {
-        lock.<span class="fn">writeLock</span>().<span class="fn">lock</span>();
-        <span class="kw">try</span> {
-            delegate.<span class="fn">put</span>(key, value);
-        } <span class="kw">finally</span> {
-            lock.<span class="fn">writeLock</span>().<span class="fn">unlock</span>();
-        }
+        lock.<span class="fn">lock</span>();
+        <span class="kw">try</span> { delegate.<span class="fn">put</span>(key, value); } <span class="kw">finally</span> { lock.<span class="fn">unlock</span>(); }
     }
 
-    <span class="kw">public boolean</span> <span class="fn">containsKey</span>(<span class="tp">K</span> key) {
-        lock.<span class="fn">readLock</span>().<span class="fn">lock</span>();      <span class="cm">// Read lock OK: doesn't modify order</span>
-        <span class="kw">try</span> {
-            <span class="kw">return</span> delegate.<span class="fn">containsKey</span>(key);
-        } <span class="kw">finally</span> {
-            lock.<span class="fn">readLock</span>().<span class="fn">unlock</span>();
-        }
+    <span class="cm">// remove, containsKey, clear, size: same lock/try/finally shape</span>
+
+    <span class="cm">// stats() and listener registration take the same lock, so a listener</span>
+    <span class="cm">// list is never mutated while put() is iterating it to fire events</span>
+    <span class="kw">public</span> <span class="tp">CacheStats</span> <span class="fn">stats</span>() {
+        lock.<span class="fn">lock</span>();
+        <span class="kw">try</span> { <span class="kw">return</span> delegate.<span class="fn">stats</span>(); } <span class="kw">finally</span> { lock.<span class="fn">unlock</span>(); }
+    }
+
+    <span class="kw">public void</span> <span class="fn">addListener</span>(<span class="tp">CacheEventListener</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; l) {
+        lock.<span class="fn">lock</span>();
+        <span class="kw">try</span> { delegate.<span class="fn">addListener</span>(l); } <span class="kw">finally</span> { lock.<span class="fn">unlock</span>(); }
     }
 }</pre>
   </div>
@@ -461,33 +458,33 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
     <table>
       <tr><th>Mechanism</th><th>Where</th><th>Why</th></tr>
       <tr>
-        <td><span class="inline-code">ReentrantReadWriteLock</span></td>
-        <td>ConcurrentLRUCache</td>
-        <td>Separates read-only ops (<span class="inline-code">containsKey</span>, <span class="inline-code">size</span>) from mutating ops</td>
+        <td><span class="inline-code">ReentrantLock</span></td>
+        <td>ConcurrentCache</td>
+        <td>One exclusive lock around every delegate call &mdash; simple and correct</td>
       </tr>
       <tr>
-        <td><span class="inline-code">writeLock for get()</span></td>
+        <td><span class="inline-code">No ReadWriteLock</span></td>
         <td>get() method</td>
-        <td>get() modifies access order (moves node to head) &mdash; <strong>not</strong> a pure read!</td>
+        <td>get() modifies access order (LRU moves node, LFU bumps freq) &mdash; <strong>not</strong> a pure read, so a read lock would buy nothing</td>
       </tr>
       <tr>
-        <td><span class="inline-code">AtomicLong</span></td>
-        <td>CacheStatistics</td>
-        <td>Lock-free counters for hits/misses/evictions</td>
+        <td><span class="inline-code">plain long counters</span></td>
+        <td>LRUCache / LFUCache</td>
+        <td>hits/misses/evictions are guarded by the decorator&rsquo;s lock; <span class="inline-code">stats()</span> returns an immutable <span class="inline-code">CacheStats</span> snapshot</td>
       </tr>
     </table>
   </div>
 
   <blockquote>
-    <strong>Gotcha:</strong> <span class="inline-code">get()</span> needs a <em>write lock</em> because it modifies the DLL access order. Using a read lock would allow concurrent get() calls to corrupt the linked list. For read-only checks, use <span class="inline-code">containsKey()</span> which uses a read lock.
+    <strong>Gotcha:</strong> <span class="inline-code">get()</span> is a <em>write</em> &mdash; it modifies the DLL access order. With a ReadWriteLock, concurrent get() calls under the read lock would corrupt the linked list, so every op would need the write lock anyway. That is why <span class="inline-code">ConcurrentCache</span> uses a plain <span class="inline-code">ReentrantLock</span>.
   </blockquote>
 
   <div class="card" style="border-left:3px solid var(--accent2);">
-    <h3 style="color:var(--accent2);margin-top:0;">Segmented Locking (Scale-up)</h3>
+    <h3 style="color:var(--accent2);margin-top:0;">Segmented Locking (Scale-up, hypothetical follow-up)</h3>
 <pre><span class="cm">// Reduce contention by partitioning into N independent caches</span>
 <span class="kw">class</span> <span class="tp">SegmentedLRUCache</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; {
     <span class="kw">private final int</span> segments = <span class="nr">16</span>;
-    <span class="kw">private final</span> <span class="tp">LRUCacheImpl</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt;[] caches;
+    <span class="kw">private final</span> <span class="tp">Cache</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt;[] caches;   <span class="cm">// each a ConcurrentCache(new LRUCache(...))</span>
 
     <span class="kw">private int</span> <span class="fn">getSegment</span>(<span class="tp">K</span> key) {
         <span class="kw">return</span> <span class="tp">Math</span>.<span class="fn">abs</span>(key.<span class="fn">hashCode</span>() % segments);
@@ -517,7 +514,7 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
       <div class="label">HashMap + DLL insert</div>
     </div>
     <div class="fee-item">
-      <div class="state">evict()</div>
+      <div class="state">evict</div>
       <div class="amount green">O(1)</div>
       <div class="label">tail.prev + HashMap remove</div>
     </div>
@@ -535,19 +532,19 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
         <td><span class="inline-code">get(key)</span></td>
         <td><strong style="color:var(--accent3);">O(1)</strong></td>
         <td>O(1)</td>
-        <td>HashMap.get + removeNode + addToHead</td>
+        <td>map.get + unlink + addAfterHead</td>
       </tr>
       <tr>
         <td><span class="inline-code">put(key, val)</span></td>
         <td><strong style="color:var(--accent3);">O(1)</strong></td>
         <td>O(1)</td>
-        <td>HashMap.put + addToHead + optional evict</td>
+        <td>optional evict + map.put + addAfterHead</td>
       </tr>
       <tr>
-        <td><span class="inline-code">evict (removeTail)</span></td>
+        <td><span class="inline-code">evict (inside put)</span></td>
         <td><strong style="color:var(--accent3);">O(1)</strong></td>
         <td>O(1)</td>
-        <td>tail.prev + removeNode + HashMap.remove</td>
+        <td>tail.prev + unlink + map.remove</td>
       </tr>
       <tr>
         <td><span class="inline-code">containsKey(key)</span></td>
@@ -654,12 +651,12 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
 
   <details>
     <summary>How would you add TTL (time-based expiration)?</summary>
-    <div class="answer">Add <span class="inline-code">long expiryTime</span> to <span class="inline-code">CacheNode</span>. On <span class="inline-code">get()</span>, check if <span class="inline-code">System.currentTimeMillis() > node.expiryTime</span> &mdash; if expired, remove and return empty (lazy expiry). For proactive cleanup, run a <span class="inline-code">ScheduledExecutorService</span> that scans from tail (oldest access) and removes expired entries. Dual eviction: LRU by access order + TTL by time.</div>
+    <div class="answer">It is already there as a Decorator: <span class="inline-code">TtlCache</span> wraps any <span class="inline-code">Cache</span> and keeps a <span class="inline-code">Map&lt;K, Long&gt; expiresAt</span>. <span class="inline-code">put()</span> stamps <span class="inline-code">clock.millis() + ttlMillis</span>; <span class="inline-code">get()</span> / <span class="inline-code">containsKey()</span> check lazily and, if expired, remove the entry and fire <span class="inline-code">onEvict</span>. No background thread &mdash; call <span class="inline-code">purgeExpired()</span> from a <span class="inline-code">ScheduledExecutorService</span> for eager cleanup. The <span class="inline-code">Clock</span> is injected so tests control time. Dual eviction: LRU by access order + TTL by time.</div>
   </details>
 
   <details>
-    <summary>Why does get() need a write lock in the concurrent version?</summary>
-    <div class="answer"><span class="inline-code">get()</span> is not a pure read &mdash; it modifies the DLL by calling <span class="inline-code">moveToHead()</span>. If two threads concurrently call get() with read locks, both would modify the DLL pointers simultaneously, causing corruption. Solution: use write lock for <span class="inline-code">get()</span>, or use <span class="inline-code">containsKey()</span> (which doesn't modify order) for read-only checks with a read lock.</div>
+    <summary>Why does the concurrent version use ReentrantLock instead of ReadWriteLock?</summary>
+    <div class="answer"><span class="inline-code">get()</span> is not a pure read &mdash; it modifies the DLL by calling <span class="inline-code">moveToHead()</span> (or bumps frequency in <span class="inline-code">LFUCache</span>). If two threads called get() under a read lock, both would modify the DLL pointers simultaneously, causing corruption. So get() would need the write lock, and since get() is the hot path, a ReadWriteLock buys nothing over a plain <span class="inline-code">ReentrantLock</span> &mdash; which is what <span class="inline-code">ConcurrentCache</span> uses.</div>
   </details>
 
   <details>
@@ -688,8 +685,8 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
   </details>
 
   <details>
-    <summary>Why store the key inside CacheNode?</summary>
-    <div class="answer">When evicting from the DLL (<span class="inline-code">removeTail()</span>), we get a node reference but need to also remove the entry from the HashMap. Without the key stored in the node, we'd need to scan the HashMap to find which key maps to this node &mdash; O(n). Storing the key in the node makes it O(1): <span class="inline-code">cache.remove(lruNode.key)</span>.</div>
+    <summary>Why store the key inside Node?</summary>
+    <div class="answer">When evicting from the DLL (<span class="inline-code">tail.prev</span>), we get a node reference but need to also remove the entry from the HashMap. Without the key stored in the node, we'd need to scan the HashMap to find which key maps to this node &mdash; O(n). Storing the key in the node makes it O(1): <span class="inline-code">map.remove(victim.key)</span>.</div>
   </details>
 
   <details>
@@ -699,7 +696,7 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
 
   <details>
     <summary>How would you test this implementation?</summary>
-    <div class="answer"><strong>Unit tests:</strong> Basic get/put, update existing key, eviction order, null key rejection, capacity=1 edge case. <strong>Invariant tests:</strong> After every operation, verify HashMap.size == DLL.size, all HashMap entries exist in DLL, head.next is MRU, tail.prev is LRU. <strong>Concurrency tests:</strong> Parallel get/put with ConcurrentLRUCache, verify no corruption. <strong>Property-based:</strong> Random operations maintain invariants. The <span class="inline-code">validateInvariants()</span> method checks all these.</div>
+    <div class="answer"><strong>Unit tests:</strong> Basic get/put, update existing key, eviction order, null key rejection, capacity=1 edge case. <strong>Invariant tests:</strong> After every operation, verify HashMap.size == DLL.size, all HashMap entries exist in DLL, head.next is MRU, tail.prev is LRU. <strong>Concurrency tests:</strong> Parallel get/put with ConcurrentCache, verify no corruption (<span class="inline-code">ConcurrentLRUCacheTest</span>), and adding a listener mid-put (<span class="inline-code">ConcurrentCacheListenerTest</span>). <strong>Property-based:</strong> Random operations maintain invariants (a hypothetical <span class="inline-code">validateInvariants()</span> helper would check these).</div>
   </details>
 </section>
 
@@ -708,21 +705,19 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
   <h2>11 &mdash; Package Structure</h2>
   <div class="card">
 <pre>lrucache/
-├── <span class="tp">LRUCache</span>.java                  <span class="cm">-- interface: get, put, size, capacity, clear, stats</span>
-├── <span class="tp">LRUCacheImpl</span>.java              <span class="cm">-- HashMap + DLL implementation (core)</span>
-├── <span class="tp">ConcurrentLRUCache</span>.java        <span class="cm">-- Decorator: thread-safe with ReadWriteLock</span>
-├── <span class="tp">CacheNode</span>.java                 <span class="cm">-- DLL node: key, value, prev, next</span>
-├── <span class="tp">CacheStatistics</span>.java           <span class="cm">-- AtomicLong counters: hits, misses, evictions</span>
-├── <span class="tp">LRUCacheDemo</span>.java              <span class="cm">-- demo: showcases all operations</span>
+├── <span class="tp">LRUCacheDemo</span>.java              <span class="cm">-- demo: LRU, LFU, TTL, concurrency, composed decorators</span>
 ├── api/
-│   └── <span class="tp">Cache</span>.java                 <span class="cm">-- generic cache interface</span>
-├── impl/
-│   └── <span class="tp">LRUCache</span>.java              <span class="cm">-- alt impl with encapsulated DoublyLinkedList</span>
-└── model/
-    ├── <span class="tp">CacheEntry</span>.java             <span class="cm">-- entry with accessTime + accessCount (for LFU/TTL)</span>
-    └── <span class="tp">EvictionPolicy</span>.java         <span class="cm">-- enum: LRU, LFU, FIFO</span></pre>
+│   ├── <span class="tp">Cache</span>.java                 <span class="cm">-- interface: get, put, remove, containsKey, clear, size, capacity, stats, listeners</span>
+│   ├── <span class="tp">CacheEventListener</span>.java    <span class="cm">-- Observer: onPut/onHit/onMiss/onEvict/onRemove/onClear</span>
+│   └── <span class="tp">CacheStats</span>.java            <span class="cm">-- immutable snapshot: hits, misses, evictions, hitRate()</span>
+└── impl/
+    ├── <span class="tp">LRUCache</span>.java              <span class="cm">-- HashMap + DLL implementation (core), nested Node</span>
+    ├── <span class="tp">LFUCache</span>.java              <span class="cm">-- HashMap + freq buckets, O(1) LFU</span>
+    ├── <span class="tp">ConcurrentCache</span>.java       <span class="cm">-- Decorator: thread-safe with ReentrantLock</span>
+    ├── <span class="tp">TtlCache</span>.java              <span class="cm">-- Decorator: lazy per-entry TTL, purgeExpired()</span>
+    └── <span class="tp">LoggingCacheListener</span>.java  <span class="cm">-- demo listener: prints events</span></pre>
   </div>
-  <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">10 files &middot; ~600 lines &middot; Two implementations: flat (LRUCacheImpl) and encapsulated DLL (impl/LRUCache)</p>
+  <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">9 files &middot; Two policies (LRUCache, LFUCache) + two Decorators (ConcurrentCache, TtlCache) over one Cache interface</p>
 </section>
 
 <!-- 12. PATTERNS SUMMARY -->
@@ -733,12 +728,12 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
       <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
       <tr>
         <td><span style="color:var(--accent);">Strategy</span></td>
-        <td>EvictionPolicy (LRU, LFU, FIFO)</td>
+        <td>Cache interface &rarr; LRUCache, LFUCache</td>
         <td>Swap eviction algorithms without changing cache logic</td>
       </tr>
       <tr>
         <td><span style="color:var(--accent4);">Decorator</span></td>
-        <td>ConcurrentLRUCache wraps LRUCache</td>
+        <td>ConcurrentCache / TtlCache wrap any Cache</td>
         <td>Add thread-safety without modifying base implementation</td>
       </tr>
       <tr>
@@ -748,7 +743,7 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
       </tr>
       <tr>
         <td><span style="color:var(--accent2);">Interface Segregation</span></td>
-        <td>LRUCache interface, Cache interface</td>
+        <td>Cache interface (api/)</td>
         <td>Clean API contract, program to interface not implementation</td>
       </tr>
       <tr>
@@ -758,7 +753,7 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
       </tr>
       <tr>
         <td><span style="color:var(--text);">Value Object</span></td>
-        <td>CacheNode (key is final), CacheEntry</td>
+        <td>Node (key is final), CacheStats (immutable)</td>
         <td>Immutable key ensures HashMap consistency</td>
       </tr>
       <tr>
@@ -806,7 +801,7 @@ Result:   {D:4, C:3, B:2}   Head &#8592;&#8594; <span class="st">D</span> &#8592
     </table>
   </div>
 
-  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">10 files &middot; O(1) everything &middot; HashMap + DLL = interview gold</p>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">9 files &middot; O(1) everything &middot; HashMap + DLL = interview gold</p>
 </section>
 
 </div>

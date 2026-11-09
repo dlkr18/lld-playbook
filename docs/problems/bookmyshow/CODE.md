@@ -1,6 +1,6 @@
 # bookmyshow - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/bookmyshow/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py bookmyshow`.
+> Generated from `src/main/java/com/you/lld/problems/bookmyshow/` on 2026-11-09. Re-run `python3 scripts/generate-code-md.py bookmyshow`.
 
 ## Project Structure (38 files)
 
@@ -1712,6 +1712,10 @@ public class EnhancedBookingService implements BookingService {
      * Confirm a PENDING booking.
      *
      * Uses synchronized(booking) for per-booking locking (not global).
+     * Before confirming, re-checks that the caller still holds every seat lock
+     * (it may have expired after createBooking) and claims each seat with
+     * Set.add, which is atomic: if another booking already claimed a seat,
+     * the claims are rolled back and nothing is confirmed.
      * State pattern validates the transition; this method handles side effects:
      *   - Mark seats as permanently booked
      *   - Release the temporary locks
@@ -1720,19 +1724,38 @@ public class EnhancedBookingService implements BookingService {
     @Override
     public boolean confirmBooking(String bookingId, Payment payment) {
         Booking booking = getBooking(bookingId);
+        String showId = booking.getShowId();
+        List<String> seatIds = booking.getSeats().stream()
+            .map(Seat::getId).collect(Collectors.toList());
 
         synchronized (booking) {
-            booking.confirm(payment);
-
-            Set<String> booked = bookedSeats.computeIfAbsent(
-                booking.getShowId(), k -> ConcurrentHashMap.newKeySet());
-            for (Seat seat : booking.getSeats()) {
-                booked.add(seat.getId());
+            if (booking.getStatus() != BookingStatus.PENDING) {
+                booking.confirm(payment); // State pattern rejects: already confirmed / cancelled / expired
+            }
+            for (String seatId : seatIds) {
+                if (!seatLockManager.isLockedByUser(showId, seatId, booking.getUserId())) {
+                    throw new SeatNotAvailableException(
+                        "Seat lock for " + seatId + " expired or was taken -- booking not confirmed");
+                }
             }
 
-            List<String> seatIds = booking.getSeats().stream()
-                .map(Seat::getId).collect(Collectors.toList());
-            seatLockManager.unlockSeats(booking.getShowId(), seatIds, booking.getUserId());
+            Set<String> booked = bookedSeats.computeIfAbsent(showId, k -> ConcurrentHashMap.newKeySet());
+            List<String> claimed = new ArrayList<>();
+            for (String seatId : seatIds) {
+                if (!booked.add(seatId)) {
+                    booked.removeAll(claimed);
+                    throw new SeatNotAvailableException("Seat already booked: " + seatId);
+                }
+                claimed.add(seatId);
+            }
+
+            try {
+                booking.confirm(payment);
+            } catch (RuntimeException e) {
+                booked.removeAll(claimed);
+                throw e;
+            }
+            seatLockManager.unlockSeats(showId, seatIds, booking.getUserId());
         }
 
         System.out.println("[BookingService] Booking confirmed: " + bookingId);
@@ -1949,6 +1972,7 @@ package com.you.lld.problems.bookmyshow.impl;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Fine-grained per-seat locking with automatic expiry.
@@ -2002,12 +2026,16 @@ public class SeatLockManager {
 
                 cleanExpiredLock(key);
 
+                // The timer must expire *this* lock only, so it gets the LockInfo
+                // once that exists (it can't before: LockInfo holds the timer).
+                final AtomicReference<LockInfo> self = new AtomicReference<>();
                 ScheduledFuture<?> task = scheduler.schedule(
-                    () -> forceUnlock(showId, seatId),
+                    () -> forceUnlock(showId, seatId, self.get()),
                     LOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS
                 );
 
                 LockInfo lock = new LockInfo(userId, expiry, task);
+                self.set(lock);
                 LockInfo existing = seatLocks.putIfAbsent(key, lock);
 
                 if (existing != null) {
@@ -2093,11 +2121,20 @@ public class SeatLockManager {
         }
     }
 
-    private void forceUnlock(String showId, String seatId) {
-        String key = seatKey(showId, seatId);
-        LockInfo lock = seatLocks.remove(key);
-        if (lock != null) {
-            System.out.println("[SeatLockManager] Lock expired for " + seatId + " (user " + lock.userId + ")");
+    /** Package-private for tests: the current lock on a seat, or null. */
+    LockInfo currentLock(String showId, String seatId) {
+        return seatLocks.get(seatKey(showId, seatId));
+    }
+
+    /**
+     * Expiry timer callback. Removes the seat lock only if it is still the
+     * lock this timer was created for: remove(key, expected), not remove(key).
+     * A timer that fires late must not delete a newer lock another user took.
+     */
+    void forceUnlock(String showId, String seatId, LockInfo expected) {
+        if (expected == null) return;
+        if (seatLocks.remove(seatKey(showId, seatId), expected)) {
+            System.out.println("[SeatLockManager] Lock expired for " + seatId + " (user " + expected.userId + ")");
         }
     }
 }

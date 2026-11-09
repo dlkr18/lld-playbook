@@ -150,9 +150,14 @@ public class PriorityTaskScheduler implements TaskSchedulerService {
             return false;
         }
         synchronized (taskQueue) {
-            taskQueue.remove(task);
+            // Only a task still waiting in the queue goes back in. A task that is
+            // running is not in the queue; re-offering it would run it twice
+            // (and a recurring one would be scheduled twice forever).
+            boolean queued = taskQueue.remove(task);
             task.setPriority(priority);
-            taskQueue.offer(task);
+            if (queued) {
+                taskQueue.offer(task);
+            }
         }
         return true;
     }

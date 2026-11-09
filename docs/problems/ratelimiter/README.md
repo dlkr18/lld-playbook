@@ -100,9 +100,7 @@ classDiagram
         -Map String,TokenBucket buckets
         -int capacity
         -int refillRate
-        -ScheduledExecutorService refillScheduler
         +allowRequest(clientId) RateLimitResult
-        -refillAllBuckets() void
         -calculateRetryAfter() long
     }
 
@@ -208,22 +206,19 @@ classDiagram
 - Memory grows with client count
 - Need cleanup for inactive clients
 
-### 3. Scheduled Refill for Token Bucket
-**Decision**: Background thread refills tokens every 100ms.
+### 3. Lazy Refill for Token Bucket
+**Decision**: Each request first adds `elapsed seconds × refillRate` tokens (capped at capacity), then tries to take one. Tokens are a `double`.
 
 **Rationale**:
-- Smooth token distribution
-- Avoids per-request timestamp calculations
-- Configurable refill frequency
-- Decouples refill from request handling
+- No background thread to start, stop or leak
+- Works for any rate: fractional tokens accumulate, so 5/s refills correctly
+- Idle clients cost nothing until they send a request
 
 **Tradeoffs**:
-- Simple implementation
-- Predictable refill rate
-- Background thread overhead
-- Slight delay in token availability
+- One `System.nanoTime()` call per request
+- Refill happens under the per-bucket lock
 
-**Alternative**: Lazy refill (calculate tokens on each request based on elapsed time).
+**Alternative**: A background thread adding `refillRate / 10` tokens every 100 ms. Rejected: integer division means rates below 10/s never refill, and it touches every bucket even when idle.
 
 ---
 
@@ -240,17 +235,15 @@ Output: RateLimitResult (allowed/blocked + metadata)
    // Initial bucket has full capacity tokens
 
 2. synchronized(bucket):
-      if bucket.tokens > 0:
-         bucket.tokens--
-         return RateLimitResult.allowed(bucket.tokens)
+      now = nanoTime()
+      bucket.tokens = min(capacity, bucket.tokens + (now - bucket.lastRefill) * refillRate / 1e9)
+      bucket.lastRefill = now
+      if bucket.tokens >= 1:
+         bucket.tokens -= 1
+         return RateLimitResult.allowed(floor(bucket.tokens))
       else:
          retryAfter = 1000 / refillRate // ms until next token
          return RateLimitResult.blocked(retryAfter)
-
-// Background refill task (runs every 100ms):
-3. for each bucket in buckets:
-      tokensToAdd = refillRate / 10 // For 100ms interval
-      bucket.tokens = min(bucket.tokens + tokensToAdd, capacity)
 ```
 
 **Time Complexity**: O(1) per request
@@ -259,7 +252,7 @@ Output: RateLimitResult (allowed/blocked + metadata)
 **Key Properties**:
 - Handles bursts: If bucket full, allows `capacity` requests instantly
 - Smooth refill: Tokens added gradually, not all at once
-- Memory efficient: Single integer per client
+- Memory efficient: one double and one timestamp per client
 
 **Example**:
 ```

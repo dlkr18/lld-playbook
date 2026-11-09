@@ -27,7 +27,6 @@ public class RateLimiterDemo {
         }
         Thread.sleep(500);
         System.out.println("  after 500ms refill: " + limiter.allowRequest("user1"));
-        limiter.shutdown();
     }
 
     private static void demoSlidingWindow() throws InterruptedException {
