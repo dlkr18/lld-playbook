@@ -651,6 +651,9 @@ def render_all(out_dir):
         if not s.exists() or s.read_text(encoding="utf-8") != text or not p.exists():
             s.write_text(text, encoding="utf-8")
             subprocess.run(["rsvg-convert", "-w", str(W), "-o", str(p), str(s)], check=True)
+            from PIL import Image                 # 256 flat colours: same look, a third of the bytes
+            Image.open(p).convert("RGB").quantize(colors=256, method=Image.Quantize.MEDIANCUT,
+                                                  dither=Image.Dither.NONE).save(p, optimize=True)
         sm, pm = out_dir / f"{b['name']}-m.svg", out_dir / f"{b['name']}-m.png"
         mtext = mobile(b)[0]
         if not sm.exists() or sm.read_text(encoding="utf-8") != mtext or not pm.exists():
