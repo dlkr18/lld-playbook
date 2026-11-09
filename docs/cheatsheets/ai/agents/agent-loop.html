@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
@@ -30,24 +34,37 @@
   <a href="#deep-dive-tracing"><span class="num">10</span> Deep Dive: Tracing</a>
   <a href="#deep-dive-cost-caps"><span class="num">11</span> Deep Dive: Cost Caps</a>
   <a href="#deep-dive-graceful-degrade"><span class="num">12</span> Deep Dive: Graceful Degrade</a>
-  <a href="#the-agent-loop-in-depth"><span class="num">13</span> The agent loop, in depth</a>
-  <a href="#the-minimal-loop-start-here"><span class="num">14</span> The minimal loop (start here)</a>
-  <a href="#watch-the-messages-evolve-a-3-step-run-verbatim"><span class="num">15</span> Watch the messages evolve: a 3-step run, verbatim</a>
-  <a href="#growing-it-into-a-production-module"><span class="num">16</span> Growing it into a production module</a>
-  <a href="#the-agent-loop-in-code"><span class="num">17</span> The agent loop in code</a>
-  <a href="#reliability-and-safety"><span class="num">18</span> Reliability and safety</a>
-  <a href="#evaluating-agents"><span class="num">19</span> Evaluating agents</a>
-  <a href="#production-ops"><span class="num">20</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">21</span> Related topics</a>
-  <a href="#where-people-get-lost"><span class="num">22</span> Where people get lost</a>
-  <a href="#how-this-connects"><span class="num">23</span> How this connects</a>
-  <a href="#check-yourself"><span class="num">24</span> Check yourself</a>
+  <a href="#the-question"><span class="num">13</span> The question</a>
+  <a href="#step-1-the-loop-and-the-conversation-it-maintains"><span class="num">14</span> Step 1: the loop, and the conversation it maintains</a>
+  <a href="#step-2-every-stop-reason-needs-a-branch"><span class="num">15</span> Step 2: every stop reason needs a branch</a>
+  <a href="#step-3-executing-a-tool-safely"><span class="num">16</span> Step 3: executing a tool safely</a>
+  <a href="#step-4-errors-are-observations-sorted-into-three-kinds"><span class="num">17</span> Step 4: errors are observations, sorted into three kinds</a>
+  <a href="#step-5-the-retry-that-refunds-twice-and-idempotency"><span class="num">18</span> Step 5: the retry that refunds twice, and idempotency</a>
+  <a href="#step-6-budgets-and-why-the-loop-must-not-trust-the-model-to"><span class="num">19</span> Step 6: budgets, and why the loop must not trust the model to stop</a>
+  <a href="#step-7-human-approval-means-the-loop-must-pause-and-resume"><span class="num">20</span> Step 7: human approval means the loop must pause and resume</a>
+  <a href="#step-8-checkpoints-crashes-and-replays"><span class="num">21</span> Step 8: checkpoints, crashes and replays</a>
+  <a href="#step-9-traces-so-you-can-see-what-happened"><span class="num">22</span> Step 9: traces, so you can see what happened</a>
+  <a href="#step-10-evaluating-an-agent"><span class="num">23</span> Step 10: evaluating an agent</a>
+  <a href="#a-worked-run-start-to-finish"><span class="num">24</span> A worked run, start to finish</a>
+  <a href="#in-code-a-loop-with-retries-idempotency-and-approval"><span class="num">25</span> In code: a loop with retries, idempotency and approval</a>
+  <a href="#the-agent-loop-in-depth"><span class="num">26</span> The agent loop, in depth</a>
+  <a href="#the-minimal-loop-start-here"><span class="num">27</span> The minimal loop (start here)</a>
+  <a href="#watch-the-messages-evolve-a-3-step-run-verbatim"><span class="num">28</span> Watch the messages evolve: a 3-step run, verbatim</a>
+  <a href="#growing-it-into-a-production-module"><span class="num">29</span> Growing it into a production module</a>
+  <a href="#the-agent-loop-in-code"><span class="num">30</span> The agent loop in code</a>
+  <a href="#reliability-and-safety"><span class="num">31</span> Reliability and safety</a>
+  <a href="#evaluating-agents"><span class="num">32</span> Evaluating agents</a>
+  <a href="#production-ops"><span class="num">33</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">34</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">35</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">36</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">37</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>The agent loop <span>// Tools &amp; agents</span></h1>
   <p>The loop in depth and in code: budgets, errors, human approval, reliability, safety, and how to evaluate an agent.</p>
-  <div class="tags"><span class="tag">17 min read</span><span class="tag">4 diagrams</span></div>
+  <div class="tags"><span class="tag">40 min read</span><span class="tag">4 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -58,7 +75,7 @@
 </section>
 <section id="new-words">
   <h2>02 &mdash; New words</h2>
-<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Budget / max_steps</strong></td><td>Hard cap on steps/tokens/time/spend; prevents runaway loops.</td></tr></tbody></table>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Turn</strong></td><td>One model call and the message it produces. An agent run is a sequence of turns separated by tool executions.</td></tr><tr><td><strong>Stop reason</strong></td><td>A field on every model response saying why generation ended: it finished (<code>end_turn</code>), it wants tools run (<code>tool_use</code>), or it hit the output limit (<code>max_tokens</code>).</td></tr><tr><td><strong>Tool use block</strong></td><td>The part of a model response that requests one tool call: a unique id, a tool name and JSON arguments.</td></tr><tr><td><strong>Tool result block</strong></td><td>What your code sends back: the result (or error) for one tool use, tagged with that tool use's id.</td></tr><tr><td><strong>Transient error</strong></td><td>A failure that may succeed if simply retried: a timeout, a rate limit, a dropped connection.</td></tr><tr><td><strong>Idempotency key</strong></td><td>A unique string sent with a write so the receiving system performs it at most once, however many times the request arrives.</td></tr><tr><td><strong>Exponential backoff</strong></td><td>Waiting longer between each retry (for example 0.5 s, 1 s, 2 s), usually with random jitter, so retries do not pile onto a struggling service.</td></tr><tr><td><strong>Budget</strong></td><td>A hard limit the runtime enforces on a run: steps, tokens, money or wall-clock time.</td></tr><tr><td><strong>Human-in-the-loop (HITL)</strong></td><td>Pausing the run before a risky action until a person approves or rejects it.</td></tr><tr><td><strong>Checkpoint</strong></td><td>A saved copy of the run's state (messages, step count, pending action) from which it can be resumed.</td></tr><tr><td><strong>Trace</strong></td><td>A structured log of one run: every model call and tool call with inputs, outputs, tokens and timings.</td></tr><tr><td><strong>pass@k / pass^k</strong></td><td>The chance that at least one of \(k\) runs succeeds, versus the chance that all \(k\) runs succeed.</td></tr><tr><td><strong>Budget / max_steps</strong></td><td>Hard cap on steps/tokens/time/spend; prevents runaway loops.</td></tr><tr><td><strong>Durable execution</strong></td><td>Checkpointed long-running jobs that resume after crashes (Temporal/LangGraph).</td></tr></tbody></table>
 </section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
@@ -113,8 +130,282 @@ POST /v1/agent/runs/{id}/approve
 <div class="card"><p>On timeout: return partial answer + 'could not complete action'. Fallback to simpler chain without tools. Never infinite spin.</p></div>
 </section>
 <p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>13 &mdash; The question</h2>
+<p><a href="what-is-an-agent.html">What an agent is</a> established the definition: the model decides the next step. This lesson is about the code that makes that possible, the loop. It is short (the core fits in fifteen lines), but almost every production agent failure lives in the parts tutorials skip: what happens when a tool times out, when the model's output is cut off, when an action needs a human, when the process crashes halfway, and how you know the agent works at all.</p>
+<p>The questions you will be asked:</p>
+<ol>
+<li>Walk me through the agent loop. What exactly goes back and forth with the model?</li>
+<li>How do you handle tool errors and retries without the agent doing something twice?</li>
+<li>How do you stop an agent from running forever or spending too much?</li>
+<li>How do you add human approval, and how do you evaluate an agent?</li>
+</ol>
+<p><strong>The running example.</strong> The same order-support agent: a customer writes "I was charged twice for ORD-482913." The agent has two read tools, <code>get_order</code> and <code>get_charges</code>, and one write tool, <code>refund</code>. Two complications make it realistic. Refunds need a human's approval. And the payments API, on the first refund attempt, performs the refund but then times out before replying. A naive loop will refund the customer twice, which would be a fitting way to resolve a duplicate-charge complaint. We will build a loop that does not.</p>
+</section>
+<section id="step-1-the-loop-and-the-conversation-it-maintains">
+  <h2>14 &mdash; Step 1: the loop, and the conversation it maintains</h2>
+<p>A model API takes a list of messages and returns one new message. The loop is the code that keeps calling it:</p>
+<pre class="ascii-diagram">messages = [user goal]
+repeat:
+    response = model(system, tools, messages)
+    messages.append(response)                    # role: assistant
+    if response.stop_reason == "end_turn":  return the text
+    results = run every tool_use block in response
+    messages.append(results)                     # role: user, one tool_result per tool_use
+until a budget is hit</pre>
+<p>Run once on our request, the message list grows like this:</p>
+<table>
+<thead><tr><th>#</th><th>Role</th><th>Content</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>user</td><td>"I was charged twice for ORD-482913."</td></tr>
+<tr><td>1</td><td>assistant</td><td>tool_use <code>tu_1</code> get_order; tool_use <code>tu_2</code> get_charges</td></tr>
+<tr><td>2</td><td>user</td><td>tool_result for <code>tu_1</code> (total $59.99); tool_result for <code>tu_2</code> (two charges)</td></tr>
+<tr><td>3</td><td>assistant</td><td>text "Two identical charges; refunding the second."; tool_use <code>tu_3</code> refund(ch_2, 59.99)</td></tr>
+<tr><td>4</td><td>user</td><td>tool_result for <code>tu_3</code> (refund re_1)</td></tr>
+<tr><td>5</td><td>assistant</td><td>text "Refunded $59.99 (charge ch_2)." stop_reason end_turn</td></tr>
+</tbody>
+</table>
+<p>Four facts about this structure matter in practice:</p>
+<ul>
+<li><strong>Tool results are sent with the user role</strong>, though no person typed them. The protocol has only two speakers, so everything from the outside world arrives as "user".</li>
+<li><strong>Every tool use must get a result, matched by id</strong>, in the very next message. If you skip one (because it was not approved, or it crashed), the API rejects the next call. A rejected or failed tool still gets a result: an error message.</li>
+<li><strong>One response can request several tools</strong> (message 1 asks for two). They are independent reads, so the runtime can run them concurrently and return both results in one message. That saves a whole turn.</li>
+<li><strong>The model is stateless.</strong> Each call re-sends the whole list. The list <em>is</em> the agent's memory of this run.</li>
+</ul>
+<p>Message formats differ slightly between providers (OpenAI puts calls in a <code>tool_calls</code> field and results in messages with role <code>tool</code>), but the shape is the same everywhere. <a href="tool-calling.html">Tool calling</a> covers the wire format in detail.</p>
+</section>
+<section id="step-2-every-stop-reason-needs-a-branch">
+  <h2>15 &mdash; Step 2: every stop reason needs a branch</h2>
+<p>The loop's exit test is the stop reason, and a robust loop handles every value, not only the happy two. The names below are the Anthropic Messages API's; OpenAI's equivalents are <code>finish_reason</code> values <code>tool_calls</code>, <code>stop</code>, <code>length</code> and <code>content_filter</code>:</p>
+<table>
+<thead><tr><th>Stop reason</th><th>Meaning</th><th>What the loop does</th></tr></thead>
+<tbody>
+<tr><td><code>tool_use</code></td><td>The model wants tools run</td><td>Execute them, append results, continue</td></tr>
+<tr><td><code>end_turn</code></td><td>The model considers itself done</td><td>Return the final text (optionally verify it first)</td></tr>
+<tr><td><code>max_tokens</code></td><td>Output hit the limit you set</td><td>Do not execute anything from this turn: a tool call's JSON may be cut off. Retry with a higher limit, or stop with an error</td></tr>
+<tr><td><code>stop_sequence</code></td><td>Output hit a stop string you supplied</td><td>Treat like <code>end_turn</code> (or like your own protocol says)</td></tr>
+<tr><td><code>pause_turn</code></td><td>A long-running server-side tool (such as provider-hosted web search) was paused mid-turn</td><td>Send the response back as-is so the model continues; it is not a final answer</td></tr>
+<tr><td><code>refusal</code> or a content filter</td><td>The model or a safety layer declined</td><td>Stop and return a safe message or escalate; do not loop on it</td></tr>
+</tbody>
+</table>
+<p>The <code>max_tokens</code> case is the one people miss. A model that is writing a long tool argument (a document, a SQL query) can be cut off halfway; parsing the truncated JSON either fails or, worse, succeeds on a shorter value. Treat that turn as unusable.</p>
+</section>
+<section id="step-3-executing-a-tool-safely">
+  <h2>16 &mdash; Step 3: executing a tool safely</h2>
+<p>Between "the model asked for <code>refund(ch_2, 59.99)</code>" and "the refund API is called" sits code that the model never sees, and it is where most of the safety lives. For each tool use block, the runtime:</p>
+<ol>
+<li><strong>Checks the tool exists and the caller may use it.</strong> The model can name a tool that does not exist or one this user must not access. Permission is decided by your code from the authenticated user, never from anything in the prompt.</li>
+<li><strong>Validates the arguments</strong> against the tool's JSON schema: required fields present, types right, enums respected, amounts in range. A missing <code>charge_id</code> is returned to the model as an error it can fix.</li>
+<li><strong>Applies policy</strong>: is a refund of $59.99 allowed without approval? (In our shop, no: every refund needs a human.)</li>
+<li><strong>Runs the function with a timeout</strong>, so one hung API does not hang the agent.</li>
+<li><strong>Shapes the result</strong>: serialise it, strip fields the model does not need, and cap its size.</li>
+</ol>
+<p>The size cap deserves a number. A tool that returns a 40,000-token log dump is not paid for once: the result stays in the message list and is re-sent on every later turn. Five more turns at an illustrative $3 per million input tokens cost \(40{,}000 \times 5 \times 3/10^6 = \$0.60\), for one careless tool, on one run. Return a summary or the first N rows and a note saying how to get more.</p>
+</section>
+<section id="step-4-errors-are-observations-sorted-into-three-kinds">
+  <h2>17 &mdash; Step 4: errors are observations, sorted into three kinds</h2>
+<p>When a tool fails, the loop has three options, and the right one depends on the kind of failure:</p>
+<table>
+<thead><tr><th>Kind</th><th>Examples</th><th>Who handles it</th></tr></thead>
+<tbody>
+<tr><td>Transient</td><td>Timeout, HTTP 429 or 503, connection reset</td><td>The runtime retries with backoff. The model never sees it unless retries run out.</td></tr>
+<tr><td>Model-correctable</td><td>Unknown order id, invalid argument, "date must be ISO format"</td><td>Returned to the model as a tool result marked as an error, with a message that says how to fix it.</td></tr>
+<tr><td>Fatal</td><td>Permission denied, policy violation, budget exhausted</td><td>The runtime stops the run (or tells the model plainly that the action is impossible and must not be retried).</td></tr>
+</tbody>
+</table>
+<p>The middle row is what makes agents worth having. The error message is an observation, and a good one turns a failure into a next step: <code>"ORDER_NOT_FOUND: no order ORD-48291. Order ids have 6 digits; ask the customer to confirm."</code> leads the model straight to asking. A bare <code>"Error 404"</code> leads it to guess.</p>
+<p>Retries in the runtime are cheap insurance. If a call fails transiently 10% of the time, independently, then with up to three attempts the chance all three fail is \(0.1^3 = 0.001\): from one failure in ten calls to one in a thousand. Waits of 0.5 s, 1 s, 2 s (doubling, plus random jitter so many clients do not retry in lock-step) give a struggling service room to recover. Retries do not help with model-correctable or fatal errors: retrying "order not found" three times gets "order not found" three times.</p>
+</section>
+<section id="step-5-the-retry-that-refunds-twice-and-idempotency">
+  <h2>18 &mdash; Step 5: the retry that refunds twice, and idempotency</h2>
+<p>Now the trap in our example. The runtime calls the payments API to refund <code>ch_2</code>. The provider performs the refund, then the response is lost and the call raises a timeout. The runtime, following Step 4, retries. Without protection, the provider sees a second, perfectly valid refund request and performs it again. The customer, who was charged twice, is now refunded twice.</p>
+<p>The root problem is that a timeout does not tell you whether the action happened. For reads that does not matter: reading twice is harmless. For writes it is the central problem, and the standard fix comes from payments engineering: an <strong>idempotency key</strong>. The caller sends a unique key with the write; the receiving system stores the key with the result and, if the same key arrives again, returns the stored result instead of acting again.</p>
+<p>The key must be <em>stable across retries of the same intended action</em> and <em>different for different actions</em>. A good choice in an agent is the run id plus the tool use id (<code>run_42:tu_3</code>): every retry of that one tool call carries the same key, and a genuinely new refund requested later in the run gets a new tool use id. Do not generate a fresh random key per attempt; that defeats the purpose. If the downstream API has no idempotency support, the tool wrapper must provide it: record the intended action in your own database before calling, and check the record before acting.</p>
+<div class="callout warn"><p><strong>The model can also repeat a write.</strong> Even with perfect runtime retries, the model may, two turns later, decide to call <code>refund</code> again because it is unsure the first one worked. Tool-use-id keys do not stop that, because it is a new tool use. Business-level checks do: the refund tool should refuse a second refund on the same charge and say so in its result.</p></div>
+</section>
+<section id="step-6-budgets-and-why-the-loop-must-not-trust-the-model-to">
+  <h2>19 &mdash; Step 6: budgets, and why the loop must not trust the model to stop</h2>
+<p>Models sometimes never decide they are done: they repeat a failing call with the same arguments, alternate between two tools, or keep "double-checking". The runtime enforces limits on every run, checked at the top of every iteration:</p>
+<ul>
+<li><strong>Steps</strong>: the number of model calls. The simplest and most important.</li>
+<li><strong>Tokens and money</strong>: because input grows each turn, cost per step rises.</li>
+<li><strong>Wall-clock time</strong>: for user-facing runs, the latency promise.</li>
+<li><strong>Repetition</strong>: the same tool with the same arguments three times in a row is almost always a loop.</li>
+</ul>
+<p>Setting the step limit from a money budget is a worked calculation. With the cost model from the previous lesson (1,550 input tokens on the first call, each turn adding about 370 tokens, 120 output tokens per turn, illustrative prices of $3 and $15 per million), the cumulative cost of a run is:</p>
+<table>
+<thead><tr><th>Model calls</th><th>4</th><th>8</th><th>9</th><th>10</th><th>12</th><th>16</th><th>20</th></tr></thead>
+<tbody><tr><td>Cumulative cost</td><td>$0.032</td><td>$0.083</td><td>$0.098</td><td>$0.114</td><td>$0.151</td><td>$0.236</td><td>$0.340</td></tr></tbody>
+</table>
+<p>A $0.10 per-run budget therefore allows 9 calls. Doubling the steps from 10 to 20 roughly triples the cost, because input grows with every turn. In practice, set the step limit from the distribution of successful runs: if 99% of successful runs in your evaluation take 6 or fewer calls, a limit of 10 stops runaways without cutting off real work.</p>
+<p>What happens at the limit matters as much as the limit. Do not raise an exception and lose the work. Return a structured outcome: what was found, what was not done, and an escalation to a human with the trace attached.</p>
+</section>
+<section id="step-7-human-approval-means-the-loop-must-pause-and-resume">
+  <h2>20 &mdash; Step 7: human approval means the loop must pause and resume</h2>
+<p>Classify every tool by risk before writing any approval code:</p>
+<table>
+<thead><tr><th>Class</th><th>Example</th><th>Policy</th></tr></thead>
+<tbody>
+<tr><td>Read</td><td>get_order, get_charges</td><td>Run automatically</td></tr>
+<tr><td>Reversible write</td><td>Add an internal note, draft an email</td><td>Run automatically, log it</td></tr>
+<tr><td>Irreversible or costly write</td><td>Refund, send email, delete, deploy</td><td>Require approval (or allow below a threshold, such as refunds under $20)</td></tr>
+</tbody>
+</table>
+<p>The naive implementation blocks the loop while waiting for a human: <code>input("approve?")</code>, or a thread waiting on a queue. That fails in production because approvals take minutes or hours, servers restart, and you cannot hold thousands of threads open. The real implementation makes the loop <strong>resumable</strong>:</p>
+<ol>
+<li>When the model requests <code>refund</code>, the runtime does not execute it. It saves the run's state (message list, step count, the pending tool use) to a database and returns <code>awaiting_approval</code> with the proposed action.</li>
+<li>A reviewer sees "Refund $59.99 on ch_2 for ORD-482913, reason: duplicate charge", with the evidence (the two charges).</li>
+<li>On approval, any process loads the state, executes the pending tool and appends its result. On rejection, it appends an error result such as "Rejected by a human reviewer. Do not retry; explain to the customer." Either way the tool use gets its result, and the loop continues.</li>
+</ol>
+<p>Show the reviewer the exact arguments that will execute, not the model's prose description of them. A model can write "refund the duplicate $59.99" while the arguments say $599.90.</p>
+</section>
+<section id="step-8-checkpoints-crashes-and-replays">
+  <h2>21 &mdash; Step 8: checkpoints, crashes and replays</h2>
+<p>The approval pause is a special case of a general need: an agent run is a long-lived, multi-step process, and the process running it can die at any point. Saving state after every step (a <strong>checkpoint</strong>) means a crash costs one step, not the run. On restart, load the latest checkpoint and continue.</p>
+<p>Checkpointing creates the same hazard as retries: if the process died after calling the refund API but before saving the result, the resumed run will call it again. The idempotency key from Step 5 makes that replay safe, because the key is built from ids already in the checkpoint. This is why "durable execution" frameworks (and LangGraph's checkpointers, see <a href="../tech/langgraph.html">LangGraph</a>) insist that side-effecting steps be idempotent.</p>
+</section>
+<section id="step-9-traces-so-you-can-see-what-happened">
+  <h2>22 &mdash; Step 9: traces, so you can see what happened</h2>
+<p>An agent's behaviour is decided at runtime, so you cannot understand a failure by reading code; you have to read the trajectory. Record one trace per run with a span per model call and per tool call. For each model call: the model, the input and output token counts, the latency, the stop reason, and the full messages (with personal data redacted). For each tool call: name, arguments, result size, duration, error kind, retry count and idempotency key. Tag the run with user, tenant, prompt version and outcome.</p>
+<p>From traces come the numbers that run an agent in production: success rate, steps per run, cost per run (and its long tail: alert on runs costing ten times the median, which are usually loops or oversized tool results), tool error rates and approval rates. See <a href="../production/observability.html">observability</a>.</p>
+</section>
+<section id="step-10-evaluating-an-agent">
+  <h2>23 &mdash; Step 10: evaluating an agent</h2>
+<p>A single successful demo proves almost nothing, because runs are not deterministic. Evaluation needs a task set (say 50 realistic requests, including the awkward ones: wrong order id, three charges, a pending charge), each with a checkable definition of success, and several runs per task.</p>
+<p>Check outcomes at three levels:</p>
+<ul>
+<li><strong>End state</strong>: inspect the world, not the reply. After the duplicate-charge task, exactly one refund of $59.99 exists against <code>ch_2</code>, and none against <code>ch_1</code>. A reply saying "refunded" while no refund exists is a failure; so is a correct reply with two refunds.</li>
+<li><strong>Trajectory</strong>: did it read the charges before refunding? Did it ask for approval? Did it stay within 6 steps? These catch an agent that gets the right answer by luck.</li>
+<li><strong>Reply quality</strong>: is the message accurate and appropriate? Often scored by a model judge against a rubric (see <a href="../production/evals.html">evals</a>).</li>
+</ul>
+<p>Then report reliability properly. If one run succeeds with probability \(p\), two numbers describe \(k\) runs:</p>
+\[ \text{pass@}k = 1 - (1-p)^k \qquad\qquad \text{pass}^k = p^k \]
+<p>pass@k (at least one of \(k\) succeeds) suits tasks where you can generate several attempts and pick a verified one. pass^k (all \(k\) succeed) is what a customer experiences: the agent has to work every time. With \(p = 0.8\): pass@3 = 0.992, which looks superb; pass^3 = 0.512, meaning only half the time would three customers in a row all be served correctly. Report pass^k for anything user-facing.</p>
+<p>Finally, size the evaluation. With 50 tasks × 5 runs = 250 runs at \(p \approx 0.8\), the standard error is \(\sqrt{0.8 \times 0.2 / 250} \approx 0.025\), so a 95% interval is about ±5 points. Comparing two prompt versions, the difference has a standard error of about 0.036, so differences smaller than about 7 points are noise. With only 50 runs the interval is ±11 points: "my change improved success from 76% to 82%" means nothing at that size.</p>
+</section>
+<section id="a-worked-run-start-to-finish">
+  <h2>24 &mdash; A worked run, start to finish</h2>
+<p>Putting it together on the running example, with the loop below:</p>
+<ol>
+<li><strong>Turn 1.</strong> The model requests <code>get_order</code> and <code>get_charges</code> in one response. Both are reads: the runtime validates, runs them, and appends two results in one user message.</li>
+<li><strong>Turn 2.</strong> The model sees two $59.99 charges and requests <code>refund(ch_2, 59.99)</code>. It is a write: the runtime saves state and returns <code>awaiting_approval</code>. Nothing has been refunded.</li>
+<li><strong>Approval.</strong> Later, perhaps in another process, the state is loaded and a human approves. The runtime calls the payments API with key <code>run_42:tu_3</code>. The provider refunds, the reply times out; the runtime backs off and retries with the same key; the provider returns the stored refund <code>re_1</code> without acting again.</li>
+<li><strong>Turn 3.</strong> The model sees the result and ends: "Refunded $59.99 (charge ch_2)." Three model calls, one refund, a full trace.</li>
+</ol>
+</section>
+<section id="in-code-a-loop-with-retries-idempotency-and-approval">
+  <h2>25 &mdash; In code: a loop with retries, idempotency and approval</h2>
+<p>This runs without an API key: <code>fake_model</code> returns turns in the same shape a real Messages API returns, so the runtime around it is the real thing.</p>
+<pre><span class="kw">import</span> json, time
+
+<span class="cm"># ---------- the environment: a payments API that times out once AFTER doing the work</span>
+REFUNDS = {}            <span class="cm"># idempotency_key -&gt; refund record (the payment provider's table)</span>
+_flaky = {<span class="st">"</span><span class="st">left</span><span class="st">"</span>: <span class="nr">1</span>}
+<span class="kw">def</span> <span class="fn">payments_refund</span>(charge_id, amount, idempotency_key):
+    <span class="kw">if</span> idempotency_key in REFUNDS:                    <span class="cm"># provider dedupes on the key</span>
+<span class="kw">return</span> REFUNDS[idempotency_key]
+    REFUNDS[idempotency_key] = {<span class="st">"</span><span class="st">refund_id</span><span class="st">"</span>: <span class="st">f</span><span class="st">"</span><span class="st">re_</span><span class="st">{</span><span class="tp">len</span>(REFUNDS)+<span class="nr">1</span><span class="st">}</span><span class="st">"</span>, <span class="st">"</span><span class="st">charge</span><span class="st">"</span>: charge_id, <span class="st">"</span><span class="st">amount</span><span class="st">"</span>: amount}
+    <span class="kw">if</span> _flaky[<span class="st">"</span><span class="st">left</span><span class="st">"</span>]:                                <span class="cm"># refund happened, but the reply is lost</span>
+        _flaky[<span class="st">"</span><span class="st">left</span><span class="st">"</span>] -= <span class="nr">1</span>
+<span class="kw">raise</span> TimeoutError(<span class="st">"</span><span class="st">payments API timed out</span><span class="st">"</span>)
+    <span class="kw">return</span> REFUNDS[idempotency_key]
+
+TOOLS = {
+    <span class="st">"</span><span class="st">get_order</span><span class="st">"</span>:   {<span class="st">"</span><span class="st">risk</span><span class="st">"</span>: <span class="st">"</span><span class="st">read</span><span class="st">"</span>,  <span class="st">"</span><span class="st">fn</span><span class="st">"</span>: <span class="kw">lambda</span> a, ctx: {<span class="st">"</span><span class="st">order_id</span><span class="st">"</span>: a[<span class="st">"</span><span class="st">order_id</span><span class="st">"</span>], <span class="st">"</span><span class="st">total</span><span class="st">"</span>: <span class="nr">59.99</span>}},
+    <span class="st">"</span><span class="st">get_charges</span><span class="st">"</span>: {<span class="st">"</span><span class="st">risk</span><span class="st">"</span>: <span class="st">"</span><span class="st">read</span><span class="st">"</span>,  <span class="st">"</span><span class="st">fn</span><span class="st">"</span>: <span class="kw">lambda</span> a, ctx: [{<span class="st">"</span><span class="st">id</span><span class="st">"</span>: <span class="st">"</span><span class="st">ch_1</span><span class="st">"</span>, <span class="st">"</span><span class="st">amount</span><span class="st">"</span>: <span class="nr">59.99</span>}, {<span class="st">"</span><span class="st">id</span><span class="st">"</span>: <span class="st">"</span><span class="st">ch_2</span><span class="st">"</span>, <span class="st">"</span><span class="st">amount</span><span class="st">"</span>: <span class="nr">59.99</span>}]},
+    <span class="st">"</span><span class="st">refund</span><span class="st">"</span>:      {<span class="st">"</span><span class="st">risk</span><span class="st">"</span>: <span class="st">"</span><span class="st">write</span><span class="st">"</span>, <span class="st">"</span><span class="st">fn</span><span class="st">"</span>: <span class="kw">lambda</span> a, ctx: payments_refund(a[<span class="st">"</span><span class="st">charge_id</span><span class="st">"</span>], a[<span class="st">"</span><span class="st">amount</span><span class="st">"</span>], ctx[<span class="st">"</span><span class="st">idem</span><span class="st">"</span>])},
+}
+REQUIRED = {<span class="st">"</span><span class="st">get_order</span><span class="st">"</span>: [<span class="st">"</span><span class="st">order_id</span><span class="st">"</span>], <span class="st">"</span><span class="st">get_charges</span><span class="st">"</span>: [<span class="st">"</span><span class="st">order_id</span><span class="st">"</span>], <span class="st">"</span><span class="st">refund</span><span class="st">"</span>: [<span class="st">"</span><span class="st">charge_id</span><span class="st">"</span>, <span class="st">"</span><span class="st">amount</span><span class="st">"</span>]}
+
+<span class="cm"># ---------- a scripted stand-in for the model: returns Messages-API-shaped turns</span>
+<span class="kw">def</span> <span class="fn">fake_model</span>(messages):
+    results = [b <span class="kw">for</span> m in messages <span class="kw">if</span> m[<span class="st">"</span><span class="st">role</span><span class="st">"</span>] == <span class="st">"</span><span class="st">user</span><span class="st">"</span> and <span class="tp">isinstance</span>(m[<span class="st">"</span><span class="st">content</span><span class="st">"</span>], <span class="tp">list</span>)
+               <span class="kw">for</span> b in m[<span class="st">"</span><span class="st">content</span><span class="st">"</span>] <span class="kw">if</span> b[<span class="st">"</span><span class="st">type</span><span class="st">"</span>] == <span class="st">"</span><span class="st">tool_result</span><span class="st">"</span>]
+    <span class="kw">if</span> not results:      <span class="cm"># step 1: two independent reads, requested in parallel</span>
+<span class="kw">return</span> {<span class="st">"</span><span class="st">stop_reason</span><span class="st">"</span>: <span class="st">"</span><span class="st">tool_use</span><span class="st">"</span>, <span class="st">"</span><span class="st">content</span><span class="st">"</span>: [
+            {<span class="st">"</span><span class="st">type</span><span class="st">"</span>: <span class="st">"</span><span class="st">tool_use</span><span class="st">"</span>, <span class="st">"</span><span class="st">id</span><span class="st">"</span>: <span class="st">"</span><span class="st">tu_1</span><span class="st">"</span>, <span class="st">"</span><span class="st">name</span><span class="st">"</span>: <span class="st">"</span><span class="st">get_order</span><span class="st">"</span>,   <span class="st">"</span><span class="st">input</span><span class="st">"</span>: {<span class="st">"</span><span class="st">order_id</span><span class="st">"</span>: <span class="st">"</span><span class="st">ORD-482913</span><span class="st">"</span>}},
+            {<span class="st">"</span><span class="st">type</span><span class="st">"</span>: <span class="st">"</span><span class="st">tool_use</span><span class="st">"</span>, <span class="st">"</span><span class="st">id</span><span class="st">"</span>: <span class="st">"</span><span class="st">tu_2</span><span class="st">"</span>, <span class="st">"</span><span class="st">name</span><span class="st">"</span>: <span class="st">"</span><span class="st">get_charges</span><span class="st">"</span>, <span class="st">"</span><span class="st">input</span><span class="st">"</span>: {<span class="st">"</span><span class="st">order_id</span><span class="st">"</span>: <span class="st">"</span><span class="st">ORD-482913</span><span class="st">"</span>}}]}
+    <span class="kw">if</span> <span class="tp">len</span>(results) == <span class="nr">2</span>:
+        <span class="kw">return</span> {<span class="st">"</span><span class="st">stop_reason</span><span class="st">"</span>: <span class="st">"</span><span class="st">tool_use</span><span class="st">"</span>, <span class="st">"</span><span class="st">content</span><span class="st">"</span>: [
+            {<span class="st">"</span><span class="st">type</span><span class="st">"</span>: <span class="st">"</span><span class="st">text</span><span class="st">"</span>, <span class="st">"</span><span class="st">text</span><span class="st">"</span>: <span class="st">"</span><span class="st">Two identical charges; refunding the second.</span><span class="st">"</span>},
+            {<span class="st">"</span><span class="st">type</span><span class="st">"</span>: <span class="st">"</span><span class="st">tool_use</span><span class="st">"</span>, <span class="st">"</span><span class="st">id</span><span class="st">"</span>: <span class="st">"</span><span class="st">tu_3</span><span class="st">"</span>, <span class="st">"</span><span class="st">name</span><span class="st">"</span>: <span class="st">"</span><span class="st">refund</span><span class="st">"</span>, <span class="st">"</span><span class="st">input</span><span class="st">"</span>: {<span class="st">"</span><span class="st">charge_id</span><span class="st">"</span>: <span class="st">"</span><span class="st">ch_2</span><span class="st">"</span>, <span class="st">"</span><span class="st">amount</span><span class="st">"</span>: <span class="nr">59.99</span>}}]}
+    <span class="kw">return</span> {<span class="st">"</span><span class="st">stop_reason</span><span class="st">"</span>: <span class="st">"</span><span class="st">end_turn</span><span class="st">"</span>, <span class="st">"</span><span class="st">content</span><span class="st">"</span>: [{<span class="st">"</span><span class="st">type</span><span class="st">"</span>: <span class="st">"</span><span class="st">text</span><span class="st">"</span>, <span class="st">"</span><span class="st">text</span><span class="st">"</span>: <span class="st">"</span><span class="st">Refunded $59.99 (charge ch_2).</span><span class="st">"</span>}]}
+
+<span class="cm"># ---------- the runtime: everything below is your code, not the model's</span>
+<span class="kw">def</span> <span class="fn">execute</span>(block, run_id, retries=<span class="nr">3</span>):
+    name, args = block[<span class="st">"</span><span class="st">name</span><span class="st">"</span>], block[<span class="st">"</span><span class="st">input</span><span class="st">"</span>]
+    <span class="kw">if</span> name not in TOOLS:
+        <span class="kw">return</span> <span class="st">f</span><span class="st">"</span><span class="st">Unknown tool </span><span class="st">{</span>name<span class="st">}</span><span class="st">. Available: </span><span class="st">{</span><span class="tp">list</span>(TOOLS)<span class="st">}</span><span class="st">"</span>, <span class="nr">True</span>
+    missing = [k <span class="kw">for</span> k in REQUIRED[name] <span class="kw">if</span> k not in args]
+    <span class="kw">if</span> missing:                                        <span class="cm"># model-correctable: tell it what is wrong</span>
+<span class="kw">return</span> <span class="st">f</span><span class="st">"</span><span class="st">Missing arguments </span><span class="st">{</span>missing<span class="st">}</span><span class="st">"</span>, <span class="nr">True</span>
+    ctx = {<span class="st">"</span><span class="st">idem</span><span class="st">"</span>: <span class="st">f</span><span class="st">"</span><span class="st">{</span>run_id<span class="st">}</span><span class="st">:</span><span class="st">{</span>block[<span class="st">'</span><span class="st">id</span><span class="st">'</span>]<span class="st">}</span><span class="st">"</span>}          <span class="cm"># stable across retries and replays</span>
+<span class="kw">for</span> attempt in <span class="tp">range</span>(retries):
+        <span class="kw">try</span>:
+            <span class="kw">return</span> json.dumps(TOOLS[name][<span class="st">"</span><span class="st">fn</span><span class="st">"</span>](args, ctx)), <span class="nr">False</span>
+<span class="kw">except</span> TimeoutError <span class="kw">as</span> e:                       <span class="cm"># transient: retry here, invisibly</span>
+            time.sleep(<span class="nr">0.01</span> * <span class="nr">2</span> ** attempt)             <span class="cm"># backoff (scaled down for the demo)</span>
+            last = <span class="tp">str</span>(e)
+    <span class="kw">return</span> <span class="st">f</span><span class="st">"</span><span class="st">{</span>name<span class="st">}</span><span class="st"> failed after </span><span class="st">{</span>retries<span class="st">}</span><span class="st"> attempts: </span><span class="st">{</span>last<span class="st">}</span><span class="st">"</span>, <span class="nr">True</span>
+<span class="kw">def</span> <span class="fn">run</span>(state, max_steps=<span class="nr">8</span>, approve=<span class="nr">None</span>):
+    msgs = state[<span class="st">"</span><span class="st">messages</span><span class="st">"</span>]
+    <span class="kw">while</span> state[<span class="st">"</span><span class="st">steps</span><span class="st">"</span>] &lt; max_steps:
+        <span class="kw">if</span> state.get(<span class="st">"</span><span class="st">pending</span><span class="st">"</span>):                       <span class="cm"># resuming after a human decision</span>
+<span class="kw">if</span> approve is <span class="nr">None</span>:                        <span class="cm"># no decision yet: stay paused</span>
+<span class="kw">return</span> {<span class="st">"</span><span class="st">status</span><span class="st">"</span>: <span class="st">"</span><span class="st">awaiting_approval</span><span class="st">"</span>, <span class="st">"</span><span class="st">action</span><span class="st">"</span>: state[<span class="st">"</span><span class="st">pending</span><span class="st">"</span>]}
+            block, state[<span class="st">"</span><span class="st">pending</span><span class="st">"</span>] = state[<span class="st">"</span><span class="st">pending</span><span class="st">"</span>], <span class="nr">None</span>
+<span class="kw">if</span> approve:
+                out, err = execute(block, state[<span class="st">"</span><span class="st">run_id</span><span class="st">"</span>])
+            <span class="kw">else</span>:
+                out, err = <span class="st">"</span><span class="st">Rejected by a human reviewer. Do not retry; explain to the customer.</span><span class="st">"</span>, <span class="nr">True</span>
+            msgs.append({<span class="st">"</span><span class="st">role</span><span class="st">"</span>: <span class="st">"</span><span class="st">user</span><span class="st">"</span>, <span class="st">"</span><span class="st">content</span><span class="st">"</span>: [
+                {<span class="st">"</span><span class="st">type</span><span class="st">"</span>: <span class="st">"</span><span class="st">tool_result</span><span class="st">"</span>, <span class="st">"</span><span class="st">tool_use_id</span><span class="st">"</span>: block[<span class="st">"</span><span class="st">id</span><span class="st">"</span>], <span class="st">"</span><span class="st">content</span><span class="st">"</span>: out, <span class="st">"</span><span class="st">is_error</span><span class="st">"</span>: err}]})
+        turn = fake_model(msgs)
+        state[<span class="st">"</span><span class="st">steps</span><span class="st">"</span>] += <span class="nr">1</span>
+        msgs.append({<span class="st">"</span><span class="st">role</span><span class="st">"</span>: <span class="st">"</span><span class="st">assistant</span><span class="st">"</span>, <span class="st">"</span><span class="st">content</span><span class="st">"</span>: turn[<span class="st">"</span><span class="st">content</span><span class="st">"</span>]})
+        <span class="kw">if</span> turn[<span class="st">"</span><span class="st">stop_reason</span><span class="st">"</span>] == <span class="st">"</span><span class="st">end_turn</span><span class="st">"</span>:
+            <span class="kw">return</span> {<span class="st">"</span><span class="st">status</span><span class="st">"</span>: <span class="st">"</span><span class="st">done</span><span class="st">"</span>, <span class="st">"</span><span class="st">answer</span><span class="st">"</span>: turn[<span class="st">"</span><span class="st">content</span><span class="st">"</span>][-<span class="nr">1</span>][<span class="st">"</span><span class="st">text</span><span class="st">"</span>], <span class="st">"</span><span class="st">steps</span><span class="st">"</span>: state[<span class="st">"</span><span class="st">steps</span><span class="st">"</span>]}
+        <span class="kw">if</span> turn[<span class="st">"</span><span class="st">stop_reason</span><span class="st">"</span>] == <span class="st">"</span><span class="st">max_tokens</span><span class="st">"</span>:
+            <span class="kw">return</span> {<span class="st">"</span><span class="st">status</span><span class="st">"</span>: <span class="st">"</span><span class="st">error</span><span class="st">"</span>, <span class="st">"</span><span class="st">reason</span><span class="st">"</span>: <span class="st">"</span><span class="st">output cut off mid-turn</span><span class="st">"</span>}
+        calls = [b <span class="kw">for</span> b in turn[<span class="st">"</span><span class="st">content</span><span class="st">"</span>] <span class="kw">if</span> b[<span class="st">"</span><span class="st">type</span><span class="st">"</span>] == <span class="st">"</span><span class="st">tool_use</span><span class="st">"</span>]
+        risky = [b <span class="kw">for</span> b in calls <span class="kw">if</span> TOOLS.get(b[<span class="st">"</span><span class="st">name</span><span class="st">"</span>], {}).get(<span class="st">"</span><span class="st">risk</span><span class="st">"</span>) == <span class="st">"</span><span class="st">write</span><span class="st">"</span>]
+        <span class="kw">if</span> risky:                                      <span class="cm"># pause: persist state, ask a human</span>
+            state[<span class="st">"</span><span class="st">pending</span><span class="st">"</span>] = risky[<span class="nr">0</span>]
+            <span class="kw">return</span> {<span class="st">"</span><span class="st">status</span><span class="st">"</span>: <span class="st">"</span><span class="st">awaiting_approval</span><span class="st">"</span>, <span class="st">"</span><span class="st">action</span><span class="st">"</span>: risky[<span class="nr">0</span>]}
+        results = []
+        <span class="kw">for</span> b in calls:                                <span class="cm"># independent reads; could run concurrently</span>
+            out, err = execute(b, state[<span class="st">"</span><span class="st">run_id</span><span class="st">"</span>])
+            results.append({<span class="st">"</span><span class="st">type</span><span class="st">"</span>: <span class="st">"</span><span class="st">tool_result</span><span class="st">"</span>, <span class="st">"</span><span class="st">tool_use_id</span><span class="st">"</span>: b[<span class="st">"</span><span class="st">id</span><span class="st">"</span>], <span class="st">"</span><span class="st">content</span><span class="st">"</span>: out, <span class="st">"</span><span class="st">is_error</span><span class="st">"</span>: err})
+        msgs.append({<span class="st">"</span><span class="st">role</span><span class="st">"</span>: <span class="st">"</span><span class="st">user</span><span class="st">"</span>, <span class="st">"</span><span class="st">content</span><span class="st">"</span>: results})   <span class="cm"># every tool_use gets a result</span>
+<span class="kw">return</span> {<span class="st">"</span><span class="st">status</span><span class="st">"</span>: <span class="st">"</span><span class="st">budget_exhausted</span><span class="st">"</span>, <span class="st">"</span><span class="st">steps</span><span class="st">"</span>: state[<span class="st">"</span><span class="st">steps</span><span class="st">"</span>]}
+
+state = {<span class="st">"</span><span class="st">run_id</span><span class="st">"</span>: <span class="st">"</span><span class="st">run_42</span><span class="st">"</span>, <span class="st">"</span><span class="st">steps</span><span class="st">"</span>: <span class="nr">0</span>, <span class="st">"</span><span class="st">pending</span><span class="st">"</span>: <span class="nr">None</span>,
+         <span class="st">"</span><span class="st">messages</span><span class="st">"</span>: [{<span class="st">"</span><span class="st">role</span><span class="st">"</span>: <span class="st">"</span><span class="st">user</span><span class="st">"</span>, <span class="st">"</span><span class="st">content</span><span class="st">"</span>: <span class="st">"</span><span class="st">I was charged twice for ORD-482913.</span><span class="st">"</span>}]}
+r = run(state)
+<span class="tp">print</span>(r[<span class="st">"</span><span class="st">status</span><span class="st">"</span>], r[<span class="st">"</span><span class="st">action</span><span class="st">"</span>][<span class="st">"</span><span class="st">name</span><span class="st">"</span>], r[<span class="st">"</span><span class="st">action</span><span class="st">"</span>][<span class="st">"</span><span class="st">input</span><span class="st">"</span>])   <span class="cm"># awaiting_approval refund {...}</span>
+saved = json.dumps(state)                       <span class="cm"># in production: write to a database</span>
+state = json.loads(saved)                       <span class="cm"># ...hours later, possibly another process</span>
+<span class="tp">print</span>(run(state, approve=<span class="nr">True</span>))                 <span class="cm"># done, 3 model calls</span>
+<span class="tp">print</span>(REFUNDS)                                  <span class="cm"># exactly ONE refund despite the timeout</span>
+</pre>
+<p>It prints <code>awaiting_approval refund {'charge_id': 'ch_2', 'amount': 59.99}</code>, then <code>{'status': 'done', 'answer': 'Refunded $59.99 (charge ch_2).', 'steps': 3}</code>, and a refunds table with exactly one entry under key <code>run_42:tu_3</code>, though the provider was called twice. Pass a fresh <code>uuid.uuid4().hex</code> as the key on each attempt instead and run it again: two refunds, <code>re_1</code> and <code>re_2</code>. (This simplified version pauses on the first write in a turn; a real one would execute the turn's reads, then pause.)</p>
+<p>With a real model, only <code>fake_model</code> changes. Written against the Anthropic Python SDK's Messages API as documented in 2025 (needs the <code>anthropic</code> package and an API key):</p>
+<pre><span class="cm"># Requires: pip install anthropic, ANTHROPIC_API_KEY set. Not run here.</span>
+<span class="kw">import</span> anthropic
+client = anthropic.Anthropic()
+TOOL_SCHEMAS = [{<span class="st">"</span><span class="st">name</span><span class="st">"</span>: <span class="st">"</span><span class="st">get_charges</span><span class="st">"</span>, <span class="st">"</span><span class="st">description</span><span class="st">"</span>: <span class="st">"</span><span class="st">List charges for one order, newest first.</span><span class="st">"</span>,
+                 <span class="st">"</span><span class="st">input_schema</span><span class="st">"</span>: {<span class="st">"</span><span class="st">type</span><span class="st">"</span>: <span class="st">"</span><span class="st">object</span><span class="st">"</span>,
+                                  <span class="st">"</span><span class="st">properties</span><span class="st">"</span>: {<span class="st">"</span><span class="st">order_id</span><span class="st">"</span>: {<span class="st">"</span><span class="st">type</span><span class="st">"</span>: <span class="st">"</span><span class="st">string</span><span class="st">"</span>, <span class="st">"</span><span class="st">pattern</span><span class="st">"</span>: <span class="st">"</span><span class="st">^ORD-</span><span class="st">\\</span><span class="st">d</span><span class="st">{6}</span><span class="st">$</span><span class="st">"</span>}},
+                                  <span class="st">"</span><span class="st">required</span><span class="st">"</span>: [<span class="st">"</span><span class="st">order_id</span><span class="st">"</span>]}}]   <span class="cm"># ...plus get_order and refund</span>
+<span class="kw">def</span> <span class="fn">real_model</span>(messages):
+    resp = client.messages.create(model=<span class="st">"</span><span class="st">YOUR_MODEL_ID</span><span class="st">"</span>, max_tokens=<span class="nr">1024</span>, system=<span class="st">"</span><span class="st">You are a support agent...</span><span class="st">"</span>,
+                                  tools=TOOL_SCHEMAS, messages=messages)
+    <span class="kw">return</span> {<span class="st">"</span><span class="st">stop_reason</span><span class="st">"</span>: resp.stop_reason,                  <span class="cm"># "tool_use", "end_turn", "max_tokens", ...</span>
+<span class="st">"</span><span class="st">content</span><span class="st">"</span>: [b.model_dump() <span class="kw">for</span> b in resp.content]} <span class="cm"># text and tool_use blocks as dicts</span>
+</pre>
+</section>
 <section id="the-agent-loop-in-depth">
-  <h2>13 &mdash; The agent loop, in depth</h2>
+  <h2>26 &mdash; The agent loop, in depth</h2>
 <p>An agent is not a library. It's a while-loop. Here's the real thing, with the parts tutorials skip.</p>
 <pre class="ascii-diagram">       ┌──────────────────── agent loop ────────────────────┐
 goal ─►│ observe context → LLM reasons → call tool(s)         │
@@ -123,7 +414,7 @@ goal ─►│ observe context → LLM reasons → call tool(s)         │
        └──────────── stop when goal met OR budget hit ────────┘</pre>
 </section>
 <section id="the-minimal-loop-start-here">
-  <h2>14 &mdash; The minimal loop (start here)</h2>
+  <h2>27 &mdash; The minimal loop (start here)</h2>
 <div class="code-block"><div class="code-file"><span>agent.py — production-shaped loop</span><span class="code-lang">python</span></div><pre><span class="kw">def</span> <span class="fn">run_agent</span>(user_msg, tools, impls, *, max_steps=<span class="nr">12</span>):
     msgs=[{<span class="st">"role"</span>:<span class="st">"user"</span>,<span class="st">"content"</span>:user_msg}]; tin=tout=<span class="nr">0</span>
     <span class="kw">for</span> step <span class="kw">in</span> <span class="fn">range</span>(max_steps):                 <span class="cm"># ① HARD BUDGET — never omit</span>
@@ -145,7 +436,7 @@ goal ─►│ observe context → LLM reasons → call tool(s)         │
 <div class="callout warn"><p><strong>The budget is not optional</strong></p>Without <code>max_steps</code>, a confused model loops forever calling the same failing tool — burning money and time. The budget (steps + tokens + wall-clock) is the one thing between you and a runaway agent.</div>
 </section>
 <section id="watch-the-messages-evolve-a-3-step-run-verbatim">
-  <h2>15 &mdash; Watch the messages evolve: a 3-step run, verbatim</h2>
+  <h2>28 &mdash; Watch the messages evolve: a 3-step run, verbatim</h2>
 <p>The single most clarifying thing you can do is print <code>msgs</code> every iteration. Here is a real-shaped transcript for the goal <i>"What did we pay vendor Acme last quarter, in EUR?"</i> with tools <code>query_payments</code> and <code>fx_convert</code>. The list only ever grows; every LLM call sees everything above it.</p>
 <div class="code-block"><div class="code-file"><span>transcript — msgs after each append (abridged values)</span><span class="code-lang">text</span></div><pre>── entering step 0: msgs has 1 item ─────────────────────────────
 [0] user      : "What did we pay vendor Acme last quarter, in EUR?"
@@ -181,7 +472,7 @@ goal ─►│ observe context → LLM reasons → call tool(s)         │
 <p>Three things to internalize from this transcript. <b>First</b>, the "conversation" is a lie we maintain: entries [2], [4], [6] have <code>role:"user"</code> but no user typed them — tool results are injected as user-turns because that's the protocol. <b>Second</b>, the failed FX call at [4] wasn't handled by <i>our</i> code beyond marking <code>is_error</code> — the <b>model</b> read the error and chose to retry. That's control flow living in the LLM, the definition of an agent from an earlier topic. <b>Third</b>, count the input cost: step 0 sends ~1 message, step 1 sends 3, step 2 sends 5, step 3 sends 7 — the same tokens are re-sent every step. History is a tax you pay per iteration (prompt caching, covered later, is the rebate).</p>
 </section>
 <section id="growing-it-into-a-production-module">
-  <h2>16 &mdash; Growing it into a production module</h2>
+  <h2>29 &mdash; Growing it into a production module</h2>
 <p>The minimal loop is correct but naked. Production adds five things — retries, tracing, parallel tool execution, cancellation, streaming — and every one of them attaches to a specific line of the loop. Here is the full module, then the commentary.</p>
 <div class="code-block"><div class="code-file"><span>agent_prod.py — the loop with its production organs (anthropic SDK shapes)</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> asyncio, json, time, uuid, random
 <span class="kw">import</span> anthropic
@@ -302,7 +593,7 @@ RETRYABLE = (anthropic.APIStatusError, anthropic.APIConnectionError)
 </ol></div>
 </section>
 <section id="the-agent-loop-in-code">
-  <h2>17 &mdash; The agent loop in code</h2>
+  <h2>30 &mdash; The agent loop in code</h2>
 <pre><span class="kw">def</span> <span class="fn">run_agent</span>(task, tools, llm, max_steps=<span class="nr">10</span>, budget_tokens=<span class="nr">200_000</span>):
     msgs = [{<span class="st">"</span><span class="st">role</span><span class="st">"</span>: <span class="st">"</span><span class="st">system</span><span class="st">"</span>, <span class="st">"</span><span class="st">content</span><span class="st">"</span>: SYSTEM}, {<span class="st">"</span><span class="st">role</span><span class="st">"</span>: <span class="st">"</span><span class="st">user</span><span class="st">"</span>, <span class="st">"</span><span class="st">content</span><span class="st">"</span>: task}]
     used = <span class="nr">0</span>
@@ -328,7 +619,7 @@ RETRYABLE = (anthropic.APIStatusError, anthropic.APIConnectionError)
 <p>Every production concern is visible here: step and token budgets, unknown tools, errors fed back, side-effect approval, output truncation, context compaction.</p>
 </section>
 <section id="reliability-and-safety">
-  <h2>18 &mdash; Reliability and safety</h2>
+  <h2>31 &mdash; Reliability and safety</h2>
 <ul>
 <li><strong>Bounds</strong>: max steps, token/cost budget, wall-clock timeout, loop detection (same call repeated).</li>
 <li><strong>Human-in-the-loop</strong> for irreversible actions (send, pay, delete); dry-run modes.</li>
@@ -338,7 +629,7 @@ RETRYABLE = (anthropic.APIStatusError, anthropic.APIConnectionError)
 </ul>
 </section>
 <section id="evaluating-agents">
-  <h2>19 &mdash; Evaluating agents</h2>
+  <h2>32 &mdash; Evaluating agents</h2>
 <ul>
 <li><strong>Task success rate</strong> on a suite of realistic tasks with programmatic checks of the end state (row in DB, file correct, test passes).</li>
 <li><strong>Consistency</strong>: run each task k times; pass^k (succeeds every time) matters for production.</li>
@@ -349,23 +640,40 @@ RETRYABLE = (anthropic.APIStatusError, anthropic.APIConnectionError)
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>20 &mdash; Production &amp; Ops</h2>
+  <h2>33 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Run replay suite on every deploy</li><li>On-call runbook for agent failures</li><li>Rate limit per user/org</li></ul></div>
 </section>
 <section id="related-topics">
-  <h2>21 &mdash; Related topics</h2>
+  <h2>34 &mdash; Related topics</h2>
 <div class="card"><ul><li><a href="what-is-an-agent.html">What an agent is</a></li><li><a href="multi-agent.html">Multi-agent systems</a></li><li><a href="tool-calling.html">Tool calling</a></li><li><a href="../tech/langgraph.html">LangGraph</a></li></ul></div>
 </section>
 <section id="where-people-get-lost">
-  <h2>22 &mdash; Where people get lost</h2>
+  <h2>35 &mdash; Where people get lost</h2>
 <div class="card"><ul><li>No HITL on write tools</li><li>Logging full prompts with PII</li><li>No max_iterations — runaway loops</li><li>Guardrails only on output not input docs</li></ul></div>
+<ul>
+<li><strong>"The model will stop when it is done."</strong> Usually, not always. A step limit, a money budget and repetition detection are mandatory, with a useful outcome when they trigger.</li>
+<li><strong>Dropping a tool result.</strong> Every tool use needs a matching result in the next message, including rejected and failed ones; otherwise the next API call fails.</li>
+<li><strong>Retrying writes without an idempotency key.</strong> A timeout does not mean the action failed. Retrying a non-idempotent write is how a duplicate charge becomes a duplicate refund.</li>
+<li><strong>A new random idempotency key per attempt.</strong> The key must be the same for every retry of one intended action, or it protects nothing.</li>
+<li><strong>Raising exceptions out of the loop on tool errors.</strong> Most errors should be observations the model can act on; write error messages that say what to do next.</li>
+<li><strong>Blocking a thread while a human approves.</strong> Persist state and resume; approvals take hours and processes restart.</li>
+<li><strong>Executing tool calls from a <code>max_tokens</code> turn.</strong> The arguments may be truncated.</li>
+<li><strong>Judging an agent by one demo, or by pass@k.</strong> Users experience pass^k; measure on a task set with several runs each and enough runs for the difference you care about.</li>
+</ul>
 </section>
 <section id="how-this-connects">
-  <h2>23 &mdash; How this connects</h2>
-<h3>Builds on</h3><ul><li><a href="tool-calling.html">Tool calling</a> &mdash; Why tools, what goes over the wire, and designing schemas the model uses well.</li><li><a href="what-is-an-agent.html">What an agent is</a> &mdash; Agents vs agentic AI, what makes something an agent, workflows vs agents, and agent architectures.</li></ul><h3>Where this shows up later</h3><ul><li><a href="memory-context.html">Memory &amp; context engineering</a> &mdash; Short- and long-term memory, compaction, and context engineering, the real production skill.</li><li><a href="multi-agent.html">Multi-agent systems</a> &mdash; When to go multi-agent, topologies, handoffs and state, orchestration, and the production debate.</li><li><a href="../adaptation/rlhf.html">RLHF &amp; reward models</a> &mdash; Teaching taste: preference data, reward models, PPO and the KL leash.</li><li><a href="../production/reference-architectures.html">Reference architectures</a> &mdash; AI system design patterns, a production agent end to end, and architectures by use case.</li><li><a href="../production/evals.html">Evaluating LLM features</a> &mdash; Golden sets, graders, LLM-as-judge done properly, statistics, an eval harness in CI, online evaluation and error analysis.</li><li><a href="../production/observability.html">Observability</a> &mdash; Seeing inside a twelve-step agent: traces, spans, metrics, tools, and what to alert on.</li><li><a href="../production/security.html">Security &amp; guardrails</a> &mdash; How agents expand the attack surface, input and output guardrails, and the defences that hold.</li><li><a href="../tech/frameworks.html">Choosing an agent framework</a> &mdash; The landscape, the same agent in five frameworks, and framework vs thin harness vs raw.</li></ul>
+  <h2>36 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="tool-calling.html">Tool calling</a> &mdash; Why tools, what goes over the wire, and designing schemas the model uses well.</li><li><a href="what-is-an-agent.html">What an agent is</a> &mdash; Agents vs agentic AI, what makes something an agent, workflows vs agents, and agent architectures.</li></ul><h3>Where this shows up later</h3><ul><li><a href="reasoning.html">Reasoning patterns</a> &mdash; ReAct, plan-and-execute, reflection and the other ways agents think.</li><li><a href="memory-context.html">Memory &amp; context engineering</a> &mdash; Short- and long-term memory, compaction, and context engineering, the real production skill.</li><li><a href="multi-agent.html">Multi-agent systems</a> &mdash; When to go multi-agent, topologies, handoffs and state, orchestration, and the production debate.</li><li><a href="../adaptation/rlhf.html">RLHF &amp; reward models</a> &mdash; Teaching taste: preference data, reward models, PPO and the KL leash.</li><li><a href="../production/reference-architectures.html">Reference architectures</a> &mdash; AI system design patterns, a production agent end to end, and architectures by use case.</li><li><a href="../production/evals.html">Evaluating LLM features</a> &mdash; Golden sets, graders, LLM-as-judge done properly, statistics, an eval harness in CI, online evaluation and error analysis.</li><li><a href="../production/observability.html">Observability</a> &mdash; Seeing inside a twelve-step agent: traces, spans, metrics, tools, and what to alert on.</li><li><a href="../production/security.html">Security &amp; guardrails</a> &mdash; How agents expand the attack surface, input and output guardrails, and the defences that hold.</li></ul>
 </section>
 <section id="check-yourself">
-  <h2>24 &mdash; Check yourself</h2>
+  <h2>37 &mdash; Check yourself</h2>
+<details><summary>The model returns two tool use blocks in one response; you approve one and the human rejects the other. What must the next message contain?</summary><div class="answer">A user message with two tool result blocks: the approved tool's real result, and an error result for the rejected one (for example "Rejected by reviewer; do not retry"), each matched by its tool use id. Omitting the rejected one makes the next API call invalid.</div></details>
+<details><summary>A tool fails transiently 5% of the time. With up to three attempts, what is the failure rate, and when would retries not help?</summary><div class="answer">\(0.05^3 = 0.000125\), about 1 in 8,000. Retries do not help for model-correctable errors (bad arguments, unknown id) or fatal ones (permission denied); those need a different action, not the same one again.</div></details>
+<details><summary>Why is <code>run_id:tool_use_id</code> a good idempotency key, and what does it not protect against?</summary><div class="answer">It is identical for every retry or replay of one intended tool call and different for every other call, so the provider acts at most once per call. It does not stop the model from issuing a <em>new</em> refund tool use for the same charge later; a business-level check in the tool (one refund per charge) handles that.</div></details>
+<details><summary>Using the cost table in Step 6, what step limit fits a $0.15 per-run budget, and why does doubling steps more than double cost?</summary><div class="answer">11 calls: 12 cost about $0.151, just over. Cost more than doubles because every call re-sends all earlier messages, so input tokens grow roughly with the square of the number of steps.</div></details>
+<details><summary>An agent succeeds on 80% of runs. A product manager reads pass@3 = 99.2% and wants to launch. What do you say?</summary><div class="answer">pass@3 counts a task as solved if any of three attempts works, which only matters if you can run three times and automatically pick the right one. A customer gets one run; three customers in a row are all served correctly only \(0.8^3 = 51\%\) of the time. Launch decisions should use the single-run rate and pass^k.</div></details>
+<details><summary>You compare two prompts on 20 tasks × 3 runs each: 70% versus 77%. Is the improvement real?</summary><div class="answer">Probably not demonstrable. With 60 runs each, the standard error of each rate is about \(\sqrt{0.75 \times 0.25 / 60} \approx 0.056\), and of the difference about 0.079, so a 95% interval on the 7-point gap is roughly ±15 points. You need several hundred runs per variant to detect a 7-point difference.</div></details>
+<details><summary>Why should the approval screen show the tool arguments rather than the model's explanation?</summary><div class="answer">The arguments are what will execute. The model's prose can disagree with its arguments (through error or prompt injection), so a reviewer approving the prose could approve a different action.</div></details>
 <details><summary>When require HITL?</summary><div class="answer">Any write/destructive tool: email, ticket update, payment, delete. Read-only RAG can auto-run.</div></details>
 <details><summary>HITL sync vs async?</summary><div class="answer">Async default — user gets notification to approve. Sync only for live chat with operator present.</div></details>
 <details><summary>Guardrails vs sandbox?</summary><div class="answer">Guardrails filter content; sandbox restricts execution environment. Need both.</div></details>

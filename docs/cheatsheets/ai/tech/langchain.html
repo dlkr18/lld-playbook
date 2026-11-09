@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
@@ -19,27 +23,42 @@
   <h2>LangChain</h2>
   <a href="index.html">&larr; Tech &amp; tools</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-interface-surface"><span class="num">04</span> API / Interface Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#deep-dive-lcel"><span class="num">07</span> Deep Dive: LCEL</a>
-  <a href="#deep-dive-retrievers"><span class="num">08</span> Deep Dive: Retrievers</a>
-  <a href="#deep-dive-tools"><span class="num">09</span> Deep Dive: Tools</a>
-  <a href="#deep-dive-memory"><span class="num">10</span> Deep Dive: Memory</a>
-  <a href="#deep-dive-callbacks"><span class="num">11</span> Deep Dive: Callbacks</a>
-  <a href="#production-ops"><span class="num">12</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">13</span> Related topics</a>
-  <a href="#where-people-get-lost"><span class="num">14</span> Where people get lost</a>
-  <a href="#how-this-connects"><span class="num">15</span> How this connects</a>
-  <a href="#check-yourself"><span class="num">16</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-interface-surface"><span class="num">05</span> API / Interface Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#deep-dive-lcel"><span class="num">08</span> Deep Dive: LCEL</a>
+  <a href="#deep-dive-retrievers"><span class="num">09</span> Deep Dive: Retrievers</a>
+  <a href="#deep-dive-tools"><span class="num">10</span> Deep Dive: Tools</a>
+  <a href="#deep-dive-memory"><span class="num">11</span> Deep Dive: Memory</a>
+  <a href="#deep-dive-callbacks"><span class="num">12</span> Deep Dive: Callbacks</a>
+  <a href="#the-question"><span class="num">13</span> The question</a>
+  <a href="#step-1-the-app-without-a-framework"><span class="num">14</span> Step 1: the app without a framework</a>
+  <a href="#step-2-one-interface-for-every-step"><span class="num">15</span> Step 2: one interface for every step</a>
+  <a href="#step-3-what-the-pipe-operator-builds"><span class="num">16</span> Step 3: what the pipe operator builds</a>
+  <a href="#step-4-streaming-through-a-chain"><span class="num">17</span> Step 4: streaming through a chain</a>
+  <a href="#step-5-config-callbacks-and-tracing"><span class="num">18</span> Step 5: config, callbacks and tracing</a>
+  <a href="#step-6-models-and-messages-the-provider-neutral-layer"><span class="num">19</span> Step 6: models and messages, the provider-neutral layer</a>
+  <a href="#step-7-the-retrieval-layer"><span class="num">20</span> Step 7: the retrieval layer</a>
+  <a href="#step-8-reliability-and-throughput-helpers"><span class="num">21</span> Step 8: reliability and throughput helpers</a>
+  <a href="#step-9-the-package-layout-and-the-churn-problem"><span class="num">22</span> Step 9: the package layout and the churn problem</a>
+  <a href="#step-10-where-langchain-stops"><span class="num">23</span> Step 10: where LangChain stops</a>
+  <a href="#a-worked-example-one-request-every-hop"><span class="num">24</span> A worked example: one request, every hop</a>
+  <a href="#choosing-langchain-or-not"><span class="num">25</span> Choosing LangChain, or not</a>
+  <a href="#in-code-the-help-centre-chain"><span class="num">26</span> In code: the help-centre chain</a>
+  <a href="#production-ops"><span class="num">27</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">28</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">29</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">30</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">31</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>LangChain <span>// Tech &amp; tools</span></h1>
   <p>Chains, runnables, retrievers and the integrations layer.</p>
-  <div class="tags"><span class="tag">8 min read</span><span class="tag">4 diagrams</span></div>
+  <div class="tags"><span class="tag">27 min read</span><span class="tag">4 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -50,15 +69,19 @@
 </div><p class="diagram-caption">LangChain stack: Prompt | ChatModel | OutputParser as LCEL chain; retriever feeds context from <a href="../rag/vector-search.html">Vector search &amp; databases</a>; tools bound via <code>bind_tools</code>; callbacks → LangSmith traces.</p>
 <div class="diagram"><img alt="A LangChain RAG chain: a retriever over the vector store, format the documents, fill the prompt template, call the LLM." src="../tech/img/langchain-rag-zoom.png"/></div><p class="diagram-caption">A LangChain RAG chain: a retriever over the vector store, format the documents, fill the prompt template, call the LLM.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Runnable</strong></td><td>LangChain's single interface for "a step": anything with <code>invoke</code>, <code>batch</code>, <code>stream</code> and their async versions. Prompts, models, parsers, retrievers and your own functions are all Runnables.</td></tr><tr><td><strong>LCEL</strong></td><td>LangChain Expression Language: building a pipeline by joining Runnables with the <code>|</code> operator. It is ordinary Python operator overloading, not a separate language.</td></tr><tr><td><strong>RunnableSequence</strong></td><td>What <code>a | b | c</code> produces: a Runnable that feeds each step's output into the next step's input.</td></tr><tr><td><strong>RunnableParallel</strong></td><td>A Runnable that runs several branches on the same input and returns a dict of their outputs. A plain dict inside a chain is turned into one automatically.</td></tr><tr><td><strong>RunnableLambda</strong></td><td>Wraps an ordinary Python function so it can sit in a chain. Plain functions in a chain are wrapped automatically.</td></tr><tr><td><strong>PromptValue</strong></td><td>What a prompt template outputs: a filled-in prompt that can be read either as a list of chat messages or as one string.</td></tr><tr><td><strong>Message types</strong></td><td>Provider-neutral classes for chat turns: <code>SystemMessage</code>, <code>HumanMessage</code>, <code>AIMessage</code> (which can carry <code>tool_calls</code>) and <code>ToolMessage</code>.</td></tr><tr><td><strong>Document</strong></td><td>LangChain's unit of retrieved text: <code>page_content</code> (a string) plus a <code>metadata</code> dict (source, page, region, and so on).</td></tr><tr><td><strong>Retriever</strong></td><td>A Runnable that takes a query string and returns a list of Documents. A vector store's <code>as_retriever()</code> gives you one.</td></tr><tr><td><strong>RunnableConfig</strong></td><td>A dict passed alongside the input (callbacks, tags, metadata, <code>max_concurrency</code>, run name) that every nested step inherits.</td></tr><tr><td><strong>Callback handler</strong></td><td>An object notified when any step starts, streams a token, ends or errors. Tracing tools such as LangSmith are callback handlers.</td></tr><tr><td><strong>Integration package</strong></td><td>A separately installed package that implements the core interfaces for one provider, such as <code>langchain-openai</code> or a vector store package.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card">
 <p><strong>Problem:</strong> LLM apps repeat the same glue: prompt templates, model wrappers, output parsers, retriever wiring, tool schemas, and tracing hooks. LangChain standardizes these as composable <code>Runnable</code> objects.</p><h3>Functional</h3><ul><li>Compose prompts, models, parsers with LCEL pipe operator</li><li>Integrate vector stores as retrievers for RAG pipelines</li><li>Bind tools to chat models; feed into LangGraph ToolNode</li><li>Stream, batch, and async invoke uniformly across steps</li></ul><h3>Non-Functional</h3><ul><li><strong>Modularity</strong> — swap OpenAI for Anthropic by changing one Runnable</li><li><strong>Observability</strong> — callbacks + LangSmith tracing</li><li><strong>Maintainability</strong> — explicit chains beat opaque agent helpers</li><li><strong>Version risk</strong> — pin packages; test on upgrade</li></ul><blockquote><strong>Position in stack:</strong> LangChain = components. <a href="langgraph.html">LangGraph</a> = orchestration with cycles and checkpointing. <a href="llamaindex.html">LlamaIndex</a> overlaps on RAG indexing. API layer: <a href="../fundamentals/api.html">Calling a model</a>.</blockquote>
 </div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card">
 <table>
 <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
@@ -72,7 +95,7 @@
 </div>
 </section>
 <section id="api-interface-surface">
-  <h2>04 &mdash; API / Interface Surface</h2>
+  <h2>05 &mdash; API / Interface Surface</h2>
 <div class="card">
 <pre>from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -110,7 +133,7 @@ answer = rag_chain.invoke("What is our refund policy?")</pre> <table>
 </div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card">
 <table>
 <tr><th>Case</th><th>LangChain?</th><th>Alternative</th></tr>
@@ -123,7 +146,7 @@ answer = rag_chain.invoke("What is our refund policy?")</pre> <table>
 </div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card highlight">
 <pre>User Query
     |
@@ -149,7 +172,7 @@ answer = rag_chain.invoke("What is our refund policy?")</pre> <table>
 </div>
 </section>
 <section id="deep-dive-lcel">
-  <h2>07 &mdash; Deep Dive: LCEL</h2>
+  <h2>08 &mdash; Deep Dive: LCEL</h2>
 <div class="diagram">
 <img alt="LCEL pipe: prompt | model | parser with parallel RunnableParallel branches for context and question." src="../tech/img/langchain-lcel-zoom.png"/>
 </div>
@@ -197,7 +220,7 @@ print(chain.invoke("Refund policy for EU?"))</pre><p>Swap Chroma for <a href="..
 </div>
 </section>
 <section id="deep-dive-retrievers">
-  <h2>08 &mdash; Deep Dive: Retrievers</h2>
+  <h2>09 &mdash; Deep Dive: Retrievers</h2>
 <div class="card">
 <pre>from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
@@ -225,7 +248,7 @@ hybrid = EnsembleRetriever(
 </div>
 </section>
 <section id="deep-dive-tools">
-  <h2>09 &mdash; Deep Dive: Tools</h2>
+  <h2>10 &mdash; Deep Dive: Tools</h2>
 <div class="diagram">
 <img alt="bind_tools on ChatModel: model emits tool_calls, ToolNode executes, results fed back until END." src="../tech/img/langchain-tools-zoom.png"/>
 </div>
@@ -246,7 +269,7 @@ tool_node = ToolNode([search_kb])</pre><p>Tool descriptions are part of the prom
 </div>
 </section>
 <section id="deep-dive-memory">
-  <h2>10 &mdash; Deep Dive: Memory</h2>
+  <h2>11 &mdash; Deep Dive: Memory</h2>
 <div class="card">
 <p>Legacy: <code>ConversationBufferWindowMemory</code>, <code>ChatMessageHistory</code>. Production pattern: <strong>don’t use in-process memory</strong> in serverless or multi-worker APIs.</p><pre># Production: external session store
 history = load_messages_from_postgres(session_id)
@@ -257,7 +280,7 @@ chain.invoke(
 </div>
 </section>
 <section id="deep-dive-callbacks">
-  <h2>11 &mdash; Deep Dive: Callbacks</h2>
+  <h2>12 &mdash; Deep Dive: Callbacks</h2>
 <div class="card">
 <pre># LangSmith (set env vars)
 # LANGCHAIN_TRACING_V2=true
@@ -280,9 +303,250 @@ class MetricsHandler(BaseCallbackHandler):
 chain.invoke(input, config={"callbacks": [MetricsHandler()]})</pre>
 </div>
 </section>
+<p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>13 &mdash; The question</h2>
+<p>Every LLM application, once you remove the model call itself, is mostly glue: fill a prompt template, fetch some documents, format them, call a model, parse what comes back, retry when the provider times out, log everything, and do it again for the next user. LangChain is a library that standardises that glue. Its claim is that if every piece speaks one interface, you can swap providers, add streaming, batching, retries and tracing once, and compose pieces like Unix pipes.</p>
+<p>Whether that claim holds for your project is the real question. Interviewers ask about LangChain in four ways:</p>
+<ol>
+<li>What is a Runnable, and what does <code>prompt | model | parser</code> actually build and execute?</li>
+<li>How does data flow through a retrieval chain: what type is the value at each step?</li>
+<li>What does the framework give you that thirty lines of your own Python would not (streaming, batching, retries, tracing), and what does it cost (abstraction depth, version churn)?</li>
+<li>When would you use LangChain, when LangGraph, and when nothing at all?</li>
+</ol>
+<p>The running example for this lesson is one concrete app: the <strong>help-centre assistant for an online electronics shop</strong>. The knowledge base is 1,200 policy and FAQ articles, averaging about 1,500 tokens each. A customer in the US asks: <em>"Can I return opened headphones after 20 days?"</em> The assistant must retrieve the right policy, answer only from it, cite the source, and stream the answer into a chat widget. We will build this as a LangChain chain, follow the value through every step, and put latency and cost numbers on each hop.</p>
+</section>
+<section id="step-1-the-app-without-a-framework">
+  <h2>14 &mdash; Step 1: the app without a framework</h2>
+<p>Start with what the code must do, in plain Python, so that every LangChain concept later has something concrete to replace.</p>
+<ol>
+<li><strong>Retrieve</strong>: embed the question, search a vector store for the top \(k = 6\) chunks, filtered to <code>region = "US"</code>.</li>
+<li><strong>Format</strong>: join the chunks into one context string, each prefixed with its source file name so the model can cite it.</li>
+<li><strong>Prompt</strong>: put the context into a system message and the question into a user message.</li>
+<li><strong>Generate</strong>: send the messages to a chat model and receive a reply.</li>
+<li><strong>Parse</strong>: pull the text out of the reply object.</li>
+</ol>
+<p>Written directly, this is five function calls, perhaps thirty lines, and nothing about it is hard. The hard parts come later: streaming the answer token by token, running the pipeline over 1,200 articles with a concurrency limit, retrying on HTTP 429, falling back when a provider is down, and tracing which chunk the model saw when it answered wrongly. Each is a cross-cutting concern touching all five steps. LangChain bets that a uniform step interface makes them cheap to add.</p>
+</section>
+<section id="step-2-one-interface-for-every-step">
+  <h2>15 &mdash; Step 2: one interface for every step</h2>
+<p>A <strong>Runnable</strong> is any object that implements one method, <code>invoke(input, config)</code>, and inherits the rest from a base class:</p>
+<table>
+<thead><tr><th>Method</th><th>Default behaviour if a step does not override it</th></tr></thead>
+<tbody>
+<tr><td><code>invoke(x)</code></td><td>Must be implemented: one input, one output.</td></tr>
+<tr><td><code>batch([x1, x2, ...])</code></td><td>Calls <code>invoke</code> on each input in a thread pool, limited by <code>max_concurrency</code>.</td></tr>
+<tr><td><code>stream(x)</code></td><td>Calls <code>invoke</code> and yields the whole result as one chunk.</td></tr>
+<tr><td><code>ainvoke</code>, <code>abatch</code>, <code>astream</code></td><td>Async versions; by default they run the sync method in an executor.</td></tr>
+</tbody>
+</table>
+<p>Components that can do better override the defaults. A chat model overrides <code>stream</code> to yield tokens as the provider sends them and <code>ainvoke</code> to use a real async HTTP client. A prompt template has nothing to stream, so it keeps the defaults.</p>
+<p>Why one interface rather than different classes with different methods? Because the cross-cutting features are then written once, on the base class, and work for every component: <code>.with_retry()</code>, <code>.with_fallbacks()</code>, <code>.batch()</code>, tracing. The alternative, which older LangChain used, was a zoo of chain classes (<code>LLMChain</code>, <code>RetrievalQA</code>, <code>ConversationalRetrievalChain</code>) each with its own call conventions and hidden prompts. Those classes are now legacy; the Runnable interface replaced them because a uniform contract composes and a zoo does not.</p>
+</section>
+<section id="step-3-what-the-pipe-operator-builds">
+  <h2>16 &mdash; Step 3: what the pipe operator builds</h2>
+<p><code>prompt | model</code> is Python's <code>__or__</code> operator. LangChain defines it on Runnable to return a <strong>RunnableSequence</strong> holding both steps. Chaining more steps flattens into one sequence, so <code>a | b | c | d</code> is a single sequence of four steps, not nested pairs. Nothing runs when you build it: the chain is a data structure describing the pipeline. Work happens on <code>invoke</code>, which loops over the steps, passing each output to the next input.</p>
+<p>Two automatic conversions ("coercions") make chains short to write:</p>
+<ul>
+<li>A <strong>plain function</strong> in a chain becomes a <code>RunnableLambda</code>.</li>
+<li>A <strong>dict</strong> in a chain becomes a <code>RunnableParallel</code>: each value is run on the same input, and the outputs are collected into a dict under the same keys.</li>
+</ul>
+<p>The help-centre chain is therefore:</p>
+<pre class="ascii-diagram">RunnableSequence
+ |-- RunnableParallel                      input: "Can I return opened headphones after 20 days?"
+ |     |-- context:  retriever | format_docs   -&gt; "[returns.md] Opened audio products can be ..."
+ |     '-- question: RunnablePassthrough       -&gt; "Can I return opened headphones after 20 days?"
+ |-- ChatPromptTemplate                    input: {"context": str, "question": str}
+ |                                         output: ChatPromptValue (system + human message)
+ |-- ChatModel                             output: AIMessage(content="Yes. Opened audio ...")
+ '-- StrOutputParser                       output: "Yes. Opened audio ..."</pre>
+<p>Follow the <em>types</em>, because that is where most chain bugs live. The question enters as a string. The parallel step turns it into a dict with two keys. The prompt template requires exactly the keys its template mentions (<code>{context}</code> and <code>{question}</code>); a missing key is a <code>KeyError</code> at run time, not at build time. The template outputs a <strong>PromptValue</strong>, which a chat model reads as messages. The model outputs an <code>AIMessage</code>, an object with content, metadata such as token usage, and possibly tool calls. The parser reduces it to a plain string.</p>
+<p><code>RunnablePassthrough</code> passes its input through unchanged, which is how the question reaches the template beside the context; <code>RunnablePassthrough.assign(docs=...)</code> keeps the input dict and adds a key, the usual way to carry documents forward for citations. Parallel branches really run concurrently (a thread pool, or <code>asyncio.gather</code> in async), so two retrievers cost the slower one's latency, not the sum.</p>
+</section>
+<section id="step-4-streaming-through-a-chain">
+  <h2>17 &mdash; Step 4: streaming through a chain</h2>
+<p>Streaming is the feature most often broken by accident, so it is worth knowing the mechanism. Each Runnable can implement <code>transform</code>: take an <em>iterator</em> of input chunks and yield output chunks. When you call <code>chain.stream(x)</code>, the sequence connects the steps' transforms so chunks flow through as they are produced.</p>
+<ul>
+<li>The chat model yields one <code>AIMessageChunk</code> per token or small group of tokens.</li>
+<li><code>StrOutputParser</code> implements <code>transform</code>, so each message chunk becomes a string chunk immediately.</li>
+<li>A plain <code>RunnableLambda</code> does not know how to process partial input. It waits for the whole input, then runs once. Placed after the model, it turns the stream into one chunk at the end.</li>
+</ul>
+<p>Put numbers on it. Suppose the query embedding takes 50 ms, the vector search 30 ms, the model's time to first token 500 ms, and the 150-token answer arrives at 60 tokens per second (2.5 s). With a streaming-safe chain, the first words appear after \(0.05 + 0.03 + 0.5 = 0.58\) s. Add a non-streaming post-processing function after the model ("strip markdown", say) and the user stares at a spinner for \(0.58 + 2.5 \approx 3.1\) s before seeing anything. Same total time, a much worse product.</p>
+<p>The fixes: do custom processing before the model, write it as a generator over chunks (LangChain treats that as a streaming transform), or use <code>astream_events</code>, which emits events from inside the chain (each token, each retriever result) whatever later steps do. That is how chat UIs show "searching..." and then the streamed answer.</p>
+</section>
+<section id="step-5-config-callbacks-and-tracing">
+  <h2>18 &mdash; Step 5: config, callbacks and tracing</h2>
+<p>Every <code>invoke</code> accepts a second argument, a <strong>RunnableConfig</strong> dict. The sequence passes it to each step, and each step passes it to its children, so a setting given at the top reaches the bottom:</p>
+<ul>
+<li><code>callbacks</code>: handlers notified on every start, token, end and error of every nested step.</li>
+<li><code>tags</code> and <code>metadata</code>: labels attached to every event (user ID, tenant, experiment arm).</li>
+<li><code>run_name</code>: a readable name for the trace.</li>
+<li><code>max_concurrency</code>: the cap used by <code>batch</code> and parallel branches.</li>
+<li><code>configurable</code>: values for fields you marked as configurable, such as which model or which temperature to use for this call.</li>
+</ul>
+<p>Callbacks are how tracing works. The callback manager creates a <strong>run</strong> for the sequence and child runs for each nested step, each with timings, inputs, outputs and errors; a tracing backend (LangSmith, or an OpenTelemetry tool) draws the tree. For a wrong help-centre answer, the trace shows the six chunks retrieved and the exact prompt sent, usually enough to tell a retrieval failure from a generation failure. See <a href="../production/observability.html">Observability</a>.</p>
+<p>The machinery costs little. On a laptop, a five-step chain of do-nothing functions took about 1 to 2 ms per call through LangChain against under a microsecond as plain calls (measured on an older <code>langchain-core</code>; order of magnitude only). Against a 3-second model call that is under 0.1%. Overhead is not the reason to avoid LangChain; debuggability and churn (Step 9) are.</p>
+</section>
+<section id="step-6-models-and-messages-the-provider-neutral-layer">
+  <h2>19 &mdash; Step 6: models and messages, the provider-neutral layer</h2>
+<p>The integration layer is what most teams actually use LangChain for. A chat model class (one per provider, in packages such as <code>langchain-openai</code> or <code>langchain-anthropic</code>) implements the Runnable interface and translates between LangChain's <strong>message types</strong> and the provider's wire format. Your code builds a list of <code>SystemMessage</code>, <code>HumanMessage</code>, <code>AIMessage</code> and <code>ToolMessage</code> objects; the integration turns them into the right JSON and turns the response back into an <code>AIMessage</code> with standardised fields for content, token usage and tool calls.</p>
+<p><strong>Tool binding</strong> is the clearest example of what the translation buys. You decorate a function:</p>
+<pre><span class="fn">@tool</span>
+<span class="kw">def</span> <span class="fn">check_order</span>(order_id: <span class="tp">str</span>, include_items: <span class="tp">bool</span> = <span class="nr">False</span>) -&gt; <span class="tp">str</span>:
+    <span class="st">"""Look up an order's purchase date and status."""</span>
+</pre>
+<p>LangChain reads the signature and docstring and produces a JSON schema: a function named <code>check_order</code>, a required string <code>order_id</code>, an optional boolean <code>include_items</code> defaulting to false. <code>model.bind_tools([check_order])</code> returns a new Runnable that sends this schema with every request in whatever shape that provider expects. The reply's <code>tool_calls</code> come back as a provider-neutral list of <code>{"name", "args", "id"}</code>. Executing the tool and looping until the model stops asking is not LangChain's job any more; that loop belongs to <a href="langgraph.html">LangGraph</a> or your own code (see <a href="../agents/tool-calling.html">Tool calling</a>).</p>
+<p><code>model.with_structured_output(Schema)</code> does the same trick for typed answers: it uses the provider's native structured-output or tool-calling mode to force the reply into a Pydantic model or JSON schema, and parses it for you.</p>
+<p>The limit of the neutral layer: it covers what providers share. Provider-specific features (a caching control, a reasoning setting) arrive late or as special-case arguments. "Swap providers in one line" holds for the basic chat call, and often fails for the features that made you choose a provider.</p>
+</section>
+<section id="step-7-the-retrieval-layer">
+  <h2>20 &mdash; Step 7: the retrieval layer</h2>
+<p>Retrieval in LangChain is a set of small interfaces wired in a fixed order:</p>
+<pre class="ascii-diagram">offline:  Loader -&gt; Documents -&gt; TextSplitter -&gt; chunks -&gt; Embeddings -&gt; VectorStore.add_documents
+online:   question -&gt; Retriever (= VectorStore.as_retriever) -&gt; list[Document] -&gt; format -&gt; prompt</pre>
+<ul>
+<li>A <strong>Document</strong> is just text plus a metadata dict. Metadata is what you filter on and cite from, so decide it at ingestion: source path, section, region, product category, last-updated date.</li>
+<li>A <strong>text splitter</strong> cuts documents into chunks. For the shop: 1,200 articles of about 1,500 tokens, split into 400-token chunks with 50 tokens of overlap (a new chunk every 350 tokens), gives roughly \(1{,}200 \times 1{,}500 / 350 \approx 5{,}100\) chunks. How to choose these numbers is the subject of <a href="../rag/chunking.html">Chunking</a>.</li>
+<li>An <strong>Embeddings</strong> class wraps an embedding model: <code>embed_documents</code> for many texts, <code>embed_query</code> for one.</li>
+<li>A <strong>VectorStore</strong> class wraps a database (Chroma, pgvector, Pinecone and dozens more) behind <code>add_documents</code> and <code>similarity_search</code>.</li>
+<li>A <strong>Retriever</strong> is a Runnable from a query string to a list of Documents. <code>as_retriever(search_kwargs={"k": 6, "filter": {"region": "US"}})</code> is the usual way to get one.</li>
+</ul>
+<p>Here is the catch that matters in practice. The VectorStore interface is a lowest common denominator, and the most important part, the <strong>metadata filter</strong>, is not standardised: its syntax is whatever the underlying database accepts. A filter written for Chroma does not run against Pinecone unchanged. The abstraction lets you swap stores in a prototype; in production you will touch the filter code, the index settings and the ingestion job anyway. See <a href="../rag/vector-search.html">Vector search</a> for what the store is doing underneath.</p>
+<p>Retriever wrappers (multi-query rewriting, keyword-plus-vector ensembles, reranking or compression) are themselves string-to-documents Runnables, so the chain around them does not change. That is the payoff of the uniform interface, and also how a chain quietly gains extra model calls: read the trace.</p>
+</section>
+<section id="step-8-reliability-and-throughput-helpers">
+  <h2>21 &mdash; Step 8: reliability and throughput helpers</h2>
+<p>Because they live on the base class, these work on any step, including a whole chain:</p>
+<ul>
+<li><strong><code>.with_retry(stop_after_attempt=3)</code></strong> re-invokes on exceptions, with exponential backoff and jitter by default. If a provider fails 2% of calls transiently and failures were independent, three attempts would leave \(0.02^3 = 8 \times 10^{-6}\) failing. They are not independent during an outage, which is why you also need the next item.</li>
+<li><strong><code>.with_fallbacks([backup])</code></strong> tries the backup Runnable when the primary raises. Typical use: a second provider, or a smaller model, for the same prompt. Fallbacks see the same input, so the prompt must suit both models.</li>
+<li><strong><code>.batch(inputs, config={"max_concurrency": 8})</code></strong> runs many inputs through a thread pool. Overnight, the shop regenerates a one-line summary for each of its 1,200 articles. At 1.5 s per model call, sequential processing takes \(1{,}200 \times 1.5 = 1{,}800\) s; with 8 in flight it takes about \(1{,}800 / 8 = 225\) s, as long as your rate limit allows 8 concurrent requests.</li>
+</ul>
+<p>Where retries go matters. Wrap the model step, not the whole chain: retrying the whole chain re-runs retrieval and re-embeds the query for no reason. Never retry a step with side effects (sending an email, writing a ticket) unless it is idempotent. See <a href="../production/reliability.html">Reliability engineering</a> for the full pattern.</p>
+</section>
+<section id="step-9-the-package-layout-and-the-churn-problem">
+  <h2>22 &mdash; Step 9: the package layout and the churn problem</h2>
+<p>LangChain is several packages, and knowing which is which explains a lot of confusing imports:</p>
+<ul>
+<li><code>langchain-core</code>: the interfaces (Runnable, messages, prompts, parsers, Document, base classes, callbacks). Small and the most stable.</li>
+<li>Partner packages (<code>langchain-openai</code>, <code>langchain-anthropic</code>, ...): one provider each, versioned separately.</li>
+<li><code>langchain-community</code>: the long tail of integrations, of variable quality.</li>
+<li><code>langchain</code>: higher-level helpers and legacy chains; <code>langgraph</code> and <code>langsmith</code> are separate projects.</li>
+</ul>
+<p>The split keeps an app from installing every provider's SDK and lets integrations release on their own schedule. The cost is <strong>churn</strong>: import paths move, classes are deprecated in favour of LCEL or LangGraph, and year-old tutorials may not run. The response is boring: pin exact versions, depend on <code>langchain-core</code> interfaces, keep an end-to-end test against a stub model, and upgrade on purpose.</p>
+</section>
+<section id="step-10-where-langchain-stops">
+  <h2>23 &mdash; Step 10: where LangChain stops</h2>
+<p>A RunnableSequence is a <strong>directed acyclic graph</strong>: data flows forward through each step once. That rules out three things an agent needs:</p>
+<ol>
+<li><strong>Loops</strong>: call the model, run the tool it asked for, call the model again, until it stops.</li>
+<li><strong>Durable state</strong>: a record of the conversation and intermediate results that survives a crash or a two-day wait for human approval.</li>
+<li><strong>Branching on results</strong> beyond simple routing: "if the order is older than 30 days, escalate to a human; otherwise process the refund".</li>
+</ol>
+<p>LangChain's older <code>AgentExecutor</code> ran a loop internally, but as a black box that was hard to customise and could not pause. The current answer is <a href="langgraph.html">LangGraph</a>: the same Runnables as nodes, plus explicit state, cycles and checkpointing. Mental model: LangChain is the parts bin, LCEL wires a straight pipeline from the parts, LangGraph wires a loop.</p>
+</section>
+<section id="a-worked-example-one-request-every-hop">
+  <h2>24 &mdash; A worked example: one request, every hop</h2>
+<p>The US customer's question through the help-centre chain, with illustrative latencies and an illustrative model price of $0.15 per million input tokens and $0.60 per million output tokens:</p>
+<table>
+<thead><tr><th>Hop</th><th>Value after the hop</th><th>Time</th><th>Tokens</th></tr></thead>
+<tbody>
+<tr><td>Input</td><td><code>"Can I return opened headphones after 20 days?"</code></td><td>0</td><td>~20</td></tr>
+<tr><td>Retriever: embed query + search, k = 6, region = US</td><td>6 Documents, ~400 tokens each, with <code>source</code> metadata</td><td>50 + 30 ms</td><td>2,400 of context</td></tr>
+<tr><td>format_docs</td><td>One string, each chunk prefixed <code>[returns.md]</code></td><td>&lt;1 ms</td><td></td></tr>
+<tr><td>Prompt template</td><td>ChatPromptValue: system (instructions + context) and human message</td><td>&lt;1 ms</td><td>~2,720 total input</td></tr>
+<tr><td>Chat model</td><td>AIMessage streamed as chunks; first token at 0.58 s</td><td>0.5 s + 2.5 s</td><td>150 output</td></tr>
+<tr><td>StrOutputParser</td><td>Plain string chunks to the UI</td><td>&lt;1 ms</td><td></td></tr>
+</tbody>
+</table>
+<p>Total about 3.1 s, of which LangChain's own work is a millisecond or two. Cost per request: \(2{,}720 \times 0.15 \times 10^{-6} + 150 \times 0.60 \times 10^{-6} \approx \$0.0005\), so about $25 a day at 50,000 questions. The 2,400 tokens of retrieved context are 88% of the input: lowering \(k\), or reranking and keeping the best 3, is the biggest cost lever, and it is not a framework decision.</p>
+</section>
+<section id="choosing-langchain-or-not">
+  <h2>25 &mdash; Choosing LangChain, or not</h2>
+<table>
+<thead><tr><th>Situation</th><th>Choice</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>One provider, one prompt, one call</td><td>Provider SDK directly</td><td>Nothing to compose; a framework adds depth with no benefit.</td></tr>
+<tr><td>Straight RAG pipeline, may switch providers, want streaming and tracing</td><td>LangChain (LCEL), pinned</td><td>The integrations and the Runnable helpers save real code.</td></tr>
+<tr><td>Prototype comparing many vector stores, loaders or models</td><td>LangChain</td><td>The breadth of integrations is its strongest feature.</td></tr>
+<tr><td>Agent with a tool loop, human approval, resumability</td><td><a href="langgraph.html">LangGraph</a> (using LangChain models and tools inside)</td><td>Needs cycles and durable state, which LCEL does not have.</td></tr>
+<tr><td>Document-heavy RAG with complex indexing</td><td>Consider LlamaIndex</td><td>Its abstractions centre on indexes and query engines.</td></tr>
+<tr><td>Small team, latency-critical, strict dependency policy</td><td>Thin in-house layer</td><td>Fifty lines you own beat a dependency tree you audit; see <a href="frameworks.html">Choosing an agent framework</a>.</td></tr>
+</tbody>
+</table>
+<p>Rule of thumb: adopt LangChain for the integrations and helpers, not its higher-level chains. Keep prompts visible in your code and business logic in plain functions, and you can leave later with little rewriting.</p>
+</section>
+<section id="in-code-the-help-centre-chain">
+  <h2>26 &mdash; In code: the help-centre chain</h2>
+<p>This version runs offline: a word-overlap function stands in for the vector store and a function stands in for the model, so every step's type and wiring is real LangChain (<code>langchain-core</code>).</p>
+<pre><span class="kw">from</span> langchain_core.documents <span class="kw">import</span> Document
+<span class="kw">from</span> langchain_core.messages <span class="kw">import</span> AIMessage
+<span class="kw">from</span> langchain_core.output_parsers <span class="kw">import</span> StrOutputParser
+<span class="kw">from</span> langchain_core.prompts <span class="kw">import</span> ChatPromptTemplate
+<span class="kw">from</span> langchain_core.runnables <span class="kw">import</span> RunnableLambda, RunnablePassthrough
+
+KB = [
+    Document(page_content=<span class="st">"</span><span class="st">Opened audio products can be returned within 30 days if undamaged.</span><span class="st">"</span>,
+             metadata={<span class="st">"</span><span class="st">source</span><span class="st">"</span>: <span class="st">"</span><span class="st">returns.md</span><span class="st">"</span>, <span class="st">"</span><span class="st">region</span><span class="st">"</span>: <span class="st">"</span><span class="st">US</span><span class="st">"</span>}),
+    Document(page_content=<span class="st">"</span><span class="st">Opened audio products: 14-day return window.</span><span class="st">"</span>,
+             metadata={<span class="st">"</span><span class="st">source</span><span class="st">"</span>: <span class="st">"</span><span class="st">returns-eu.md</span><span class="st">"</span>, <span class="st">"</span><span class="st">region</span><span class="st">"</span>: <span class="st">"</span><span class="st">EU</span><span class="st">"</span>}),
+    Document(page_content=<span class="st">"</span><span class="st">Gift cards are not refundable.</span><span class="st">"</span>,
+             metadata={<span class="st">"</span><span class="st">source</span><span class="st">"</span>: <span class="st">"</span><span class="st">giftcards.md</span><span class="st">"</span>, <span class="st">"</span><span class="st">region</span><span class="st">"</span>: <span class="st">"</span><span class="st">US</span><span class="st">"</span>}),
+]
+
+<span class="kw">def</span> <span class="fn">retrieve</span>(question, k=<span class="nr">2</span>, region=<span class="st">"</span><span class="st">US</span><span class="st">"</span>):
+    <span class="cm"># stand-in for vectorstore.as_retriever(): score by word overlap, filter by metadata</span>
+    words = <span class="tp">set</span>(question.lower().split())
+    hits = [d <span class="kw">for</span> d in KB <span class="kw">if</span> d.metadata[<span class="st">"</span><span class="st">region</span><span class="st">"</span>] == region]
+    hits.sort(key=<span class="kw">lambda</span> d: -<span class="tp">len</span>(words &amp; <span class="tp">set</span>(d.page_content.lower().split())))
+    <span class="kw">return</span> hits[:k]
+
+<span class="kw">def</span> <span class="fn">format_docs</span>(docs):
+    <span class="kw">return</span> <span class="st">"</span><span class="st">\n</span><span class="st">"</span>.join(<span class="st">f</span><span class="st">"</span><span class="st">[</span><span class="st">{</span>d.metadata[<span class="st">'</span><span class="st">source</span><span class="st">'</span>]<span class="st">}</span><span class="st">] </span><span class="st">{</span>d.page_content<span class="st">}</span><span class="st">"</span> <span class="kw">for</span> d in docs)
+
+<span class="kw">def</span> <span class="fn">fake_model</span>(prompt_value):
+    <span class="cm"># stand-in for a chat model: report what it was sent</span>
+    msgs = prompt_value.to_messages()
+    <span class="kw">return</span> AIMessage(content=<span class="st">f</span><span class="st">"</span><span class="st">(</span><span class="st">{</span><span class="tp">len</span>(msgs)<span class="st">}</span><span class="st"> messages, </span><span class="st">{</span><span class="tp">len</span>(msgs[<span class="nr">0</span>].content)<span class="st">}</span><span class="st"> chars of system prompt)</span><span class="st">"</span>)
+
+prompt = ChatPromptTemplate.from_messages([
+    (<span class="st">"</span><span class="st">system</span><span class="st">"</span>, <span class="st">"</span><span class="st">Answer only from the context. Cite the [source].</span><span class="st">\n</span><span class="st">\n</span><span class="st">{context}</span><span class="st">"</span>),
+    (<span class="st">"</span><span class="st">human</span><span class="st">"</span>, <span class="st">"</span><span class="st">{question}</span><span class="st">"</span>),
+])
+
+chain = (
+    {<span class="st">"</span><span class="st">context</span><span class="st">"</span>: RunnableLambda(retrieve) | format_docs, <span class="st">"</span><span class="st">question</span><span class="st">"</span>: RunnablePassthrough()}
+    | prompt
+    | RunnableLambda(fake_model)
+    | StrOutputParser()
+)
+
+<span class="tp">print</span>([<span class="tp">type</span>(s).__name__ <span class="kw">for</span> s in chain.steps])
+<span class="tp">print</span>(chain.invoke(<span class="st">"</span><span class="st">Can I return opened headphones after 20 days?</span><span class="st">"</span>))
+<span class="tp">print</span>(<span class="tp">len</span>(chain.batch([<span class="st">"</span><span class="st">q1</span><span class="st">"</span>, <span class="st">"</span><span class="st">q2</span><span class="st">"</span>, <span class="st">"</span><span class="st">q3</span><span class="st">"</span>], config={<span class="st">"</span><span class="st">max_concurrency</span><span class="st">"</span>: <span class="nr">2</span>})))
+</pre>
+<p>It prints the four step types (<code>RunnableParallel</code>, <code>ChatPromptTemplate</code>, <code>RunnableLambda</code>, <code>StrOutputParser</code>), then <code>(2 messages, 175 chars of system prompt)</code>, then <code>3</code>. The dict became a RunnableParallel; the EU document was filtered out before formatting.</p>
+<p>The production version swaps the two stand-ins for real integrations and adds the helpers from Step 8:</p>
+<pre><span class="cm"># Needs langchain-openai, a vector store integration and an API key; written against the documented API.</span>
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> ChatOpenAI
+
+retriever = vectorstore.as_retriever(search_kwargs={<span class="st">"</span><span class="st">k</span><span class="st">"</span>: <span class="nr">6</span>, <span class="st">"</span><span class="st">filter</span><span class="st">"</span>: {<span class="st">"</span><span class="st">region</span><span class="st">"</span>: <span class="st">"</span><span class="st">US</span><span class="st">"</span>}})
+model = ChatOpenAI(model=<span class="st">"</span><span class="st">gpt-4o-mini</span><span class="st">"</span>, temperature=<span class="nr">0.2</span>).with_retry(stop_after_attempt=<span class="nr">3</span>)
+model = model.with_fallbacks([ChatOpenAI(model=<span class="st">"</span><span class="st">gpt-4o</span><span class="st">"</span>, temperature=<span class="nr">0.2</span>)])
+
+chain = (
+    {<span class="st">"</span><span class="st">context</span><span class="st">"</span>: retriever | format_docs, <span class="st">"</span><span class="st">question</span><span class="st">"</span>: RunnablePassthrough()}
+    | prompt | model | StrOutputParser()
+)
+
+<span class="kw">for</span> chunk in chain.stream(<span class="st">"</span><span class="st">Can I return opened headphones after 20 days?</span><span class="st">"</span>,
+                          config={<span class="st">"</span><span class="st">tags</span><span class="st">"</span>: [<span class="st">"</span><span class="st">help-centre</span><span class="st">"</span>], <span class="st">"</span><span class="st">metadata</span><span class="st">"</span>: {<span class="st">"</span><span class="st">user</span><span class="st">"</span>: <span class="st">"</span><span class="st">u_123</span><span class="st">"</span>}}):
+    <span class="tp">print</span>(chunk, end=<span class="st">"</span><span class="st">"</span>, flush=<span class="nr">True</span>)
+</pre>
+</section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>12 &mdash; Production &amp; Ops</h2>
+  <h2>27 &mdash; Production &amp; Ops</h2>
 <div class="card">
 <table>
 <tr><th>Concern</th><th>Practice</th></tr>
@@ -297,13 +561,13 @@ chain.invoke(input, config={"callbacks": [MetricsHandler()]})</pre>
 </div>
 </section>
 <section id="related-topics">
-  <h2>13 &mdash; Related topics</h2>
+  <h2>28 &mdash; Related topics</h2>
 <div class="card">
 <ul><li><a href="langgraph.html">LangGraph</a> — nodes call LC runnables and ToolNode</li><li><a href="llamaindex.html">LlamaIndex</a> — overlapping RAG scope; can interop</li><li><a href="crewai.html">CrewAI</a> — uses LangChain LLM/tool wrappers</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — reference architecture</li><li><a href="../rag/rag-in-production.html">Making RAG good &amp; measuring it</a> — production chat patterns</li><li><a href="../fundamentals/api.html">Calling a model</a> — underlying chat API</li><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a> — template design</li><li><a href="../rag/embeddings.html">Embeddings</a> — retriever theory</li><li><a href="../production/evals.html">Evaluating LLM features</a> — regression on chain changes</li></ul>
 </div>
 </section>
 <section id="where-people-get-lost">
-  <h2>14 &mdash; Where people get lost</h2>
+  <h2>29 &mdash; Where people get lost</h2>
 <div class="card">
 <ul><li><strong><code>create_react_agent</code> black box</strong> — hard to debug loops; use LangGraph</li><li><strong>Deprecated APIs in old tutorials</strong> — LLMChain, old import paths</li><li><strong>Memory in serverless</strong> — lost between requests; use external store</li><li><strong>Retriever k too small</strong> — recall suffers before reranker sees candidates</li><li><strong>No fallbacks</strong> — single model failure takes down feature</li><li><strong>Mixing sync invoke in async FastAPI</strong> — blocks event loop; use ainvoke</li></ul>
 </div> <div class="card">
@@ -316,13 +580,30 @@ chain.invoke(input, config={"callbacks": [MetricsHandler()]})</pre>
 <tr><td>Minimal deps</td><td><a href="../fundamentals/api.html">Calling a model</a></td></tr>
 </table>
 </div>
+<ul>
+<li><strong>"LCEL is a special language."</strong> It is Python's <code>|</code> operator overloaded to build a RunnableSequence. Anything you can do in a chain you can do with plain function calls; the chain buys uniform streaming, batching, retries and tracing.</li>
+<li><strong>"Building the chain runs it."</strong> Building only assembles a description. Errors such as a missing template key appear on <code>invoke</code>, which is why a stub-model test of every chain is cheap insurance.</li>
+<li><strong>Breaking streaming with a lambda after the model.</strong> A non-streaming step waits for the full input. Put processing before the model, write it as a generator, or read tokens with <code>astream_events</code>.</li>
+<li><strong>"Swapping vector stores is one line."</strong> The metadata filter syntax, index settings and ingestion differ per store. The interface hides the call, not the semantics.</li>
+<li><strong>Retrying the whole chain.</strong> Retry the model step. Retrying the chain re-runs retrieval and anything with side effects.</li>
+<li><strong>Using LCEL for an agent loop.</strong> A sequence is acyclic. Tool loops, durable state and human approval belong in LangGraph or your own loop.</li>
+<li><strong>Blaming the framework for latency or cost.</strong> Its overhead is milliseconds. Tokens of retrieved context and hidden extra model calls (multi-query, compression) are where the time and money go; read the trace.</li>
+<li><strong>Unpinned versions.</strong> Imports and classes move between releases. Pin, and upgrade on purpose with a test run.</li>
+</ul>
 </section>
 <section id="how-this-connects">
-  <h2>15 &mdash; How this connects</h2>
+  <h2>30 &mdash; How this connects</h2>
 <h3>Builds on</h3><ul><li><a href="../fundamentals/api.html">Calling a model</a> &mdash; The API call end to end: messages, roles, streaming, tool calls, errors and retries, across providers.</li><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a> &mdash; Zero- and few-shot, chain of thought, decomposition, self-critique, injection defence.</li><li><a href="../rag/embeddings.html">Embeddings</a> &mdash; Turning meaning into numbers: dense vectors, cosine similarity, sentence embeddings and contrastive training.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../rag/document-ingestion.html">Document ingestion</a> &mdash; Parsing PDFs and HTML, OCR, deduplication and keeping the index fresh.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li></ul><h3>Where this shows up later</h3><ul><li><a href="llamaindex.html">LlamaIndex</a> &mdash; Data-first RAG framework: loaders, indexes, query engines.</li><li><a href="crewai.html">CrewAI</a> &mdash; Role-based multi-agent crews: agents, tasks, processes.</li><li><a href="pgvector.html">pgvector</a> &mdash; Vector search inside Postgres: HNSW/IVFFlat, hybrid with full-text, operations.</li><li><a href="pinecone.html">Pinecone</a> &mdash; Managed serverless vector database: namespaces, metadata filters, hybrid.</li><li><a href="chroma.html">Chroma</a> &mdash; Lightweight embedded vector store for prototypes and local RAG.</li></ul>
 </section>
 <section id="check-yourself">
-  <h2>16 &mdash; Check yourself</h2>
+  <h2>31 &mdash; Check yourself</h2>
+<details><summary>What object does <code>{"context": retriever | fmt, "question": RunnablePassthrough()} | prompt | model | parser</code> build, and how many steps does it have?</summary><div class="answer">A single RunnableSequence with four steps: a RunnableParallel (the dict, coerced), the ChatPromptTemplate, the chat model and the output parser. The inner <code>retriever | fmt</code> is its own two-step sequence inside the parallel's <code>context</code> branch.</div></details>
+<details><summary>What is the type of the value between the prompt template and the model, and between the model and the parser?</summary><div class="answer">A PromptValue (a ChatPromptValue holding a system and a human message) between template and model; an AIMessage (or AIMessageChunks when streaming) between model and parser. The parser turns it into a string.</div></details>
+<details><summary>Model time-to-first-token is 500 ms, generation takes 2.5 s, retrieval 80 ms. A teammate adds <code>RunnableLambda(clean_markdown)</code> after the model. What happens to perceived latency, and what do you do?</summary><div class="answer">First visible text moves from about 0.58 s to about 3.1 s, because the lambda waits for the complete message before it runs, so streaming collapses into one chunk at the end. Move the cleaning before the model, make it a generator that transforms chunks, or clean on the client.</div></details>
+<details><summary>You must summarise 1,200 articles at about 1.5 s per call, with a provider limit of 10 concurrent requests. Roughly how long does <code>batch</code> take with <code>max_concurrency=8</code>, and why not set it to 50?</summary><div class="answer">About \(1{,}200 \times 1.5 / 8 = 225\) s. Setting 50 would exceed the provider's concurrency limit, causing 429 errors and retries that make the job slower, not faster. Leave headroom below the limit for live traffic.</div></details>
+<details><summary>Where should <code>with_retry</code> go in a RAG chain, and why?</summary><div class="answer">On the model step (or the retriever separately if it is flaky), not on the whole chain. Retrying the whole chain repeats the embedding and search calls, and would repeat any side effects.</div></details>
+<details><summary>Your RAG cost is $25 a day and 88% of input tokens are retrieved context. Name two changes and estimate the effect of one.</summary><div class="answer">Reduce \(k\) (6 to 4 chunks) or rerank and keep the top 3. With \(k = 3\), input falls from about 2,720 to about 1,520 tokens, so input cost drops by about 44%, and total cost by roughly a third once output is included, provided answer quality holds on your evaluation set.</div></details>
+<details><summary>When would you choose LangGraph instead of an LCEL chain for the help-centre bot?</summary><div class="answer">When it must act, not just answer: look up the order with a tool, decide based on the result, loop until done, wait for a human to approve a refund, and resume after a crash. Those need cycles and checkpointed state, which a RunnableSequence does not have.</div></details>
 <details>
 <summary>What is LCEL?</summary>
 <div class="answer">LangChain Expression Language: compose Runnables with the <code>|</code> operator. Example: <code>prompt | model | parser</code>. Supports sync/async/stream/batch uniformly across all steps. Parallel branches via <code>RunnableParallel</code>.</div>

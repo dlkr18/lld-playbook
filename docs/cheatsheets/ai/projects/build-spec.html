@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
@@ -19,33 +23,250 @@
   <h2>Complete build: spec &amp; architecture</h2>
   <a href="index.html">&larr; Build &amp; interview</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#the-complete-build-1-4-spec-architecture"><span class="num">02</span> The Complete Build 1/4 — spec &amp; architecture</a>
-  <a href="#step-1-the-elicitation-conversation-that-produces-the-spec"><span class="num">03</span> Step −1 — the elicitation conversation that produces the spec</a>
-  <a href="#step-0-write-the-spec-before-any-ai-code"><span class="num">04</span> Step 0 — write the spec BEFORE any AI code</a>
-  <a href="#step-1-decide-the-shape-apply-the-decision-guide-honestly"><span class="num">05</span> Step 1 — decide the shape (apply the decision guide honestly)</a>
-  <a href="#step-2-the-architecture-with-every-box-justified"><span class="num">06</span> Step 2 — the architecture, with every box justified</a>
-  <a href="#step-2-5-the-data-model-schema-before-prompts"><span class="num">07</span> Step 2.5 — the data model (schema before prompts)</a>
-  <a href="#step-2-75-the-api-surface-small-on-purpose"><span class="num">08</span> Step 2.75 — the API surface (small on purpose)</a>
-  <a href="#step-3-model-infra-choices-with-reasons-not-vibes"><span class="num">09</span> Step 3 — model &amp; infra choices (with reasons, not vibes)</a>
-  <a href="#how-this-connects"><span class="num">10</span> How this connects</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#the-question"><span class="num">03</span> The question</a>
+  <a href="#step-1-every-requirement-becomes-a-number-and-a-check"><span class="num">04</span> Step 1: every requirement becomes a number and a check</a>
+  <a href="#step-2-from-daily-volume-to-concurrency"><span class="num">05</span> Step 2: from daily volume to concurrency</a>
+  <a href="#step-3-the-latency-budget-hop-by-hop"><span class="num">06</span> Step 3: the latency budget, hop by hop</a>
+  <a href="#step-4-the-cost-budget-per-request"><span class="num">07</span> Step 4: the cost budget per request</a>
+  <a href="#step-5-the-price-of-being-wrong-sets-the-abstention-line"><span class="num">08</span> Step 5: the price of being wrong sets the abstention line</a>
+  <a href="#step-6-choosing-the-shape-router-workflow-one-agentic-pocket"><span class="num">09</span> Step 6: choosing the shape: router, workflow, one agentic pocket</a>
+  <a href="#step-7-choosing-models-with-eval-gates"><span class="num">10</span> Step 7: choosing models with eval gates</a>
+  <a href="#step-8-sizing-the-data-layer"><span class="num">11</span> Step 8: sizing the data layer</a>
+  <a href="#step-9-the-spec-becomes-the-test-suite"><span class="num">12</span> Step 9: the spec becomes the test suite</a>
+  <a href="#what-an-interviewer-probes"><span class="num">13</span> What an interviewer probes</a>
+  <a href="#in-code-a-sizing-sheet-that-fails-loudly"><span class="num">14</span> In code: a sizing sheet that fails loudly</a>
+  <a href="#the-complete-build-1-4-spec-architecture"><span class="num">15</span> The Complete Build 1/4 — spec &amp; architecture</a>
+  <a href="#step-1-the-elicitation-conversation-that-produces-the-spec"><span class="num">16</span> Step −1 — the elicitation conversation that produces the spec</a>
+  <a href="#step-0-write-the-spec-before-any-ai-code"><span class="num">17</span> Step 0 — write the spec BEFORE any AI code</a>
+  <a href="#step-1-decide-the-shape-apply-the-decision-guide-honestly"><span class="num">18</span> Step 1 — decide the shape (apply the decision guide honestly)</a>
+  <a href="#step-2-the-architecture-with-every-box-justified"><span class="num">19</span> Step 2 — the architecture, with every box justified</a>
+  <a href="#step-2-5-the-data-model-schema-before-prompts"><span class="num">20</span> Step 2.5 — the data model (schema before prompts)</a>
+  <a href="#step-2-75-the-api-surface-small-on-purpose"><span class="num">21</span> Step 2.75 — the API surface (small on purpose)</a>
+  <a href="#step-3-model-infra-choices-with-reasons-not-vibes"><span class="num">22</span> Step 3 — model &amp; infra choices (with reasons, not vibes)</a>
+  <a href="#where-people-get-lost"><span class="num">23</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">24</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">25</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Complete build: spec &amp; architecture <span>// Build &amp; interview</span></h1>
   <p>The system we build end to end: requirements, architecture and decisions.</p>
-  <div class="tags"><span class="tag">12 min read</span><span class="tag">1 diagram</span></div>
+  <div class="tags"><span class="tag">32 min read</span><span class="tag">1 diagram</span></div>
 </div>
 
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
 <div class="diagram"><img src="../img/build.png" alt="The system built end to end in this stage: an order-support agent with tools, a knowledge layer for policy questions, and evals, tracing and budgets around it."></div><p class="diagram-caption">The system built end to end in this stage: an order-support agent with tools, a knowledge layer for policy questions, and evals, tracing and budgets around it.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Spec</strong></td><td>A short list of what the system must do and how well, each line checkable by a test or a dashboard. Written before any prompt.</td></tr><tr><td><strong>Non-functional requirement (NFR)</strong></td><td>A requirement about how the system behaves rather than what it does: latency, availability, cost, security, auditability.</td></tr><tr><td><strong>p95 latency</strong></td><td>The time within which 95% of requests finish; one in twenty is slower. Users notice the tail, so specs use percentiles.</td></tr><tr><td><strong>Time to first token (TTFT)</strong></td><td>How long until the first word of a streamed answer appears. It is what a user perceives as "it started answering".</td></tr><tr><td><strong>Little's law</strong></td><td>For any stable system, average number in flight = arrival rate × average time each one spends inside: \(L = \lambda W\).</td></tr><tr><td><strong>Concurrency</strong></td><td>How many requests are in progress at the same moment.</td></tr><tr><td><strong>Rate limit (RPM / TPM)</strong></td><td>The provider's cap on requests and tokens per minute for your account.</td></tr><tr><td><strong>Latency budget</strong></td><td>The end-to-end target split into an allowance per hop (router, retrieval, model, validation), so each component has a number to meet.</td></tr><tr><td><strong>Coverage and precision</strong></td><td>Coverage: share of questions answered rather than escalated. Precision: share of those answers that are right.</td></tr><tr><td><strong>Router</strong></td><td>A cheap classifier (often a small model with a forced output schema) that sends each request down the right path.</td></tr><tr><td><strong>Workflow vs agent</strong></td><td>A workflow runs steps your code fixes in advance; an agent lets the model choose the next step in a loop.</td></tr><tr><td><strong>Eval gate</strong></td><td>A threshold on an evaluation metric that a change must pass before it ships, such as router accuracy at least 95% on the labelled set.</td></tr></tbody></table>
+</section>
+<p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>03 &mdash; The question</h2>
+<p>"Build us an AI assistant for the support team" becomes a design problem only when somebody writes down how many people will use it, how fast it must be, what it may cost, and what it must never do. Every later decision, from the model to whether you need an agent at all, is arithmetic on those numbers. In an AI system design interview this is the first ten minutes, and it is where SDE3 candidates separate themselves. The questions:</p>
+<ol>
+<li>Before you design anything, what do you need to know, and what numbers do you write down?</li>
+<li>Size it: how many requests per second, how many tokens per minute, what does one answer cost, can you meet the latency target?</li>
+<li>Why a router and a workflow rather than one autonomous agent with every tool?</li>
+<li>How will you know it works, and how do you choose the model?</li>
+</ol>
+<p>The running example is the course's capstone: an internal support assistant for about 200 support staff. It answers policy questions from company documents, looks up orders, and refunds up to $100: automatically when the charge records prove the case (a duplicate charge), otherwise after a human approves. The spec on this page (see "Step 0" below this lesson) fixes the numbers we will use throughout: about <strong>3,000 questions per working day</strong>, a peak of <strong>15 concurrent</strong> questions, <strong>p95 ≤ 6 s</strong> end to end with first token within 2 s, at most <strong>$0.03 per resolved question</strong> and about $2,500 per month all-in. The other build pages implement it: <a href="build-knowledge.html">knowledge layer</a>, <a href="build-agent.html">agent</a>, <a href="build-ship.html">evals, serving and cost</a>. This lesson shows how the numbers produce the architecture.</p>
+</section>
+<section id="step-1-every-requirement-becomes-a-number-and-a-check">
+  <h2>04 &mdash; Step 1: every requirement becomes a number and a check</h2>
+<p>Stakeholders speak in adjectives. A spec line is useful only when a machine can say whether it is met, so each needs a number and a place that number is measured.</p>
+<table>
+<thead><tr><th>Stakeholder says</th><th>Spec line</th><th>Measured by</th></tr></thead>
+<tbody>
+<tr><td>"It has to feel quick"</td><td>first token p95 ≤ 2 s, complete answer p95 ≤ 6 s</td><td>gateway timing histogram</td></tr>
+<tr><td>"It can't cost a fortune"</td><td>≤ $0.03 per resolved question</td><td>token counts in traces × price, divided by resolved count</td></tr>
+<tr><td>"It mustn't make things up"</td><td>≥ 90% correct and grounded on the eval set; wrong-answer rate on answered questions ≤ 3%</td><td>offline eval suite plus sampled judge in production</td></tr>
+<tr><td>"Never refund too much"</td><td>100% of refunds within policy</td><td>database constraint plus a daily reconciliation query</td></tr>
+</tbody>
+</table>
+<p>Where does $0.03 come from? Finance gave a ceiling of about $2,500 per month. At 3,000 questions a day over 22 working days, volume is 66,000 questions a month, so the absolute ceiling is \(2{,}500 / 66{,}000 \approx \$0.038\) per question. The spec sets $0.03 to leave about 20% for things estimates always miss: retries, long conversations, evaluation runs. A budget with no headroom is a budget you will break in month two.</p>
+<p>The rule: if you cannot name the dashboard or test that would turn red when a line is violated, the line is not finished.</p>
+</section>
+<section id="step-2-from-daily-volume-to-concurrency">
+  <h2>05 &mdash; Step 2: from daily volume to concurrency</h2>
+<p>What sizes a system is how many requests are in flight at once, not daily volume. Little's law converts between them:</p>
+\[ L = \lambda W \]
+<p>where \(L\) is the average number of requests in the system, \(\lambda\) the arrival rate, and \(W\) the average time each spends inside. It holds for any stable queue, regardless of how arrivals are distributed.</p>
+<p>3,000 questions over an 8-hour working day is 375 an hour, or \(\lambda \approx 0.104\) per second. With a typical answer taking about \(W = 4.6\) s, average concurrency is \(0.104 \times 4.6 \approx 0.48\). On average, less than one question is being answered at any moment.</p>
+<p>Averages hide bursts: a shift change, an outage that floods the team with tickets. The spec says peak is 15 concurrent. Run Little's law backwards: 15 in flight at about 4.5 s each means \(\lambda = 15 / 4.5 \approx 3.3\) requests per second, or 200 a minute. The NFR table adds 3× headroom, so the design point is 45 concurrent, about 10 requests per second.</p>
+<p>Now the number that actually limits you. Each knowledge-base question sends about 3,900 input tokens (400 to the router, 3,500 to the answer model). At the spec peak:</p>
+\[ 200\ \text{req/min} \times 3{,}900\ \text{tokens} \approx 780{,}000\ \text{input tokens per minute} \]
+<p>and about 2.3 million at the 3× design point. One async worker handles 10 requests per second easily; whether your provider account allows 2.3 million tokens per minute is the real question. The capacity plan is about rate-limit tiers and a queue, not CPUs. <a href="../production/cost-performance.html">Cost &amp; performance</a> covers token buckets and queueing in depth.</p>
+</section>
+<section id="step-3-the-latency-budget-hop-by-hop">
+  <h2>06 &mdash; Step 3: the latency budget, hop by hop</h2>
+<p>A knowledge-base answer passes through a chain of hops. Give each one a typical (median) time, based on what such a component usually takes. These are illustrative, order-of-magnitude values; you replace them with your own measurements in week one:</p>
+<table>
+<thead><tr><th>Hop</th><th>Median</th><th>Why that size</th></tr></thead>
+<tbody>
+<tr><td>Gateway (auth, rate limit, request id)</td><td>20 ms</td><td>in-process checks</td></tr>
+<tr><td>Router: small model, ~400 tokens in, ~30 out</td><td>450 ms</td><td>one network round trip plus a short generation</td></tr>
+<tr><td>Embed the query</td><td>80 ms</td><td>one embedding API call</td></tr>
+<tr><td>Hybrid search in Postgres</td><td>30 ms</td><td>HNSW plus full-text on 40,000 rows</td></tr>
+<tr><td>Rerank 30 candidates</td><td>200 ms</td><td>cross-encoder over 30 pairs</td></tr>
+<tr><td>Answer model time to first token, 3,500 tokens in</td><td>800 ms</td><td>queueing plus prefill of the prompt</td></tr>
+<tr><td>Decode 250 output tokens at ~80 tokens/s</td><td>3.1 s</td><td>output tokens are generated one at a time</td></tr>
+<tr><td>Output validation</td><td>30 ms</td><td>schema and citation checks in code</td></tr>
+</tbody>
+</table>
+<p>The medians sum to 4.7 s, under 6 s, but the spec is about p95, and the p95 of a sum is neither the sum of medians nor the sum of p95s (7.3 s, which assumes every hop is slow on the same request). Model each hop as a random variable with a long right tail and simulate. With lognormal noise per hop (the code at the end), the serial design gives:</p>
+<ul>
+<li>first token: median 1.64 s, <strong>p95 2.44 s</strong> (spec: 2 s)</li>
+<li>complete answer: median 4.83 s, <strong>p95 6.23 s</strong> (spec: 6 s)</li>
+</ul>
+<p>The design as drawn misses both targets. This is the moment an interviewer is waiting for: do you notice, and what do you cut?</p>
+<ol>
+<li><strong>Run the router and retrieval in parallel.</strong> Most questions are knowledge-base questions, so start embedding, searching and reranking the moment the request arrives, and throw the result away if the router says "order action". The cost is about 600 wasted retrievals a day (the 20% of traffic that is not a knowledge-base question) at about $0.0004 each, roughly $0.24 a day. The first-token path now contains the slower of router and retrieval instead of both: first token p95 falls to 2.11 s, end to end to 5.90 s.</li>
+<li><strong>Cache the static prompt prefix.</strong> About 1,200 of the 3,500 input tokens (system prompt, instructions, output format) are identical on every call. Provider prompt caching skips recomputing them; modelling that as a TTFT median of 650 ms instead of 800 ms brings first token p95 to 1.84 s and end to end to 5.69 s. Both targets met.</li>
+</ol>
+<p>Decoding 250 tokens is two thirds of the total, so output length is the biggest latency lever you control: with 350-token answers the end-to-end p95 becomes about 7.4 s even with both fixes in place. The answer prompt asks for concision and <code>max_tokens</code> sits near 300, a product decision as much as a performance one. Why decoding is slow per token is explained in <a href="../inference/inference-internals.html">inference internals</a>.</p>
+<p>The order agent cannot live inside this budget: each step is a model call (about 1.2 s) plus a tool call (about 0.2 s), so six steps take about 8.4 s. The spec gives it a different budget explicitly: it streams progress, and refunds are asynchronous ("proposed, awaiting approval").</p>
+</section>
+<section id="step-4-the-cost-budget-per-request">
+  <h2>07 &mdash; Step 4: the cost budget per request</h2>
+<p>Model pricing is per token, with output tokens several times dearer than input. Using illustrative prices (mid-tier model $3 per million input tokens and $15 per million output; small model $0.25 and $1.25; substitute current prices, the method is the point):</p>
+<table>
+<thead><tr><th>Path</th><th>Calls</th><th>Cost</th></tr></thead>
+<tbody>
+<tr><td>Knowledge-base answer</td><td>router (400 in, 30 out) + answer (3,500 in, 250 out) + embedding and rerank ≈ $0.0004</td><td>≈ $0.0148</td></tr>
+<tr><td>Order agent, 4 model calls (read order, read charges, refund, answer)</td><td>router + 8,480 input tokens and 500 output across the four calls</td><td>≈ $0.0331</td></tr>
+<tr><td>Escalated at the router</td><td>router + the speculative retrieval from Step 3</td><td>≈ $0.0005</td></tr>
+</tbody>
+</table>
+<p>Why does a four-call agent read 8,480 input tokens and not four times one prompt? Because the agent's context grows. Every call re-sends the whole conversation: the 1,550-token prefix (system prompt, tool definitions, user message) plus every earlier tool call and tool result, about 380 tokens per step. Call \(k\) (counting from 0) reads about \(1{,}550 + 380k\) tokens, so total input over \(n\) calls is</p>
+\[ \sum_{k=0}^{n-1} (1{,}550 + 380k) = 1{,}550\,n + 380\,\frac{n(n-1)}{2} \]
+<p>which grows with the square of the step count. Three calls cost about $0.023; four cost $0.033; six cost $0.056, already almost double the per-question ceiling. A step cap is a cost control as much as a safety control.</p>
+<p>Blend by the traffic mix the elicitation suggested (80% knowledge-base, 12% order actions, 8% escalated at the router): about $0.0158 per question. The spec is per <em>resolved</em> question, and escalations cost money without resolving anything. If 92% of knowledge-base answers and 85% of agent runs resolve the question, 83.8% of all questions resolve, and the cost per resolved question is \(0.0158 / 0.838 \approx \$0.0189\): about 63% of the ceiling for the model calls. Note that one order-agent run ($0.033) costs more than the ceiling on its own; the ceiling holds because it is an average, and four in five questions are $0.015 knowledge-base answers. The rest of the budget pays for evaluation runs, retries and infrastructure, which <a href="build-ship.html">the ship page</a> totals line by line.</p>
+<div class="callout"><p><strong>Why "per resolved".</strong> Escalating more lowers cost per request; dividing by resolved questions exposes that trick.</p></div>
+</section>
+<section id="step-5-the-price-of-being-wrong-sets-the-abstention-line">
+  <h2>08 &mdash; Step 5: the price of being wrong sets the abstention line</h2>
+<p>The elicitation found an asymmetry: a wrong policy answer is expensive (a customer is promised something the company must honour or retract), a slow or escalated one is cheap. Put rough numbers on it. Say an escalation costs about 6 minutes of a tier-2 agent's time at a loaded $45 an hour, about $4.50. Say a wrong policy promise costs about $150 on average in credits, rework and goodwill. Both numbers are illustrative; finance can give you real ones.</p>
+<p>For a question where the system's chance of being wrong is \(q\), answering costs \(q \times 150\) in expectation and escalating costs \(4.50\). Answering is worth it only when</p>
+\[ q \times C_{\text{wrong}} &lt; C_{\text{escalate}} \quad\Longrightarrow\quad q &lt; \frac{4.50}{150} = 3\% \]
+<p>So the system should answer only when it is at least 97% likely to be right, and hand the rest to a human. This one inequality justifies three pieces of the architecture: grounding with mandatory citations (to raise precision), an explicit "insufficient evidence" outcome (to abstain), and a human queue as a first-class path rather than an error.</p>
+<p>It also reconciles two spec lines that look like they conflict. "≥ 90% correct and grounded" is about coverage; "≤ 3% wrong among answered questions" is about precision. A system that answers 92% of eval questions, gets 90 of them right and 2 wrong, and abstains on 8, satisfies both: 90% correct overall, and \(2/92 \approx 2.2\%\) wrong among answered (precision 97.8%). Let it answer one more question and get that one wrong (90 right, 3 wrong, 93 answered) and the wrong rate becomes \(3/93 \approx 3.2\%\): the second line fails although the first still passes. The two lines constrain different things. A system that answers 100% and gets 92% right has better-looking accuracy and is worse for the business: 8% wrong answers, each costing $150.</p>
+</section>
+<section id="step-6-choosing-the-shape-router-workflow-one-agentic-pocket">
+  <h2>09 &mdash; Step 6: choosing the shape: router, workflow, one agentic pocket</h2>
+<p>With numbers in hand, the architecture stops being taste. Walk the ladder from <a href="../agents/what-is-an-agent.html">what an agent is</a>: is a single prompt enough (no, it needs private documents and live orders)? Is the path known in advance (mostly: classify, then retrieve or act, then answer)? Is any part genuinely open-ended (yes, investigating "why was I charged twice?" needs a variable number of lookups)? That produces a <strong>router plus a workflow, with one bounded agent</strong> for order investigations. Two numbers back the choice against the obvious alternative, one agent holding every tool:</p>
+<ul>
+<li><strong>Cost and latency on the common path.</strong> As an agent, a knowledge-base question becomes two sequential model calls: one that decides to call the search tool, then one that answers with about 2,000 tokens of retrieved text in context. That is about 5,160 input and 310 output tokens, roughly $0.020 against $0.014 for the direct path (about 40% more) and an extra second of model latency on the path that had no slack in Step 3.</li>
+<li><strong>Reliability compounds.</strong> If each model step does the right thing with probability 0.97, a task that needs \(n\) correct steps succeeds with probability \(0.97^n\): 0.91 for three steps, 0.83 for six. Every step you take out of the model's hands and put into code removes a factor from that product.</li>
+</ul>
+<p>Two non-numerical reasons settle it: separate paths can be measured separately, and the refund tool never shares a context with a retrieved document that might carry an injected instruction. More shapes are in <a href="../production/hybrid-patterns.html">hybrid patterns</a> and <a href="../production/reference-architectures.html">reference architectures</a>.</p>
+</section>
+<section id="step-7-choosing-models-with-eval-gates">
+  <h2>10 &mdash; Step 7: choosing models with eval gates</h2>
+<p>"Which model?" is answered by an experiment, not by a leaderboard. For each role, write the gate first, then try the cheapest model that might pass it, and move up only on failure.</p>
+<ul>
+<li><strong>Router</strong>: gate "≥ 95% accuracy on the labelled intents, and no order action routed to the knowledge-base path". Classification into three labels with a forced output schema is easy, so start with the smallest model.</li>
+<li><strong>Answer model</strong>: gate "≥ 90% correct and grounded, ≤ 3% wrong among answered" on the end-to-end set. Grounded synthesis with citations is harder; start mid-tier.</li>
+</ul>
+<p>Be honest about what a small eval set can tell you. The build's router set has 60 labelled examples. If the router gets 57 right, the point estimate is 95%, but the 95% confidence interval (Wilson method) runs from about <strong>86% to 98%</strong>. You cannot tell a 95% router from a 90% one with 60 examples. To pin accuracy to within ±2.5 points near 95%, you need about</p>
+\[ n \approx \frac{1.96^2 \cdot p(1-p)}{0.025^2} = \frac{3.84 \times 0.0475}{0.000625} \approx 292 \]
+<p>examples. Start with 60 (an afternoon of labelling) to catch large regressions, and grow the set from production traffic. Saying this in an interview is worth more than any model name. Statistics for comparing two systems on the same set are in <a href="../production/evals.html">evals</a>.</p>
+</section>
+<section id="step-8-sizing-the-data-layer">
+  <h2>11 &mdash; Step 8: sizing the data layer</h2>
+<p>Count before you choose storage. The corpus is about 1,200 documents, which chunk into about 40,000 pieces. Each chunk carries a 1,024-dimension float32 embedding:</p>
+\[ 40{,}000 \times 1{,}024 \times 4\ \text{bytes} \approx 164\ \text{MB} \]
+<p>Add about 48 MB of chunk text (40,000 chunks of about 300 tokens at roughly 4 characters per token), the full-text index and the HNSW graph, and the whole knowledge layer is a few hundred megabytes. It fits in memory on the Postgres server the team already runs. A dedicated vector database would add a service, a sync job and an on-call surface to hold less data than a laptop's browser cache. That is the case for <a href="../tech/pgvector.html">pgvector</a> here; it changes at tens of millions of vectors or heavy filtered search at high query rates, not at 40,000.</p>
+<p>The audit trail is the store that grows: about 5 trace rows of 2 KB per request, kept 2 years:</p>
+\[ 3{,}000 \times 5 \times 2\ \text{KB} \times 22 \times 24 \approx 16\ \text{GB} \]
+<p>Ordinary Postgres again, partitioned by month. The schema is under "Step 2.5" on this page.</p>
+</section>
+<section id="step-9-the-spec-becomes-the-test-suite">
+  <h2>12 &mdash; Step 9: the spec becomes the test suite</h2>
+<p>A finished spec maps one-to-one onto automated checks. Deterministic lines (refund ≤ $100, no duplicate idempotency key, citations point at supplied sources) become unit tests that run on every commit. Quality lines (90% correct and grounded, ≤ 3% wrong among answered) become gates on the end-to-end eval set, run on every prompt, model or index change. Operational lines (p95, cost per resolved question, escalation rate) become production dashboards with alerts. A proposed change is then judged by one question: which spec number does it move, and does the suite agree? <a href="build-ship.html">The ship page</a> builds this suite.</p>
+</section>
+<section id="what-an-interviewer-probes">
+  <h2>13 &mdash; What an interviewer probes</h2>
+<p>After you present the design, expect pushes like these. Each has a numerical answer from the steps above.</p>
+<ul>
+<li><strong>"Traffic goes up 50×. What breaks first?"</strong> Not CPU: provider tokens per minute (about 39 million at 50× the peak) and spend (about $52,000 a month on model calls). Re-decide caching, a fine-tuned small model and self-hosting with those numbers.</li>
+<li><strong>"Why not one agent?"</strong> Step 6: about 40% more cost and an extra model call on 80% of traffic, \(0.97^n\) reliability, refund authority next to retrieved text.</li>
+<li><strong>"Your latency budget doesn't add up."</strong> Agree, simulate, and name the fixes from Step 3.</li>
+<li><strong>"Is 95% router accuracy real?"</strong> Not provable with 60 examples; give the interval and the plan to grow the set.</li>
+<li><strong>"The provider is down?"</strong> 99.5% availability allows a fallback model, then escalating everything with context. See <a href="../production/reliability.html">reliability</a>.</li>
+</ul>
+</section>
+<section id="in-code-a-sizing-sheet-that-fails-loudly">
+  <h2>14 &mdash; In code: a sizing sheet that fails loudly</h2>
+<p>Write the spec's arithmetic as a script with assertions, keep it next to the code, and re-run it when a price, a prompt length or a traffic forecast changes. Every number in this lesson comes from it.</p>
+<pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="cm"># ---- spec -------------------------------------------------------------</span>
+Q_PER_DAY, WORKDAYS, HOURS = <span class="nr">3000</span>, <span class="nr">22</span>, <span class="nr">8</span>
+PEAK_CONCURRENT, HEADROOM = <span class="nr">15</span>, <span class="nr">3</span>
+P95_E2E, P95_FIRST = <span class="nr">6.0</span>, <span class="nr">2.0</span>
+MONTHLY_CAP, PER_RESOLVED_CAP = <span class="nr">2500</span>, <span class="nr">0.03</span>
+<span class="cm"># ---- illustrative prices, $ per token (replace with current ones) -----</span>
+MID_IN, MID_OUT = <span class="nr">3e-6</span>, <span class="nr">15e-6</span>
+SMALL_IN, SMALL_OUT = <span class="nr">0.25e-6</span>, <span class="nr">1.25e-6</span>
+RETRIEVAL = <span class="nr">0.0004</span> <span class="cm"># query embedding + rerank</span>
+<span class="cm"># Step 1-2: budget and load</span>
+monthly_q = Q_PER_DAY * WORKDAYS
+<span class="tp">print</span>(<span class="st">"</span><span class="st">ceiling per question  $</span><span class="st">%.3f</span><span class="st">"</span> % (MONTHLY_CAP / monthly_q))           <span class="cm"># 0.038</span>
+rate = PEAK_CONCURRENT / <span class="nr">4.5</span> <span class="cm"># Little: L = lambda*W</span>
+<span class="tp">print</span>(<span class="st">"</span><span class="st">peak req/min </span><span class="st">%.0f</span><span class="st">, input tokens/min </span><span class="st">%.0f</span><span class="st">"</span> % (rate * <span class="nr">60</span>, rate * <span class="nr">60</span> * <span class="nr">3900</span>))
+
+<span class="cm"># Step 3: latency, lognormal noise per hop, router and retrieval serial vs parallel</span>
+<span class="kw">def</span> <span class="fn">latency</span>(parallel, ttft_median, n=<span class="nr">200_000</span>):
+    rng = np.random.default_rng(<span class="nr">0</span>)
+    hops = {<span class="st">"</span><span class="st">gateway</span><span class="st">"</span>: (<span class="nr">0.02</span>, <span class="nr">.3</span>), <span class="st">"</span><span class="st">router</span><span class="st">"</span>: (<span class="nr">0.45</span>, <span class="nr">.35</span>), <span class="st">"</span><span class="st">embed</span><span class="st">"</span>: (<span class="nr">0.08</span>, <span class="nr">.4</span>),
+            <span class="st">"</span><span class="st">search</span><span class="st">"</span>: (<span class="nr">0.03</span>, <span class="nr">.5</span>), <span class="st">"</span><span class="st">rerank</span><span class="st">"</span>: (<span class="nr">0.20</span>, <span class="nr">.3</span>), <span class="st">"</span><span class="st">ttft</span><span class="st">"</span>: (ttft_median, <span class="nr">.4</span>),
+            <span class="st">"</span><span class="st">decode</span><span class="st">"</span>: (<span class="nr">3.1</span>, <span class="nr">.2</span>), <span class="st">"</span><span class="st">validate</span><span class="st">"</span>: (<span class="nr">0.03</span>, <span class="nr">.3</span>)}
+    s = {k: m * np.exp(sd * rng.standard_normal(n)) <span class="kw">for</span> k, (m, sd) in hops.items()}
+    retrieval = s[<span class="st">"</span><span class="st">embed</span><span class="st">"</span>] + s[<span class="st">"</span><span class="st">search</span><span class="st">"</span>] + s[<span class="st">"</span><span class="st">rerank</span><span class="st">"</span>]
+    before = np.maximum(s[<span class="st">"</span><span class="st">router</span><span class="st">"</span>], retrieval) <span class="kw">if</span> parallel <span class="kw">else</span> s[<span class="st">"</span><span class="st">router</span><span class="st">"</span>] + retrieval
+    first = s[<span class="st">"</span><span class="st">gateway</span><span class="st">"</span>] + before + s[<span class="st">"</span><span class="st">ttft</span><span class="st">"</span>]
+    total = first + s[<span class="st">"</span><span class="st">decode</span><span class="st">"</span>] + s[<span class="st">"</span><span class="st">validate</span><span class="st">"</span>]
+    <span class="kw">return</span> np.percentile(first, <span class="nr">95</span>), np.percentile(total, <span class="nr">95</span>)
+
+<span class="kw">for</span> name, par, ttft in [(<span class="st">"</span><span class="st">serial</span><span class="st">"</span>, <span class="nr">False</span>, <span class="nr">0.80</span>), (<span class="st">"</span><span class="st">parallel</span><span class="st">"</span>, <span class="nr">True</span>, <span class="nr">0.80</span>),
+                        (<span class="st">"</span><span class="st">parallel + cached prefix</span><span class="st">"</span>, <span class="nr">True</span>, <span class="nr">0.65</span>)]:
+    f, t = latency(par, ttft)
+    <span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">{</span>name<span class="st">:</span><span class="st">26s</span><span class="st">}</span><span class="st"> first p95 </span><span class="st">{</span>f<span class="st">:</span><span class="st">.2f</span><span class="st">}</span><span class="st">s  end-to-end p95 </span><span class="st">{</span>t<span class="st">:</span><span class="st">.2f</span><span class="st">}</span><span class="st">s</span><span class="st">"</span>)
+f, t = latency(<span class="nr">True</span>, <span class="nr">0.65</span>)
+<span class="kw">assert</span> f &lt;= P95_FIRST and t &lt;= P95_E2E, <span class="st">"</span><span class="st">latency budget broken</span><span class="st">"</span>
+<span class="cm"># Step 4: cost per path; agent context grows every call</span>
+router = <span class="nr">400</span> * SMALL_IN + <span class="nr">30</span> * SMALL_OUT
+kb = router + <span class="nr">3500</span> * MID_IN + <span class="nr">250</span> * MID_OUT + RETRIEVAL
+<span class="kw">def</span> <span class="fn">agent</span>(calls, prefix=<span class="nr">1550</span>, grow=<span class="nr">380</span>):
+    tin = <span class="tp">sum</span>(prefix + k * grow <span class="kw">for</span> k in <span class="tp">range</span>(calls))
+    tout = <span class="nr">100</span> * (calls - <span class="nr">1</span>) + <span class="nr">200</span>
+<span class="kw">return</span> router + tin * MID_IN + tout * MID_OUT
+escalate = router + RETRIEVAL
+blend = <span class="nr">0.80</span> * kb + <span class="nr">0.12</span> * agent(<span class="nr">4</span>) + <span class="nr">0.08</span> * escalate
+resolved = <span class="nr">0.80</span> * <span class="nr">0.92</span> + <span class="nr">0.12</span> * <span class="nr">0.85</span>
+<span class="tp">print</span>(<span class="st">"</span><span class="st">kb $</span><span class="st">%.4f</span><span class="st">  agent(4) $</span><span class="st">%.4f</span><span class="st">  agent(6) $</span><span class="st">%.4f</span><span class="st">"</span> % (kb, agent(<span class="nr">4</span>), agent(<span class="nr">6</span>)))
+<span class="tp">print</span>(<span class="st">"</span><span class="st">per question $</span><span class="st">%.4f</span><span class="st">, per resolved $</span><span class="st">%.4f</span><span class="st">"</span> % (blend, blend / resolved))
+<span class="kw">assert</span> blend / resolved &lt; PER_RESOLVED_CAP
+
+<span class="cm"># Step 5: abstain when P(wrong) exceeds cost ratio</span>
+<span class="tp">print</span>(<span class="st">"</span><span class="st">answer only if P(wrong) &lt; </span><span class="st">%.0f</span><span class="st">%%</span><span class="st">"</span> % (<span class="nr">100</span> * <span class="nr">4.50</span> / <span class="nr">150</span>))
+
+<span class="cm"># Step 8: storage</span>
+<span class="tp">print</span>(<span class="st">"</span><span class="st">vectors </span><span class="st">%.0f</span><span class="st"> MB, traces over 2 years </span><span class="st">%.1f</span><span class="st"> GB</span><span class="st">"</span>
+      % (<span class="nr">40_000</span> * <span class="nr">1024</span> * <span class="nr">4</span> / <span class="nr">1e6</span>, Q_PER_DAY * <span class="nr">5</span> * <span class="nr">2000</span> * WORKDAYS * <span class="nr">24</span> / <span class="nr">1e9</span>))
+</pre>
+<p>It prints every number above: the $0.038 ceiling, 780,000 tokens per minute, the three latency rows (2.44/6.23, 2.11/5.90, 1.84/5.69 s), $0.0148, $0.0331 and $0.0556 per path, $0.0189 per resolved question, the 3% line, 164 MB and 15.8 GB. Change one input, say 350-token answers, and an assertion names the spec line you broke.</p>
+</section>
 <section id="the-complete-build-1-4-spec-architecture">
-  <h2>02 &mdash; The Complete Build 1/4 — spec &amp; architecture</h2>
+  <h2>15 &mdash; The Complete Build 1/4 — spec &amp; architecture</h2>
 <p>Everything so far was one topic at a time. This build creates <b>one real system, end to end</b>, making every decision explicitly and citing the topic that justifies it. The system: an internal <b>support knowledge agent</b> — answers questions from company docs, looks up orders, files refund requests with approval. Realistic, bounded, contains every pattern in this guide.</p>
 </section>
 <section id="step-1-the-elicitation-conversation-that-produces-the-spec">
-  <h2>03 &mdash; Step −1 — the elicitation conversation that produces the spec</h2>
+  <h2>16 &mdash; Step −1 — the elicitation conversation that produces the spec</h2>
 <p>The spec below did not fall out of the sky. It came out of a one-hour conversation with three stakeholders: the support team lead (the user), the finance controller (owns refund risk), and the platform engineer (owns whatever gets deployed). Here is the shape of that conversation, condensed. These are the questions to ask on <i>any</i> AI project — notice that none of them mention models.</p>
 <div class="code-block"><div class="code-file"><span>elicitation.md — the questions that produce a spec (annotated)</span><span class="code-lang">text</span></div><pre>YOU: "Walk me through the last five tickets your team handled."
 LEAD: Two were 'where is my order', one duplicate charge, one policy
@@ -79,7 +300,7 @@ ALL: Cross-customer data exposure. Invented policy. Refund over policy.
 <div class="callout"><p><strong>If you only ask one question</strong></p>Ask for the last N real examples of the task ("walk me through the last five tickets"). Stakeholders describe their work in abstractions; the examples contain the actual distribution — the intents, the edge cases, the vocabulary your eval set (2/4) will need. Five real tickets are worth fifty requirements-meeting adjectives.</div>
 </section>
 <section id="step-0-write-the-spec-before-any-ai-code">
-  <h2>04 &mdash; Step 0 — write the spec BEFORE any AI code</h2>
+  <h2>17 &mdash; Step 0 — write the spec BEFORE any AI code</h2>
 <pre class="ascii-diagram">TASK        answer support questions grounded in docs; act on orders (lookup, refund ≤ $100)
 USERS       ~200 support staff, ~3K questions/day, peak 15 concurrent
 SUCCESS     ≥90% answers graded correct+grounded; 100% refunds within policy; zero PII leaks
@@ -102,7 +323,7 @@ FALLBACK    low confidence or missing evidence → hand to human with context at
 </table>
 </section>
 <section id="step-1-decide-the-shape-apply-the-decision-guide-honestly">
-  <h2>05 &mdash; Step 1 — decide the shape (apply the decision guide honestly)</h2>
+  <h2>18 &mdash; Step 1 — decide the shape (apply the decision guide honestly)</h2>
 <p>Walk the ladder from the agents part:</p>
 <table>
 <tr><th>Question</th><th>Answer</th><th>Consequence</th></tr>
@@ -121,7 +342,7 @@ FALLBACK    low confidence or missing evidence → hand to human with context at
 <div class="callout warn"><p><strong>The seductive third rejection: fine-tune first</strong></p>"Let's fine-tune a model on our support data, then it'll just know our policies." Rejected because (<a href="../adaptation/index.html">Fine-tuning &amp; alignment</a>): policies <i>change weekly</i> — a fine-tune bakes March's refund policy into weights that answer questions in June; RAG updates by re-indexing a doc. Fine-tuning also can't cite sources, and the spec requires groundedness you can verify. The flywheel in 4/4 revisits fine-tuning <i>after</i> a quarter of logged (question → great answer) pairs exists — as a cost optimization, not a knowledge store.</div>
 </section>
 <section id="step-2-the-architecture-with-every-box-justified">
-  <h2>06 &mdash; Step 2 — the architecture, with every box justified</h2>
+  <h2>19 &mdash; Step 2 — the architecture, with every box justified</h2>
 <pre class="ascii-diagram">            user question
                  │
        ┌─────────▼─────────┐
@@ -151,7 +372,7 @@ FALLBACK    low confidence or missing evidence → hand to human with context at
 <p>Read the diagram as a risk gradient: the KB path (left) can at worst say something wrong <i>with citations attached</i>, which a support agent can check. The order path (right) can move money, so it gets every guard in this guide — bounded loop, policy engine, idempotency, approval gate (3/4). The router's third arm — <code>other/low-conf</code> — is not an afterthought; per the spec's FALLBACK line, graceful handoff is a first-class outcome and roughly 8–12% of real traffic will take it.</p>
 </section>
 <section id="step-2-5-the-data-model-schema-before-prompts">
-  <h2>07 &mdash; Step 2.5 — the data model (schema before prompts)</h2>
+  <h2>20 &mdash; Step 2.5 — the data model (schema before prompts)</h2>
 <p>Five tables carry the whole system. Sketching them now surfaces the decisions prose hides: where ACLs live, what "idempotent refund" physically means, what a trace row must contain for the flywheel in 4/4 to work.</p>
 <div class="code-block"><div class="code-file"><span>schema.sql — the whole system in five tables (Postgres 16 + pgvector)</span><span class="code-lang">sql</span></div><pre><span class="kw">CREATE</span> EXTENSION <span class="kw">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> vector;
 
@@ -221,7 +442,7 @@ FALLBACK    low confidence or missing evidence → hand to human with context at
 <p>Notice what the schema enforces that no prompt can: the <code>CHECK</code> on <code>amount_usd</code> means even a bug in the policy engine cannot write a $500 refund row; the <code>refunds</code> primary key makes idempotency a property of the database, not of careful code; <code>embed_model</code> on every chunk prevents the classic silent failure of querying v3 embeddings against a v2 index after a partial re-embed (2/4).</p>
 </section>
 <section id="step-2-75-the-api-surface-small-on-purpose">
-  <h2>08 &mdash; Step 2.75 — the API surface (small on purpose)</h2>
+  <h2>21 &mdash; Step 2.75 — the API surface (small on purpose)</h2>
 <p>Four endpoints. Everything else is internal. A small surface is what makes the gateway's auth, rate limiting and tracing tractable (<a href="../production/index.html">Production &amp; evals</a>).</p>
 <div class="code-block"><div class="code-file"><span>api.md — the complete external surface</span><span class="code-lang">text</span></div><pre>POST /v1/ask                          the single entry point for staff UI
   in : { conv_id?, message, stream: true }
@@ -247,7 +468,7 @@ Invariants the gateway enforces on every call:
 <p>One worked number before choosing infra: peak 15 concurrent questions × p95 6s each ≈ 2.5 questions/s peak. A single async FastAPI worker handles that trivially — the bottleneck will be provider rate limits, not CPU (illustrative sizing; 4/4 does the full arithmetic). Three workers exist for deploys and failure, not for load.</p>
 </section>
 <section id="step-3-model-infra-choices-with-reasons-not-vibes">
-  <h2>09 &mdash; Step 3 — model &amp; infra choices (with reasons, not vibes)</h2>
+  <h2>22 &mdash; Step 3 — model &amp; infra choices (with reasons, not vibes)</h2>
 <table>
 <tr><th>Decision</th><th>Choice</th><th>Reasoning chain</th></tr>
 <tr><td>Router model</td><td>small/fast (Haiku-class)</td><td>3-way classification; forced tool output; quality ceiling low, volume high → smallest model that passes router evals (measure! don't assume)</td></tr>
@@ -268,9 +489,32 @@ Invariants the gateway enforces on every call:
 <li>Design the API surface for the same system if end customers (not staff) were the users. List every invariant that changes (auth, ACLs, rate limits, PII in responses) and what new spec lines you'd need.</li>
 </ol></div>
 </section>
+<p class="part-divider">In production</p>
+<section id="where-people-get-lost">
+  <h2>23 &mdash; Where people get lost</h2>
+<ul>
+<li><strong>"Start by picking the model and the vector database."</strong> Those are outputs of the spec, not inputs. Picking them first means every later decision is justified by taste.</li>
+<li><strong>"Adding up the p95 of each hop gives the end-to-end p95."</strong> It overestimates (tails rarely coincide), and adding medians underestimates. Simulate, or measure the end-to-end distribution directly.</li>
+<li><strong>"Daily volume sizes the system."</strong> Concurrency and tokens per minute do. 3,000 a day is under one request in flight on average; the peak and the provider's token limit are the real constraints.</li>
+<li><strong>"An agent with all the tools is simpler."</strong> Less code to write, more to debug: more model calls on every request, a reliability product of \(p^n\), and dangerous tools sharing context with untrusted text.</li>
+<li><strong>"Accuracy is the quality metric."</strong> With asymmetric error costs, precision on answered questions and coverage are separate numbers; a system that always answers can score higher accuracy and cost more.</li>
+<li><strong>"The agent's cost is linear in steps."</strong> Each call re-reads the growing context, so input tokens grow with the square of the step count.</li>
+<li><strong>"60 test cases prove 95% accuracy."</strong> The interval is roughly 86% to 98%. Small sets catch big regressions; they do not rank close candidates.</li>
+<li><strong>"Escalation is failure."</strong> It is a designed outcome with a cost, chosen whenever the expected cost of answering is higher.</li>
+</ul>
+</section>
 <section id="how-this-connects">
-  <h2>10 &mdash; How this connects</h2>
-<h3>Builds on</h3><ul><li><a href="../agents/multi-agent.html">Multi-agent systems</a> &mdash; When to go multi-agent, topologies, handoffs and state, orchestration, and the production debate.</li></ul>
+  <h2>24 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../agents/what-is-an-agent.html">What an agent is</a> &mdash; Agents vs agentic AI, what makes something an agent, workflows vs agents, and agent architectures.</li><li><a href="../agents/multi-agent.html">Multi-agent systems</a> &mdash; When to go multi-agent, topologies, handoffs and state, orchestration, and the production debate.</li><li><a href="../inference/inference-internals.html">Inference internals</a> &mdash; Prefill vs decode, the KV cache, PagedAttention, continuous batching and speculative decoding.</li><li><a href="../production/reference-architectures.html">Reference architectures</a> &mdash; AI system design patterns, a production agent end to end, and architectures by use case.</li><li><a href="../production/reliability.html">Reliability engineering</a> &mdash; Surviving flaky models and APIs: retries, fallbacks, timeouts, idempotency.</li><li><a href="../production/evals.html">Evaluating LLM features</a> &mdash; Golden sets, graders, LLM-as-judge done properly, statistics, an eval harness in CI, online evaluation and error analysis.</li></ul><h3>Where this shows up later</h3><ul><li><a href="build-knowledge.html">Complete build: the knowledge layer</a> &mdash; Ingestion, chunking, indexing and retrieval for the build.</li><li><a href="build-agent.html">Complete build: the agent</a> &mdash; The order agent: tools, loop, memory and guardrails.</li><li><a href="build-ship.html">Complete build: prove it, serve it, afford it</a> &mdash; Evals, serving, cost and operations for the build.</li><li><a href="answer-kit.html">Interview answer kit</a> &mdash; Model answers for the eval and RAG/agent questions, and the follow-ups to prepare.</li></ul>
+</section>
+<section id="check-yourself">
+  <h2>25 &mdash; Check yourself</h2>
+<details><summary>Using Little's law, what average concurrency does 3,000 questions over an 8-hour day imply at 4.6 s per answer, and why is that not the number you design for?</summary><div class="answer">\(\lambda = 3{,}000 / 28{,}800\ \text{s} \approx 0.104\)/s, so \(L \approx 0.104 \times 4.6 \approx 0.48\). You design for the peak (15 concurrent, 3× headroom to 45) because bursts, not averages, hit rate limits and latency targets.</div></details>
+<details><summary>An agent run takes 5 model calls with a 1,550-token prefix and 380 tokens added per step. How many input tokens does it read in total?</summary><div class="answer">\(1{,}550 \times 5 + 380 \times (0+1+2+3+4) = 7{,}750 + 3{,}800 = 11{,}550\) tokens. The second term grows with the square of the number of calls.</div></details>
+<details><summary>Escalation costs $6 and a wrong answer costs $300. Above what probability of being wrong should the system abstain?</summary><div class="answer">Abstain when \(q \times 300 &gt; 6\), so when \(q &gt; 2\%\). The system should answer only when it is at least 98% likely to be right.</div></details>
+<details><summary>Your end-to-end p95 is 6.4 s against a 6 s target, and decoding 300 tokens is 60% of the time. Name the cheapest fix and one that costs money.</summary><div class="answer">Cheapest: shorten answers (prompt for concision, lower <code>max_tokens</code>), since decode time is proportional to output tokens. Costs money: speculative parallel retrieval (wasted retrievals on non-KB traffic) or a faster/more expensive serving tier. Prompt caching of the static prefix lowers TTFT and usually lowers cost too.</div></details>
+<details><summary>The router scores 57/60 and a cheaper router scores 55/60. Should you switch to the more expensive one on this evidence?</summary><div class="answer">Not on this evidence. 57/60 has a 95% interval of roughly 86% to 98%, and 55/60 overlaps it heavily. Either grow the set (about 300 examples to resolve ±2.5 points), compare the two on the same examples with a paired test, or decide on cost and misroute severity, checking specifically that no order action is routed to the knowledge path.</div></details>
+<details><summary>40,000 chunks of 1,024-dimension float32 vectors: how big is the vector data, and what does that imply for the store?</summary><div class="answer">\(40{,}000 \times 1{,}024 \times 4 \approx 164\) MB. It fits in memory on an existing Postgres server, so pgvector avoids running a separate vector database until the corpus is orders of magnitude larger or filtered search load demands it.</div></details>
 </section>
 
 <div class="sheet-pager"><a class="prev" href="../stretch/multimodal.html"><span>Previous</span>Multimodal LLMs</a><a class="next" href="build-knowledge.html"><span>Next</span>Complete build: the knowledge layer</a></div>

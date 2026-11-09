@@ -1,0 +1,307 @@
+<!-- Deep lesson: LangGraph. Merged into tech/langgraph by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>State</td><td>The one shared record a graph run reads and writes: a typed dict (or Pydantic model) such as messages, the order being refunded, an approval flag.</td></tr>
+<tr><td>Channel</td><td>One key of the state. Each channel has its own rule for how new values are merged in.</td></tr>
+<tr><td>Reducer</td><td>The merge rule for a channel: a function of (old value, update). Default is "overwrite"; <code>add_messages</code> appends.</td></tr>
+<tr><td>Node</td><td>A function that receives the current state and returns a partial update (only the keys it changes).</td></tr>
+<tr><td>Edge / conditional edge</td><td>A fixed transition from one node to the next, or a router function that looks at the state and returns the name of the next node.</td></tr>
+<tr><td>Super-step</td><td>One tick of the runtime: run every node scheduled for this tick, merge all their updates, then decide which nodes run next.</td></tr>
+<tr><td>Checkpointer</td><td>The storage backend (memory, SQLite, Postgres, ...) that saves a snapshot of the state after every super-step.</td></tr>
+<tr><td>Thread</td><td>One run's history of checkpoints, named by a <code>thread_id</code> you choose, typically a conversation or ticket ID.</td></tr>
+<tr><td>Interrupt</td><td>A deliberate pause: the run stops, its state is saved, and it waits until someone resumes it with a value.</td></tr>
+<tr><td>Command</td><td>An object a node or caller can return or send to update state and choose where to go next, including <code>Command(resume=...)</code> to continue after an interrupt.</td></tr>
+<tr><td>Send</td><td>A way for a router to launch the same node many times in parallel with different inputs (map-reduce fan-out).</td></tr>
+<tr><td>Recursion limit</td><td>A cap on the number of super-steps per run, so a looping agent cannot run forever.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>A chain runs each step once, in order. An agent does not: it calls a model, the model asks for a tool, the tool's result goes back to the model, and this repeats an unknown number of times. Real agents also need to stop and wait (for a human to approve a refund, for a webhook), survive a server restart mid-run, and let an engineer replay exactly what happened. LangGraph is a runtime for this: you describe the agent as a graph of nodes over a shared state, and it executes the graph step by step, saving the state after every step.</p>
+<p>Interviewers ask:</p>
+<ol>
+<li>How is a LangGraph agent executed: what are state, reducers and super-steps, and why are they designed that way?</li>
+<li>How does checkpointing make a run durable and resumable, and what does that demand of your nodes?</li>
+<li>How do you put a human approval in the middle of an agent without holding a process open for hours?</li>
+<li>When is LangGraph the right tool, versus a plain loop, an LCEL chain or a workflow engine?</li>
+</ol>
+<p>Running example: the electronics shop from <a href="@@tech/langchain@@">LangChain</a> now wants its assistant to <em>act</em>. A customer writes: <em>"Refund order A1042, the headphones arrived broken."</em> The agent must look up the order (a tool call), check the amount, and issue the refund. Shop policy: any refund over $100 needs a human reviewer's approval, which may take hours. Order A1042 is $149. We will build this as a graph, run it, crash it, pause it and resume it.</p>
+</section>
+
+<section data-label="Step 1: an agent is a state machine">
+<p>Write the refund agent as boxes and arrows before writing any code:</p>
+<pre class="ascii-diagram">           +-----------+   asks for a tool    +--------------+
+ START --&gt; |   agent   | -------------------&gt; | lookup_order |
+           | (model)   | &lt;------------------- |   (tool)     |
+           +-----------+                      +--------------+
+              |     |  refund needed (&gt; $100: pause for approval first)
+              |     '--------------------------&gt; +--------------+
+              |     &lt;--------------------------- | issue_refund |
+              |  done                            +--------------+
+              v
+             END</pre>
+<p>Two kinds of thing appear. <strong>Nodes</strong> do work: the <code>agent</code> node calls the model, <code>lookup_order</code> and <code>issue_refund</code> run tools. <strong>Edges</strong> decide what runs next. Some edges are fixed (after a tool, always go back to the agent); one is conditional (after the agent, go to whichever tool it asked for, or end).</p>
+<p>This is a <strong>state machine</strong>, and drawing it shows where control lives. In a "let the model decide everything" agent, the model's output alone picks the next action. In a graph, the model proposes and your router function disposes: it can refuse to route to <code>issue_refund</code> unless the order lookup has happened, enforce the $100 rule in code rather than in a prompt, and end the run if a budget is exceeded. Rules that must hold belong in edges, not in prompts.</p>
+</section>
+
+<section data-label="Step 2: one shared state, merged by reducers">
+<p>All nodes read and write one <strong>state</strong> object, declared up front:</p>
+<pre data-lang="python">class RefundState(TypedDict):
+    messages: Annotated[list, add_messages]   # reducer: append
+    order: dict                               # default: overwrite
+    approved: bool
+</pre>
+<p>A node does not return the whole state. It returns a <strong>partial update</strong>, only the keys it changed: <code>lookup_order</code> returns <code>{"order": {...}, "messages": [tool_result]}</code>. The runtime merges that update into the state using each key's <strong>reducer</strong>. For <code>order</code> the default reducer overwrites. For <code>messages</code>, <code>add_messages</code> appends the new messages to the list (and replaces a message if one with the same ID already exists, which is how you edit history).</p>
+<p>Why partial updates and reducers, instead of letting each node mutate a shared dict? Three reasons:</p>
+<ul>
+<li><strong>Parallel nodes.</strong> If two nodes run in the same step and both add messages, appending both is well defined; two in-place mutations would race. When two parallel nodes write a key that has no reducer, LangGraph raises an error rather than guessing which one wins.</li>
+<li><strong>Checkpoints are cheap and exact.</strong> The runtime knows precisely what each step changed, so it can record it.</li>
+<li><strong>Nodes stay testable.</strong> A node is a pure-looking function from state to update: give it a state dict, assert on the dict it returns.</li>
+</ul>
+<p>Design state to be small and explicit. Every value in it is saved at every step (Step 5) and much of it is sent to the model, so a state that accumulates raw tool outputs (whole web pages, whole order histories) gets expensive quickly.</p>
+</section>
+
+<section data-label="Step 3: nodes, edges and routers">
+<p>Building the graph is three kinds of call on a builder: <code>add_node(name, fn)</code>, <code>add_edge(a, b)</code> for fixed transitions, and <code>add_conditional_edges(a, router)</code> where <code>router(state)</code> returns the next node's name (or <code>END</code>). Special names <code>START</code> and <code>END</code> mark the entry and the exit. Then <code>compile()</code> validates the structure (for example, that every edge points at a real node) and returns a Runnable, so it has <code>invoke</code>, <code>stream</code> and <code>batch</code> like any LangChain step.</p>
+<p>The router for the refund agent reads the last message: if the model asked for <code>lookup_order</code>, go there; if it asked to refund and an order is loaded, go to <code>issue_refund</code>; otherwise end. The router is ordinary Python, so it is where you put the guarantees: "never refund without a loaded order", "end after 8 model calls". A model can be talked into ignoring a prompt rule; it cannot be talked out of an <code>if</code> statement.</p>
+<p>Prebuilt helpers exist (a ready-made tool-executing node and a ready-made ReAct agent graph) and are worth using for the plain tool loop. Write your own nodes when the business rules are the point, as here.</p>
+</section>
+
+<section data-label="Step 4: how a run executes, in super-steps">
+<p>LangGraph's runtime is modelled on Pregel, a graph-processing design from Google: computation proceeds in synchronised rounds. Each round is a <strong>super-step</strong>:</p>
+<ol>
+<li>Run every node that was triggered for this step. Several can run at once.</li>
+<li>Collect all their partial updates and apply them to the state through the reducers. Nodes in the same step never see each other's updates.</li>
+<li>Follow the edges out of the nodes that ran to decide which nodes are triggered next.</li>
+<li>Save a checkpoint. If nothing is triggered, the run is finished.</li>
+</ol>
+<p>The refund run, step by step:</p>
+<table>
+<thead><tr><th>Super-step</th><th>Node</th><th>Update returned</th><th>Next</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>agent</td><td>message: "call lookup_order(A1042)"</td><td>lookup_order</td></tr>
+<tr><td>2</td><td>lookup_order</td><td>order = {A1042, $149}; message: tool result</td><td>agent</td></tr>
+<tr><td>3</td><td>agent</td><td>message: "refund of $149 needs approval"</td><td>issue_refund (but interrupted first)</td></tr>
+<tr><td>4</td><td>issue_refund</td><td>refunded = true; message: "refund R-77 created"</td><td>agent</td></tr>
+<tr><td>5</td><td>agent</td><td>message: "refund of $149 issued"</td><td>END</td></tr>
+</tbody>
+</table>
+<p>The synchronised rounds give a deterministic order for merging, which makes runs reproducible from their checkpoints even when nodes run in parallel. They also give a natural place to count: a <strong>recursion limit</strong> caps the number of super-steps per run, and hitting it raises an error. That is the backstop for an agent stuck calling the same tool forever; set it deliberately rather than relying on the default.</p>
+</section>
+
+<section data-label="Step 5: checkpoints make the run durable">
+<p>Compile the graph with a <strong>checkpointer</strong> and invoke it with a thread ID:</p>
+<pre data-lang="python">graph = builder.compile(checkpointer=PostgresSaver(conn))
+graph.invoke({"messages": [user_msg]}, {"configurable": {"thread_id": "ticket-8812"}})
+</pre>
+<p>After every super-step the checkpointer saves a <strong>checkpoint</strong>: the state's channel values, which nodes are due next, and metadata (step number, parent checkpoint). Checkpoints for one <code>thread_id</code> form that thread's history. Invoking again with the same thread ID loads the latest checkpoint and continues from there, which is how a multi-turn conversation keeps its history without your API servers holding anything in memory. Any server can serve the next request.</p>
+<p>Durability is the second payoff. Suppose the process dies during super-step 4, after <code>issue_refund</code> has called the payment API but before the checkpoint is written. On restart, the run resumes from the last saved checkpoint (end of step 3) and <strong>runs <code>issue_refund</code> again</strong>. The checkpointer records completed steps, not half-finished side effects. So:</p>
+<div class="callout warn"><p><strong>Nodes with side effects must be idempotent.</strong> Pass an idempotency key derived from the state (for example <code>"A1042-refund"</code>) to the payment API, so a replayed call returns the original refund instead of paying twice. This is the same rule as any at-least-once system; see <a href="@@production/reliability@@">Reliability engineering</a>.</p></div>
+<p>Storage has a cost you should estimate. If a refund thread averages 6 checkpoints of about 10 KB each and the shop handles 20,000 such threads a day, full snapshots come to about \(6 \times 10\ \text{KB} \times 20{,}000 = 1.2\) GB a day. Implementations reduce this by writing only channels that changed, but you still need a retention policy (delete or archive threads after, say, 30 days) and you should keep bulky data (documents, images) out of the state, storing a reference instead.</p>
+</section>
+
+<section data-label="Step 6: human in the loop without holding a process">
+<p>The $100 rule needs a person. The naive approach (block the request handler until a reviewer clicks approve) ties up a worker for hours and loses everything on a deploy. With checkpoints, a pause costs nothing:</p>
+<ol>
+<li>The run reaches the point that needs approval and <strong>interrupts</strong>. The state, including which node is due next, is already checkpointed. <code>invoke</code> returns to your API, which shows the reviewer the pending refund.</li>
+<li>No process is waiting. The thread is just rows in Postgres.</li>
+<li>Hours later, the reviewer clicks approve. Your API calls <code>graph.invoke(Command(resume=True), config)</code> with the same thread ID. The runtime loads the checkpoint and continues, passing <code>True</code> to the waiting point.</li>
+</ol>
+<p>There are two ways to declare the pause. A static one, <code>interrupt_before=["issue_refund"]</code> at compile time, stops before that node every time. A dynamic one calls <code>interrupt(payload)</code> inside a node, which pauses only when your code decides to (only for refunds over $100) and sends a payload to show the reviewer. The resume value becomes the return value of <code>interrupt(...)</code>.</p>
+<p>One mechanism detail catches people: when a run resumes after a dynamic interrupt, the node that called <code>interrupt</code> <strong>starts again from its first line</strong>, and this time <code>interrupt</code> returns the resume value instead of pausing. Any code before the <code>interrupt</code> call runs twice. Put side effects after the interrupt, or in a separate node.</p>
+<p>The same machinery supports editing: <code>update_state(config, values)</code> writes a correction into the thread (the reviewer changes the refund amount to $120), and the run continues from the edited state.</p>
+</section>
+
+<section data-label="Step 7: replay and time travel">
+<p>Because every super-step is a saved checkpoint, a thread's history is a list you can read: <code>get_state_history(config)</code> returns each checkpoint with its state and next nodes. Two uses:</p>
+<ul>
+<li><strong>Debugging.</strong> A customer complains the agent refunded the wrong order. Read the thread: you see the exact message list the model had at step 3 and the exact tool result at step 2, not a reconstruction from logs.</li>
+<li><strong>Forking.</strong> Invoke with a config naming an earlier <code>checkpoint_id</code> and the run continues from that point as a new branch, leaving the original history intact. Engineers use it to test "what would the agent have done with the fixed prompt from this exact state?"</li>
+</ul>
+<p>Replaying is deterministic in the graph's control flow, not in the model: re-running a model node calls the model again and may produce different text. To reproduce exactly, read the saved outputs rather than regenerating them.</p>
+</section>
+
+<section data-label="Step 8: streaming what the graph is doing">
+<p>An agent run can take 10 to 60 seconds, so users need to see progress. <code>graph.stream(input, config, stream_mode=...)</code> offers several views of the same run:</p>
+<ul>
+<li><code>"updates"</code>: after each super-step, which node ran and what it returned. Good for a progress line ("Looking up order A1042...").</li>
+<li><code>"values"</code>: the full state after each step. Good for debugging, heavy for a UI.</li>
+<li><code>"messages"</code>: model tokens as they are generated, from inside whichever node is calling the model. Good for typing the final answer out.</li>
+<li><code>"custom"</code>: anything your node chooses to emit, such as "fetched 3 of 10 pages".</li>
+</ul>
+<p>Modes can be combined. The typical chat UI uses updates for status and messages for the answer text.</p>
+</section>
+
+<section data-label="Step 9: parallel branches, fan-out and subgraphs">
+<p>Nodes that are triggered in the same super-step run in parallel. If after the order lookup you want to check the fraud score and the warranty status at the same time, give <code>lookup_order</code> two outgoing edges; both nodes run in the next super-step and their updates are merged by the reducers. A node that both point to runs once, in the step after both finish; to join branches of different lengths, declare one edge from the list of branch nodes to the join node.</p>
+<p>When the number of parallel tasks is only known at run time (one check per item in a five-item order), a router returns a list of <strong>Send</strong> objects, <code>Send("check_item", {"item": x})</code>, one per item. The runtime runs the node once per Send in the same super-step, each with its own input, and a reducer on the results key collects them. This is map-reduce inside an agent.</p>
+<p><strong>Subgraphs</strong> are compiled graphs used as nodes in a bigger graph, for example a "refund" subgraph and a "shipping question" subgraph behind one router. They keep large agents modular and are how multi-agent designs are usually built in LangGraph: each agent is a subgraph, and edges or a supervisor node decide who acts next. See <a href="@@agents/multi-agent@@">Multi-agent systems</a> for when that is worth it.</p>
+</section>
+
+<section data-label="Step 10: where the time and money go">
+<p>The graph runtime itself is cheap. The cost of an agent is model calls, and the loop makes them grow faster than you might expect, because each call re-sends the whole message history. Suppose the system prompt and tool definitions are 1,500 tokens, the user message is 30, and each iteration adds about 300 tokens (the model's tool request plus the tool result). Input tokens for call \(i\) (starting at 0) are \(1{,}530 + 300\,i\), so over \(n\) calls:</p>
+\[ \text{total input} = \sum_{i=0}^{n-1} (1{,}530 + 300\,i) = 1{,}530\,n + 150\,n(n-1) \]
+<ul>
+<li>The refund run makes 3 model calls: 5,490 input tokens.</li>
+<li>A 10-call run: 28,800 tokens, nearly double the 15,300 it would be if history did not grow.</li>
+<li>A 20-call run: 87,600 tokens, almost three times 30,600.</li>
+</ul>
+<p>The quadratic term is why long-running agents need context management: summarise or drop old tool outputs, keep bulky results in state but out of the messages, and use provider prompt caching for the fixed prefix. Latency adds up the same way: 5 super-steps with a model call of about 1.5 s and tools of about 0.3 s each is roughly 5 s before any human wait. See <a href="@@agents/memory-context@@">Memory and context</a> and <a href="@@production/cost-performance@@">Cost and latency</a>.</p>
+</section>
+
+<section data-label="Choosing LangGraph, or not">
+<table>
+<thead><tr><th>Situation</th><th>Choice</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Fixed pipeline, no loop (retrieve, answer)</td><td>LCEL chain or plain code</td><td>No cycles or pauses to manage; a graph adds ceremony.</td></tr>
+<tr><td>Tool loop, short-lived, no approvals</td><td>Plain <code>while</code> loop, or LangGraph's prebuilt agent</td><td>Thirty lines of your own loop is fine; use the prebuilt if you want its streaming and tracing for free.</td></tr>
+<tr><td>Loop with business rules, approvals, resumable runs</td><td>LangGraph with a durable checkpointer</td><td>State, interrupts and checkpoints are exactly what it provides.</td></tr>
+<tr><td>Multi-day business process with many services, strict delivery guarantees</td><td>A workflow engine (Temporal and similar), calling LLM steps as activities</td><td>Those engines specialise in long-running durable execution, timers and retries across services.</td></tr>
+<tr><td>Role-play collaboration of a few agents, quick prototype</td><td><a href="@@tech/crewai@@">CrewAI</a> or subgraphs</td><td>Higher-level roles and tasks; less control.</td></tr>
+</tbody>
+</table>
+<p>The broader comparison, including thin in-house harnesses, is in <a href="@@tech/frameworks@@">Choosing an agent framework</a>.</p>
+</section>
+
+<section data-label="In code: the runtime in miniature, then the real thing">
+<p>LangGraph is not installed in every environment, so first a 40-line model of its runtime: partial updates merged by reducers, one checkpoint per step, a recursion limit, a static interrupt, and resume from storage. It runs as is.</p>
+<pre data-lang="python">import copy, json
+
+def append(old, new):            # reducer for the message list
+    return old + new
+
+class Graph:
+    """A toy of LangGraph's runtime: reducers, super-steps, checkpoints, interrupts."""
+    def __init__(self, reducers):
+        self.reducers, self.nodes, self.edges = reducers, {}, {}
+    def node(self, name, fn, then):           # then: a node name, or a router function
+        self.nodes[name], self.edges[name] = fn, then
+    def run(self, store, thread, state=None, start="agent", interrupt_before=(), resume=None):
+        if resume is not None:                # pick up exactly where the checkpoint left off
+            state, nxt = copy.deepcopy(store[thread][-1])
+            state["approved"] = resume
+        else:
+            nxt = start
+        steps = 0
+        while nxt != "END":
+            if nxt in interrupt_before and resume is None:
+                store.setdefault(thread, []).append((copy.deepcopy(state), nxt))
+                return state, f"paused before {nxt}"
+            resume = None
+            update = self.nodes[nxt](state)                    # a node returns a partial update
+            for k, v in update.items():                        # reducers merge it into the state
+                state[k] = self.reducers.get(k, lambda o, n: n)(state.get(k), v)
+            then = self.edges[nxt]
+            nxt = then(state) if callable(then) else then
+            store.setdefault(thread, []).append((copy.deepcopy(state), nxt))  # checkpoint
+            steps += 1
+            if steps &gt; 25:
+                raise RuntimeError("recursion limit")
+        return state, "done"
+
+# --- the refund agent: a scripted "model" so the run is reproducible ---
+def agent(s):
+    if "order" not in s:
+        return {"messages": ["AI: call lookup_order(A1042)"]}
+    return {"messages": [f"AI: refund of ${s['order']['amount']} {'issued' if s.get('refunded') else 'needs approval'}"]}
+
+def lookup_order(s):
+    return {"order": {"id": "A1042", "amount": 149}, "messages": ["TOOL: order A1042, $149, delivered 6 days ago"]}
+
+def issue_refund(s):
+    if not s.get("approved"):
+        return {"messages": ["SYSTEM: refund rejected by reviewer"]}
+    return {"refunded": True, "messages": ["TOOL: refund R-77 created (idempotency key A1042-refund)"]}
+
+def route(s):
+    last = s["messages"][-1]
+    if "call lookup_order" in last: return "lookup_order"
+    if "needs approval" in last and "refunded" not in s and "approved" not in s: return "issue_refund"
+    return "END"
+
+g = Graph(reducers={"messages": append})
+g.node("agent", agent, route)
+g.node("lookup_order", lookup_order, "agent")
+g.node("issue_refund", issue_refund, "agent")
+
+store = {}                                     # stands in for a Postgres checkpointer
+state, status = g.run(store, "t-1", {"messages": ["USER: refund A1042, broken headphones"]},
+                      interrupt_before=("issue_refund",))
+print(status, "| checkpoints:", len(store["t-1"]))
+# ... hours later, a different process, same thread id ...
+state, status = g.run(store, "t-1", resume=True)
+print(status, "| checkpoints:", len(store["t-1"]))
+print(json.dumps(state["messages"], indent=1))
+</pre>
+<p>It prints <code>paused before issue_refund | checkpoints: 4</code>, then <code>done | checkpoints: 6</code>, then the six messages of the run. The second call receives no state from the caller: everything comes from the stored checkpoint, which is the point. Unlike the real runtime, the toy runs one node per step and has no parallel branches.</p>
+<p>The same agent in LangGraph, using a dynamic interrupt so only refunds over $100 pause:</p>
+<pre data-lang="python"># Needs langgraph, langchain-openai and a Postgres checkpointer package; written against the documented API.
+from typing import Annotated, TypedDict
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import add_messages
+from langgraph.prebuilt import ToolNode
+from langgraph.types import interrupt, Command
+
+class RefundState(TypedDict):
+    messages: Annotated[list, add_messages]
+
+model = llm.bind_tools([lookup_order])                 # a LangChain chat model
+
+def agent(state):
+    return {"messages": [model.invoke(state["messages"])]}
+
+def refund(state):
+    amount = current_order_amount(state)               # read from the tool result in state
+    if amount &gt; 100:
+        approved = interrupt({"order": "A1042", "amount": amount})   # pauses here
+        if not approved:
+            return {"messages": [("system", "Refund rejected by reviewer.")]}
+    payments.refund("A1042", amount, idempotency_key="A1042-refund")  # side effect after interrupt
+    return {"messages": [("system", f"Refund of ${amount} issued.")]}
+
+def route(state):
+    last = state["messages"][-1]
+    if getattr(last, "tool_calls", None):
+        return "tools"
+    return "refund" if wants_refund(last) else END
+
+b = StateGraph(RefundState)
+b.add_node("agent", agent)
+b.add_node("tools", ToolNode([lookup_order]))
+b.add_node("refund", refund)
+b.add_edge(START, "agent")
+b.add_conditional_edges("agent", route, ["tools", "refund", END])
+b.add_edge("tools", "agent")
+b.add_edge("refund", "agent")
+graph = b.compile(checkpointer=checkpointer)
+
+cfg = {"configurable": {"thread_id": "ticket-8812"}, "recursion_limit": 12}
+graph.invoke({"messages": [("user", "Refund order A1042, the headphones arrived broken.")]}, cfg)
+# later, from any server:
+graph.invoke(Command(resume=True), cfg)
+</pre>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"Nodes mutate the state."</strong> Nodes return partial updates; reducers merge them. Mutating the input dict in place bypasses the reducers and the checkpoint record.</li>
+<li><strong>Forgetting a reducer on a list key.</strong> Without <code>add_messages</code> (or another reducer), each update overwrites the list, and the history silently shrinks to the last message.</li>
+<li><strong>"Checkpoints mean exactly-once."</strong> A crash mid-step re-runs that step from the last checkpoint. Side-effecting nodes must be idempotent.</li>
+<li><strong>Code before <code>interrupt()</code> running twice.</strong> On resume the node restarts from its first line. Keep side effects after the interrupt or in another node.</li>
+<li><strong>Using the in-memory checkpointer in production.</strong> It vanishes on restart and is not shared between servers, so interrupts and multi-turn threads break. Use a database-backed one.</li>
+<li><strong>Putting business rules only in the prompt.</strong> The router is code; put rules that must hold (approval thresholds, step budgets) there.</li>
+<li><strong>Letting state grow without limit.</strong> Every value is checkpointed every step and messages are re-sent every call; token cost grows quadratically with loop length.</li>
+<li><strong>"Replay reproduces the run."</strong> Control flow replays; model calls are made again and can differ. Read saved outputs to reproduce exactly.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>Two nodes run in the same super-step and both return <code>{"messages": [m]}</code>. What happens with and without the <code>add_messages</code> reducer?</summary><div class="answer">With it, both messages are appended in a deterministic order. Without a reducer, two writes to the same key in one step conflict and LangGraph raises an error instead of picking one; for a single writer, it would overwrite the list.</div></details>
+<details><summary>The process crashes after <code>issue_refund</code> called the payment API but before the step's checkpoint was saved. What happens on resume, and how do you make it safe?</summary><div class="answer">The run resumes from the previous checkpoint and runs <code>issue_refund</code> again, calling the payment API a second time. Make it safe with an idempotency key derived from the state (such as the order ID), so the provider returns the original refund instead of creating a new one.</div></details>
+<details><summary>Why can a reviewer approve a refund six hours after the run paused, on a different server, without anything having been kept in memory?</summary><div class="answer">At the interrupt the full state and the next node were saved by the checkpointer under the thread ID. Resuming with <code>Command(resume=...)</code> and the same thread ID loads that checkpoint on any server and continues from the paused point.</div></details>
+<details><summary>A node logs "approval requested" to an audit table, then calls <code>interrupt()</code>. Why do you see two audit rows per approval?</summary><div class="answer">On resume, the node re-runs from its first line, so the audit write before <code>interrupt()</code> executes again. Move it into a separate node before this one, or make the write idempotent.</div></details>
+<details><summary>System prompt plus tools are 1,500 tokens, the user message 30, and each loop iteration adds 300 tokens. How many input tokens does a 10-call run consume, and what would you change first?</summary><div class="answer">\(1{,}530 \times 10 + 150 \times 10 \times 9 = 15{,}300 + 13{,}500 = 28{,}800\). First, trim what each iteration adds (summarise or drop old tool outputs, keep bulky results in state but out of messages); then cache the fixed 1,500-token prefix with prompt caching and cap iterations in the router.</div></details>
+<details><summary>For each, LangGraph or not: (a) retrieve and answer, (b) a tool loop with a refund approval step, (c) a 14-day onboarding workflow across five services with timers.</summary><div class="answer">(a) No: an LCEL chain or plain code. (b) Yes: state, interrupt and durable checkpoints are exactly the requirement. (c) Probably a workflow engine such as Temporal, with LLM calls as activities; it specialises in long timers and cross-service durability.</div></details>
+<details><summary>Why are super-step updates applied only at the end of the step?</summary><div class="answer">So nodes running in parallel in the same step all see the same input state and their updates are merged in a defined order by the reducers. That keeps runs deterministic and makes each checkpoint a consistent snapshot.</div></details>
+</section>

@@ -1,0 +1,262 @@
+<!-- Deep lesson: pgvector. Merged into tech/pgvector by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Extension</td><td>A package that adds types, functions and index methods to PostgreSQL. pgvector is installed with <code>CREATE EXTENSION vector</code>.</td></tr>
+<tr><td><code>vector(n)</code></td><td>A column type holding an array of \(n\) 32-bit floats. <code>halfvec(n)</code> stores 16-bit floats, <code>sparsevec</code> sparse vectors, <code>bit(n)</code> binary vectors.</td></tr>
+<tr><td>Distance operator</td><td>An SQL operator that returns the distance between two vectors: <code>&lt;-&gt;</code> Euclidean, <code>&lt;=&gt;</code> cosine distance, <code>&lt;#&gt;</code> negative inner product.</td></tr>
+<tr><td>Operator class</td><td>Tells an index which distance it serves (for example <code>vector_cosine_ops</code>). A query only uses the index if its operator matches.</td></tr>
+<tr><td>Sequential scan</td><td>Postgres reading every row of a table. For vectors, it means exact search: correct but proportional to table size.</td></tr>
+<tr><td>HNSW index</td><td>A graph-based approximate nearest-neighbour index. Good recall and speed; slower to build and larger in memory.</td></tr>
+<tr><td>IVFFlat index</td><td>An index that clusters vectors into lists with k-means and searches only the nearest few lists. Faster to build, smaller, usually lower recall.</td></tr>
+<tr><td><code>ef_search</code> / <code>probes</code></td><td>Query-time knobs: how many candidates HNSW examines, and how many lists IVFFlat searches. Higher means better recall and slower queries.</td></tr>
+<tr><td>Iterative index scan</td><td>A pgvector feature that keeps pulling candidates from the index until enough rows pass the <code>WHERE</code> clause.</td></tr>
+<tr><td>Query planner</td><td>The part of Postgres that picks how to run a query (which index, which join order) from cost estimates. <code>EXPLAIN</code> shows its choice.</td></tr>
+<tr><td>Read replica</td><td>A copy of the database that receives the primary's changes and serves read queries, adding search capacity.</td></tr>
+<tr><td>Dead tuple</td><td>The old version of an updated or deleted row, left in place until <code>VACUUM</code> reclaims it.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>Most applications that add RAG already have a database, and very often it is PostgreSQL. It holds the users, the tenants, the documents and the permissions. Adding a separate vector database means a second system to run, a pipeline to keep it in sync, and a class of bugs where the two disagree: a document deleted in Postgres but still retrievable from the vector store, or a permission revoked in one place and not the other. pgvector removes that by making a vector just another column. Similarity search becomes an SQL query, inside the same transactions, joins and backups as everything else.</p>
+<p>Interviewers ask:</p>
+<ol>
+<li>How does pgvector store and search vectors, and what do HNSW and IVFFlat trade off?</li>
+<li>Why can a filtered vector query return fewer rows than asked for, and how do you fix it?</li>
+<li>How do you do hybrid search, and how far does it scale before you need something else?</li>
+</ol>
+<p>The running example: a help-desk SaaS already on Postgres, with 800 customer tenants. It is adding an assistant that answers from each tenant's help-centre articles and past tickets: 4 million chunks in total, embedded with a 1,536-dimension model. Tenants are uneven: the average is 5,000 chunks, the median about 2,000, the largest about 400,000. Every query is scoped to one tenant and to the articles the user's role may see.</p>
+</section>
+
+<section data-label="Step 1: the mental model, a column and an ORDER BY">
+<p>Everything in pgvector follows from one idea: nearest-neighbour search is a sort. "The 10 chunks closest to this query" is</p>
+<pre data-lang="sql">SELECT id, content
+FROM chunks
+WHERE tenant_id = 42
+ORDER BY embedding &lt;=&gt; :query_vec      -- cosine distance, smallest first
+LIMIT 10;</pre>
+<p>Without an index, Postgres computes the distance for every row that passes the <code>WHERE</code> clause, sorts, and returns the top 10: exact search. With a vector index, it can instead ask the index for rows in approximately nearest-first order and stop early: approximate search. The rest of the lesson is about when each happens and what it costs.</p>
+<p>Because it is just SQL, the things that are hard in a separate vector store are free here. The permission check can be a join to the <code>article_permissions</code> table in the same query. A deleted article's chunks vanish in the same transaction that deletes the article. A backup of the database is a backup of the index. That consistency is pgvector's real selling point; raw speed is not.</p>
+</section>
+
+<section data-label="Step 2: types, operators and why the index sometimes is not used">
+<p>The table for our example:</p>
+<pre data-lang="sql">CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE chunks (
+  id          bigserial PRIMARY KEY,
+  tenant_id   int       NOT NULL REFERENCES tenants(id),
+  article_id  bigint    NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+  chunk_no    int       NOT NULL,
+  content     text      NOT NULL,
+  embedding   vector(1536) NOT NULL,
+  UNIQUE (article_id, chunk_no)
+);</pre>
+<p>A <code>vector(1536)</code> value takes \(4 \times 1{,}536 + 8 = 6{,}152\) bytes. Across 4 million rows that is about 24.6 GB of vectors before any index. Keep that number; it drives memory sizing later.</p>
+<p>Three distance operators matter, and each needs the matching index operator class:</p>
+<table>
+<thead><tr><th>Operator</th><th>Meaning</th><th>Index operator class</th></tr></thead>
+<tbody>
+<tr><td><code>&lt;-&gt;</code></td><td>Euclidean (L2) distance</td><td><code>vector_l2_ops</code></td></tr>
+<tr><td><code>&lt;=&gt;</code></td><td>Cosine distance, \(1 - \cos\)</td><td><code>vector_cosine_ops</code></td></tr>
+<tr><td><code>&lt;#&gt;</code></td><td>Negative inner product</td><td><code>vector_ip_ops</code></td></tr>
+</tbody>
+</table>
+<p>The inner product is negated because Postgres index scans only produce ascending order; negating it makes "largest inner product" come first. If a query orders by <code>&lt;-&gt;</code> but the index was built with <code>vector_cosine_ops</code>, the index is silently ignored and every query becomes a full exact scan. That is the first thing to check with <code>EXPLAIN</code> when vector queries are slow. For embedding models that output unit vectors, cosine, inner product and L2 all rank identically, and inner product is the cheapest to compute.</p>
+<p>Indexes on <code>vector</code> support up to 2,000 dimensions. Larger models need <code>halfvec</code> (16-bit floats, indexable up to 4,000 dimensions), which also halves memory: our 24.6 GB becomes about 12.3 GB, usually with a negligible recall change that you should confirm on your golden set.</p>
+</section>
+
+<section data-label="Step 3: exact search is sometimes the right answer">
+<p>Before adding an approximate index, notice what the <code>WHERE tenant_id = 42</code> clause does. With an ordinary B-tree index on <code>tenant_id</code>, Postgres can fetch only tenant 42's rows and compute exact distances for those.</p>
+<ul>
+<li>Median tenant: 2,000 rows × 6 KB ≈ 12 MB of vectors to scan. That is a few milliseconds to tens of milliseconds, and recall is 100%.</li>
+<li>Largest tenant: 400,000 rows × 6 KB ≈ 2.5 GB per query. Far too slow for interactive use.</li>
+<li>No tenant filter at all: 24.6 GB per query. Never acceptable.</li>
+</ul>
+<p>So for a multi-tenant application with many small tenants, exact search per tenant is not a fallback; it is often the best plan for most tenants, because it is exact and needs no tuning. Approximate indexes earn their keep for the large tenants and for any query that spans a large share of the table. Postgres's planner makes this choice per query from its statistics, which is convenient and occasionally surprising (Step 6).</p>
+</section>
+
+<section data-label="Step 4: HNSW, the default approximate index">
+<pre data-lang="sql">SET maintenance_work_mem = '32GB';             -- let the graph build in memory
+SET max_parallel_maintenance_workers = 7;      -- parallel build
+
+CREATE INDEX chunks_embedding_hnsw ON chunks
+  USING hnsw (embedding vector_cosine_ops)
+  WITH (m = 16, ef_construction = 64);         -- the defaults, stated explicitly
+
+SET hnsw.ef_search = 100;                      -- per session or transaction; default 40</pre>
+<p>HNSW builds a layered graph in which each vector links to up to \(m\) neighbours (twice that on the bottom layer). A search enters at the top, greedily walks toward the query, and on the bottom layer keeps a candidate list of size <code>ef_search</code>, returning the best of those. The general mechanism and its recall curves are explained in <a href="@@rag/vector-search@@">vector search</a>; what is specific to Postgres is operational:</p>
+<ul>
+<li><strong>Build memory.</strong> The build is much faster when the whole graph fits in <code>maintenance_work_mem</code>. For our 4 million rows the index is roughly the vectors (24.6 GB) plus links, so a build on a server with too little memory can take many times longer. Build after a bulk load, not row by row, and use parallel workers.</li>
+<li><strong>Query memory.</strong> For fast queries the index must stay in RAM (Postgres's buffer cache plus the operating system's file cache). If the index is 26 GB and the server has 32 GB shared with everything else, queries hit disk and latency jumps by orders of magnitude.</li>
+<li><strong>Writes.</strong> Every insert walks the graph to find its neighbours, so inserts into an HNSW-indexed table are much slower than plain inserts. Batch them, and expect bulk re-embedding to be limited by index maintenance.</li>
+<li><strong><code>ef_search</code> and <code>LIMIT</code>.</strong> The index returns at most about <code>ef_search</code> candidates per scan. Asking for <code>LIMIT 100</code> with the default 40 returns at most about 40 unless you raise it.</li>
+</ul>
+</section>
+
+<section data-label="Step 5: IVFFlat, the cheaper alternative">
+<p>IVFFlat runs k-means over the existing vectors to find <code>lists</code> centroids, and assigns each vector to its nearest centroid. A query compares itself with the centroids, then scans exactly the vectors in the nearest <code>probes</code> lists.</p>
+<p>A common starting point is <code>lists</code> ≈ rows / 1,000 up to a million rows and ≈ \(\sqrt{\text{rows}}\) above that, with <code>probes</code> ≈ \(\sqrt{\text{lists}}\). For 4 million rows: \(\sqrt{4{,}000{,}000} = 2{,}000\) lists, about 45 probes, so each query scans \(45/2{,}000 = 2.25\%\) of the table, about 90,000 vectors. That is much less work than 4 million, and much more than HNSW typically touches.</p>
+<p>The trade-offs against HNSW:</p>
+<ul>
+<li><strong>For IVFFlat:</strong> faster to build, smaller, cheaper inserts.</li>
+<li><strong>Against:</strong> the centroids are computed once, from the data present at build time. Build it on an empty or tiny table and the lists are meaningless. As new data drifts away from the original distribution, lists become unbalanced and recall falls until you rebuild. And at the same speed, recall is usually lower.</li>
+</ul>
+<p>The practical default is HNSW. IVFFlat suits very large tables that are loaded in bulk and rarely change, where build time and memory matter more than the last few points of recall.</p>
+</section>
+
+<section data-label="Step 6: filtering, where most pgvector bugs live">
+<p>Here is the failure that surprises nearly every team. With an HNSW index, Postgres runs the filtered query like this: ask the index for about <code>ef_search</code> nearest candidates from the <em>whole table</em>, then apply <code>WHERE tenant_id = 42</code> to those candidates.</p>
+<p>Tenant 42 owns 1 in 800 rows. Of 40 candidates, the expected number belonging to it is \(40/800 = 0.05\). The query asks for 10 rows and almost always returns zero. A softer filter fails more quietly: if a role filter keeps 10% of rows, 40 candidates yield about 4 rows, not 10, and the RAG prompt gets less context with no error anywhere.</p>
+<p>The fixes, from simplest:</p>
+<ol>
+<li><strong>Let the planner use the B-tree.</strong> For selective filters, an index on <code>tenant_id</code> plus exact distance over that tenant's rows (Step 3) is both correct and fast. Postgres often chooses this automatically when its statistics say the filter is selective; check with <code>EXPLAIN</code>, and make sure <code>ANALYZE</code> has run.</li>
+<li><strong>Iterative index scans</strong> (pgvector 0.8 and later): <code>SET hnsw.iterative_scan = relaxed_order</code> makes the scan keep pulling candidates until enough rows pass the filter, up to a configurable limit (<code>hnsw.max_scan_tuples</code>). This fixes the moderate-filter case. For very selective filters it may scan a great deal: in the model below it reads about 12,700 candidates to find 10 rows for a tenant owning 1 in 800 rows.</li>
+<li><strong>Partial indexes or partitioning</strong> for large tenants: a separate HNSW index per big tenant (<code>CREATE INDEX ... WHERE tenant_id = 7</code>), or list-partition the table by tenant group so each partition has its own index, and the filter selects the partition before the vector search starts.</li>
+<li><strong>Raising <code>ef_search</code></strong> helps a moderate filter at the cost of every query's latency. It cannot rescue a 1-in-800 filter.</li>
+</ol>
+<p>For our help desk the combination is: B-tree on <code>tenant_id</code> for exact search on the many small tenants, partial HNSW indexes for the dozen largest, and iterative scans enabled as a safety net for role filters. The model in the code section shows all three behaviours on synthetic data.</p>
+</section>
+
+<section data-label="Step 7: hybrid search in plain SQL">
+<p>Help-desk questions contain error codes and product names, which dense vectors blur. Postgres has had full-text search for decades: a <code>tsvector</code> column, a GIN index, and ranking functions. Combining it with vector search is a query with two ranked lists and <strong>reciprocal rank fusion</strong>: each chunk scores \(\sum 1/(k + \text{rank})\) over the lists it appears in, with \(k = 60\) by convention.</p>
+<pre data-lang="sql">ALTER TABLE chunks ADD COLUMN tsv tsvector
+  GENERATED ALWAYS AS (to_tsvector('english', content)) STORED;
+CREATE INDEX chunks_tsv ON chunks USING gin (tsv);
+
+WITH vec AS (
+  SELECT id, row_number() OVER (ORDER BY embedding &lt;=&gt; :q_vec) AS r
+  FROM chunks WHERE tenant_id = :t
+  ORDER BY embedding &lt;=&gt; :q_vec LIMIT 50
+), kw AS (
+  SELECT id, row_number() OVER (ORDER BY ts_rank_cd(tsv, query) DESC) AS r
+  FROM chunks, websearch_to_tsquery('english', :q_text) AS query
+  WHERE tenant_id = :t AND tsv @@ query
+  ORDER BY ts_rank_cd(tsv, query) DESC LIMIT 50
+)
+SELECT id, SUM(1.0 / (60 + r)) AS rrf
+FROM (SELECT * FROM vec UNION ALL SELECT * FROM kw) both_lists
+GROUP BY id ORDER BY rrf DESC LIMIT 10;</pre>
+<p>Worked: chunk A is 1st by vector and 3rd by keyword: \(1/61 + 1/63 = 0.03227\). Chunk B is 2nd by vector and 1st by keyword: \(1/62 + 1/61 = 0.03252\), so B edges ahead. Chunk C appears only 4th in the keyword list: \(1/64 = 0.0156\). Agreement between the two lists is rewarded; raw score scales never mix. Postgres's built-in ranking is simpler than BM25 (it has no corpus-wide term weighting), which is usually fine for fusion; extensions exist if you need true BM25. Why fusion works is covered in <a href="@@rag/hybrid-search@@">hybrid search</a>.</p>
+</section>
+
+<section data-label="Step 8: writes, consistency and maintenance">
+<p>pgvector inherits Postgres's transactional guarantees, which is the property other vector stores most often lack.</p>
+<ul>
+<li><strong>Re-ingesting an article</strong> is one transaction: delete its chunks, insert the new ones, commit. A query running at the same time sees either the old version or the new one, never a mix and never both. The <code>UNIQUE (article_id, chunk_no)</code> constraint plus <code>INSERT ... ON CONFLICT DO UPDATE</code> makes reruns idempotent.</li>
+<li><strong>Deletes are immediate</strong> on the primary: once the transaction commits, the next query cannot return the deleted chunks. With <code>ON DELETE CASCADE</code>, deleting an article removes its chunks automatically, which makes data-deletion requests straightforward.</li>
+<li><strong>Replicas lag.</strong> If searches run on read replicas, a just-uploaded article may take a moment to appear there. Usually acceptable; route the uploader's own follow-up queries to the primary if not.</li>
+<li><strong>Dead tuples and vacuum.</strong> An update or delete leaves the old row version behind, and the HNSW index keeps pointing at it until <code>VACUUM</code> cleans up. Heavy churn (re-embedding everything nightly) bloats both table and index, and vacuuming a large HNSW index is slow. Re-embed only chunks whose text hash changed, and tune autovacuum for the chunks table.</li>
+</ul>
+</section>
+
+<section data-label="Step 9: scaling, and when to leave">
+<p>Capacity in pgvector is mostly a memory question. For our 4 million chunks:</p>
+<table>
+<thead><tr><th>Choice</th><th>Vector data</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td><code>vector(1536)</code></td><td>24.6 GB</td><td>Index needs a server with well over 32 GB RAM to stay cached</td></tr>
+<tr><td><code>halfvec(1536)</code> (column or expression index)</td><td>12.3 GB</td><td>Fits comfortably on a 64 GB server alongside the application data</td></tr>
+<tr><td>Binary-quantised index, re-rank top 100 with full vectors</td><td>about 0.8 GB of bit vectors (192 bytes + 8 each), plus graph links</td><td>Much smaller and faster first pass; recall depends on the embedding model, so test it</td></tr>
+</tbody>
+</table>
+<p>Query throughput scales with read replicas: each replica holds a full copy of the index, so search load spreads across them while writes stay on the primary. Use a connection pooler, because RAG traffic opens many short connections.</p>
+<p>The ceiling arrives when one machine can no longer hold the index in memory, when index builds take longer than your maintenance window, or when vector traffic starts to hurt the transactional workload on the same primary. As an order of magnitude, a well-provisioned server handles tens of millions of vectors; beyond that you are sharding Postgres yourself (by tenant, for example) or moving the vectors to a database designed to distribute them, such as <a href="@@tech/pinecone@@">Pinecone</a> or <a href="@@tech/weaviate@@">Weaviate</a>. Many teams never reach it.</p>
+</section>
+
+<section data-label="Choosing pgvector">
+<table>
+<thead><tr><th>Situation</th><th>pgvector?</th><th>Reason</th></tr></thead>
+<tbody>
+<tr><td>Already run Postgres; vectors relate to existing rows (tenants, permissions)</td><td>Yes, the default</td><td>One system, joins, transactions, one backup</td></tr>
+<tr><td>Many small tenants, every query scoped to one</td><td>Yes</td><td>B-tree plus exact search is fast and has perfect recall</td></tr>
+<tr><td>Hundreds of millions of vectors, high query rate</td><td>Probably not alone</td><td>Single-node memory and build times become the limit</td></tr>
+<tr><td>No one on the team operates databases</td><td>Use a managed Postgres, or Pinecone</td><td>Index memory, vacuum and replicas need attention</td></tr>
+<tr><td>Need true BM25 and hybrid in one call with no SQL</td><td>Possible, more work</td><td>Weaviate has it built in</td></tr>
+<tr><td>Prototype in a notebook</td><td>Fine if Postgres is handy</td><td><a href="@@tech/chroma@@">Chroma</a> is quicker to start</td></tr>
+</tbody>
+</table>
+</section>
+
+<section data-label="In code: the application side, and a model of the filter problem">
+<pre data-lang="python"># Not run here: needs PostgreSQL with pgvector, `pip install psycopg pgvector`. Written against their documented APIs (2025).
+import numpy as np
+import psycopg
+from pgvector.psycopg import register_vector
+
+with psycopg.connect("dbname=helpdesk") as conn:
+    register_vector(conn)                                    # numpy arrays &lt;-&gt; vector columns
+    with conn.transaction():                                 # re-ingest one article atomically
+        conn.execute("DELETE FROM chunks WHERE article_id = %s", (article_id,))
+        with conn.cursor() as cur:
+            cur.executemany(
+                "INSERT INTO chunks (tenant_id, article_id, chunk_no, content, embedding) "
+                "VALUES (%s, %s, %s, %s, %s)",
+                [(tenant_id, article_id, i, text, np.asarray(vec, dtype=np.float32))
+                 for i, (text, vec) in enumerate(chunk_rows)])
+
+    conn.execute("SET hnsw.iterative_scan = relaxed_order")   # safety net for filters
+    rows = conn.execute(
+        "SELECT c.id, c.content, c.embedding &lt;=&gt; %s AS dist "
+        "FROM chunks c JOIN article_permissions p ON p.article_id = c.article_id "
+        "WHERE c.tenant_id = %s AND p.role = %s "
+        "ORDER BY c.embedding &lt;=&gt; %s LIMIT 10",
+        (q_vec, tenant_id, role, q_vec)).fetchall()
+</pre>
+<p>The filter problem from Step 6, runnable with numpy. The sorted distance list stands in for the index's nearest-first stream.</p>
+<pre data-lang="python">import numpy as np
+
+rng = np.random.default_rng(0)
+n, dim, tenants = 100_000, 64, 800
+X = rng.normal(size=(n, dim)).astype(np.float32)
+X /= np.linalg.norm(X, axis=1, keepdims=True)
+tenant = rng.integers(0, tenants, size=n)          # ~125 rows per tenant
+q = X[123] + 0.5 * rng.normal(size=dim).astype(np.float32)
+q /= np.linalg.norm(q)
+dist = 1 - X @ q                                    # cosine distance, like the &lt;=&gt; operator
+order = np.argsort(dist)                            # stand-in for the index's nearest-first stream
+
+want, t = 10, 7
+truth = [i for i in order if tenant[i] == t][:want]          # exact answer: filter, then rank
+
+# 1. index scan of ef_search=40 candidates, THEN the WHERE clause
+ef_search = 40
+post = [i for i in order[:ef_search] if tenant[i] == t]
+print(f"post-filter, ef_search={ef_search}: {len(post)} rows returned")
+
+# 2. iterative scan: keep pulling candidates until enough rows pass the filter
+pulled, got = 0, []
+while len(got) &lt; want and pulled &lt; n:
+    batch = order[pulled:pulled + ef_search]; pulled += ef_search
+    got += [i for i in batch if tenant[i] == t]
+print(f"iterative scan: {len(got[:want])} rows after scanning {pulled} candidates")
+
+# 3. B-tree on tenant_id, then exact distance over that tenant's rows only
+rows = np.flatnonzero(tenant == t)
+exact = rows[np.argsort(dist[rows])][:want].tolist()
+print(f"tenant rows scanned exactly: {len(rows)}; matches truth: {exact == truth}")
+</pre>
+<p>It prints 0 rows for the post-filter plan, 10 rows after scanning 12,720 candidates for the iterative scan, and an exact answer from scanning only the tenant's 116 rows: the three behaviours from Step 6, and the reason small tenants are best served by the B-tree.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>Index built with one operator class, query using another.</strong> The index is ignored and every query becomes a full scan. Match <code>vector_cosine_ops</code> with <code>&lt;=&gt;</code>, and check <code>EXPLAIN</code>.</li>
+<li><strong>"LIMIT 10 returns 10."</strong> With an HNSW scan followed by a selective <code>WHERE</code>, it can return 0. Use the B-tree path, iterative scans, or per-tenant indexes.</li>
+<li><strong>Building IVFFlat on an empty table.</strong> The centroids come from the data present at build time. Load first, then build, and rebuild as data drifts.</li>
+<li><strong>Too little memory.</strong> An HNSW index that does not fit in RAM turns millisecond queries into disk-bound ones. Size the server to the index, or use <code>halfvec</code>.</li>
+<li><strong>Forgetting <code>ef_search</code> caps results.</strong> <code>LIMIT 100</code> with the default 40 returns about 40. Raise it for large limits.</li>
+<li><strong>Re-embedding everything nightly.</strong> It bloats table and index with dead tuples and makes vacuum slow. Re-embed only changed text.</li>
+<li><strong>"pgvector is a toy compared with real vector databases."</strong> At millions of vectors with good memory sizing it is fast, and it is the only option here with transactional consistency between vectors and application data.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>A role filter keeps 5% of rows. With the default <code>ef_search</code> of 40 and no iterative scan, about how many rows does <code>LIMIT 10</code> return?</summary><div class="answer">About \(40 \times 0.05 = 2\). Enable iterative scans, raise <code>ef_search</code>, or restructure so the filter is applied before the vector search.</div></details>
+<details><summary>How much memory do the vectors of 10 million 1,024-dimension chunks need as <code>vector</code>, and as <code>halfvec</code>?</summary><div class="answer">\(10{,}000{,}000 \times (4 \times 1{,}024 + 8) \approx 41\) GB as <code>vector</code>; about half, roughly 20.5 GB, as <code>halfvec</code>. Plus index links and headroom for the rest of the database.</div></details>
+<details><summary>For an IVFFlat index on 9 million rows, suggest <code>lists</code> and <code>probes</code>, and the share of rows each query scans.</summary><div class="answer">\(\sqrt{9{,}000{,}000} = 3{,}000\) lists, \(\sqrt{3{,}000} \approx 55\) probes, so about \(55/3{,}000 \approx 1.8\%\) of rows (about 165,000) per query. Tune probes against recall measured on real queries.</div></details>
+<details><summary>Chunk X ranks 3rd by vector and 2nd by keyword; chunk Y ranks 1st by vector and does not appear in the keyword list. Which wins under RRF with \(k = 60\)?</summary><div class="answer">X: \(1/63 + 1/62 = 0.0320\). Y: \(1/61 = 0.0164\). X wins: appearing in both lists beats topping one.</div></details>
+<details><summary>Vector queries were fast yesterday and take seconds today, with no code change. What do you check?</summary><div class="answer"><code>EXPLAIN</code>: did the planner switch from the index to a sequential scan (stale statistics, a changed operator, a new filter)? Memory: has the index grown past what stays cached? Bloat: did a mass update create dead tuples that vacuum has not cleaned? Also check replica lag if reads moved.</div></details>
+<details><summary>Your product needs a deleted help-centre article to be unretrievable the moment the delete returns. Pinecone or pgvector, and why?</summary><div class="answer">pgvector: the delete commits in a transaction (with <code>ON DELETE CASCADE</code> removing chunks), and every later query on the primary cannot see them. An eventually consistent service would need extra handling, such as filtering against your own database at query time.</div></details>
+<details><summary>Why is the inner-product operator negative?</summary><div class="answer">Postgres index scans return rows in ascending order of the operator's value. A larger inner product means more similar, so pgvector returns its negative, making the most similar rows come first.</div></details>
+</section>

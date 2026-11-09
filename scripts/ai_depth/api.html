@@ -1,0 +1,324 @@
+<!-- Deep lesson: Calling a model. Merged into fundamentals/api by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Message</td><td>One entry in the list you send: a role plus content. The whole request is an ordered list of messages.</td></tr>
+<tr><td>Role</td><td>Who a message is from: <code>system</code> (standing instructions), <code>user</code>, <code>assistant</code> (the model's earlier replies) or <code>tool</code> (a tool's result).</td></tr>
+<tr><td>Stateless API</td><td>The provider remembers nothing between requests. Every call must carry everything the model should see.</td></tr>
+<tr><td>Input / output tokens</td><td>Tokens you send (prompt plus history) and tokens the model generates. Billed separately; output usually costs several times more per token.</td></tr>
+<tr><td><code>max_tokens</code></td><td>The cap on output tokens for one call (OpenAI's current name is <code>max_completion_tokens</code>). Hitting it cuts the answer off mid-sentence.</td></tr>
+<tr><td>Finish (stop) reason</td><td>Why generation ended: natural end, length cap, a tool call, or a safety filter. Must be checked on every response.</td></tr>
+<tr><td>Streaming (SSE)</td><td>Receiving the answer as a series of small events over one open HTTP connection (server-sent events), instead of one response at the end.</td></tr>
+<tr><td>TTFT</td><td>Time to first token: from sending the request to receiving the first piece of output. What users perceive as responsiveness.</td></tr>
+<tr><td>Tool call</td><td>A structured request from the model ("call <code>get_order_status</code> with <code>A1001</code>") that your code executes and answers.</td></tr>
+<tr><td>RPM / TPM</td><td>Rate limits: requests per minute and tokens per minute allowed for your account or key. Exceeding either returns HTTP 429.</td></tr>
+<tr><td>Exponential backoff with jitter</td><td>Waiting longer after each failed attempt (0.5 s, 1 s, 2 s, …) with randomness added so many clients do not retry in lockstep.</td></tr>
+<tr><td>Idempotent</td><td>Safe to repeat: doing it twice has the same effect as once. Reads are; "refund the order" is not, unless you make it so.</td></tr>
+<tr><td>Prompt caching</td><td>The provider reuses the processed state of a prompt prefix it has seen recently, charging less and responding faster for it.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>Every LLM feature, however elaborate, bottoms out in an HTTP request: a list of messages goes in, generated text (or a request to run a tool) comes out. The call looks trivial in a tutorial and causes most of the operational pain in production: conversations whose cost grows with every turn, answers silently cut off by a length cap, retries that turn a provider hiccup into an outage, and rate limits that fail on launch day.</p>
+<p>The interview questions:</p>
+<ol>
+<li>What is actually sent and received? If the API is stateless, how does a chatbot remember the conversation, and what does that cost?</li>
+<li>Why stream, and what does streaming change in your code?</li>
+<li>Which errors do you retry, how, and how do you avoid making an outage worse?</li>
+<li>How do you size for rate limits and set timeouts?</li>
+</ol>
+<p><strong>The running example.</strong> "Shopbot" is the support assistant for an online store. Its system prompt, including two tool definitions, is 800 tokens. A typical customer message is 60 tokens; a typical reply is 200. Customers ask about orders, so Shopbot calls a <code>get_order_status</code> tool. The store has a sale next week, and traffic will triple. We will follow one conversation through every step, then the sale.</p>
+</section>
+
+<section data-label="Step 1: one request, a list of messages">
+<p>Here is Shopbot's first call, in the shape most providers use (this one is OpenAI-style Chat Completions; Step 10 covers the differences):</p>
+<pre data-lang="json">{
+  "model": "MODEL_ID",
+  "max_completion_tokens": 500,
+  "temperature": 0.3,
+  "messages": [
+    {"role": "system", "content": "You are Shopbot, the support assistant for ... (800 tokens)"},
+    {"role": "user", "content": "Hi, where is my order A1001? It was meant to arrive Monday."}
+  ],
+  "tools": [ {"type": "function", "function": {"name": "get_order_status", "...": "..."}} ]
+}</pre>
+<p>And the response, trimmed:</p>
+<pre data-lang="json">{
+  "choices": [{
+    "message": {"role": "assistant", "content": null,
+                "tool_calls": [{"id": "call_1", "type": "function",
+                  "function": {"name": "get_order_status", "arguments": "{\"order_id\": \"A1001\"}"}}]},
+    "finish_reason": "tool_calls"
+  }],
+  "usage": {"prompt_tokens": 860, "completion_tokens": 24}
+}</pre>
+<p>Three things to notice. First, the roles are not decoration. On the provider's side, the messages are rendered into one token sequence using the model's <strong>chat template</strong>, with special tokens marking where each role's text begins and ends; the model was trained on that format, so it treats system text as standing instructions and user text as the request. (What belongs in each part is in <a href="@@prompting/prompt-anatomy@@">Anatomy of a prompt</a>.) Second, the reply carries a <code>finish_reason</code>: here the model stopped because it wants a tool run, not because it finished. Third, <code>usage</code> tells you exactly what you were billed. Log it on every call; it is the ground truth for cost.</p>
+</section>
+
+<section data-label="Step 2: stateless means you resend the conversation">
+<p>The provider forgets the request the moment it responds. To continue the conversation, Shopbot appends the assistant's reply and the next user message to the list and sends the <em>whole</em> list again. The "memory" lives in your application.</p>
+<p>That has a cost shape worth computing. With an 800-token system prompt, 60-token user turns and 200-token replies, turn \(n\) sends</p>
+\[ \text{input}_n = 800 + 260\,(n - 1) + 60 \]
+<p>tokens: the system prompt, all \(n-1\) earlier exchanges, and the new question.</p>
+<table>
+<thead><tr><th>Turn</th><th>1</th><th>2</th><th>3</th><th>5</th><th>10</th></tr></thead>
+<tbody><tr><td>Input tokens</td><td>860</td><td>1,120</td><td>1,380</td><td>1,900</td><td>3,200</td></tr></tbody>
+</table>
+<p>A 10-turn conversation sends 20,300 input tokens in total, though only 3,200 distinct tokens of text exist. Total input grows with the <em>square</em> of the number of turns, because each turn resends all earlier turns: \(n\,(S + U) + (U + A)\,n(n-1)/2\) for system prompt \(S\), user turn \(U\) and reply \(A\): here \(10 \times 860 + 260 \times 45 = 20{,}300\). At illustrative prices of $3 per million input tokens and $15 per million output tokens, the conversation costs about $0.061 for input and $0.030 for 2,000 output tokens: $0.091, with input already two-thirds of the bill after ten turns.</p>
+<p>Three consequences:</p>
+<ul>
+<li><strong>Long conversations get expensive and slow</strong>, and eventually exceed the context window. Production chat apps trim old turns, summarise them, or move facts into retrieved memory; see <a href="@@agents/memory-context@@">Memory &amp; context engineering</a>.</li>
+<li><strong>You can edit history.</strong> Since you send it, you can drop a failed tool call, redact personal data, or replace ten turns with a summary. The model only knows what is in the list.</li>
+<li><strong>Prompt caching fits this pattern exactly.</strong> Each turn's input is the previous turn's input plus a little more, so the prefix is identical. Step 9 puts a number on it.</li>
+</ul>
+<p>Some providers offer server-side conversation state (a conversation ID instead of the full history). That moves storage, not cost: the model still processes the whole history on every turn.</p>
+</section>
+
+<section data-label="Step 3: length caps and finish reasons">
+<p>Every call ends for a reason, and each reason needs different handling:</p>
+<table>
+<thead><tr><th>Meaning</th><th>OpenAI Chat Completions</th><th>Anthropic Messages</th><th>What your code does</th></tr></thead>
+<tbody>
+<tr><td>Natural end</td><td><code>stop</code></td><td><code>end_turn</code></td><td>Use the answer.</td></tr>
+<tr><td>Hit <code>max_tokens</code></td><td><code>length</code></td><td><code>max_tokens</code></td><td>The answer is truncated. Never parse it as JSON; retry with a higher cap, ask for a shorter answer, or continue.</td></tr>
+<tr><td>Wants a tool</td><td><code>tool_calls</code></td><td><code>tool_use</code></td><td>Run the tool(s), append results, call again (Step 5).</td></tr>
+<tr><td>Hit a stop sequence</td><td><code>stop</code></td><td><code>stop_sequence</code></td><td>Expected if you set one.</td></tr>
+<tr><td>Safety filter</td><td><code>content_filter</code></td><td><code>refusal</code> (newer models), or a refusal in the text</td><td>Show a safe fallback; log for review.</td></tr>
+</tbody>
+</table>
+<p>The most common silent bug in LLM code is ignoring <code>length</code>. A reply cut at 500 tokens reads fine for 499 tokens and then stops mid-word; a JSON object cut off is invalid; a summary cut off omits its conclusion. Size <code>max_tokens</code> from the longest legitimate output (measure it), not from a guess, and alert when the length finish rate rises.</p>
+</section>
+
+<section data-label="Step 4: streaming, and what it changes">
+<p>Generation is sequential: the model produces one token, appends it, and runs again. A 200-token reply at an illustrative 60 tokens per second takes 3.3 seconds to generate, after a time to first token of, say, 0.5 seconds. Without streaming, the customer stares at a spinner for 3.8 seconds. With streaming, words appear at 0.5 seconds and keep coming at reading speed. Total time is identical; perceived latency falls by a factor of about seven. For any interface a human watches, stream.</p>
+<p>Mechanically, streaming is <strong>server-sent events</strong>: the HTTP response stays open, and the server writes lines of the form <code>data: {json}</code> separated by blank lines, ending with a final event (<code>data: [DONE]</code> in OpenAI's format, a <code>message_stop</code> event in Anthropic's). Each event carries a small <strong>delta</strong>: a few characters of text, a fragment of a tool call's arguments, or at the end, the finish reason and usage.</p>
+<p>What changes in your code:</p>
+<ul>
+<li><strong>You assemble the answer yourself.</strong> Text deltas concatenate. Tool-call arguments also arrive in fragments and are only valid JSON once the call is complete; parse at the end, not per delta.</li>
+<li><strong>Errors can arrive mid-stream.</strong> A 200 status code at the start does not mean success. The stream can break or deliver an error event after 100 tokens. Decide whether to retry the whole call (the user has already seen half an answer) or show what you have plus an error.</li>
+<li><strong>Validation moves to the end.</strong> You cannot check a citation or a schema until the whole answer exists, so output guardrails either buffer (losing the latency benefit) or run on sentence chunks as they complete.</li>
+<li><strong>Every hop must pass the stream through.</strong> Reverse proxies and serverless platforms that buffer responses silently turn streaming back into waiting. Test TTFT through the real path, not against the provider directly.</li>
+</ul>
+</section>
+
+<section data-label="Step 5: a tool call is two round trips">
+<p>The model never runs a tool. It returns a structured request, your code runs it, and you send the result back in a new call. For Shopbot's question:</p>
+<ol>
+<li><strong>Call 1</strong>: system prompt, tools, user message (860 input tokens). The model returns <code>finish_reason: tool_calls</code> with <code>get_order_status({"order_id": "A1001"})</code> and an ID, <code>call_1</code>.</li>
+<li><strong>Your code</strong> validates the arguments, checks that this customer may see order A1001, runs the lookup, and gets <code>{"status": "shipped", "eta": "2 days"}</code>.</li>
+<li><strong>Call 2</strong>: everything from call 1, plus the assistant's tool-call message, plus a <code>tool</code> message with the result and <code>tool_call_id: call_1</code>. The model writes the answer for the customer.</li>
+</ol>
+<p>The ID pairs results with requests, which matters when the model asks for several tools at once (parallel tool calls); every requested call needs a result message, or the next request is rejected. Each tool round trip resends the whole history, so a question needing three sequential lookups costs four calls. Wrap the loop in a hard iteration cap. Designing the tool schemas themselves is covered in <a href="@@agents/tool-calling@@">Tool calling</a>; the loop as an agent, in <a href="@@agents/agent-loop@@">The agent loop</a>.</p>
+</section>
+
+<section data-label="Step 6: what fails, and which failures to retry">
+<p>Calls to a hosted model fail more often than calls to a typical internal service: providers run near capacity, generation takes seconds, and long requests meet more network trouble. Classify every failure by one question: <em>will the identical request succeed if I send it again?</em></p>
+<table>
+<thead><tr><th>Status / error</th><th>Meaning</th><th>Retry?</th></tr></thead>
+<tbody>
+<tr><td>400 Bad Request</td><td>Malformed request, invalid schema, or context too long</td><td>No. Fix the request (for context length: trim history).</td></tr>
+<tr><td>401 / 403</td><td>Bad or unauthorised key</td><td>No. Alert.</td></tr>
+<tr><td>404</td><td>Unknown model name (often a retired model)</td><td>No. Alert.</td></tr>
+<tr><td>408, timeout, connection reset</td><td>Network or slow generation</td><td>Yes, with backoff.</td></tr>
+<tr><td>429 Too Many Requests</td><td>Your rate limit, or provider-wide capacity</td><td>Yes, after <code>Retry-After</code> if given.</td></tr>
+<tr><td>500, 502, 503 (and Anthropic's 529 "overloaded")</td><td>Provider-side failure</td><td>Yes, with backoff; fail over if it persists.</td></tr>
+<tr><td>Error event mid-stream</td><td>Generation failed partway</td><td>Usually yes, from the start.</td></tr>
+</tbody>
+</table>
+<p>Retrying a 400 is the classic waste: the same malformed request fails five times, slower. Retrying an LLM call itself is safe, because generating text has no side effects. Retrying the <em>tools</em> it triggered may not be, which Step 7 addresses.</p>
+</section>
+
+<section data-label="Step 7: retries that do not make things worse">
+<p>A naive retry loop resends immediately. When a provider is overloaded, every client doing that multiplies the load at the worst moment. Three rules fix it.</p>
+<p><strong>Back off exponentially, with jitter.</strong> Wait \(\min(\text{cap}, \text{base} \cdot 2^{k})\) before retry \(k\), but pick the actual delay uniformly between zero and that value ("full jitter"), so a thousand clients that failed together spread their retries out instead of returning as one wave. With base 0.5 s and cap 8 s, the ceilings for four retries are 0.5, 1, 2 and 4 seconds (7.5 s in total); a fifth would hit the 8 s cap. With full jitter the expected wait is half of each ceiling. If the server sends <code>Retry-After</code>, wait at least that long: it knows when capacity returns.</p>
+<p><strong>Retry at one layer only.</strong> If Shopbot's API layer makes up to 3 attempts, its LLM client makes up to 3 attempts per call, and the SDK underneath does the same, one user request can become \(3^3 = 27\) provider calls during an incident. Pick one layer, usually the one closest to the provider, and turn retries off elsewhere (most SDKs retry by default; set their <code>max_retries</code> deliberately).</p>
+<p><strong>Retry within a deadline.</strong> A customer will not wait 40 seconds. Give each user request a total time budget, say 20 seconds, and stop retrying when the next wait would exceed it; then fail over to another model or provider, or degrade (link to a human, a cached answer). Fallback chains and circuit breakers are covered in <a href="@@production/reliability@@">Reliability engineering</a>.</p>
+<div class="callout warn"><p><strong>Idempotency for tools with side effects.</strong> Suppose call 2 times out after Shopbot's tool loop has already issued a refund. A blind retry of the whole turn can run the tool loop again and refund twice. Give each tool execution an idempotency key (for example, conversation ID plus tool-call ID) and have the tool refuse a key it has already completed. Retry the model call freely; retry side effects only through idempotency keys.</p></div>
+</section>
+
+<section data-label="Step 8: rate limits, capacity and timeouts">
+<p>Shopbot's key allows, say, 500 requests per minute and 400,000 tokens per minute. Which binds? An average Shopbot call is about 3,000 input tokens (mid-conversation, with history) plus up to 200 output tokens. Some providers count the requested <code>max_tokens</code> toward the limit check, not just what was generated, so an inflated cap uses up quota you never consume. At 3,200 tokens per call, \(400{,}000 / 3{,}200 = 125\) calls per minute. The token limit binds long before the 500-request limit.</p>
+<p>How many calls are in flight at once? Little's law: concurrency equals arrival rate times time in system. At 125 calls per minute (2.08 per second) and 4 seconds per call, about 8.3 calls are open at any moment. That tells you your connection pool and worker count.</p>
+<p>Now the sale. Traffic triples, to around 375 calls per minute: three times the token budget. Without a plan, two-thirds of calls get 429s, retry, and add load. With a plan:</p>
+<ul>
+<li><strong>Ask for a higher limit before the sale.</strong> Limits are usually raised on request or by usage tier.</li>
+<li><strong>Shape the traffic yourself.</strong> A client-side token bucket that admits calls at the budget rate and queues the rest turns 429 storms into short, predictable waits.</li>
+<li><strong>Spend fewer tokens per call.</strong> Trim history to the last few turns plus a summary; cap <code>max_tokens</code> realistically.</li>
+<li><strong>Spread across capacity.</strong> A second region, provider or smaller model for simple intents, behind the same interface.</li>
+</ul>
+<p><strong>Timeouts</strong> need two numbers. A connect timeout of a few seconds catches network trouble. The read timeout must exceed the longest legitimate generation: with <code>max_tokens</code> 500 and a slow-day decode speed of 30 tokens per second, generation can take about 17 seconds, plus the time to first token. A 10-second read timeout would kill valid calls and then retry them, burning quota. With streaming, prefer an <em>idle</em> timeout (no event for N seconds) over a total one.</p>
+</section>
+
+<section data-label="Step 9: the cost levers at the API layer">
+<p><strong>Prompt caching.</strong> Shopbot's turns share a growing prefix (Step 2). With caching, the provider stores the processed prefix and charges a fraction for reusing it. If cached input costs an illustrative 10% of the normal input price, the 10-turn conversation's input changes as follows. Turn 1 is processed in full (860 tokens). On each later turn, everything up to the end of the previous request is read from cache, and only the 260 new tokens (the previous reply plus the new question) are processed at full price. That is \(860 + 9 \times 260 = 3{,}200\) full-price tokens and 17,100 cached ones: input falls from $0.061 to about $0.015, and the whole conversation from $0.091 to about $0.045. (This ignores any cache-write surcharge and the minimum cacheable length, which an 860-token first turn may not meet.) The rules: the prefix must match byte for byte, so put static content (system prompt, tool definitions) first and never put a timestamp at the top; caches expire after minutes of inactivity; some providers require you to mark cache points explicitly and charge extra to write a cache entry; and there is usually a minimum prefix length.</p>
+<p><strong>Batch APIs.</strong> For work nobody waits on (nightly classification of yesterday's tickets, evaluation runs), providers accept a file of requests and return results within hours, typically at a substantial discount. Wrong for Shopbot's chat; right for its weekly "summarise all complaints" job.</p>
+<p><strong>The basics.</strong> Set <code>max_tokens</code>; route simple intents ("where is my order") to a smaller model; do not resend tool definitions the turn does not need. Pricing and routing in depth: <a href="@@production/cost-performance@@">Cost &amp; latency</a> and <a href="@@fundamentals/tokens-context-cost@@">Tokens, context &amp; cost</a>.</p>
+</section>
+
+<section data-label="Step 10: the same call across providers">
+<p>The concepts are shared; the field names are not. The differences that break code when switching:</p>
+<table>
+<thead><tr><th></th><th>OpenAI Chat Completions</th><th>Anthropic Messages</th></tr></thead>
+<tbody>
+<tr><td>System prompt</td><td>A message with role <code>system</code> (or <code>developer</code>)</td><td>A top-level <code>system</code> field, not a message</td></tr>
+<tr><td>Output cap</td><td>Optional; current name <code>max_completion_tokens</code> (<code>max_tokens</code> is deprecated and rejected by reasoning models)</td><td><code>max_tokens</code>, required</td></tr>
+<tr><td>Usage in a stream</td><td>Only if you pass <code>stream_options={"include_usage": true}</code>; arrives in a final chunk with no choices</td><td>In the <code>message_start</code> and <code>message_delta</code> events</td></tr>
+<tr><td>Response content</td><td>A string in <code>message.content</code></td><td>A list of typed blocks (<code>text</code>, <code>tool_use</code>, …)</td></tr>
+<tr><td>Tool definition</td><td><code>{"type": "function", "function": {name, description, parameters}}</code></td><td><code>{name, description, input_schema}</code></td></tr>
+<tr><td>Tool arguments</td><td>A JSON <em>string</em> to parse</td><td>An already-parsed object in <code>input</code></td></tr>
+<tr><td>Tool result</td><td>A message with role <code>tool</code> and <code>tool_call_id</code></td><td>A <code>tool_result</code> block inside a <code>user</code> message, with <code>tool_use_id</code></td></tr>
+<tr><td>Message order</td><td>Flexible</td><td>Alternating user and assistant turns (consecutive same-role messages are combined)</td></tr>
+</tbody>
+</table>
+<p>OpenAI also has a newer Responses API with different shapes, and many open-model servers (vLLM, Ollama) expose an OpenAI-compatible endpoint, which is why that format is the de facto lingua franca. Most teams wrap calls in one internal interface: messages and tools in a neutral format, adapters per provider, plus the retry, timeout, logging and usage accounting from this lesson in one place.</p>
+</section>
+
+<section data-label="In code: the loop, retries and a stream parser">
+<p>A runnable model of the whole lesson against a fake provider: two transient failures (a 429 with <code>Retry-After</code>, then a 500), backoff with jitter, a tool round trip, and parsing a server-sent-events stream.</p>
+<pre data-lang="python">import json, random
+
+# --- A fake provider, so the client logic runs offline -----------------------
+class RateLimited(Exception):              # HTTP 429
+    def __init__(self, retry_after=None):
+        self.retry_after = retry_after
+class ServerError(Exception): pass         # HTTP 500/502/503/529
+class BadRequest(Exception): pass          # HTTP 400: never retry
+
+ORDERS = {"A1001": {"status": "shipped", "eta": "2 days"}}
+failures = [RateLimited(retry_after=2.0), ServerError()]   # first two calls fail
+
+def fake_chat(messages, tools):
+    if failures:
+        raise failures.pop(0)
+    last = messages[-1]
+    if last["role"] == "user":                      # model decides to call a tool
+        return {"finish_reason": "tool_calls", "tool_calls": [
+            {"id": "call_1", "name": "get_order_status", "arguments": '{"order_id": "A1001"}'}]}
+    result = json.loads(last["content"])            # last message is the tool result
+    return {"finish_reason": "stop",
+            "content": f"Your order has {result['status']} and should arrive in {result['eta']}."}
+
+# --- Retries: backoff with full jitter, honour Retry-After, respect a deadline -
+def with_retries(fn, max_attempts=5, base=0.5, cap=8.0, deadline=30.0, rng=random.Random(7)):
+    waited = 0.0                                    # simulated clock: no real sleeping
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return fn(), attempt, waited
+        except BadRequest:
+            raise                                   # a malformed request will not improve
+        except (RateLimited, ServerError) as e:
+            if attempt == max_attempts:
+                raise
+            delay = rng.uniform(0, min(cap, base * 2 ** (attempt - 1)))   # full jitter
+            if isinstance(e, RateLimited) and e.retry_after:
+                delay = max(delay, e.retry_after)   # the server knows best
+            if waited + delay &gt; deadline:
+                raise
+            waited += delay
+
+# --- The tool loop: the application owns the history and runs the tools ------
+def get_order_status(order_id):
+    return ORDERS.get(order_id, {"status": "unknown", "eta": "unknown"})
+
+messages = [{"role": "system", "content": "You are Shopbot. Use tools for order data."},
+            {"role": "user", "content": "Where is my order A1001?"}]
+for _ in range(5):                                  # hard cap on loop iterations
+    reply, attempts, waited = with_retries(lambda: fake_chat(messages, tools=["get_order_status"]))
+    print(f"call ok after {attempts} attempt(s), waited {waited:.2f}s, finish={reply['finish_reason']}")
+    if reply["finish_reason"] != "tool_calls":
+        messages.append({"role": "assistant", "content": reply["content"]})
+        break
+    messages.append({"role": "assistant", "tool_calls": reply["tool_calls"]})
+    for tc in reply["tool_calls"]:
+        out = get_order_status(**json.loads(tc["arguments"]))
+        messages.append({"role": "tool", "tool_call_id": tc["id"], "content": json.dumps(out)})
+
+print(messages[-1]["content"])
+print(len(messages), "messages will be resent on the next turn")
+
+# --- Reading a server-sent-events stream ------------------------------------
+raw = ('data: {"delta": "Your"}\n\ndata: {"delta": " order"}\n\n'
+       'data: {"delta": " has shipped."}\n\ndata: {"finish_reason": "stop"}\n\ndata: [DONE]\n\n')
+text, finish = [], None
+for line in raw.splitlines():
+    if not line.startswith("data: "):
+        continue                                    # blank separators, comments, keep-alives
+    payload = line[len("data: "):]
+    if payload == "[DONE]":
+        break
+    event = json.loads(payload)
+    text.append(event.get("delta", ""))
+    finish = event.get("finish_reason", finish)
+print(repr("".join(text)), finish)</pre>
+<p>It prints that the first call succeeded on the third attempt after 2.15 simulated seconds (the 2-second <code>Retry-After</code> plus a jittered 0.15 s), the second call on the first, the final answer, and that five messages now make up the history to resend. The same logic against real SDKs:</p>
+<pre data-lang="python"># Not run here: needs network and API keys. Written against the documented
+# openai (1.x) and anthropic Python SDKs as of 2025; MODEL is a placeholder.
+from openai import OpenAI
+import anthropic
+
+MODEL = "your-model-id"
+tools_openai = [{"type": "function", "function": {
+    "name": "get_order_status",
+    "description": "Look up an order's shipping status by its ID.",
+    "parameters": {"type": "object",
+                   "properties": {"order_id": {"type": "string"}},
+                   "required": ["order_id"]}}}]
+
+# OpenAI Chat Completions, streamed. Turn SDK retries off if you own the retry policy.
+oa = OpenAI(max_retries=0, timeout=30.0)
+messages = [{"role": "system", "content": "You are Shopbot. Use tools for order data."},
+            {"role": "user", "content": "Where is my order A1001?"}]
+stream = oa.chat.completions.create(model=MODEL, messages=messages, tools=tools_openai,
+                                    max_completion_tokens=500, stream=True,
+                                    stream_options={"include_usage": True})
+for chunk in stream:
+    if chunk.usage:                          # final chunk: usage only, empty choices
+        print("usage:", chunk.usage.prompt_tokens, chunk.usage.completion_tokens)
+    if not chunk.choices:
+        continue
+    choice = chunk.choices[0]
+    if choice.delta.content:
+        print(choice.delta.content, end="", flush=True)
+    if choice.finish_reason:                 # "stop" | "length" | "tool_calls" | "content_filter"
+        print("\nfinish:", choice.finish_reason)
+
+# Anthropic Messages: system is a top-level field, max_tokens is required,
+# and tool calls arrive as content blocks.
+an = anthropic.Anthropic(max_retries=0, timeout=30.0)
+resp = an.messages.create(
+    model=MODEL, max_tokens=500,
+    system="You are Shopbot. Use tools for order data.",
+    messages=[{"role": "user", "content": "Where is my order A1001?"}],
+    tools=[{"name": "get_order_status",
+            "description": "Look up an order's shipping status by its ID.",
+            "input_schema": {"type": "object",
+                             "properties": {"order_id": {"type": "string"}},
+                             "required": ["order_id"]}}])
+print(resp.stop_reason, resp.usage.input_tokens, resp.usage.output_tokens)
+for block in resp.content:
+    if block.type == "tool_use":            # reply with a tool_result block in a *user* message
+        result = {"role": "user", "content": [{"type": "tool_result",
+                  "tool_use_id": block.id, "content": '{"status": "shipped"}'}]}</pre>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"The API remembers the conversation."</strong> It remembers nothing. You resend the history, and you pay for it every turn.</li>
+<li><strong>Ignoring the finish reason.</strong> <code>length</code> means truncated. Truncated JSON fails to parse; truncated prose fails silently.</li>
+<li><strong>Retrying everything.</strong> 400s, 401s and 404s will not succeed on retry. Retry 429, 5xx and timeouts only.</li>
+<li><strong>Retrying at every layer.</strong> Retries multiply: 3 layers of 3 attempts is 27 calls per request during an outage.</li>
+<li><strong>Retrying side effects blindly.</strong> The model call is safe to repeat; the refund it triggered is not. Use idempotency keys.</li>
+<li><strong>Read timeouts shorter than generation.</strong> Long answers take tens of seconds. A short timeout kills valid calls and wastes quota on retries.</li>
+<li><strong>"Streaming makes it faster."</strong> It makes the first words arrive sooner. Total time and cost are unchanged.</li>
+<li><strong>Putting a timestamp or user ID at the top of the prompt.</strong> It breaks the shared prefix and with it prompt caching.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>Shopbot's system prompt grows to 2,000 tokens. Using the same 60-token questions and 200-token replies, how many input tokens does turn 10 send, and how many does the 10-turn conversation send in total?</summary><div class="answer">Turn 10: \(2{,}000 + 260 \times 9 + 60 = 4{,}400\). Total: \(\sum_{n=1}^{10} (2{,}060 + 260(n-1)) = 10 \times 2{,}060 + 260 \times 45 = 32{,}300\) tokens.</div></details>
+<details><summary>A response comes back with finish reason <code>length</code> and your JSON parser throws. What are your options, and which do you pick first?</summary><div class="answer">The output hit <code>max_tokens</code>. First check whether the cap is too low for legitimate outputs (measure the length distribution) and raise it. If outputs are unexpectedly long, tighten the instructions or schema. Never "repair" truncated JSON by guessing the missing part.</div></details>
+<details><summary>Your key allows 1,000 RPM and 600,000 TPM. Calls average 5,000 input tokens and set <code>max_tokens</code> to 1,000, and the provider counts <code>max_tokens</code> toward the limit. What is your real ceiling in calls per minute, and one way to raise it without a limit increase?</summary><div class="answer">\(600{,}000 / 6{,}000 = 100\) calls per minute: the token limit binds, far below 1,000 RPM. If real outputs average 200 tokens, lowering <code>max_tokens</code> to, say, 400 raises the ceiling to about \(600{,}000 / 5{,}400 \approx 111\); trimming history to cut input tokens raises it further.</div></details>
+<details><summary>Why add jitter to exponential backoff? Wouldn't the exponential growth alone spread retries out?</summary><div class="answer">Clients that failed at the same moment compute the same schedule, so without jitter they retry at the same moments too (0.5 s, 1 s, 2 s later), hitting the recovering service in synchronised waves. Randomising each delay spreads them across the interval.</div></details>
+<details><summary>A call to issue a store credit times out. Is it safe to retry? What would make it safe?</summary><div class="answer">Not blindly: the timeout may have happened after the credit was issued. Give the operation an idempotency key (conversation ID plus tool-call ID) and have the credit service return the earlier result if it has already processed that key.</div></details>
+<details><summary>Your streamed answers show a 4-second TTFT in production but 0.5 seconds in local tests. Name two likely causes.</summary><div class="answer">A proxy, load balancer or serverless platform buffering the response until it completes (so streaming is effectively off), or a much larger production prompt (long history, retrieved context, or a cache miss because a timestamp sits at the top of the prompt) increasing prefill time. Queueing behind your own rate limiter is a third.</div></details>
+</section>

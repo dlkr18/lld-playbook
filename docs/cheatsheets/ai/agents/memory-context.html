@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
@@ -30,26 +34,38 @@
   <a href="#deep-dive-episodic-memory"><span class="num">10</span> Deep Dive: Episodic Memory</a>
   <a href="#deep-dive-consolidation"><span class="num">11</span> Deep Dive: Consolidation</a>
   <a href="#deep-dive-memory-retrieval"><span class="num">12</span> Deep Dive: Memory Retrieval</a>
-  <a href="#memory-making-agents-remember"><span class="num">13</span> Memory: making agents remember</a>
-  <a href="#working-memory-a-buffer-that-knows-when-to-shrink"><span class="num">14</span> Working memory: a buffer that knows when to shrink</a>
-  <a href="#episodic-memory-remember-recall-over-a-vector-store"><span class="num">15</span> Episodic memory: remember/recall over a vector store</a>
-  <a href="#fact-extraction-from-transcripts-to-a-profile"><span class="num">16</span> Fact extraction: from transcripts to a profile</a>
-  <a href="#external-memory-the-file-the-agent-keeps"><span class="num">17</span> External memory: the file the agent keeps</a>
-  <a href="#the-write-policy-what-not-to-store"><span class="num">18</span> The write policy: what NOT to store</a>
-  <a href="#context-engineering-the-real-production-skill"><span class="num">19</span> Context engineering — the real production skill</a>
-  <a href="#the-per-turn-checklist"><span class="num">20</span> The per-turn checklist</a>
-  <a href="#context-and-memory-management"><span class="num">21</span> Context and memory management</a>
-  <a href="#production-ops"><span class="num">22</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">23</span> Related topics</a>
-  <a href="#where-people-get-lost"><span class="num">24</span> Where people get lost</a>
-  <a href="#how-this-connects"><span class="num">25</span> How this connects</a>
-  <a href="#check-yourself"><span class="num">26</span> Check yourself</a>
+  <a href="#the-question"><span class="num">13</span> The question</a>
+  <a href="#step-1-the-context-window-is-the-only-memory-the-model-has"><span class="num">14</span> Step 1: the context window is the only memory the model has</a>
+  <a href="#step-2-why-a-bigger-window-does-not-solve-it"><span class="num">15</span> Step 2: why a bigger window does not solve it</a>
+  <a href="#step-3-how-fast-a-long-task-fills-the-window"><span class="num">16</span> Step 3: how fast a long task fills the window</a>
+  <a href="#step-4-three-ways-to-shrink-working-memory"><span class="num">17</span> Step 4: three ways to shrink working memory</a>
+  <a href="#step-5-prompt-caching-and-why-order-matters"><span class="num">18</span> Step 5: prompt caching, and why order matters</a>
+  <a href="#step-6-long-term-memory-three-kinds"><span class="num">19</span> Step 6: long-term memory, three kinds</a>
+  <a href="#step-7-the-write-path-deciding-what-to-remember"><span class="num">20</span> Step 7: the write path, deciding what to remember</a>
+  <a href="#step-8-the-read-path-scoring-what-to-load"><span class="num">21</span> Step 8: the read path, scoring what to load</a>
+  <a href="#step-9-context-engineering-the-whole-discipline"><span class="num">22</span> Step 9: context engineering, the whole discipline</a>
+  <a href="#a-worked-design-for-priya-s-day-200-request"><span class="num">23</span> A worked design for Priya&#x27;s day-200 request</a>
+  <a href="#in-code-a-working-memory-simulator-and-a-memory-store"><span class="num">24</span> In code: a working-memory simulator and a memory store</a>
+  <a href="#memory-making-agents-remember"><span class="num">25</span> Memory: making agents remember</a>
+  <a href="#working-memory-a-buffer-that-knows-when-to-shrink"><span class="num">26</span> Working memory: a buffer that knows when to shrink</a>
+  <a href="#episodic-memory-remember-recall-over-a-vector-store"><span class="num">27</span> Episodic memory: remember/recall over a vector store</a>
+  <a href="#fact-extraction-from-transcripts-to-a-profile"><span class="num">28</span> Fact extraction: from transcripts to a profile</a>
+  <a href="#external-memory-the-file-the-agent-keeps"><span class="num">29</span> External memory: the file the agent keeps</a>
+  <a href="#the-write-policy-what-not-to-store"><span class="num">30</span> The write policy: what NOT to store</a>
+  <a href="#context-engineering-the-real-production-skill"><span class="num">31</span> Context engineering — the real production skill</a>
+  <a href="#the-per-turn-checklist"><span class="num">32</span> The per-turn checklist</a>
+  <a href="#context-and-memory-management"><span class="num">33</span> Context and memory management</a>
+  <a href="#production-ops"><span class="num">34</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">35</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">36</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">37</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">38</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Memory &amp; context engineering <span>// Tools &amp; agents</span></h1>
   <p>Short- and long-term memory, compaction, and context engineering, the real production skill.</p>
-  <div class="tags"><span class="tag">26 min read</span><span class="tag">3 diagrams</span></div>
+  <div class="tags"><span class="tag">44 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -59,7 +75,7 @@
 </section>
 <section id="new-words">
   <h2>02 &mdash; New words</h2>
-<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Working memory</strong></td><td>The messages list in the current window.</td></tr><tr><td><strong>Episodic memory</strong></td><td>Past interactions in a vector store, retrieved when relevant.</td></tr><tr><td><strong>Semantic memory</strong></td><td>Facts/knowledge accessed via RAG.</td></tr><tr><td><strong>Procedural memory</strong></td><td>Skills/routines encoded in the system prompt.</td></tr><tr><td><strong>External memory</strong></td><td>Files/DB the agent writes and re-reads (survives compaction).</td></tr><tr><td><strong>Context engineering</strong></td><td>Deciding what goes in the window each turn — the production skill.</td></tr><tr><td><strong>Compaction</strong></td><td>Summarizing old turns to free context while preserving key facts.</td></tr></tbody></table>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Context window</strong></td><td>The maximum number of tokens a model can read in one call: instructions, history, tool results and its own output together.</td></tr><tr><td><strong>Working (short-term) memory</strong></td><td>What the agent knows during one task: the messages in the current context window. Gone when the call ends unless you save it.</td></tr><tr><td><strong>Long-term memory</strong></td><td>Information saved outside the model (a database, a vector store, files) and loaded back into the context when relevant, across sessions.</td></tr><tr><td><strong>Context engineering</strong></td><td>Deciding, for every model call, exactly which tokens go into the window: what to include, compress, order and leave out.</td></tr><tr><td><strong>Compaction</strong></td><td>Replacing a long stretch of conversation with a shorter model-written summary so the run can continue within budget.</td></tr><tr><td><strong>Tool-result clearing</strong></td><td>Replacing old, already-used tool results with short stubs, keeping the record that a call happened but not its full output.</td></tr><tr><td><strong>Prompt caching</strong></td><td>A provider feature that stores the processed form of a repeated prompt prefix, so later calls that start with the same tokens are cheaper and faster.</td></tr><tr><td><strong>Semantic memory</strong></td><td>Durable facts about the user or world ("prefers email", "delivery address is ...").</td></tr><tr><td><strong>Episodic memory</strong></td><td>Records of past events and interactions ("on day 140 we refunded charge ch_2").</td></tr><tr><td><strong>Procedural memory</strong></td><td>Learned how-to: instructions or rules the agent should follow next time ("check pending holds before refunding").</td></tr><tr><td><strong>Recency decay</strong></td><td>Down-weighting a memory the older it is, for example halving its recency score every 30 days.</td></tr><tr><td><strong>Upsert</strong></td><td>Write that updates an existing record if one with the same key exists, otherwise inserts. Prevents old and new versions of a fact from coexisting.</td></tr><tr><td><strong>Lost in the middle</strong></td><td>The observed tendency of models to use information at the start and end of a long context more reliably than information in the middle.</td></tr><tr><td><strong>Working memory</strong></td><td>The messages list in the current window.</td></tr><tr><td><strong>External memory</strong></td><td>Files/DB the agent writes and re-reads (survives compaction).</td></tr></tbody></table>
 </section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
@@ -114,8 +130,221 @@ Query -&gt; Retrieve relevant memories -&gt; Inject into system prompt</pre></di
 <div class="card"><p>At session start: embed user message, search memory top-5, inject as system context. Re-rank by recency × relevance.</p></div>
 </section>
 <p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>13 &mdash; The question</h2>
+<p>A model remembers nothing between calls. Every call starts from the tokens you send and nothing else. So everything an agent "knows", within a task or across months, is something your code chose to put in the context window. That makes two problems:</p>
+<ul>
+<li><strong>Within a task</strong>, the context grows with every step until it is too expensive, too slow, too distracting, or simply too big.</li>
+<li><strong>Across tasks</strong>, nothing carries over unless you save it, and then you must decide what to save, how to keep it correct, and what to load back.</li>
+</ul>
+<p>Both are parts of one discipline, context engineering: choosing the right tokens for every call. The questions you will be asked:</p>
+<ol>
+<li>How does an agent remember things, within a conversation and across conversations?</li>
+<li>What do you do when a long-running agent's context fills up?</li>
+<li>How would you design long-term memory for a support or personal assistant? What do you store, and how do you retrieve it?</li>
+<li>What is context engineering, and why is it said to matter more than prompt wording?</li>
+</ol>
+<p><strong>The running example.</strong> Priya is a customer of the online shop from earlier lessons. On day 140 the support agent refunded a duplicate charge (<code>ch_2</code> on ORD-482913). On day 190 she mentioned that she had moved from Pune to Bengaluru. On day 200 she writes: "I think you have been double-charging me for months. Check all my orders this year, and send the replacement for my broken lamp to my new place." Answering needs a long investigation (about 30 tool calls, each returning about 1,500 tokens) and facts from two earlier conversations. We will design what the agent holds in its context at each step and what it keeps between sessions.</p>
+</section>
+<section id="step-1-the-context-window-is-the-only-memory-the-model-has">
+  <h2>14 &mdash; Step 1: the context window is the only memory the model has</h2>
+<p>Think of the model as a function that reads one document, the context, and writes a continuation. The document is assembled by your code for every call from up to six kinds of content:</p>
+<pre class="ascii-diagram">┌───────────────────────── one model call ─────────────────────────┐
+│ system instructions      (fixed: role, rules, policies)          │
+│ tool definitions         (fixed per agent, see tool calling)     │
+│ long-term memories       (loaded for this user and this request) │
+│ conversation so far      (user turns, model turns)               │
+│ tool calls and results   (grows every step)                      │
+│ ...room for the output   (reserved, not filled)                  │
+└──────────────────────────────────────────────────────────────────┘</pre>
+<p>Nothing outside this box influences the model. If Priya's new address is not in it, the model cannot know it, however many databases hold it. If the result of the first <code>get_charges</code> call was dropped, the model cannot use it, even though it "saw" it ten steps ago. Two kinds of memory follow:</p>
+<ul>
+<li><strong>Working memory</strong> is the box's contents during one task. It is managed by deciding what stays in the message list.</li>
+<li><strong>Long-term memory</strong> is storage outside the box. It is managed by deciding what to write out after a task and what to read back in before one.</li>
+</ul>
+<p>"Memory" in an agent is therefore never a property of the model. It is a read path and a write path that you design.</p>
+</section>
+<section id="step-2-why-a-bigger-window-does-not-solve-it">
+  <h2>15 &mdash; Step 2: why a bigger window does not solve it</h2>
+<p>Windows of hundreds of thousands of tokens are common, so why not keep everything? Three costs grow with what you put in:</p>
+<ul>
+<li><strong>Money.</strong> Input tokens are billed on every call, and an agent re-sends the context on every step (see <a href="agent-loop.html">the agent loop</a>).</li>
+<li><strong>Latency.</strong> The model must process (prefill) the whole context before writing the first output token. Prefill time grows with length; see <a href="../inference/inference-internals.html">inference internals</a>.</li>
+<li><strong>Quality.</strong> Models do not use long contexts uniformly. Facts in the middle of a long context are used less reliably than facts near the start or end ("lost in the middle"), and irrelevant material distracts: a stale address or an old failed tool result can be picked up as if it were current. Long-context quality varies by model and task, so measure it on yours rather than trusting the advertised window size.</li>
+</ul>
+<p>The working rule: the window is a maximum, not a target. Fill each call with the smallest set of tokens that lets the model do the next step well.</p>
+</section>
+<section id="step-3-how-fast-a-long-task-fills-the-window">
+  <h2>16 &mdash; Step 3: how fast a long task fills the window</h2>
+<p>Put numbers on Priya's investigation. The fixed prefix (instructions, tool definitions, loaded memories) is 5,000 tokens. Each step adds a 200-token model turn and a 1,500-token tool result. Over 30 steps:</p>
+<ul>
+<li>The context on the last call is \(5000 + 29 \times 1700 = 54{,}300\) tokens.</li>
+<li>Each call re-sends everything before it, so the total input across the run is the sum \(\sum_{s=0}^{29}(5000 + 1700\,s) = 30 \times 5000 + 1700 \times 435 = 889{,}500\) tokens.</li>
+<li>At an illustrative $3 per million input tokens, about $2.67 for one investigation.</li>
+</ul>
+<p>Total input grows with the square of the number of steps because the \(1700\,s\) term is summed. By step 30, each call is carrying 29 full tool results, most of which the agent finished using long ago: the charges for January's orders do not help it decide what to check in October. The next three steps are ways to stop carrying them.</p>
+</section>
+<section id="step-4-three-ways-to-shrink-working-memory">
+  <h2>17 &mdash; Step 4: three ways to shrink working memory</h2>
+<p><strong>Truncation (a sliding window)</strong> keeps only the last N messages. It is simple and dangerous: the first message, Priya's request with both tasks in it, is the first thing dropped. Plain truncation suits chit-chat, not tasks. If you use it, pin the original request and the instructions so they are never dropped.</p>
+<p><strong>Tool-result clearing</strong> keeps every message but replaces old tool results with a short stub: <code>[get_charges ORD-3121 result cleared; 2 charges, no duplicate; call again if needed]</code>. The model keeps the trail of what it did and the conclusion, but not the raw payload. Keeping the last 3 results in full and stubbing older ones at 30 tokens each, the same 30-step run sends 373,530 input tokens (down from 889,500) and peaks at 16,080 tokens (down from 54,300). It is cheap, needs no extra model call, and loses little, because a result's value is mostly used up by the next decision.</p>
+<p><strong>Compaction</strong> asks a model to summarise the history so far into a compact state, then continues from the summary. With a trigger at 20,000 tokens and a 1,500-token summary, the run sends 354,900 tokens and peaks at 18,600. Compaction handles what clearing cannot (long user conversations, many small turns), but it costs a model call each time and it is lossy in ways you do not control: a summary can drop the one detail that later matters. Write the compaction prompt like a handover note with required fields:</p>
+<ul>
+<li>the user's goal, in their words, with all parts ("check all orders this year" <em>and</em> "send the replacement to the new address");</li>
+<li>what has been done and found so far (orders checked, duplicates found, refunds issued with ids);</li>
+<li>what remains, and any decisions or constraints agreed with the user;</li>
+<li>identifiers needed later (order ids, charge ids, refund ids).</li>
+</ul>
+<table>
+<thead><tr><th>Strategy</th><th>Input tokens over 30 steps</th><th>Peak context</th><th>Illustrative cost</th><th>Main risk</th></tr></thead>
+<tbody>
+<tr><td>Keep everything</td><td>889,500</td><td>54,300</td><td>$2.67</td><td>Cost, latency, distraction</td></tr>
+<tr><td>Clear old tool results (keep 3)</td><td>373,530</td><td>16,080</td><td>$1.12</td><td>Needing an old result again (re-call the tool)</td></tr>
+<tr><td>Compact at 20k into 1.5k</td><td>354,900</td><td>18,600</td><td>$1.06 + summary calls</td><td>The summary drops a needed detail</td></tr>
+</tbody>
+</table>
+<p>A fourth option moves state out of the window entirely: give the agent a <strong>scratchpad</strong> tool or file (<code>write_note</code>, <code>read_notes</code>) and let it record findings as it goes: "ORD-3121: ok. ORD-3388: duplicate ch_9, refunded re_7." Clearing and compaction then lose nothing important, because the important part was written down. This is what long-running coding agents do with to-do files and progress notes.</p>
+</section>
+<section id="step-5-prompt-caching-and-why-order-matters">
+  <h2>18 &mdash; Step 5: prompt caching, and why order matters</h2>
+<p>Prompt caching changes the arithmetic. If consecutive calls begin with the same tokens, the provider can reuse its processing of that prefix. Cached reads are billed at a fraction of the normal input price and prefill faster. With illustrative multipliers in line with one major provider's published pricing (cache writes at 1.25 times the base input price, cache reads at 0.1 times), caching the whole growing history of the keep-everything run brings its cost from about $2.67 to about $0.45.</p>
+<p>That is cheaper than clearing without caching, so why clear at all? Because caching fixes the bill but not the other two costs: the peak context is still 54,300 tokens, so the model still reads, and can still be distracted by, 29 stale results. And the two interact: a cache only matches an <em>exact</em> prefix. Every time you edit an earlier message (stubbing a result, compacting history), everything after the edit is a cache miss and must be written again. The practical design follows:</p>
+<ul>
+<li><strong>Order the context from most stable to least stable</strong>: system instructions, then tool definitions, then long-term memories for the session, then the conversation. Anything that changes per call goes last.</li>
+<li><strong>Do not put timestamps or request ids at the top</strong> of the system prompt; one changing token there invalidates the entire cache.</li>
+<li><strong>Clear or compact in batches</strong>, for example when the context passes a threshold, rather than editing history on every step, so the cache stays valid between edits.</li>
+</ul>
+</section>
+<section id="step-6-long-term-memory-three-kinds">
+  <h2>19 &mdash; Step 6: long-term memory, three kinds</h2>
+<p>On day 200, the agent needs two facts from earlier sessions: the duplicate refund on day 140 (so it does not refund the same charge again) and the new address from day 190. Neither is in today's conversation. Long-term memory is the store those facts live in between sessions. It helps to separate three kinds, because they are written, updated and read differently:</p>
+<table>
+<thead><tr><th>Kind</th><th>Example for Priya</th><th>Written when</th><th>Updated how</th></tr></thead>
+<tbody>
+<tr><td>Semantic (facts)</td><td>Delivery address: 7 Lake View, Bengaluru. Prefers email.</td><td>A durable fact is stated or confirmed</td><td>Overwritten by key: a new address replaces the old</td></tr>
+<tr><td>Episodic (events)</td><td>Day 140: refunded duplicate charge ch_2 on ORD-482913.</td><td>After a task, as a short record</td><td>Appended; old episodes fade in relevance, they are not rewritten</td></tr>
+<tr><td>Procedural (how-to)</td><td>For this payment provider, check for pending holds before treating two charges as duplicates.</td><td>When an approach is learned or corrected</td><td>Edited deliberately; often reviewed by a person</td></tr>
+</tbody>
+</table>
+<p>A fourth source is often lumped in but is not memory: the systems of record. The refund itself lives in the payments database, and the agent should query it with a tool rather than trust a memory of it. Memory is for things that exist nowhere else (preferences, conversational context, learned procedures) and for pointers that make retrieval faster. When memory and a system of record disagree, the system of record wins.</p>
+</section>
+<section id="step-7-the-write-path-deciding-what-to-remember">
+  <h2>20 &mdash; Step 7: the write path, deciding what to remember</h2>
+<p>Most memory systems fail on the write path, not the read path: they store too much, store it badly, or never correct it. A sound write path has four stages:</p>
+<ol>
+<li><strong>Extract.</strong> After a session (or every few turns), a model call reads the transcript and proposes candidate memories in a fixed structure: kind, key (for facts), text, importance from 0 to 1, source (which session and turn).</li>
+<li><strong>Filter by a policy.</strong> Keep what is durable, specific to this user, and likely to be useful later. Drop small talk, one-off details, things the system of record already holds, and anything sensitive you have no reason to keep (card numbers, health details, passwords). This policy is a product and privacy decision, not just a prompt.</li>
+<li><strong>Reconcile with what is stored.</strong> For each candidate, look for an existing memory with the same key or very similar text. Then add, update, or ignore. "Moved to Bengaluru" must <em>update</em> the address, not sit next to the Pune address.</li>
+<li><strong>Store with metadata</strong>: timestamp, source, importance, and what it superseded. Provenance lets you show the user why the agent believes something, and deletion requests ("forget my address") must be able to find and remove every copy.</li>
+</ol>
+<p>The reconcile stage is what keeps memory correct over months. Without it, every changed fact leaves a contradiction behind, and the read path has to guess which version is current.</p>
+</section>
+<section id="step-8-the-read-path-scoring-what-to-load">
+  <h2>21 &mdash; Step 8: the read path, scoring what to load</h2>
+<p>Before answering on day 200, the agent retrieves a few memories relevant to the request and puts them in the context, with their dates. A common scoring rule, popularised by research on generative agents, combines three signals:</p>
+\[ \text{score} = \text{similarity} + \text{recency} + \text{importance}, \qquad \text{recency} = 0.5^{\,\text{age in days} / h} \]
+<p>Similarity is the cosine similarity between the request's embedding and the memory's (see <a href="../rag/embeddings.html">embeddings</a>); recency halves every \(h\) days (here \(h = 30\)); importance was set at write time. In practice the three terms are often weighted; equal weights keep the arithmetic visible.</p>
+<p>Suppose the write path had <em>not</em> reconciled, so both addresses are stored. For the request "which address should the replacement go to?", with illustrative similarities:</p>
+<table>
+<thead><tr><th>Memory</th><th>Similarity</th><th>Age (days)</th><th>Recency</th><th>Importance</th><th>Score</th></tr></thead>
+<tbody>
+<tr><td>Address: 7 Lake View, Bengaluru</td><td>0.58</td><td>10</td><td>0.794</td><td>0.8</td><td><strong>2.17</strong></td></tr>
+<tr><td>Address: 14 MG Road, Pune</td><td>0.62</td><td>200</td><td>0.010</td><td>0.8</td><td>1.43</td></tr>
+<tr><td>Prefers email, not SMS</td><td>0.10</td><td>30</td><td>0.500</td><td>0.5</td><td>1.10</td></tr>
+<tr><td>Refunded ch_2 on ORD-482913</td><td>0.15</td><td>60</td><td>0.250</td><td>0.6</td><td>1.00</td></tr>
+</tbody>
+</table>
+<p>Two lessons. Similarity alone would have ranked the <em>old</em> Pune address first (0.62 beats 0.58): wording, not truth, decides similarity. Recency rescues the ranking here. But the stale address still makes the top three and enters the context, where the model may use it. Scoring can only make a contradiction less likely to win; the reconcile step in the write path removes it. Fix contradictions when writing, and use recency as a safety net, not the mechanism.</p>
+<p>Two more read-path rules: put memories in the context <em>with their dates and sources</em> ("[day 190, from chat] new address ..."), so the model can reason about staleness; and load few of them. Five relevant memories help; fifty half-relevant ones are the distraction problem from Step 2 again.</p>
+</section>
+<section id="step-9-context-engineering-the-whole-discipline">
+  <h2>22 &mdash; Step 9: context engineering, the whole discipline</h2>
+<p>Steps 1 to 8 are instances of one job. For every model call, decide:</p>
+<ul>
+<li><strong>Select</strong>: which instructions, tools, memories, documents and history this step needs. Fewer tools per call (see <a href="tool-calling.html">tool calling</a>) and fewer, better-chosen documents (see <a href="../rag/rag-pipeline.html">the RAG pipeline</a>) are both context engineering.</li>
+<li><strong>Compress</strong>: clear used tool results, compact long histories, return compact tool outputs in the first place.</li>
+<li><strong>Order</strong>: stable content first for caching; the user's current request and the most decision-relevant facts near the end, where models attend most reliably; never bury the key constraint in the middle of a long dump.</li>
+<li><strong>Isolate</strong>: give a sub-task its own fresh context. A sub-agent can spend 40,000 tokens reading Priya's 30 orders and return a 500-token report ("2 duplicates found: ORD-3388 ch_9, ORD-4410 ch_14"); the main agent's context grows by 500 tokens, not 40,000. See <a href="multi-agent.html">multi-agent systems</a>.</li>
+<li><strong>Persist</strong>: write what must survive (notes, memories) outside the window, so that compressing the window loses nothing that matters.</li>
+</ul>
+<p>The reason it is called the real production skill: two agents with the same model, prompt and tools can differ widely in cost and accuracy purely because of what each one puts in the window on step 17.</p>
+</section>
+<section id="a-worked-design-for-priya-s-day-200-request">
+  <h2>23 &mdash; A worked design for Priya&#x27;s day-200 request</h2>
+<ol>
+<li><strong>Session start.</strong> Load the stable prefix (instructions, tools: 5,000 tokens, cached). Retrieve memories for "double-charged, orders this year, replacement, new place": the Bengaluru address (reconciled; the Pune one was superseded), the day-140 refund episode, the email preference. Insert them with dates, about 150 tokens.</li>
+<li><strong>Investigation.</strong> Hand the 30-order audit to a sub-agent with a fresh context and a scratchpad. It clears old tool results as it goes, records each finding in notes, and returns a 500-token report. It does not re-flag ch_2 as a new duplicate, because the episode memory and the payments tool both show it was refunded.</li>
+<li><strong>Main thread.</strong> The main agent's context holds the request, three memories and the report: under 7,000 tokens. It proposes two refunds (approval required) and the replacement to the Bengaluru address.</li>
+<li><strong>Session end.</strong> The write path extracts candidates: two new refund episodes (append), "address confirmed: Bengaluru" (update the timestamp of the existing fact), nothing about the lamp's colour (one-off, dropped).</li>
+</ol>
+</section>
+<section id="in-code-a-working-memory-simulator-and-a-memory-store">
+  <h2>24 &mdash; In code: a working-memory simulator and a memory store</h2>
+<p>Both blocks run as-is. The first reproduces the Step 4 table:</p>
+<pre>PREFIX, RESULT, OUTPUT, STEPS = <span class="nr">5_000</span>, <span class="nr">1_500</span>, <span class="nr">200</span>, <span class="nr">30</span> <span class="cm"># tokens</span>
+<span class="kw">def</span> <span class="fn">simulate</span>(strategy, keep_results=<span class="nr">3</span>, compact_at=<span class="nr">20_000</span>, summary_tokens=<span class="nr">1_500</span>):
+    history = []                     <span class="cm"># [kind, tokens] for each message after the fixed prefix</span>
+    sent = peak = <span class="nr">0</span>
+<span class="kw">for</span> step in <span class="tp">range</span>(STEPS):
+        context = PREFIX + <span class="tp">sum</span>(t <span class="kw">for</span> _, t in history)
+        sent += context                                   <span class="cm"># every call re-sends the context</span>
+        peak = <span class="tp">max</span>(peak, context)
+        history += [[<span class="st">"</span><span class="st">assistant</span><span class="st">"</span>, OUTPUT], [<span class="st">"</span><span class="st">tool_result</span><span class="st">"</span>, RESULT]]
+        <span class="kw">if</span> strategy == <span class="st">"</span><span class="st">clear</span><span class="st">"</span>:                           <span class="cm"># old results -&gt; 30-token stubs</span>
+            results = [m <span class="kw">for</span> m in history <span class="kw">if</span> m[<span class="nr">0</span>] == <span class="st">"</span><span class="st">tool_result</span><span class="st">"</span>]
+            <span class="kw">for</span> m in results[:-keep_results]:
+                m[<span class="nr">0</span>], m[<span class="nr">1</span>] = <span class="st">"</span><span class="st">stub</span><span class="st">"</span>, <span class="nr">30</span> <span class="cm"># "[result of get_charges cleared; call again if needed]"</span>
+<span class="kw">if</span> strategy == <span class="st">"</span><span class="st">compact</span><span class="st">"</span> and PREFIX + <span class="tp">sum</span>(t <span class="kw">for</span> _, t in history) &gt; compact_at:
+            history = [[<span class="st">"</span><span class="st">summary</span><span class="st">"</span>, summary_tokens]]       <span class="cm"># an LLM call writes this in practice</span>
+<span class="kw">return</span> sent, peak
+
+<span class="kw">for</span> s in (<span class="st">"</span><span class="st">keep everything</span><span class="st">"</span>, <span class="st">"</span><span class="st">clear</span><span class="st">"</span>, <span class="st">"</span><span class="st">compact</span><span class="st">"</span>):
+    sent, peak = simulate(s)
+    <span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">{</span>s<span class="st">:</span><span class="st">16s</span><span class="st">}</span><span class="st"> input tokens sent </span><span class="st">{</span>sent<span class="st">:</span><span class="st">&gt;8,</span><span class="st">}</span><span class="st">   peak context </span><span class="st">{</span>peak<span class="st">:</span><span class="st">&gt;6,</span><span class="st">}</span><span class="st">   cost $</span><span class="st">{</span>sent * <span class="nr">3</span> / <span class="nr">1e6</span><span class="st">:</span><span class="st">.2f</span><span class="st">}</span><span class="st">"</span>)
+</pre>
+<p>Output: 889,500 / 54,300 / $2.67 for keeping everything, 373,530 / 16,080 / $1.12 for clearing, 354,900 / 18,600 / $1.06 for compaction. Try <code>keep_results=1</code> or a lower <code>compact_at</code> and watch the trade between tokens and how much raw detail survives.</p>
+<p>The second is a minimal long-term store: upsert by key on the write path, similarity plus recency plus importance on the read path (TF-IDF similarity stands in for an embedding model):</p>
+<pre><span class="kw">from</span> sklearn.feature_extraction.text <span class="kw">import</span> TfidfVectorizer
+<span class="kw">from</span> sklearn.metrics.pairwise <span class="kw">import</span> cosine_similarity
+
+<span class="kw">class</span> <span class="tp">MemoryStore</span>:
+    <span class="st">"""Long-term memory for one user. Facts with a key are upserted, so a new value
+    supersedes the old one instead of sitting next to it."""</span>
+<span class="kw">def</span> <span class="fn">__init__</span>(<span class="tp">self</span>, half_life_days=<span class="nr">30</span>):
+        <span class="tp">self</span>.items, <span class="tp">self</span>.half_life = {}, half_life_days
+
+    <span class="kw">def</span> <span class="fn">write</span>(<span class="tp">self</span>, text, day, importance, key=<span class="nr">None</span>):
+        k = key or <span class="st">f</span><span class="st">"</span><span class="st">episode-</span><span class="st">{</span><span class="tp">len</span>(<span class="tp">self</span>.items)<span class="st">}</span><span class="st">"</span>
+        old = <span class="tp">self</span>.items.get(k)
+        <span class="tp">self</span>.items[k] = {<span class="st">"</span><span class="st">text</span><span class="st">"</span>: text, <span class="st">"</span><span class="st">day</span><span class="st">"</span>: day, <span class="st">"</span><span class="st">importance</span><span class="st">"</span>: importance,
+                         <span class="st">"</span><span class="st">supersedes</span><span class="st">"</span>: old[<span class="st">"</span><span class="st">text</span><span class="st">"</span>] <span class="kw">if</span> old <span class="kw">else</span> <span class="nr">None</span>}
+
+    <span class="kw">def</span> <span class="fn">read</span>(<span class="tp">self</span>, query, today, k=<span class="nr">3</span>):
+        keys = <span class="tp">list</span>(<span class="tp">self</span>.items)
+        texts = [<span class="tp">self</span>.items[x][<span class="st">"</span><span class="st">text</span><span class="st">"</span>] <span class="kw">for</span> x in keys]
+        vec = TfidfVectorizer().fit(texts + [query])
+        sims = cosine_similarity(vec.transform([query]), vec.transform(texts))[<span class="nr">0</span>]
+        scored = []
+        <span class="kw">for</span> key, sim in <span class="tp">zip</span>(keys, sims):
+            m = <span class="tp">self</span>.items[key]
+            recency = <span class="nr">0.5</span> ** ((today - m[<span class="st">"</span><span class="st">day</span><span class="st">"</span>]) / <span class="tp">self</span>.half_life)
+            scored.append((<span class="tp">round</span>(sim + recency + m[<span class="st">"</span><span class="st">importance</span><span class="st">"</span>], <span class="nr">2</span>), m[<span class="st">"</span><span class="st">text</span><span class="st">"</span>]))
+        <span class="kw">return</span> <span class="tp">sorted</span>(scored, reverse=<span class="nr">True</span>)[:k]
+
+mem = MemoryStore()
+mem.write(<span class="st">"</span><span class="st">Delivery address: 14 MG Road, Pune</span><span class="st">"</span>, day=<span class="nr">0</span>, importance=<span class="nr">0.8</span>, key=<span class="st">"</span><span class="st">delivery_address</span><span class="st">"</span>)
+mem.write(<span class="st">"</span><span class="st">Prefers email updates, not SMS</span><span class="st">"</span>, day=<span class="nr">170</span>, importance=<span class="nr">0.5</span>, key=<span class="st">"</span><span class="st">contact_pref</span><span class="st">"</span>)
+mem.write(<span class="st">"</span><span class="st">Refunded duplicate charge ch_2 on ORD-482913</span><span class="st">"</span>, day=<span class="nr">140</span>, importance=<span class="nr">0.6</span>)
+mem.write(<span class="st">"</span><span class="st">Delivery address: 7 Lake View, Bengaluru</span><span class="st">"</span>, day=<span class="nr">190</span>, importance=<span class="nr">0.8</span>, key=<span class="st">"</span><span class="st">delivery_address</span><span class="st">"</span>)
+
+<span class="kw">for</span> score, text in mem.read(<span class="st">"</span><span class="st">which delivery address should the replacement go to?</span><span class="st">"</span>, today=<span class="nr">200</span>):
+    <span class="tp">print</span>(score, text)
+<span class="tp">print</span>(<span class="st">"</span><span class="st">superseded:</span><span class="st">"</span>, mem.items[<span class="st">"</span><span class="st">delivery_address</span><span class="st">"</span>][<span class="st">"</span><span class="st">supersedes</span><span class="st">"</span>])
+</pre>
+<p>It prints the Bengaluru address first (score 1.82), then the email preference (1.0) and the refund episode (0.85); the Pune address is gone from the store and recorded only as what the new fact superseded. Remove <code>key="delivery_address"</code> from the last write and both addresses come back, the old one included: the contradiction the read path cannot fully fix. In production the store is a database table plus a vector index, the extraction is a model call with a schema, and every memory carries the user id so retrieval can never cross users.</p>
+</section>
 <section id="memory-making-agents-remember">
-  <h2>13 &mdash; Memory: making agents remember</h2>
+  <h2>25 &mdash; Memory: making agents remember</h2>
 <p>Models are stateless. "Memory" is a system you build. It exists because the context window is finite — memory decides what to keep and what to reload.</p>
 <p>Every "the agent remembered!" moment is plumbing: something wrote text to a store earlier, and something injected it into the context now. There is no third mechanism. Once you see memory as <b>write policy + storage + read policy</b>, the five classic types below stop being taxonomy trivia and become five different answers to "what do we write, where, and when do we read it back?"</p>
 <table>
@@ -128,7 +357,7 @@ Query -&gt; Retrieve relevant memories -&gt; Inject into system prompt</pre></di
 </table>
 </section>
 <section id="working-memory-a-buffer-that-knows-when-to-shrink">
-  <h2>14 &mdash; Working memory: a buffer that knows when to shrink</h2>
+  <h2>26 &mdash; Working memory: a buffer that knows when to shrink</h2>
 <p>The <code>messages</code> list <i>is</i> working memory, and its failure mode is simply growing until it degrades quality and burns money. The fix is a buffer object that watches its own token count and summarizes the oldest turns past a threshold — the summarization <i>trigger</i> is the design decision, not the summary itself.</p>
 <div class="code-block"><div class="code-file"><span>working_memory.py — buffer with a summarization trigger</span><span class="code-lang">python</span></div><pre><span class="kw">class</span> <span class="tp">ConversationBuffer</span>:
     <span class="st">"""messages list that compresses itself past a token threshold."""</span>
@@ -159,7 +388,7 @@ Query -&gt; Retrieve relevant memories -&gt; Inject into system prompt</pre></di
 <p>Details that matter: the trigger fires on <i>tokens</i>, not message count (one message can be a 40k-token tool result); the last <code>keep_recent</code> turns stay verbatim because the model needs exact recent wording, not a paraphrase; and the summary is <i>rolling</i> — each compression folds new turns into the existing summary rather than re-summarizing from scratch, keeping compression cost O(evicted turns), not O(history). Worked numbers (illustrative): a 100-turn support session averaging 400 tokens/turn is 40k tokens raw. With <code>max_tokens=30_000</code> this buffer compresses twice, and turn 100 is answered against ~2k of summary + ~2.4k of recent turns ≈ 4.4k instead of 40k — a ~9× input-cost cut, and (just as important) the model isn't wading through 90 stale turns to find the current question.</p>
 </section>
 <section id="episodic-memory-remember-recall-over-a-vector-store">
-  <h2>15 &mdash; Episodic memory: remember/recall over a vector store</h2>
+  <h2>27 &mdash; Episodic memory: remember/recall over a vector store</h2>
 <p>Working memory dies with the session. Episodic memory is the cross-session store: embed notable moments, retrieve the relevant ones next time. The original sketch, now with the parts a real one needs — dedupe on write and score-thresholded, time-aware reads:</p>
 <div class="code-block"><div class="code-file"><span>episodic.py — vector store of past events (qdrant-style API)</span><span class="code-lang">python</span></div><pre><span class="kw">class</span> <span class="tp">EpisodicMemory</span>:
     <span class="kw">def</span> <span class="fn">__init__</span>(<span class="tp">self</span>, db, embed, col=<span class="st">"</span><span class="st">memories</span><span class="st">"</span>):
@@ -191,7 +420,7 @@ Query -&gt; Retrieve relevant memories -&gt; Inject into system prompt</pre></di
 <p>Three non-obvious choices here. The <b>relevance floor</b>: vector search always returns <i>something</i>, and without <code>min_score</code> an unrelated question drags in four random memories that actively mislead. The <b>dedupe check</b>: agents restate the same fact constantly; without it, "user prefers Python" ends up stored 30 times and crowds out everything else in every recall. The <b>staleness disclaimer</b> in the injection: memories are claims about the past, and the model should treat them as evidence, not gospel — "may be stale" measurably reduces the model doubling down on outdated facts.</p>
 </section>
 <section id="fact-extraction-from-transcripts-to-a-profile">
-  <h2>16 &mdash; Fact extraction: from transcripts to a profile</h2>
+  <h2>28 &mdash; Fact extraction: from transcripts to a profile</h2>
 <p>Episodic recall answers "what happened related to X?" But some knowledge should be <i>always</i> present, not retrieved-if-relevant: the user's name, plan tier, stack, standing preferences. That's a <b>profile</b> — a small structured document, built by running an extraction pass after each session, and injected into the system prompt whole (it's tiny).</p>
 <div class="code-block"><div class="code-file"><span>profile.py — end-of-session fact extraction with merge</span><span class="code-lang">python</span></div><pre>PROFILE_SCHEMA = {<span class="st">"</span><span class="st">name</span><span class="st">"</span>: <span class="nr">None</span>, <span class="st">"</span><span class="st">role</span><span class="st">"</span>: <span class="nr">None</span>, <span class="st">"</span><span class="st">stack</span><span class="st">"</span>: [], <span class="st">"</span><span class="st">preferences</span><span class="st">"</span>: [],
                   <span class="st">"</span><span class="st">constraints</span><span class="st">"</span>: [], <span class="st">"</span><span class="st">current_projects</span><span class="st">"</span>: []}
@@ -216,7 +445,7 @@ Query -&gt; Retrieve relevant memories -&gt; Inject into system prompt</pre></di
 <p>The contradiction rule is the whole game: profiles must be <i>updatable</i>, not append-only. "User is migrating to Postgres" (March) must replace "user runs MySQL" (January), or the agent gives confidently wrong advice forever. Note also the fail-safe: a botched extraction keeps the old profile rather than corrupting it — memory writes should never be able to make the system dumber than doing nothing.</p>
 </section>
 <section id="external-memory-the-file-the-agent-keeps">
-  <h2>17 &mdash; External memory: the file the agent keeps</h2>
+  <h2>29 &mdash; External memory: the file the agent keeps</h2>
 <div class="callout"><p><strong>The "write to a file" trick</strong></p>A robust, inspectable pattern: the agent keeps a plan/notes <b>file</b> and re-reads it each turn. It survives context compaction, you can debug it, and it doubles as an audit log. Simple beats clever.</div>
 <p>Concretely, this is just two tools plus a system-prompt contract:</p>
 <div class="code-block"><div class="code-file"><span>scratchpad.py — file-based external memory as tools</span><span class="code-lang">python</span></div><pre>PAD = pathlib.Path(<span class="st">"</span><span class="st">workdir/scratchpad.md</span><span class="st">"</span>)
@@ -237,7 +466,7 @@ SYSTEM += <span class="st">"""</span>
 <p>Semantic memory (facts about the world → RAG, <a href="../rag/index.html">Knowledge &amp; RAG</a>, <a href="tool-calling.html">Tool calling</a>) and procedural memory (instructions that update — really just the profile pattern applied to <i>behavior</i>: "user wants diffs, not full files" ends up as a standing instruction) complete the table; both reuse machinery you've already seen, which is the quiet point of this topic — memory types differ in <b>policy</b>, barely in mechanism.</p>
 </section>
 <section id="the-write-policy-what-not-to-store">
-  <h2>18 &mdash; The write policy: what NOT to store</h2>
+  <h2>30 &mdash; The write policy: what NOT to store</h2>
 <p>Everyone designs the read path; the write path is where memory systems actually die. Store too little and the agent is a goldfish. Store too much and recall returns noise, the profile bloats, and you've built a privacy liability. Rules that hold up:</p>
 <ul>
 <li><b>Don't store what you can re-derive.</b> Tool outputs, retrieved documents, computed results — the source of truth already exists; store the <i>pointer</i> ("order data lives in orders_db, key = email"), not the copy that will silently go stale.</li>
@@ -266,7 +495,7 @@ SYSTEM += <span class="st">"""</span>
 </ol></div>
 </section>
 <section id="context-engineering-the-real-production-skill">
-  <h2>19 &mdash; Context engineering — the real production skill</h2>
+  <h2>31 &mdash; Context engineering — the real production skill</h2>
 <p>Bigger than prompt engineering. The job: decide <b>what's in the window each turn</b>, because it's finite and quality drops as it fills.</p>
 <p>Prompt engineering asks "how do I phrase this?" Context engineering asks "of everything I <i>could</i> put in the window — system prompt, tool schemas, history, retrieved documents, memories, scratchpad — what earns its tokens <b>this turn</b>?" Two facts make this the job. First, the window is a hard budget: overflow is an API error. Second, and less obvious: quality degrades <i>before</i> you hit the limit. Long contexts bury the needle — models attend less reliably to material in the middle of a 150k-token window, and every irrelevant document you "helpfully" include is a distractor competing with the relevant one. More context is not more better; more <i>relevant</i> context is.</p>
 <h3>Token budgeting</h3>
@@ -392,7 +621,7 @@ answer = <span class="kw">await</span> llm(SYNTH_PROMPT + <span class="st">"</sp
 <p>The arithmetic that justifies it: each sub-investigation might churn through 100k tokens of logs and diffs. Done inline, the parent's window holds ~300k tokens of raw material (over the limit, and mostly noise by synthesis time). With sub-agents, the parent's window holds three ~800-token digests. The parent stays cheap, cacheable, and sharp for the actual decision; the expensive mess was spent in disposable windows. That's context engineering's whole thesis in one pattern: <b>spend tokens where they inform the next decision; quarantine tokens that don't.</b></p>
 </section>
 <section id="the-per-turn-checklist">
-  <h2>20 &mdash; The per-turn checklist</h2>
+  <h2>32 &mdash; The per-turn checklist</h2>
 <ul>
 <li><b>System prompt:</b> static, versioned, cache-marked. No timestamps, no per-request IDs.</li>
 <li><b>Tools:</b> only the tools this task can need — 20 schemas the model never calls are pure distractor cost. Route first, then expose.</li>
@@ -414,7 +643,7 @@ answer = <span class="kw">await</span> llm(SYNTH_PROMPT + <span class="st">"</sp
 </ol></div>
 </section>
 <section id="context-and-memory-management">
-  <h2>21 &mdash; Context and memory management</h2>
+  <h2>33 &mdash; Context and memory management</h2>
 <ul>
 <li>Long tasks overflow the context window and degrade quality before they hit the limit.</li>
 <li><strong>Compaction</strong>: summarize older turns and tool outputs, keep decisions and open items.</li>
@@ -425,23 +654,40 @@ answer = <span class="kw">await</span> llm(SYNTH_PROMPT + <span class="st">"</sp
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>22 &mdash; Production &amp; Ops</h2>
+  <h2>34 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>GDPR delete by user_id across memory stores</li><li>Don't store secrets/PII without encryption</li><li>Memory write audit log</li></ul></div>
 </section>
 <section id="related-topics">
-  <h2>23 &mdash; Related topics</h2>
+  <h2>35 &mdash; Related topics</h2>
 <div class="card"><ul><li><a href="what-is-an-agent.html">What an agent is</a></li><li><a href="agent-loop.html">The agent loop</a></li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a></li><li><a href="../production/semantic-cache.html">Semantic caching</a></li></ul></div>
 </section>
 <section id="where-people-get-lost">
-  <h2>24 &mdash; Where people get lost</h2>
+  <h2>36 &mdash; Where people get lost</h2>
 <div class="card"><ul><li>Dumping full chat history — context overflow</li><li>Storing contradictory facts without merge</li><li>Cross-user memory leakage</li><li>No TTL on outdated preferences</li></ul></div>
+<ul>
+<li><strong>"The model remembers the conversation."</strong> It remembers nothing; your code re-sends it. Memory is a read path and a write path you design.</li>
+<li><strong>"We have a 200k window, so context management is unnecessary."</strong> Cost and latency grow with every token on every call, and quality drops as irrelevant material accumulates. The window is a ceiling, not a goal.</li>
+<li><strong>Sliding-window truncation for tasks.</strong> It drops the original request first. Pin the goal and instructions, or use clearing and compaction.</li>
+<li><strong>Treating compaction as free.</strong> It costs a model call and can silently drop the detail that matters later. Use a structured handover prompt and keep ids in notes.</li>
+<li><strong>Editing early history on every step with caching on.</strong> Any change to a prefix invalidates the cache after it. Put stable content first and compact in batches.</li>
+<li><strong>Storing every turn as a memory.</strong> Memory without a write policy becomes a pile of stale, contradictory, sometimes sensitive text. Extract, filter, reconcile.</li>
+<li><strong>Relying on retrieval scoring to resolve contradictions.</strong> Similarity can prefer the stale fact. Supersede old facts when writing.</li>
+<li><strong>Trusting memory over systems of record.</strong> Whether a refund happened is a question for the payments API, not for a remembered sentence.</li>
+</ul>
 </section>
 <section id="how-this-connects">
-  <h2>25 &mdash; How this connects</h2>
-<h3>Builds on</h3><ul><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="tool-calling.html">Tool calling</a> &mdash; Why tools, what goes over the wire, and designing schemas the model uses well.</li><li><a href="what-is-an-agent.html">What an agent is</a> &mdash; Agents vs agentic AI, what makes something an agent, workflows vs agents, and agent architectures.</li><li><a href="agent-loop.html">The agent loop</a> &mdash; The loop in depth and in code: budgets, errors, human approval, reliability, safety, and how to evaluate an agent.</li></ul><h3>Where this shows up later</h3><ul><li><a href="../tech/langchain.html">LangChain</a> &mdash; Chains, runnables, retrievers and the integrations layer.</li><li><a href="../tech/llamaindex.html">LlamaIndex</a> &mdash; Data-first RAG framework: loaders, indexes, query engines.</li><li><a href="../tech/crewai.html">CrewAI</a> &mdash; Role-based multi-agent crews: agents, tasks, processes.</li></ul>
+  <h2>37 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../rag/embeddings.html">Embeddings</a> &mdash; Turning meaning into numbers: dense vectors, cosine similarity, sentence embeddings and contrastive training.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="tool-calling.html">Tool calling</a> &mdash; Why tools, what goes over the wire, and designing schemas the model uses well.</li><li><a href="what-is-an-agent.html">What an agent is</a> &mdash; Agents vs agentic AI, what makes something an agent, workflows vs agents, and agent architectures.</li><li><a href="agent-loop.html">The agent loop</a> &mdash; The loop in depth and in code: budgets, errors, human approval, reliability, safety, and how to evaluate an agent.</li></ul><h3>Where this shows up later</h3><ul><li><a href="multi-agent.html">Multi-agent systems</a> &mdash; When to go multi-agent, topologies, handoffs and state, orchestration, and the production debate.</li><li><a href="../tech/langgraph.html">LangGraph</a> &mdash; Agents as explicit state graphs: nodes, edges, checkpoints, interrupts.</li><li><a href="../tech/langchain.html">LangChain</a> &mdash; Chains, runnables, retrievers and the integrations layer.</li><li><a href="../tech/llamaindex.html">LlamaIndex</a> &mdash; Data-first RAG framework: loaders, indexes, query engines.</li><li><a href="../tech/crewai.html">CrewAI</a> &mdash; Role-based multi-agent crews: agents, tasks, processes.</li></ul>
 </section>
 <section id="check-yourself">
-  <h2>26 &mdash; Check yourself</h2>
+  <h2>38 &mdash; Check yourself</h2>
+<details><summary>A 20-step run has a 4,000-token prefix and adds 1,000 tokens per step. How many input tokens does it send in total, and what is the last call's context size?</summary><div class="answer">The last call carries \(4000 + 19 \times 1000 = 23{,}000\) tokens. Total: \(20 \times 4000 + 1000 \times (0 + 1 + \dots + 19) = 80{,}000 + 190{,}000 = 270{,}000\) tokens.</div></details>
+<details><summary>Why can tool-result clearing lose less information than compaction, despite being simpler?</summary><div class="answer">Clearing keeps every message and the model's own reasoning, removing only raw payloads whose value was already used by the next decision (and the tool can be called again). Compaction rewrites the history through a model, which may omit any detail, including the user's goal or an id needed later.</div></details>
+<details><summary>Your agent's system prompt begins with "Current time: 14:03:22". Caching seems not to work. Why?</summary><div class="answer">A cache matches an exact prefix. The timestamp changes on every call, so the very first tokens differ and nothing after them can be reused. Move volatile values to the end of the context.</div></details>
+<details><summary>With a 30-day half-life, what recency score does a 90-day-old memory get, and what does that imply for a stable fact like a birthday?</summary><div class="answer">\(0.5^{90/30} = 0.125\). A durable fact that is still true would be wrongly down-ranked, so recency decay suits episodes and changeable facts; stable facts should be keyed and exempt from decay (or have high importance).</div></details>
+<details><summary>Priya says "forget my old address". What must your memory design support for this to be honest?</summary><div class="answer">Provenance and deletion: every memory stores its user id and source, so all copies (including superseded versions, summaries and any vector-index entries) can be found and removed. A memory that was compacted into a summary must be removed or the summary regenerated.</div></details>
+<details><summary>A research agent reads 25 web pages of about 3,000 tokens each before answering, and quality is poor. Propose two context-engineering changes.</summary><div class="answer">Isolate the reading in a sub-agent (or per-page calls) that returns short structured notes, so the main context holds a few thousand tokens of findings instead of 75,000 of raw pages. And put the question and the best-supported findings at the end of the context, clearing raw page text after notes are written.</div></details>
+<details><summary>Which of these belong in long-term memory: the customer's preferred language; the current status of their order; a refund issued last month; their card number?</summary><div class="answer">Preferred language: yes (durable semantic fact). Order status: no, query the system of record. The refund: a short episode is useful context, but the payments system remains authoritative. Card number: no; sensitive and never needed by the agent.</div></details>
 <details><summary>Scratchpad vs long-term memory?</summary><div class="answer">Scratchpad: current task working state in context. Long-term: persisted facts across sessions retrieved by embedding similarity.</div></details>
 <details><summary>When summarize vs retrieve?</summary><div class="answer">Summarize when session exceeds token budget. Retrieve when need specific past facts not in recent buffer.</div></details>
 <details><summary>How extract facts for storage?</summary><div class="answer">LLM extraction prompt at session end: list durable user preferences/facts. Discard tool noise and ephemeral data.</div></details>

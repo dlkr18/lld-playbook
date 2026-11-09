@@ -1,0 +1,224 @@
+<!-- Deep lesson: Reranking. Merged into rag/reranking by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>First-stage retrieval</td><td>The fast search (BM25, embeddings, or both fused) that pulls a candidate list of, say, 50 chunks out of millions.</td></tr>
+<tr><td>Reranker</td><td>A slower, more accurate model that rescores only those candidates and reorders them.</td></tr>
+<tr><td>Bi-encoder</td><td>A model that embeds query and passage separately; their similarity is a dot product of two vectors computed independently.</td></tr>
+<tr><td>Cross-encoder</td><td>A model that reads the query and the passage together in one input and outputs a single relevance score.</td></tr>
+<tr><td>Logit</td><td>The raw score a cross-encoder outputs; passing it through a sigmoid gives a number between 0 and 1.</td></tr>
+<tr><td>Candidate depth \(N\)</td><td>How many first-stage results are sent to the reranker.</td></tr>
+<tr><td>Kept \(K\)</td><td>How many reranked results are passed on to the language model.</td></tr>
+<tr><td>Late interaction (ColBERT)</td><td>A middle ground: store one vector per token of each passage, and score by matching each query token to its best passage token.</td></tr>
+<tr><td>MaxSim</td><td>ColBERT's score: for each query token, the highest similarity to any passage token, summed over query tokens.</td></tr>
+<tr><td>Pointwise / listwise</td><td>Scoring each passage on its own, versus judging a whole list of passages at once and returning an order.</td></tr>
+<tr><td>MMR</td><td>Maximal marginal relevance: choosing results that are relevant but not near-copies of results already chosen.</td></tr>
+<tr><td>Abstention threshold</td><td>A reranker score below which the system says it found nothing relevant instead of answering.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>First-stage retrieval is built for speed: it must search millions of chunks in tens of milliseconds, so it compares precomputed vectors or looks up word lists. That speed has a price in precision. The answer is usually somewhere in its top 50, but often not in its top 5, and the top 5 is what the language model reads. Reranking spends a much more expensive model on just those 50 candidates to put the right ones first.</p>
+<p>Interviewers ask:</p>
+<ol>
+<li>Why is a cross-encoder more accurate than a bi-encoder, and why can it not replace it?</li>
+<li>How do you choose how many candidates to rerank and how many to keep?</li>
+<li>What does reranking cost in latency and money, and what are the alternatives (ColBERT, LLM rerankers)?</li>
+<li>Can you use reranker scores to decide that nothing relevant was found?</li>
+</ol>
+<p>The running example continues from <a href="@@rag/hybrid-search@@">hybrid search</a>. A customer of the support assistant asks <strong>"error E-4012 when exporting invoices"</strong>. Hybrid retrieval with reciprocal rank fusion returned 50 candidates whose top three were nearly tied:</p>
+<table>
+<thead><tr><th>Fused rank</th><th>Chunk</th><th>RRF score</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>d5: "Troubleshooting export errors: most export failures are caused by missing invoice fields."</td><td>0.0325</td></tr>
+<tr><td>2</td><td>d1: "Error E-4012: the export failed because the invoice has no tax ID. Add a tax ID and retry."</td><td>0.0323</td></tr>
+<tr><td>3</td><td>d2: "Exporting invoices to CSV: open Billing, select the invoices, and choose Export."</td><td>0.0320</td></tr>
+</tbody>
+</table>
+<p>Only d1 answers the question. The fused scores cannot tell them apart, because neither retriever ever read the question and a passage together. That is what a reranker does.</p>
+</section>
+
+<section data-label="Step 1: why the first stage cannot be precise">
+<p>A bi-encoder turns each passage into one vector <em>before any query exists</em>. That vector has to serve every question anyone might ask about the passage: "what is E-4012", "why did my export fail", "do invoices need a tax ID". It is a summary, and a summary loses detail. At query time, the only interaction between question and passage is one dot product between two summaries.</p>
+<p>So the bi-encoder can tell that d1, d2 and d5 are all "about invoice export problems", and rank them near each other and above password resets. What it cannot do is check whether the specific code in the question is the specific code the passage explains, or whether a passage that matches the topic actually answers the question asked. BM25 has the opposite limitation: it sees the shared token "E-4012" but nothing of meaning.</p>
+<p>The useful consequence: first-stage retrieval is good at <strong>recall at depth</strong> (is the answer somewhere in the top 50?) and mediocre at <strong>precision at the top</strong> (is it in the top 5?). A second stage can fix the order, but only of what the first stage found.</p>
+</section>
+
+<section data-label="Step 2: how a cross-encoder scores a pair">
+<p>A cross-encoder concatenates the query and one passage into a single input, typically</p>
+<pre class="ascii-diagram">[CLS] error E-4012 when exporting invoices [SEP] Error E-4012: the export failed because
+the invoice has no tax ID. Add a tax ID and retry. [SEP]</pre>
+<p>and runs a <a href="@@fundamentals/transformers@@">transformer</a> over it. Because attention runs across the whole input, every query token can attend to every passage token in every layer: "E-4012" in the question attends directly to "E-4012" in the passage; "exporting" to "export failed"; the model can notice that d4's "E-4007" is a different code. The final vector of the first token goes through a small linear layer that outputs one number, the relevance logit. A sigmoid turns it into a score between 0 and 1.</p>
+<p>Training uses (query, passage, label) examples: relevant pairs labelled 1, and hard negatives (passages a first-stage retriever ranked highly that are not answers) labelled 0, with a binary cross-entropy loss; or one positive plus several negatives per query with a softmax over them. The hard negatives are what teach it the distinctions the first stage misses, such as the right topic but the wrong code.</p>
+<p>For our candidates, a reranker would give d1 a high logit and d5 and d2 clearly lower ones: d5 is about export errors in general, d2 is about exporting at all, and only d1 is about E-4012. The order becomes d1, d5, d2.</p>
+<div class="callout"><p><strong>Why not use a cross-encoder for everything?</strong> It has nothing to precompute. The passage's representation depends on the query, so every query needs one full forward pass per passage. For 30,000 chunks of about 300 tokens, that is roughly 9.6 million tokens of transformer computation per question. On 50 candidates it is about 16,000 tokens: roughly a thousand times more than embedding a 15-token query, but affordable, because it is one batched forward pass.</p></div>
+</section>
+
+<section data-label="Step 3: retrieve wide, rerank narrow">
+<p>The standard design has two numbers to choose: the candidate depth \(N\) and the number kept \(K\). Two facts drive them.</p>
+<p><strong>The reranker's ceiling is the first stage's recall at \(N\).</strong> If the answer is not among the \(N\) candidates, no reranker can find it. Larger \(N\) raises that ceiling.</p>
+<p><strong>Reranking cost grows linearly in \(N\)</strong>, and an imperfect reranker given more candidates also faces more distractors.</p>
+<p>A synthetic model makes the trade visible (the code is at the end). Each query has 5,000 candidate chunks with a hidden relevance; the answer's relevance is high. The first stage sees relevance through a lot of noise; the reranker through much less. Measured over 2,000 simulated queries:</p>
+<table>
+<thead><tr><th>Candidates \(N\)</th><th>First-stage recall@\(N\)</th><th>Answer in top 5 after reranking (good reranker)</th><th>Same, noisier reranker</th></tr></thead>
+<tbody>
+<tr><td>— (no reranking)</td><td>—</td><td colspan="2">0.516 (first stage's own top 5)</td></tr>
+<tr><td>10</td><td>0.643</td><td>0.641</td><td>0.638</td></tr>
+<tr><td>20</td><td>0.757</td><td>0.748</td><td>0.725</td></tr>
+<tr><td>50</td><td>0.882</td><td>0.846</td><td>0.774</td></tr>
+<tr><td>100</td><td>0.940</td><td>0.865</td><td>0.766</td></tr>
+<tr><td>200</td><td>0.976</td><td>0.875</td><td>0.732</td></tr>
+</tbody>
+</table>
+<p>Read it as three lessons. Reranking 50 candidates lifts "answer in the top 5" from 0.52 to about 0.85: the main benefit. Going from 50 to 200 candidates quadruples the reranking cost for 3 more points with a good reranker, and <em>loses</em> points with a weaker one, which gets confused by more near-misses. And the after-reranking number can never exceed the first-stage recall in the same row.</p>
+<p>These numbers come from a toy model, not from any real system. The shape is what transfers: measure first-stage recall at several depths on your golden set, rerank at a few depths, and pick the smallest \(N\) where the final top-\(K\) quality stops improving. Typical choices land at \(N\) = 20 to 100 and \(K\) = 3 to 10.</p>
+</section>
+
+<section data-label="Step 4: latency and cost">
+<p>A cross-encoder's cost per query is roughly \(N \times\) (query tokens + passage tokens). For \(N = 50\) and 320 tokens per pair: 16,000 tokens through the model. All 50 pairs go in one batch, so on a GPU the latency is one batched forward pass.</p>
+<ul>
+<li>A small cross-encoder (tens to a few hundred million parameters) on a GPU typically scores 50 such pairs in a few tens of milliseconds; on a CPU, hundreds of milliseconds (order of magnitude; measure on your hardware).</li>
+<li>Larger rerankers (billions of parameters, often fine-tuned from LLMs) are more accurate and several times slower.</li>
+<li>Hosted rerank APIs charge per search or per document scored, and add a network round trip.</li>
+</ul>
+<p>Levers when reranking is too slow: lower \(N\); truncate passages to the first few hundred tokens (most relevance signal is early, and cross-encoders have an input limit anyway, often 512 tokens); use a smaller reranker model; or cache results for repeated queries. In a typical RAG request the language model's generation dominates total latency, so a 30 to 80 ms reranking stage that measurably improves the context is usually a good trade.</p>
+</section>
+
+<section data-label="Step 5: late interaction, a middle ground">
+<p>ColBERT-style models sit between the two encoders. At indexing time they store <em>one vector per token</em> of each passage (typically 128 dimensions), rather than one per passage. At query time they embed each query token and compute <strong>MaxSim</strong>:</p>
+\[ \text{score}(q, d) = \sum_{i \in q} \max_{j \in d} \; \mathbf{q}_i \cdot \mathbf{d}_j \]
+<p>Each query token finds its best-matching passage token, and the matches add up. Toy version with two query tokens ("E-4012", "export") and three tokens per passage, unit vectors in 3 dimensions:</p>
+<table>
+<thead><tr><th>Passage</th><th>Best match for "E-4012"</th><th>Best match for "export"</th><th>MaxSim</th></tr></thead>
+<tbody>
+<tr><td>d1 (E-4012, export, tax)</td><td>0.993</td><td>0.983</td><td><strong>1.976</strong></td></tr>
+<tr><td>d5 (export, errors, failures)</td><td>0.588</td><td>0.988</td><td>1.576</td></tr>
+</tbody>
+</table>
+<p>Both passages match "export" well, but only d1 has a token matching the code, so it wins. Token-level matching recovers much of what a single passage vector blurs, while passage token vectors are still precomputed, so it is far cheaper per candidate than a cross-encoder.</p>
+<p>The cost moves to storage: 300 tokens × 128 dimensions × 2 bytes is 76.8 KB per chunk, against 2 KB for one 1,024-dimension float16 vector, about 37 times more. For our 30,000 chunks that is 2.3 GB, fine; for 100 million chunks it needs compression and specialised engines. Late interaction is used both as a reranker over candidates and, with such engines, as a first stage.</p>
+</section>
+
+<section data-label="Step 6: language models as rerankers">
+<p>A general LLM can rerank too, in two styles:</p>
+<ul>
+<li><strong>Pointwise</strong>: for each candidate, ask "Does this passage answer the question? Score 0 to 3", or read the probability of the token "Yes". Simple and parallel, but scores drift between calls.</li>
+<li><strong>Listwise</strong>: show the question and 20 numbered passages, ask for the IDs in order of relevance. The model compares passages with each other, which is closer to what ranking needs, but lists longer than the context comfortably handles must be processed in overlapping windows, and models favour passages by position in the prompt, so shuffle and check.</li>
+</ul>
+<p>The appeal is flexibility: relevance criteria can be written in plain language ("prefer the current policy over archived versions; the customer is on an annual plan"). The cost is the problem. Listwise reranking of 50 passages of 320 tokens is about 16,000 input tokens per query. At 2 million queries a month that is 32 billion tokens; at an illustrative $0.25 to $1 per million input tokens, $8,000 to $32,000 a month, plus seconds of latency. A dedicated cross-encoder on one GPU does the same job for a small fraction of that. LLM reranking fits low-volume, high-value queries, or as a teacher to generate training labels for a cheaper reranker.</p>
+</section>
+
+<section data-label="Step 7: using scores to decide, not just to sort">
+<p>Embedding similarities are not calibrated (see <a href="@@rag/embeddings@@">embeddings</a>): a cosine of 0.78 says little about relevance on its own. Cross-encoder scores are better suited to decisions, because the model was trained on exactly the question "is this pair relevant?", per pair. A sigmoid of a logit of 6.2 is 0.998; of −3.1 is 0.043.</p>
+<p>That enables two useful behaviours:</p>
+<ul>
+<li><strong>Abstention.</strong> If even the best candidate scores below a threshold, the system says it could not find the answer instead of letting the language model improvise from irrelevant chunks. This is one of the most effective controls against confident wrong answers in RAG.</li>
+<li><strong>Variable \(K\).</strong> Keep every candidate above a threshold, up to a maximum, instead of a fixed number: one chunk when one clearly answers, six when the question is broad.</li>
+</ul>
+<p>The scores are still not true probabilities, and they shift with the reranker model, the domain and passage length. Choose thresholds on a labelled set that includes unanswerable questions: plot the share of answerable questions kept and unanswerable ones rejected at each threshold, and pick the trade-off the product wants. Re-tune whenever the reranker changes.</p>
+</section>
+
+<section data-label="Step 8: diversity, so the top K are not copies">
+<p>Rerankers score each passage independently, so near-duplicates score alike and can fill the kept slots: the same paragraph from the policy page, its PDF copy and a forum quote. <strong>Maximal marginal relevance</strong> picks results one at a time, each maximising</p>
+\[ \lambda \cdot \text{rel}(d) - (1 - \lambda) \cdot \max_{s \in \text{selected}} \text{sim}(d, s) \]
+<p>so a candidate is penalised for resembling anything already chosen. With four candidates where A and A′ are near-copies (similarity 0.999) with relevance 0.911 and 0.920, B is relevant (0.871) and different, and C is weakly relevant (0.604): plain ranking keeps A′, A. MMR with \(\lambda = 0.7\) keeps A′ first, then scores A at \(0.7 \times 0.911 - 0.3 \times 0.999 = 0.338\) and B at \(0.7 \times 0.871 - 0.3 \times 0.613 = 0.426\) (0.613 is B's similarity to A′), and picks B. Deduplication at ingestion (see <a href="@@rag/document-ingestion@@">document ingestion</a>) removes the worst cases; MMR handles the rest at query time.</p>
+</section>
+
+<section data-label="Measuring whether the reranker earns its place">
+<p>Evaluate the pipeline with and without the reranker on the same golden set (built as in <a href="@@rag/embedding-models@@">choosing an embedding model</a>):</p>
+<ul>
+<li><strong>Answer-in-top-\(K\)</strong> (hit@\(K\)) and <strong>nDCG@\(K\)</strong> at the \(K\) you pass to the model: the reranker should move these clearly.</li>
+<li><strong>First-stage recall@\(N\)</strong>: the ceiling. If reranked hit@\(K\) is close to it, the reranker is doing its job and further gains must come from retrieval.</li>
+<li><strong>Per-slice results</strong>: identifiers, paraphrases, unanswerable questions.</li>
+<li><strong>Latency at p50 and p95</strong> with realistic \(N\) and passage lengths, under load.</li>
+<li><strong>End-to-end answer quality</strong> on a sample (see <a href="@@rag/rag-in-production@@">making RAG good and measuring it</a>): better context should mean fewer wrong or unsupported answers.</li>
+</ul>
+</section>
+
+<section data-label="In code: the two-stage trade, MaxSim and MMR">
+<p>The synthetic simulation behind the table in Step 3 (takes a few seconds):</p>
+<pre data-lang="python">import numpy as np
+
+def simulate(reranker_noise, depths=(10, 20, 50, 100, 200), queries=2000, cands=5000, seed=0):
+    rng = np.random.default_rng(seed)
+    rel = rng.normal(size=(queries, cands))                 # hidden relevance of every candidate
+    rel[:, 0] = 4.5                                          # candidate 0 is the answer
+    first = rel + rng.normal(scale=1.0, size=rel.shape)     # first stage: noisy view
+    rank1 = (first &gt; first[:, [0]]).sum(1) + 1               # answer's first-stage rank
+    print(f"first-stage top-5 hit: {np.mean(rank1 &lt;= 5):.3f}")
+    for n in depths:
+        hits = 0
+        for q in range(queries):
+            if rank1[q] &gt; n:
+                continue                                     # never reached the reranker
+            cand = np.argsort(-first[q])[:n]
+            rr = rel[q, cand] + rng.normal(scale=reranker_noise, size=n)
+            pos = np.where(cand == 0)[0][0]
+            hits += (rr &gt; rr[pos]).sum() &lt; 5                 # answer still in top 5 after rerank
+        print(f"N={n:3d}  recall@N={np.mean(rank1 &lt;= n):.3f}  top-5 after rerank={hits / queries:.3f}")
+
+simulate(reranker_noise=0.7)    # a good reranker
+simulate(reranker_noise=0.9)    # a noisier one: deeper candidate lists start to hurt
+</pre>
+<p>MaxSim and MMR from Steps 5 and 8:</p>
+<pre data-lang="python">import numpy as np
+
+unit = lambda m: m / np.linalg.norm(m, axis=-1, keepdims=True)
+query = unit(np.array([[0.9, 0.1, 0.1], [0.1, 0.9, 0.2]]))                      # "E-4012", "export"
+d1 = unit(np.array([[0.85, 0.2, 0.1], [0.2, 0.8, 0.3], [0.1, 0.2, 0.9]]))       # E-4012, export, tax
+d5 = unit(np.array([[0.3, 0.8, 0.2], [0.2, 0.9, 0.1], [0.4, 0.6, 0.5]]))        # export, errors, failures
+for name, doc in (("d1", d1), ("d5", d5)):
+    best = (query @ doc.T).max(axis=1)                       # each query token's best passage token
+    print(name, np.round(best, 3), "MaxSim", round(best.sum(), 3))             # d1 1.976, d5 1.576
+
+vecs = {k: v / np.linalg.norm(v) for k, v in {
+    "A": np.array([0.9, 0.3, 0.1]), "A'": np.array([0.88, 0.32, 0.12]),
+    "B": np.array([0.5, 0.1, 0.85]), "C": np.array([0.2, 0.9, 0.3])}.items()}
+q = np.array([0.8, 0.3, 0.5]); q /= np.linalg.norm(q)
+rel = {k: float(v @ q) for k, v in vecs.items()}
+
+def mmr(rel, vecs, k, lam=0.7):
+    chosen, left = [], set(rel)
+    while left and len(chosen) &lt; k:
+        score = {d: lam * rel[d] - (1 - lam) * max((float(vecs[d] @ vecs[s]) for s in chosen), default=0.0)
+                 for d in left}
+        best = max(score, key=score.get)
+        chosen.append(best); left.remove(best)
+    return chosen
+
+print("by relevance:", sorted(rel, key=rel.get, reverse=True)[:2])                # ["A'", 'A']
+print("MMR:", mmr(rel, vecs, 2))                                                   # ["A'", 'B']
+</pre>
+<p>With a real cross-encoder (sentence-transformers' documented API; not installed in this sandbox):</p>
+<pre data-lang="python"># needs: pip install sentence-transformers (downloads a model; not installed here)
+from sentence_transformers import CrossEncoder
+
+reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", max_length=512)
+query = "error E-4012 when exporting invoices"
+candidates = [chunk_text[c] for c in fused_ids[:50]]          # from hybrid retrieval
+scores = reranker.predict([(query, p) for p in candidates])   # one logit per pair, batched
+ranked = sorted(zip(fused_ids[:50], scores), key=lambda x: -x[1])
+keep = [cid for cid, s in ranked[:8] if s &gt; THRESHOLD] or None   # None -&gt; abstain
+</pre>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"The reranker will fix bad retrieval."</strong> It can only reorder what it is given. If the answer is not in the top \(N\), improve the first stage.</li>
+<li><strong>"More candidates is always better."</strong> Cost grows linearly, gains flatten, and a weaker reranker can get worse as distractors increase. Find the knee of the curve on your data.</li>
+<li><strong>Confusing a cross-encoder with a bi-encoder from the same family.</strong> They are different models with different inputs; a cross-encoder outputs a score, not an embedding, and cannot be indexed.</li>
+<li><strong>Feeding whole documents to the reranker.</strong> Cross-encoders have an input limit, often 512 tokens; text past it is cut. Rerank chunks.</li>
+<li><strong>Treating reranker scores as probabilities.</strong> They are better than cosines for thresholds, but still need calibration on labelled answerable and unanswerable questions.</li>
+<li><strong>Using an LLM reranker at high volume without doing the arithmetic.</strong> 16,000 tokens per query adds up to tens of thousands of dollars a month at millions of queries.</li>
+<li><strong>Letting near-duplicates fill the top \(K\).</strong> Deduplicate at ingestion and apply MMR or a similarity cut at query time.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>You rerank 40 candidates of 280 tokens with 20-token queries. How many tokens does the reranker process per query, and how many would scoring all 200,000 chunks need?</summary><div class="answer">\(40 \times 300 = 12{,}000\) tokens. For all chunks: \(200{,}000 \times 300 = 60\) million tokens per query, which is why cross-encoders only ever see a shortlist.</div></details>
+<details><summary>First-stage recall@50 is 0.78 and hit@5 after reranking 50 is 0.76. Where should you invest next?</summary><div class="answer">In first-stage retrieval. The reranker already captures almost everything the first stage gives it (0.76 of a 0.78 ceiling). Improve recall at depth: hybrid search, better chunking, a better embedding model, or query rewriting.</div></details>
+<details><summary>Why can a cross-encoder tell "E-4012" from "E-4007" when a bi-encoder struggles?</summary><div class="answer">It reads query and passage in one input, so attention can compare the query's code directly with the passage's code in every layer. A bi-encoder compresses each passage into one vector before seeing any query, and that summary barely distinguishes two similar codes.</div></details>
+<details><summary>An LLM listwise reranker on 30 passages of 300 tokens runs on 500,000 queries a month. At $0.50 per million input tokens, what does it cost?</summary><div class="answer">\(30 \times 300 = 9{,}000\) tokens per query, plus the instructions; \(9{,}000 \times 500{,}000 = 4.5\) billion tokens; at $0.50 per million, about $2,250 a month (illustrative price), plus output tokens and latency of a second or more per query.</div></details>
+<details><summary>How would you choose an abstention threshold for reranker scores?</summary><div class="answer">Label a set of answerable and unanswerable questions, run the reranker, and for each candidate threshold measure the share of answerable questions kept and unanswerable ones rejected. Pick the point that matches the product's tolerance for wrong answers versus refusals, and re-tune whenever the reranker or corpus changes.</div></details>
+<details><summary>ColBERT needs about 37 times more storage than single-vector embeddings here. Why accept that?</summary><div class="answer">Token-level vectors keep detail that a single vector averages away (codes, names, specific terms), giving accuracy closer to a cross-encoder while passage vectors are still precomputed, so scoring candidates is much cheaper than running a cross-encoder per pair.</div></details>
+</section>

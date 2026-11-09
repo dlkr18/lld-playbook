@@ -1,0 +1,288 @@
+<!-- Deep lesson: Reliability engineering. Merged into production/reliability by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Availability</td><td>The fraction of requests (or time) for which a service works. 99.5% means 1 in 200 requests fails.</td></tr>
+<tr><td>Transient vs persistent failure</td><td>A transient failure goes away if you try again shortly (a blip, a rate limit); a persistent one does not (an outage, a bad request).</td></tr>
+<tr><td>Exponential backoff</td><td>Waiting longer after each failed attempt, typically doubling the wait each time.</td></tr>
+<tr><td>Jitter</td><td>Randomness added to the wait, so many clients that failed together do not retry together.</td></tr>
+<tr><td>Retry amplification</td><td>Retries at several layers multiplying, so one user request becomes many upstream calls during an incident.</td></tr>
+<tr><td>Retry budget</td><td>A cap on retries as a fraction of normal traffic, so retries can never multiply load beyond a set factor.</td></tr>
+<tr><td>Deadline</td><td>The absolute time by which the whole request must finish. Every inner timeout is cut to fit what remains of it.</td></tr>
+<tr><td>Hedged request</td><td>A backup copy of a slow request sent to another replica; whichever answers first wins.</td></tr>
+<tr><td>Fallback</td><td>A different model, provider or region used when the primary fails.</td></tr>
+<tr><td>Circuit breaker</td><td>A switch that stops calling a dependency after repeated failures and fails fast, then tests it again after a cool-down.</td></tr>
+<tr><td>Rate limit (RPM / TPM)</td><td>A provider's cap on requests or tokens per minute for your account. Exceeding it returns HTTP 429.</td></tr>
+<tr><td>Idempotency</td><td>The property that doing an operation twice has the same effect as doing it once. Required before retrying anything with side effects.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>A hosted model API is a remote dependency that is slower, more expensive and less predictable than most: it rate-limits you, it has slow tails measured in tens of seconds, it has regional incidents, and even when it answers, the answer can be malformed. An LLM feature that calls it several times per request inherits all of that. Reliability engineering is the set of techniques that turn a flaky dependency into a dependable feature, and the arithmetic that says which technique helps when.</p>
+<p>What interviewers ask:</p>
+<ol>
+<li>How do failures add up across a multi-step pipeline or agent?</li>
+<li>How should retries work, and how can they make an outage worse?</li>
+<li>How do you set timeouts for calls that legitimately take 50 seconds?</li>
+<li>When do fallbacks, circuit breakers and hedging help, and what do they cost?</li>
+</ol>
+<p><strong>Running example.</strong> A contract-review feature: a user uploads a contract and gets a structured risk summary. Each request makes <strong>three model calls in sequence</strong>: classify the document type, extract clauses as JSON, and write the summary. Peak traffic is <strong>10 requests per second</strong>; each call averages about 3,000 tokens. The provider, under normal conditions, answers <strong>99.5%</strong> of calls successfully (an illustrative figure), with failures split between rate limits, server errors and timeouts, plus rare regional outages. The target: 99.9% of requests produce a correct summary within 60 seconds.</p>
+</section>
+
+<section data-label="Step 1: failures compound">
+<p>If each call succeeds with probability \(a\) and the calls fail independently, a request that needs \(n\) calls in series succeeds with probability \(a^n\):</p>
+\[ 0.995^3 \approx 0.985 \qquad 0.995^{10} \approx 0.951 \]
+<p>Our three-call pipeline fails 1.5% of the time with no protection: fifteen times the 0.1% target. An agent that makes ten calls fails about 5% of the time, before counting any mistakes the model makes. Multi-step designs multiply unreliability, which is one reason to use as few model calls per request as the task allows.</p>
+<p>The independence assumption matters and is often wrong. Transient failures (a dropped connection, a busy replica) are roughly independent between calls. Outages are not: if the provider's region is down, every call fails together. The two kinds need different tools. Retries fix independent failures; fallbacks and degradation handle correlated ones.</p>
+</section>
+
+<section data-label="Step 2: retry the right failures">
+<p>A retry turns a per-call failure probability \(f\) into roughly \(f^2\), if failures are independent. With \(f = 0.005\), one retry gives a per-call failure of \(2.5 \times 10^{-5}\), and the three-call pipeline succeeds 99.993% of the time. That one change takes the feature from 98.5% to well past the target, which is why retries are the first tool.</p>
+<p>But only some failures are worth retrying:</p>
+<ul>
+<li><strong>Retry:</strong> timeouts, connection errors, server errors (500, 502, 503), overload responses, and rate limits (429), the last after the wait the provider asks for in its <code>retry-after</code> header if it sends one.</li>
+<li><strong>Do not retry:</strong> malformed requests (400), authentication errors (401, 403), prompts over the context limit, content-policy refusals. These fail identically every time; retrying wastes the time budget and the quota.</li>
+<li><strong>Retry only if safe:</strong> any call with side effects (a tool that sends an email or issues a refund) must be idempotent first: the retry must carry an idempotency key so the second attempt cannot do the action twice. Plain model calls have no side effects except cost, so they are safe to repeat.</li>
+</ul>
+</section>
+
+<section data-label="Step 3: back off, with jitter">
+<p>When a provider has a blip, every client fails at nearly the same moment. If they all retry after the same delay, they all arrive again at the same moment, and a provider that was struggling gets the whole load in one burst. Exponential backoff (wait 0.5 s, then 1 s, then 2 s...) spaces attempts out per client but does nothing about clients being synchronised with each other.</p>
+<p><strong>Jitter</strong> fixes the synchronisation. With "full jitter", each retry waits a random time between zero and the exponential cap, so a crowd that failed together spreads out across the whole window.</p>
+<p>A simulation makes the difference concrete. A thousand requests fail at once; the provider can serve 150 requests per 100 ms and rejects the rest, which retry with a base delay of 0.5 s:</p>
+<table>
+<thead><tr><th>Strategy</th><th>Time until all 1,000 served</th><th>Total attempts</th></tr></thead>
+<tbody>
+<tr><td>Exponential backoff, no jitter</td><td>31.6 s</td><td>3,850</td></tr>
+<tr><td>Exponential backoff, full jitter</td><td>2.1 s</td><td>1,974</td></tr>
+</tbody>
+</table>
+<p>Without jitter, each wave arrives as one block, 150 are served, and the other 850, 700, 550... all wait together for the next, ever longer, delay. With jitter, retries trickle in at roughly the rate the provider can absorb. Same backoff, same provider, fifteen times faster recovery and half the load. Jitter is not a refinement; it is the part that makes backoff work at scale.</p>
+</section>
+
+<section data-label="Step 4: retries can cause the outage">
+<p>Retries add load exactly when the dependency can least afford it. Two mechanisms make that dangerous:</p>
+<ul>
+<li><strong>Amplification across layers.</strong> If the HTTP client library retries 3 times, your service retries 3 times, and the caller of your service retries 3 times, one user action becomes up to \(3 \times 3 \times 3 = 27\) upstream calls during an incident. Our peak of 30 model calls per second becomes up to 810 calls per second aimed at a provider that is already failing, and the rate limiter guarantees most of them fail too.</li>
+<li><strong>Retry storms keep an outage going.</strong> A provider recovering from overload is pushed straight back into it by the retry backlog. Systems can stay down for this reason alone.</li>
+</ul>
+<p>The defences are structural. Retry at <strong>one layer</strong> (usually the one that knows the deadline and whether the operation is idempotent) and make the others pass errors through. And cap retries with a <strong>retry budget</strong>: retries may add at most, say, 10% on top of first attempts across the whole client. Under normal conditions that is far more than needed (failures are 0.5%); during an outage it caps the extra load at 1.1 times normal instead of 3 or 27 times.</p>
+</section>
+
+<section data-label="Step 5: timeouts and deadlines for slow, streaming calls">
+<p>Every call needs a timeout: without one, a hung connection holds a request (and a worker, and memory) forever. LLM calls make choosing it awkward, because legitimate latency varies hugely. Our extraction call can produce 2,000 output tokens at about 25 ms each: 50 seconds of perfectly healthy generation. A total timeout of 30 s kills every long extraction; a timeout of 120 s waits two minutes for a connection that died at second three.</p>
+<p>The fix is to time out on <strong>progress</strong>, not on total duration, which streaming makes possible:</p>
+<ul>
+<li>A <strong>time-to-first-token timeout</strong>, set a little above the observed p99 TTFT (say 5 s if p99 is 3 s). A call that has not started in that time is very likely stuck in a queue or dead.</li>
+<li>An <strong>idle timeout between tokens</strong> (say 10 s): a healthy stream produces a token every few tens of milliseconds, so a ten-second silence means a stall.</li>
+<li>A <strong>deadline</strong> for the whole request (60 s here), propagated down: each attempt's timeout is the smaller of its own cap and the time remaining before the deadline. Otherwise the first attempt can consume the entire budget and the "three attempts" in the retry policy never happen.</li>
+</ul>
+<p>The deadline also tells you how many retries are realistic. In a 60 s interactive request whose three sequential calls include an extraction that can take 50 s, there is no room to retry a slow extraction at all; the plan must rely on fast failure detection and fallbacks instead. Background jobs with a ten-minute deadline can afford several patient retries. Retry policy is a function of the deadline, not a constant.</p>
+</section>
+
+<section data-label="Step 6: hedging the slow tail">
+<p>Some calls do not fail; they are just very slow, because they landed on an overloaded replica or a stalled connection. Retries do not help, since the call has not failed yet. A <strong>hedged request</strong> sends a second copy after a delay and takes whichever answers first.</p>
+<p>A simulation with illustrative numbers: most calls take about 2 s, but 2% stall for around 30 s. Hedging after 4 s (roughly the p95):</p>
+<table>
+<thead><tr><th></th><th>p50</th><th>p95</th><th>p99</th><th>Extra requests</th></tr></thead>
+<tbody>
+<tr><td>No hedging</td><td>2.0 s</td><td>3.9 s</td><td>30.0 s</td><td>0%</td></tr>
+<tr><td>Hedge at 4 s</td><td>2.0 s</td><td>3.9 s</td><td>6.1 s</td><td>4.6%</td></tr>
+</tbody>
+</table>
+<p>The p99 falls from 30 s to 6 s for about 5% more calls. The rule of thumb: hedge at around the p95, so only the slowest few percent get a backup. Two conditions apply. The call must be safe to duplicate (no side effects), and the duplicate costs tokens, so hedging a 3,000-token call adds about 5% to spend. It pays off where tail latency matters more than a few percent of cost, which for interactive features it usually does.</p>
+</section>
+
+<section data-label="Step 7: fallbacks for correlated failures">
+<p>When the primary provider or region is down, retries and hedges all fail together. A <strong>fallback</strong> sends the call somewhere else: another region of the same provider, another provider's comparable model, or a smaller model. If the two fail independently, availability combines as</p>
+\[ A = 1 - (1 - a_1)(1 - a_2) = 1 - 0.005 \times 0.005 = 0.999975 \]
+<p>That formula is the optimistic bound, and the caveats are where real systems fail:</p>
+<ul>
+<li><strong>Correlation.</strong> Two regions of one provider share software, deploys and sometimes capacity; two providers may share a cloud. Independence is an assumption to check, not a given.</li>
+<li><strong>Behaviour differs.</strong> A prompt tuned for one model may produce different JSON, longer answers or different refusals on another. The fallback path needs its own prompt variant and must pass the same evaluation suite as the primary (see <a href="@@production/evals@@">Evaluating LLM features</a>). A fallback that has never been tested is a second outage waiting to happen.</li>
+<li><strong>Capacity.</strong> When the primary fails, the fallback receives all the traffic at once. If its rate limit covers only a fraction, it fails too. Size the fallback quota for full peak load, or decide in advance which traffic gets it.</li>
+<li><strong>Data rules.</strong> A fallback provider must be allowed to receive the data under your privacy and residency commitments.</li>
+</ul>
+<p>When everything is down, <strong>degrade gracefully</strong>: return what you can (the clause extraction without the summary, a cached result, a queued job with a notification) and say clearly that it is partial.</p>
+</section>
+
+<section data-label="Step 8: circuit breakers">
+<p>During an outage, every request still tries the failing primary first, waits for its timeout, maybe retries, and only then falls back. Each request pays seconds of delay, and the failing provider keeps receiving traffic. A <strong>circuit breaker</strong> stops this by remembering recent failures:</p>
+<ul>
+<li><strong>Closed</strong> (normal): calls go through; failures are counted.</li>
+<li><strong>Open</strong>: after, say, 5 consecutive failures (or a failure rate above 50% over a window), calls fail immediately without being sent, so requests go straight to the fallback.</li>
+<li><strong>Half-open</strong>: after a cool-down (say 30 s), one trial call is let through. Success closes the breaker; failure reopens it.</li>
+</ul>
+<p>The simulation in the code below runs 10 requests per second for 200 seconds against a provider with a 60-second outage. Without protection, three attempts per request send 1,800 calls into the outage. With a breaker and a retry budget, 6 calls reach the provider during the outage; the other requests fail fast (and in a real system go to the fallback), and service resumes within one cool-down of recovery. One detail: a 400 Bad Request should not count as a failure for the breaker, since it means your request is wrong, not that the provider is down.</p>
+</section>
+
+<section data-label="Step 9: rate limits are capacity, not errors">
+<p>Hosted providers cap each account at some number of requests per minute (RPM) and tokens per minute (TPM). A 429 is not a fault; it is the provider telling you that your demand exceeds your allocation. Treat it as a capacity-planning input:</p>
+\[ \text{TPM needed} = \text{requests/s} \times \text{calls per request} \times \text{tokens per call} \times 60 \]
+<p>For the contract feature at peak: \(10 \times 3 \times 3{,}000 \times 60 = 5.4\) million tokens per minute. If the account's limit is 4 million TPM, retries cannot help: 26% of the demand has no capacity. The options are capacity options: raise the quota, spread across several deployments or regions, reduce tokens per call (shorter prompts, smaller documents per call), or queue and smooth the bursts.</p>
+<p>Inside your system, a <strong>client-side rate limiter</strong> (a token bucket refilled at your quota rate) is better than discovering the limit through 429s: it keeps you just below the limit, lets you give priority to interactive traffic over background jobs, and turns overload into a short, controlled queue instead of a burst of failures. Batch work should go through a separate quota or a batch API so it cannot starve interactive users.</p>
+</section>
+
+<section data-label="Step 10: a wrong answer is a failure too">
+<p>A call that returns HTTP 200 with JSON missing a required field has failed as surely as a timeout, and must be handled like one. For the extraction step:</p>
+<ul>
+<li><strong>Validate</strong> every structured output against its schema and business rules (dates parse, amounts are positive, clause references exist in the document).</li>
+<li><strong>Repair once</strong> on failure: re-ask with the validation error included. If 3% of outputs fail validation and a repair fixes 80% of those, the residual failure rate is 0.6%, at a cost of 3% more calls. Cap repairs at one or two, and only if the deadline allows.</li>
+<li><strong>Prevent</strong> where possible: constrained decoding or a provider's strict structured-output mode makes schema violations nearly impossible (see <a href="@@prompting/structured-output@@">Structured output</a>), leaving only the business-rule checks.</li>
+<li><strong>Check the finish reason</strong>: output cut off at the token limit is invalid by construction.</li>
+</ul>
+<p>Validation failures also feed observability: a rising repair rate is often the first sign that a model update or prompt change has shifted behaviour (see <a href="@@production/observability@@">Observability</a>).</p>
+</section>
+
+<section data-label="A worked plan for the contract feature">
+<ol>
+<li><strong>Baseline:</strong> three calls at 99.5% gives 98.5%. Target is 99.9%.</li>
+<li><strong>Retries</strong> at the orchestrator only, for retryable errors, full jitter, under a 10% retry budget, each attempt cut to the remaining deadline. Independent failures drop to about 0.0075% per request.</li>
+<li><strong>Timeouts</strong>: 5 s to first token, 10 s idle between tokens, 60 s request deadline.</li>
+<li><strong>Hedging</strong> for the classify and summary calls at their p95; not for extraction, whose length makes duplicates expensive.</li>
+<li><strong>Fallback</strong> to a second provider with its own tested prompt variant and a quota sized for full peak, behind a circuit breaker on the primary.</li>
+<li><strong>Capacity</strong>: 5.4M TPM at peak against a 4M quota, so request an increase or split traffic across two deployments; client-side token bucket with interactive traffic first.</li>
+<li><strong>Validation</strong>: schema plus business checks on extraction, one repair attempt, strict structured output where supported.</li>
+<li><strong>Degradation</strong>: if all providers fail, accept the upload, queue the job and notify when done.</li>
+<li><strong>Measure</strong>: success rate within deadline per step, retry and fallback rates, breaker state changes, repair rate; alert on the SLO burn rate.</li>
+</ol>
+</section>
+
+<section data-label="In code: jitter, hedging and a breaker you can test">
+<p>The thundering-herd simulation from Step 3.</p>
+<pre data-lang="python">import random
+
+def recover(strategy, clients=1000, capacity=150, bucket=0.1, base=0.5, seed=0):
+    """All clients fail at t=0. The provider serves `capacity` requests per 100 ms bucket and
+    rejects the rest, which retry. Returns (seconds until everyone succeeded, total attempts)."""
+    rng = random.Random(seed)
+    pending = [(0.0, 0)] * clients                      # (time of next try, attempt number)
+    attempts, t_done = 0, 0.0
+    while pending:
+        pending.sort()
+        b = int(pending[0][0] / bucket)                  # the earliest bucket with any arrivals
+        now = [p for p in pending if int(p[0] / bucket) == b]
+        later = [p for p in pending if int(p[0] / bucket) != b]
+        attempts += len(now)
+        served, rejected = now[:capacity], now[capacity:]
+        t_done = (b + 1) * bucket
+        retry = []
+        for t, n in rejected:
+            cap = base * 2 ** n
+            delay = cap if strategy == "exponential" else rng.uniform(0, cap)   # full jitter
+            retry.append((t + delay, n + 1))
+        pending = later + retry
+    return t_done, attempts
+
+for s in ("exponential", "full jitter"):
+    t, a = recover(s)
+    print(f"{s:12s}: everyone served after {t:5.1f} s, {a} attempts for 1000 requests")
+</pre>
+<p>The hedging simulation from Step 6.</p>
+<pre data-lang="python">import random
+
+rng = random.Random(3)
+def call_latency():
+    """Illustrative: mostly ~2 s, but 2% of calls stall on a slow replica for ~30 s."""
+    return rng.uniform(25, 35) if rng.random() &lt; 0.02 else rng.lognormvariate(0.7, 0.35)
+
+def pct(xs, q):
+    return sorted(xs)[int(q * len(xs))]
+
+N, HEDGE_AT = 100_000, 4.0                         # send a backup request if no answer by 4 s
+plain = [call_latency() for _ in range(N)]
+hedged, extra = [], 0
+for _ in range(N):
+    first = call_latency()
+    if first &lt;= HEDGE_AT:
+        hedged.append(first)
+    else:
+        extra += 1
+        hedged.append(min(first, HEDGE_AT + call_latency()))
+
+for name, xs in (("no hedging", plain), ("hedge at 4 s", hedged)):
+    print(f"{name:13s} p50 {pct(xs, .5):4.1f} s  p95 {pct(xs, .95):4.1f} s  p99 {pct(xs, .99):4.1f} s")
+print(f"extra requests sent: {extra / N:.1%}")
+</pre>
+<p>A circuit breaker and retry budget, tested against a 60-second outage. The naive client sends three attempts per request into the outage; the protected one fails fast.</p>
+<pre data-lang="python">import random
+
+class Breaker:
+    """Open after `threshold` consecutive failures; let one trial call through after `cooldown` s."""
+    def __init__(self, threshold=5, cooldown=30.0):
+        self.threshold, self.cooldown, self.fails, self.opened_at = threshold, cooldown, 0, None
+    def allow(self, now):
+        return self.opened_at is None or now - self.opened_at &gt;= self.cooldown   # closed, or half-open
+    def record(self, ok, now):
+        self.fails = 0 if ok else self.fails + 1
+        if ok:
+            self.opened_at = None
+        elif self.fails &gt;= self.threshold:
+            self.opened_at = now
+
+class RetryBudget:
+    """Retries may add at most `ratio` extra calls on top of first attempts."""
+    def __init__(self, ratio=0.1):
+        self.ratio, self.first, self.retries = ratio, 0, 0
+    def can_retry(self):
+        return self.retries &lt; self.ratio * self.first
+
+def call(provider, breaker, budget, now, max_attempts=3):
+    budget.first += 1
+    for attempt in range(max_attempts):
+        if attempt and not budget.can_retry():
+            return "gave up (retry budget)"
+        if not breaker.allow(now):
+            return "fast fail (breaker open)"
+        budget.retries += attempt &gt; 0
+        ok = provider(now)
+        breaker.record(ok, now)
+        if ok:
+            return "ok"
+    return "failed"
+
+def run(protected):
+    rng = random.Random(0)
+    calls = {"all": 0, "outage": 0}
+    def provider(t):                                   # 0.5% transient errors; outage at 100-160 s
+        calls["all"] += 1
+        calls["outage"] += 100 &lt;= t &lt; 160
+        return rng.random() &gt; (1.0 if 100 &lt;= t &lt; 160 else 0.005)
+    breaker = Breaker() if protected else Breaker(threshold=10**9)      # huge threshold = no breaker
+    budget = RetryBudget() if protected else RetryBudget(ratio=10**9)  # huge ratio = unlimited retries
+    results = {}
+    for i in range(2000):                              # 10 requests per second for 200 s
+        r = call(provider, breaker, budget, now=i / 10)
+        results[r] = results.get(r, 0) + 1
+    return results, calls
+
+for protected in (False, True):
+    results, calls = run(protected)
+    print("protected" if protected else "naive    ", results, f"upstream calls during outage: {calls['outage']}")
+    assert results["ok"] &gt;= 1390                       # everything outside the outage still succeeds
+</pre>
+<p>Output: the naive client gets 1,400 successes and 600 failures and sends 1,800 calls into the outage; the protected client gets 1,399 successes, 600 fast failures (which a real system would route to the fallback) and sends 6. In production, use a maintained library for the mechanics (for example <code>tenacity</code> for retries with jitter, or your HTTP client's retry policy), and keep the budget, deadline and breaker decisions in your own code where you can see them.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"Retries make it reliable."</strong> They fix independent, transient failures. Against an outage they only add load. Pair them with fallbacks and breakers.</li>
+<li><strong>Backoff without jitter.</strong> Synchronised clients retry in waves and can keep a recovering provider down. Always add jitter.</li>
+<li><strong>Retrying at every layer.</strong> Attempts multiply (3 × 3 × 3 = 27). Retry in one place, under a budget.</li>
+<li><strong>One total timeout for streaming calls.</strong> It either kills long healthy generations or waits far too long on dead ones. Time out on first token and on idle gaps, within an overall deadline.</li>
+<li><strong>Retrying 400s and context-length errors.</strong> They fail identically every time and burn the deadline. Classify errors first.</li>
+<li><strong>An untested fallback.</strong> Different models parse prompts differently and the fallback's quota may be tiny. Evaluate it and size it before you need it.</li>
+<li><strong>Treating 429s as bad luck.</strong> They are a capacity signal. Compute required TPM and plan quota, smoothing and priorities.</li>
+<li><strong>Counting HTTP 200 as success.</strong> Invalid or truncated output is a failure; validate it.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>An agent makes 8 model calls per task, each 99.7% reliable, failures independent. What is its success rate, and with one retry per call?</summary><div class="answer">\(0.997^8 \approx 97.6\%\). With one retry each call fails with probability \(0.003^2 = 9\times10^{-6}\), so the task succeeds about \(1 - 8 \times 9\times10^{-6} \approx 99.993\%\) of the time (for transient, independent failures only).</div></details>
+<details><summary>Why does exponential backoff without jitter recover so slowly in the simulation?</summary><div class="answer">All rejected clients have the same attempt count and the same delay, so they arrive together in one bucket each time; the provider serves its 150 and the rest wait for an ever longer synchronised delay. Jitter spreads them across the window so arrivals match capacity.</div></details>
+<details><summary>Gateway, service and SDK each retry up to 3 times. During an outage your service sends 40 calls per second normally. What is the worst-case upstream rate, and what do you change?</summary><div class="answer">\(40 \times 27 = 1{,}080\) calls per second. Retry only at the layer that owns the deadline, disable SDK and gateway retries (or set them to zero), and add a retry budget so retries add at most about 10%.</div></details>
+<details><summary>A summarisation call can legitimately take 45 s. Users report requests hanging for two minutes. What timeouts do you set?</summary><div class="answer">A time-to-first-token timeout just above observed p99 TTFT (a few seconds), an idle timeout between streamed tokens (around 10 s), and an overall deadline that fits the product. Hung connections are cut in seconds without killing long healthy generations.</div></details>
+<details><summary>You need 3 million TPM at peak and your quota is 2 million. Will retries with backoff solve the 429s?</summary><div class="answer">No. A third of demand has no capacity; retries only delay and add load. Raise the quota, split across deployments or regions, reduce tokens per call, or queue and prioritise interactive traffic.</div></details>
+<details><summary>Primary and fallback providers each have 99.5% availability. What availability does the pair give, and why might you not get it?</summary><div class="answer">If independent, \(1 - 0.005^2 = 99.9975\%\). You may not, because failures can be correlated (shared cloud or upstream), the fallback's quota may not absorb full traffic, and its outputs may fail your validation if prompts were never tuned or evaluated for it.</div></details>
+<details><summary>Should you hedge a tool call that charges a customer's card? Should you hedge a classification call?</summary><div class="answer">Not the charge: a duplicate could double-charge, unless the operation is idempotent with a shared key, and even then hedging buys little. The classification call is side-effect free, so hedging at about its p95 cuts tail latency for a few percent more cost.</div></details>
+</section>

@@ -1,0 +1,253 @@
+<!-- Deep lesson: Voice agents. Merged into stretch/voice-agents by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Voice-to-voice latency</td><td>Time from the moment the caller stops speaking to the moment they hear the agent start. The number that decides whether the agent feels natural.</td></tr>
+<tr><td>Cascaded pipeline</td><td>Speech-to-text, then a text LLM, then text-to-speech, each a separate model, streaming into the next.</td></tr>
+<tr><td>Speech-to-speech model</td><td>One model that takes audio in and produces audio out, without an explicit text step in between.</td></tr>
+<tr><td>VAD</td><td>Voice activity detection: deciding, frame by frame, whether the audio contains speech.</td></tr>
+<tr><td>Endpointing</td><td>Deciding that the caller has finished their turn, as opposed to pausing mid-sentence.</td></tr>
+<tr><td>Partial / final transcript</td><td>Streaming speech-to-text emits provisional words while the caller talks (partials) and a corrected version once a segment ends (final).</td></tr>
+<tr><td>WER</td><td>Word error rate: substitutions plus deletions plus insertions, divided by the number of words actually spoken.</td></tr>
+<tr><td>TTFA</td><td>Time to first audio: how long text-to-speech takes to produce the first playable audio for a piece of text.</td></tr>
+<tr><td>Barge-in</td><td>The caller speaking over the agent. The agent must stop talking and listen.</td></tr>
+<tr><td>Echo cancellation</td><td>Removing the agent's own voice from the incoming audio, so it does not hear itself as the caller.</td></tr>
+<tr><td>Frame</td><td>A short slice of audio, typically 20 milliseconds, the unit in which audio is streamed and analysed.</td></tr>
+<tr><td>Erlang</td><td>A unit of telephone traffic: one line continuously busy. Average concurrent calls = calls per hour × hours per call.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>A text chatbot can take three seconds to answer and nobody minds. On a phone call, three seconds of silence feels like the line dropped. In conversation, people typically start replying within a few hundred milliseconds of the other person finishing (gaps on the order of 200 milliseconds are common across languages), and pauses beyond about a second feel awkward. A voice agent is therefore an LLM application with a latency budget an order of magnitude tighter than chat, plus problems text never has: deciding when someone has finished talking, being interrupted, and mishearing.</p>
+<p>The interview questions:</p>
+<ol>
+<li>Walk through the pipeline. Where does the latency go, and how do you get under a second?</li>
+<li>How does the agent know the caller has finished speaking? What is the trade-off?</li>
+<li>What happens when the caller interrupts?</li>
+<li>Cascaded or speech-to-speech? How do you evaluate a voice agent, and what does a minute cost?</li>
+</ol>
+<p><strong>The running example.</strong> Brightsmile, a chain of dental clinics, puts an agent on its phone line to handle bookings. A caller says: <em>"Hi, I'd like to move my cleaning on Thursday to next week, um, maybe Tuesday afternoon?"</em> The agent must understand this, call a <code>list_slots</code> tool, offer options, handle being interrupted, and confirm the change. About 600 calls an hour arrive at peak, averaging 3 minutes. We follow one turn of this call through every stage, in milliseconds.</p>
+</section>
+
+<section data-label="Step 1: audio is a stream of small frames">
+<p>Everything in a voice agent operates on audio <strong>frames</strong>, usually 20 milliseconds each. What a frame contains depends on the transport:</p>
+<table>
+<thead><tr><th>Transport</th><th>Format</th><th>Per 20 ms frame</th><th>Bit rate</th></tr></thead>
+<tbody>
+<tr><td>Phone line (PSTN, via a telephony provider)</td><td>8 kHz, 8-bit μ-law</td><td>160 samples, 160 bytes</td><td>64 kbit/s</td></tr>
+<tr><td>Browser or app (WebRTC)</td><td>16 kHz, 16-bit PCM (often compressed with Opus in transit)</td><td>320 samples, 640 bytes</td><td>256 kbit/s uncompressed</td></tr>
+</tbody>
+</table>
+<p>The phone line matters more than it looks. Sampling at 8 kHz can only represent frequencies up to 4 kHz, and the traditional telephone band is roughly 300 to 3,400 Hz. Consonants like "s", "f" and "th" carry much of their energy above that, which is why "Tuesday" and "two stay" are harder to tell apart on a phone call than in person. Speech models are usually trained mostly on 16 kHz audio; upsampling phone audio to 16 kHz changes the format but cannot restore the lost frequencies. Expect higher error rates on telephony, and prefer speech-to-text models or settings tuned for it.</p>
+<p>Frames arrive continuously, in both directions, over a long-lived connection (a WebSocket from the telephony provider, or WebRTC). The agent is not a request-response service; it is a set of concurrent streams.</p>
+</section>
+
+<section data-label="Step 2: the pipeline and its latency budget">
+<p>The cascaded pipeline, which most production voice agents use:</p>
+<pre class="ascii-diagram">caller audio -&gt; VAD -&gt; streaming STT -&gt; endpointing -&gt; LLM (+ tools) -&gt; streaming TTS -&gt; caller
+                  ^                                                                |
+                  +------------- barge-in: caller speaks while agent talks --------+</pre>
+<p>Now put illustrative but realistic numbers on each stage of one turn, measured from the moment the caller stops speaking:</p>
+<table>
+<thead><tr><th>Stage</th><th>Time</th><th>What it is</th></tr></thead>
+<tbody>
+<tr><td>Endpoint wait</td><td>300 ms</td><td>Silence needed before deciding the turn is over (Step 4)</td></tr>
+<tr><td>STT final</td><td>100 ms</td><td>Streaming STT finalising the last words after the endpoint</td></tr>
+<tr><td>LLM time to first token</td><td>300 ms</td><td>Network plus prefill of the prompt and history</td></tr>
+<tr><td>First sentence</td><td>100 ms</td><td>About 10 tokens at 100 tokens per second</td></tr>
+<tr><td>TTS time to first audio</td><td>120 ms</td><td>Synthesising the start of the first sentence</td></tr>
+<tr><td>Network and telephony</td><td>150 ms</td><td>Both directions, carrier plus internet</td></tr>
+</tbody>
+</table>
+<p>How these combine depends entirely on whether each stage waits for the previous one to <em>finish</em> or only to <em>start</em>:</p>
+<ul>
+<li><strong>Sequential</strong> (batch STT on the whole utterance, wait for the full 40-token reply, synthesise all of it, then play): \(300 + 400 + 300 + 400 + 600 + 150 = 2{,}150\) ms. Unusable.</li>
+<li><strong>Streamed</strong> (each stage starts on the first output of the previous): \(300 + 100 + 300 + 100 + 120 + 150 = 1{,}070\) ms. Workable, slightly slow.</li>
+<li><strong>Speculative</strong>: start the LLM on the partial transcript as soon as silence begins (about 50 ms in), in parallel with the endpoint wait. The first sentence is ready at \(50 + 300 + 100 = 450\) ms; if the endpoint confirms at 300 ms and the transcript did not change, TTS starts at 450 ms, first audio at 570 ms, and the caller hears it at 720 ms. If the caller resumes speaking, the speculative response is thrown away.</li>
+</ul>
+<p>The lesson in those three numbers: <strong>latency is won by overlap, not by faster components.</strong> Every stage that waits for a complete input instead of a first chunk adds its whole duration. After overlap, the biggest remaining items are the endpoint wait and the LLM's time to first token, and those are the next two steps.</p>
+</section>
+
+<section data-label="Step 3: VAD, is anyone speaking?">
+<p>Voice activity detection labels each frame as speech or not. The simplest method thresholds the frame's energy; it fails on background noise (a dental clinic's waiting room, a car). Modern agents use a small neural VAD that outputs a speech probability per frame, run on every 20 to 30 ms frame at negligible cost.</p>
+<p>Raw frame decisions flicker, so VAD output is smoothed: speech "starts" after several consecutive speech frames (so a cough or a click does not count), and "stops" after a run of non-speech frames. VAD answers "is there speech right now?". It does not answer "has the caller finished?", which is a different and harder question.</p>
+</section>
+
+<section data-label="Step 4: endpointing, the trade-off at the heart of turn-taking">
+<p>People pause mid-sentence. The Brightsmile caller pauses after "next week, um," while deciding. If the agent treats every silence longer than \(T\) milliseconds as the end of the turn, it faces a direct trade-off: a short \(T\) responds fast but cuts callers off; a long \(T\) waits politely and feels sluggish, because \(T\) is added to every single turn.</p>
+<p>Put numbers on it. Suppose mid-turn pauses follow a log-normal distribution with a median of 250 ms (a synthetic but plausible shape: most pauses short, a long tail of thinking pauses), and a typical turn contains two of them. A turn is cut off if either pause exceeds \(T\):</p>
+<table>
+<thead><tr><th>Threshold \(T\)</th><th>Pauses longer than \(T\)</th><th>Turns cut off (2 pauses)</th><th>Added to every turn</th></tr></thead>
+<tbody>
+<tr><td>300 ms</td><td>38.2%</td><td>61.8%</td><td>300 ms</td></tr>
+<tr><td>500 ms</td><td>12.4%</td><td>23.2%</td><td>500 ms</td></tr>
+<tr><td>800 ms</td><td>2.6%</td><td>5.2%</td><td>800 ms</td></tr>
+</tbody>
+</table>
+<p>No fixed threshold is good: 800 ms is polite and slow, 300 ms is fast and constantly interrupts. The fix is to use what was <em>said</em>, not just the silence. <strong>Semantic endpointing</strong> looks at the transcript: "maybe Tuesday afternoon?" reads as complete; "I'd like to move my cleaning on Thursday to" does not. A small model or classifier (some speech-to-text providers build one in) estimates completeness, and the wait adapts: 300 ms when the turn looks complete, 1,000 ms when it does not.</p>
+<p>Assume the classifier marks 85% of real turn ends as complete and 90% of mid-turn pauses as incomplete. Then the average wait is \(0.85 \times 300 + 0.15 \times 1{,}000 = 405\) ms, and about 9.3% of turns get cut off. Compared with a fixed 500 ms threshold, that is both faster (405 versus 500 ms) and far less rude (9.3% versus 23.2%). Being cut off is also recoverable: the caller keeps talking, which triggers barge-in (Step 8), and the agent stops. The cost is awkwardness, not a failed call, which is why systems lean toward responding fast.</p>
+</section>
+
+<section data-label="Step 5: streaming speech-to-text, and errors that matter">
+<p>Streaming STT emits <strong>partial</strong> transcripts every few hundred milliseconds while the caller speaks ("move my cleaning on", "move my cleaning on Thursday to…") and a <strong>final</strong> transcript, with corrections, when a segment ends. Partials let the system start work early (the speculative LLM call in Step 2, or a semantic endpointing check); finals are what you act on. The "STT final" cost in the budget is only the time to finalise the last few words after the endpoint, because everything before was transcribed while the caller was still talking.</p>
+<p>Recognition quality is measured by <strong>word error rate</strong>: the minimum number of word substitutions, deletions and insertions needed to turn the transcript into what was actually said, divided by the number of words said. For the Brightsmile caller on a noisy phone line:</p>
+<pre class="ascii-diagram">said:  move my cleaning on thursday to next tuesday afternoon
+heard: move my cleaning on thursday to next to stay afternoon
+                                            ^^ ^^^^
+       1 substitution (tuesday -&gt; to) + 1 insertion (stay) = 2 errors / 9 words = 22.2% WER</pre>
+<p>22% sounds bad, but the deeper problem is <em>which</em> word was lost: the one entity the whole request depends on. WER weights "um" and "Tuesday" equally; your task does not. Three practical responses:</p>
+<ul>
+<li><strong>Measure entity accuracy</strong> (dates, times, names, numbers) separately from overall WER.</li>
+<li><strong>Bias the recogniser</strong> toward expected vocabulary: weekday names, clinic locations, dentists' names, using the keyword or phrase hints most STT services offer.</li>
+<li><strong>Confirm critical values by reading them back</strong>: "Tuesday the 14th at 2:30, is that right?" A confirmation turn costs a few seconds and prevents a wrong booking. Design it into the dialogue for every action that changes something.</li>
+</ul>
+</section>
+
+<section data-label="Step 6: the LLM, under a latency budget">
+<p>The LLM stage is an ordinary agent (see <a href="@@agents/agent-loop@@">The agent loop</a> and <a href="@@agents/tool-calling@@">Tool calling</a>) with three voice-specific constraints.</p>
+<p><strong>Time to first token is the budget.</strong> It is mostly network plus prefill, and prefill grows with prompt length. A 3-minute call accumulates history every turn (see <a href="@@fundamentals/api@@">Calling a model</a>), so keep the system prompt short, cache its static prefix, trim history, and choose a fast model. Voice agents typically use smaller, faster models than chat assistants for the conversational turn, and hand harder reasoning to a tool or a background call.</p>
+<p><strong>Tool calls add a round trip mid-turn.</strong> When the caller asks for Tuesday afternoon, the model must call <code>list_slots</code>, wait for the result, and call the model again. That can add 500 ms to over a second. Two standard mitigations: have the agent say a short acknowledgement first ("Let me check Tuesday afternoon for you.") so the line is not silent while the tool runs, and make the tools fast (a cached availability lookup, not a slow scheduling API on every call).</p>
+<p><strong>Write for the ear.</strong> The output is spoken, so the prompt must ask for short sentences, one question at a time, no lists or Markdown, and numbers in speakable form. Long answers are worse on the phone than on screen: the caller cannot skim, and the longer the agent talks, the more likely an interruption.</p>
+</section>
+
+<section data-label="Step 7: streaming text-to-speech">
+<p>TTS turns text into audio. The latency that matters is time to first audio, and it depends on how text is fed in. Waiting for the LLM's whole reply wastes the 400 ms of generation; feeding single tokens produces poor intonation, because speech prosody depends on the whole phrase. The usual compromise is <strong>sentence or clause chunking</strong>: buffer LLM output until a sentence boundary (or a comma, for a fast start), send that chunk to TTS, and play its audio while the next chunk is generated. Keep the agent's first sentence short ("Sure, let me check.") so the first chunk is ready quickly.</p>
+<p>TTS also needs <strong>text normalisation</strong>: "2:30pm" must be spoken as "two thirty p m", "Dr. Okafor" as "Doctor Okafor", and "14/05" as a date in the caller's locale. Either instruct the LLM to write in spoken form or normalise before synthesis; do not leave it to chance, because a mispronounced time is a wrong time.</p>
+</section>
+
+<section data-label="Step 8: barge-in, and keeping history honest">
+<p>The agent is offering: <em>"I have Tuesday at two thirty or at four fifteen. Which works better for you?"</em> After 1.6 seconds, the caller cuts in: "Is there anything later?" The agent must:</p>
+<ol>
+<li><strong>Detect speech during playback.</strong> This requires echo cancellation, because the microphone or phone line also carries the agent's own voice back; without it, the agent interrupts itself. Phone networks and WebRTC stacks provide some echo cancellation; it is not perfect, so VAD thresholds during agent speech are often set higher.</li>
+<li><strong>Stop quickly.</strong> Halt TTS playback and flush any queued audio within a couple of hundred milliseconds, and cancel the in-flight LLM generation so it does not keep talking.</li>
+<li><strong>Distinguish interruptions from backchannels.</strong> "Mm-hm" and "okay" while the agent talks usually mean "go on", not "stop". Requiring a minimum speech duration or a few transcribed words before treating it as barge-in avoids stopping for every murmur.</li>
+<li><strong>Record what was actually heard.</strong> This is the step most implementations get wrong. The LLM generated the whole sentence, but the caller heard only part of it. With word timings from TTS (each word here lasting about 0.38 s), the words finished by 1.6 s are "I have Tuesday at". The conversation history must store <code>"I have Tuesday at [interrupted]"</code>, not the full reply.</li>
+</ol>
+<p>Why the last point matters: if the history says the agent offered both times, the model reads "anything later?" as a rejection of 4:15 too and offers Wednesday, skipping the slot the caller never heard and would have taken. With the honest history, the model sees that it got no further than "Tuesday at" and replies "Yes, four fifteen on Tuesday. Would that work?" Honest history makes the model reason about what the caller actually knows.</p>
+</section>
+
+<section data-label="Step 9: cascaded or speech-to-speech">
+<p>Speech-to-speech models take audio in and produce audio out in one model, often through realtime APIs. They avoid the text bottleneck (so they hear tone and hesitation and can respond with natural prosody) and remove the hand-offs between stages, which lowers latency. The cascaded pipeline keeps text at every seam, and that is its strength: you can log and search transcripts, apply guardrails and redaction on text, swap the STT, LLM or TTS vendor independently, use your full tool-calling agent, and evaluate each stage separately.</p>
+<p>The decision usually follows the product. For a booking line with tools, confirmations and audit needs, like Brightsmile, cascaded is the safer default. For companionship, language practice or concierge experiences where how something is said is the product, speech-to-speech is compelling. Hybrids exist too: a speech-to-speech model for the conversational surface, delegating actions to a text agent through tools.</p>
+</section>
+
+<section data-label="Step 10: capacity, cost and evaluation">
+<p><strong>Capacity.</strong> 600 calls an hour averaging 3 minutes is \(600 \times 3/60 = 30\) Erlangs: 30 calls in progress on average at peak, each holding open audio streams, an STT session, a TTS session and a conversation. Provision above the average (calls cluster), and check your STT, TTS and LLM providers' concurrency limits, not just their rate limits.</p>
+<p><strong>Cost per minute</strong>, with illustrative prices: STT at $0.006 per audio minute; TTS for about 450 spoken characters per minute at $30 per million characters, $0.0135; an LLM handling 6 turns a minute at about 2,000 input and 40 output tokens per turn, at $1 and $5 per million, $0.0132; telephony at $0.01. Total about <strong>$0.043 per minute</strong>, or about 13 cents for a 3-minute call. The LLM share grows quickly with long system prompts and long calls, because every turn resends the history; prompt caching matters here as much as in chat.</p>
+<p><strong>Evaluation</strong> needs more than transcript accuracy:</p>
+<ul>
+<li><strong>Latency percentiles</strong>, measured voice-to-voice from recordings: p50 and p95, never just the mean. One 3-second silence per call ruins the experience even if the average is fine.</li>
+<li><strong>Endpointing quality</strong>: the rate at which the agent talks over callers, and the rate of awkward long silences.</li>
+<li><strong>Recognition</strong>: WER on your own call audio, and entity accuracy on dates, times and names.</li>
+<li><strong>Task success</strong>: was the appointment moved to the time the caller wanted, verified against the booking system.</li>
+<li><strong>Simulated callers</strong>: scripted or LLM-driven callers with synthesised voices, accents, background noise, pauses and interruptions, run against every change before real callers hear it. Evaluation design in general is in <a href="@@production/evals@@">Evaluating LLM features</a>.</li>
+</ul>
+</section>
+
+<section data-label="The worked example: one turn, millisecond by millisecond">
+<pre class="ascii-diagram"> t (ms)  event
+   -4000 caller starts: "Hi, I'd like to move my cleaning on Thursday to next week, um,
+         maybe Tuesday afternoon?"  Partials stream throughout.
+   -1900 450 ms pause after "um": semantic endpointing sees an incomplete sentence, waits.
+       0 caller stops speaking.
+      50 VAD reports silence; LLM starts speculatively on the partial transcript.
+     300 transcript reads as complete; endpoint confirmed, partial unchanged: keep speculation.
+     350 first LLM token: "Sure,"
+     450 first sentence ready: "Sure, let me check Tuesday afternoon."  -&gt; TTS
+     570 first audio produced
+     720 caller hears "Sure, let me check..."   (voice-to-voice: 720 ms)
+     ~   meanwhile the model calls list_slots(day="Tuesday", after="12:00"), 400 ms
+    2600 agent: "I have Tuesday at two thirty or at four fifteen..."
+    4200 caller barges in: "Is there anything later?"  TTS stopped, history records
+         "I have Tuesday at [interrupted]".
+         agent: "Yes, four fifteen on Tuesday. Would that work?"   caller: "Perfect."
+         agent: "Tuesday the fourteenth at four fifteen. Shall I confirm that?"</pre>
+<p>Every technique in the lesson appears: semantic endpointing avoided cutting the caller off at the "um"; speculation and streaming produced a 720 ms reply; a short acknowledgement covered the tool call; barge-in stopped the agent and kept the history honest; and a read-back confirmation guarded the one value that matters.</p>
+</section>
+
+<section data-label="In code: the arithmetic of a voice agent">
+<pre data-lang="python">import numpy as np
+
+# 1. Audio as bytes: 20 ms frames on a phone line versus wideband WebRTC.
+for name, rate, bytes_per_sample in [("phone, 8 kHz mu-law", 8000, 1), ("WebRTC, 16 kHz PCM16", 16000, 2)]:
+    samples = rate * 20 // 1000
+    print(f"{name}: {samples} samples = {samples * bytes_per_sample} bytes per frame, "
+          f"{rate * bytes_per_sample * 8 // 1000} kbit/s")
+
+# 2. The latency budget for one turn, in ms after the caller stops speaking.
+endpoint, stt_final, ttft, first_sentence, tts_first_audio, network = 300, 100, 300, 100, 120, 150
+reply_tokens, tok_per_s, reply_audio_synth = 40, 100, 600
+sequential = (endpoint + 400                          # batch STT on the whole utterance
+              + ttft + reply_tokens / tok_per_s * 1000  # wait for the whole reply
+              + reply_audio_synth + network)          # synthesise all of it, then play
+streamed = endpoint + stt_final + ttft + first_sentence + tts_first_audio + network
+speculative = max(50 + ttft + first_sentence, endpoint) + tts_first_audio + network
+print(f"sequential {sequential:.0f} ms, streamed {streamed} ms, speculative {speculative} ms")
+
+# 3. Endpointing: how often does a silence threshold cut a caller off mid-sentence?
+rng = np.random.default_rng(0)
+pauses = rng.lognormal(mean=np.log(250), sigma=0.6, size=200_000)   # synthetic mid-turn pauses, ms
+for threshold in (300, 500, 800):
+    q = (pauses &gt; threshold).mean()               # one pause exceeds the threshold
+    per_turn = 1 - (1 - q) ** 2                   # turns with two pauses
+    print(f"threshold {threshold} ms: {q:.1%} of pauses, {per_turn:.1%} of turns cut off")
+
+# Semantic endpointing: wait 300 ms if the transcript reads as complete, 1,000 ms if not.
+# Assume mid-turn pauses look incomplete 90% of the time and real turn ends look complete 85%.
+q = 0.9 * (pauses &gt; 1000).mean() + 0.1 * (pauses &gt; 300).mean()
+print(f"semantic: {1 - (1 - q) ** 2:.1%} of turns cut off, mean wait {0.85 * 300 + 0.15 * 1000:.0f} ms")
+
+# 4. Word error rate: edit distance over words, divided by reference length.
+def wer(ref, hyp):
+    r, h = ref.split(), hyp.split()
+    d = np.zeros((len(r) + 1, len(h) + 1), dtype=int)
+    d[:, 0], d[0, :] = range(len(r) + 1), range(len(h) + 1)
+    for i in range(1, len(r) + 1):
+        for j in range(1, len(h) + 1):
+            d[i, j] = min(d[i - 1, j] + 1, d[i, j - 1] + 1, d[i - 1, j - 1] + (r[i - 1] != h[j - 1]))
+    return d[-1, -1] / len(r)
+
+ref = "move my cleaning on thursday to next tuesday afternoon"
+hyp = "move my cleaning on thursday to next to stay afternoon"
+print(f"WER {wer(ref, hyp):.1%}")
+
+# 5. Barge-in: keep only the words the caller actually heard before interrupting.
+reply = "I have Tuesday at two thirty or at four fifteen. Which works better for you?"
+words = reply.split()
+word_end_s = np.cumsum([0.38] * len(words))       # word end times reported by the TTS
+heard = [w for w, t in zip(words, word_end_s) if t &lt;= 1.6]   # caller spoke at 1.6 s
+print(" ".join(heard) + " [interrupted]")
+
+# 6. Capacity and cost per minute (all prices illustrative).
+calls_per_hour, minutes_per_call = 600, 3
+print("concurrent calls:", calls_per_hour * minutes_per_call / 60)
+stt = 0.006                                       # $ per audio minute
+tts = 450 * 30 / 1e6                              # 450 characters spoken per minute at $30 per million
+llm = 6 * (2000 * 1 / 1e6 + 40 * 5 / 1e6)         # 6 turns a minute, 2,000 in / 40 out tokens per turn
+phone = 0.01
+print(f"$ per minute: stt {stt:.4f} tts {tts:.4f} llm {llm:.4f} phone {phone:.4f} "
+      f"total {stt + tts + llm + phone:.4f}")</pre>
+<p>It prints the frame sizes from Step 1, the 2,150 / 1,070 / 720 ms budgets from Step 2, the endpointing table and the semantic-endpointing result (9.3% cut off, 405 ms average wait) from Step 4, the 22.2% WER from Step 5, the truncated history line from Step 8, and the 30 concurrent calls and $0.0427 per minute from Step 10. In a real system, frameworks such as Pipecat or LiveKit Agents provide the streaming plumbing (transports, VAD, interruption handling) and you supply the agent logic; these numbers are what you tune inside them.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>Optimising components instead of overlap.</strong> A faster LLM saves 100 ms; streaming between stages saves a second.</li>
+<li><strong>A fixed silence threshold.</strong> Any fixed value is either rude or slow. Use transcript-aware endpointing.</li>
+<li><strong>Treating WER as the quality metric.</strong> One wrong date matters more than ten dropped "um"s. Measure entity accuracy and confirm critical values.</li>
+<li><strong>Storing the full reply after an interruption.</strong> History must reflect what the caller heard, or the model reasons about options the caller never received.</li>
+<li><strong>Silence during tool calls.</strong> Say something short first, and keep tools fast.</li>
+<li><strong>Chat-style output.</strong> Lists, long paragraphs and unnormalised numbers sound terrible. Prompt for speech and normalise before TTS.</li>
+<li><strong>Testing on clean laptop audio.</strong> Phone audio is 8 kHz, compressed and noisy. Evaluate on real call recordings and simulated noisy callers.</li>
+<li><strong>Reporting mean latency.</strong> Callers remember the worst pause. Track p95 voice-to-voice.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>A pipeline streams everything except TTS, which waits for the LLM's full 60-token reply at 100 tokens per second before synthesising. How much latency does that add compared with sentence chunking, if the first sentence is 10 tokens?</summary><div class="answer">Waiting for the full reply takes 600 ms of generation instead of 100 ms for the first sentence, so about 500 ms more, plus extra synthesis time for the whole reply rather than the first chunk.</div></details>
+<details><summary>Using Step 4's table, a product manager wants fewer than 10% of turns cut off with a fixed threshold. What threshold, and what does it cost? What would you propose instead?</summary><div class="answer">Somewhere between 500 ms (23.2%) and 800 ms (5.2%): about 670 ms or more (650 ms still cuts off 10.8%). That adds over half a second to every turn. Propose semantic endpointing, which in the example achieves 9.3% at a 405 ms average wait.</div></details>
+<details><summary>Compute the WER: said "book me with doctor okafor on friday", heard "book me with doctor oh cafe on friday".</summary><div class="answer">"okafor" became "oh cafe": one substitution and one insertion, 2 errors over 7 spoken words, about 28.6%. Both errors hit the dentist's name, the entity that matters; add the dentists' names as recognition hints and read the booking back.</div></details>
+<details><summary>Why must echo cancellation work before barge-in can work?</summary><div class="answer">Without it, the agent's own voice comes back on the incoming audio, the VAD detects speech while the agent is talking, and the agent "barges in" on itself, stopping mid-sentence for no reason.</div></details>
+<details><summary>Peak traffic is 900 calls an hour averaging 4 minutes. How many concurrent calls must you support on average, and what else do you check?</summary><div class="answer">\(900 \times 4 / 60 = 60\) concurrent calls on average, so provision headroom above that for clustering. Check concurrency limits on the STT, TTS and LLM providers and the telephony trunk, not only their per-minute rate limits.</div></details>
+<details><summary>A clinic chain needs auditable transcripts, redaction of patient details, and tool calls to its booking system. Cascaded or speech-to-speech, and why?</summary><div class="answer">Cascaded. Text at every seam gives transcripts for audit, a place to apply redaction and guardrails, and the full tool-calling agent; each stage can be evaluated and swapped independently. Speech-to-speech's prosody advantage does not outweigh those needs here.</div></details>
+</section>

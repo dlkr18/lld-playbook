@@ -1,0 +1,262 @@
+<!-- Deep lesson: Observability. Merged into production/observability by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Trace</td><td>The record of one request's whole journey through the system, made of spans that share one trace ID.</td></tr>
+<tr><td>Span</td><td>One timed operation inside a trace (a model call, a tool call, a retrieval) with a start, an end, a parent and attributes.</td></tr>
+<tr><td>Attributes</td><td>Key-value facts attached to a span: model name, token counts, prompt version, tool arguments, document IDs.</td></tr>
+<tr><td>Context propagation</td><td>Passing the trace ID and current span ID along with a request, across threads, queues and services, so all spans join one trace.</td></tr>
+<tr><td>OpenTelemetry (OTel)</td><td>The vendor-neutral standard and SDKs for producing traces, metrics and logs. Its GenAI conventions name LLM attributes (<code>gen_ai.*</code>).</td></tr>
+<tr><td>Metric</td><td>A number aggregated over many requests: a counter, a gauge or a histogram (for latency percentiles).</td></tr>
+<tr><td>Cardinality</td><td>How many distinct values a metric label can take. Labels like user ID explode it and the metrics bill with it.</td></tr>
+<tr><td>Head / tail sampling</td><td>Deciding whether to keep a trace when it starts (cheap, blind) or after it ends (can keep every error and slow trace).</td></tr>
+<tr><td>Online evaluation</td><td>Scoring a sample of live traffic for quality (format checks, groundedness, an LLM judge) instead of only offline test sets.</td></tr>
+<tr><td>SLO and error budget</td><td>A target such as "99.5% of conversations succeed in 30 days"; the 0.5% allowed to fail is the budget.</td></tr>
+<tr><td>Burn rate</td><td>How fast the error budget is being used: observed failure rate ÷ allowed failure rate. 1.0 means exactly on budget.</td></tr>
+<tr><td>Exemplar</td><td>A concrete trace linked from a metric, so you can jump from "p95 rose" to a request that shows why.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>A web service fails loudly: an exception, a 500, a timeout. An LLM application mostly fails quietly. The request returns 200, the answer is fluent, and it is wrong: the retriever fetched the wrong document, the model picked the wrong tool argument, a prompt change made answers longer and costs higher. Observability is how you see these failures, explain them from evidence, and catch them early next time.</p>
+<p>The questions interviewers ask:</p>
+<ol>
+<li>What would you record for every LLM call and agent step, and why each field?</li>
+<li>An agent occasionally takes 15 seconds and sometimes does the wrong thing. How do you find out why?</li>
+<li>What do you alert on, given that most quality failures do not raise errors?</li>
+<li>How do you afford to keep this data, and what about the user data inside the prompts?</li>
+</ol>
+<p><strong>Running example.</strong> A customer-support agent handles about 200,000 conversations a day. One customer writes: "I was charged twice for order 8812, please refund the duplicate." The agent replies that it has refunded the duplicate, but the customer complains a day later: the refund went to a different order, and the reply took 14 seconds. With no observability you have a complaint and a log line saying 200 OK. We will instrument this request, read its trace, turn traces into metrics and alerts, and decide what to keep.</p>
+</section>
+
+<section data-label="Step 1: why ordinary monitoring is not enough">
+<p>Traditional application monitoring watches request rate, error rate and latency, the "RED" metrics. They still matter for LLM applications, and they catch outages, but they miss what makes these systems different:</p>
+<ul>
+<li><strong>Correctness is not visible in status codes.</strong> The wrong refund succeeded technically. Quality must be measured explicitly.</li>
+<li><strong>One request is many steps.</strong> Our agent made four model calls and six tool or guardrail calls. A request-level latency number cannot say which step was slow or which decision was wrong.</li>
+<li><strong>Cost varies per request.</strong> One conversation uses 3,000 tokens, another 300,000 after a tool loop. Spend must be measured per request, per feature and per tenant, not estimated.</li>
+<li><strong>Behaviour depends on versions you do not deploy as code</strong>: the prompt, the model snapshot behind an API name, the retrieval index, decoding settings. If these are not recorded, "did Tuesday's change cause this?" cannot be answered.</li>
+<li><strong>The same input can produce different outputs.</strong> You cannot always reproduce a failure by rerunning it, so you must capture enough of the original to inspect it.</li>
+</ul>
+<p>The answer is <strong>tracing</strong> first, metrics derived from traces second, and quality signals added on top.</p>
+</section>
+
+<section data-label="Step 2: traces and spans, the data model">
+<p>A <strong>span</strong> is a record of one operation: a name, a start and end time, a status, a parent span ID, and attributes. A <strong>trace</strong> is the tree of spans that share a trace ID. Instrumenting our agent produces this trace (11 spans):</p>
+<pre class="ascii-diagram">POST /chat                         14.30 s   tenant=acme
+├─ execute_tool input_guardrail     0.12 s
+├─ execute_tool retrieve_policy     0.15 s   doc_ids=refund-policy#3
+├─ chat step 1                      1.90 s   in 6,200  out 120   → call get_order
+├─ execute_tool get_order           0.18 s   order_id=8812
+├─ chat step 2                      2.10 s   in 6,900  out 90    → call list_charges
+├─ execute_tool list_charges        6.30 s   attempts=3  charges=ch_1:8812, ch_7:9020
+├─ chat step 3                      1.60 s   in 7,600  out 80    → call refund
+├─ execute_tool refund              0.40 s   charge_id=ch_7
+├─ chat step 4                      1.40 s   in 7,900  out 60    → final answer
+└─ execute_tool output_guardrail    0.10 s</pre>
+<p>Read it the way you would in an incident:</p>
+<ul>
+<li><strong>Where did the time go?</strong> <code>list_charges</code> took 6.3 s, 44% of the request, and its <code>attempts=3</code> attribute says why: it was retried twice (the attempt events would show two rate-limit responses). The four model calls together took 7.0 s, the other 49%. The fix for "slow" is the billing API's rate limit, not the model.</li>
+<li><strong>Why was the answer wrong?</strong> <code>list_charges</code> returned charges for <em>two</em> orders (8812 and 9020) because it lists by customer, not by order. The model refunded <code>ch_7</code>, which belongs to order 9020. The model's choice is visible in step 3's output; the root cause is a tool whose result made the wrong choice easy.</li>
+<li><strong>What did it cost?</strong> 28,600 input and 350 output tokens: about $0.091 at illustrative prices of $3 and $15 per million. Note that input grew every step, because each call resends the whole conversation.</li>
+</ul>
+<p>None of this was available from the request log. All of it was available from one trace, in a minute. That is the case for tracing.</p>
+</section>
+
+<section data-label="Step 3: what to put on each span">
+<p>Every attribute should answer a question you will ask during an incident. A practical set, by span type:</p>
+<table>
+<thead><tr><th>Span</th><th>Attributes</th><th>Question it answers</th></tr></thead>
+<tbody>
+<tr><td>Model call</td><td>model and snapshot, provider, temperature and max tokens, input/output/cached token counts, finish reason, TTFT, prompt template version</td><td>Which model and prompt produced this? Was it cut off? What did it cost?</td></tr>
+<tr><td>Model call (content)</td><td>the messages sent and received, or a reference to them in separate storage</td><td>What exactly did the model see and say?</td></tr>
+<tr><td>Tool call</td><td>tool name, arguments, result summary, status, attempts</td><td>What did the agent decide to do, and what came back?</td></tr>
+<tr><td>Retrieval</td><td>query, index version, returned document IDs and scores</td><td>Was the right evidence available to the model?</td></tr>
+<tr><td>Root</td><td>tenant, feature, user or session ID (hashed if needed), app version, outcome</td><td>Whose request was it, and did it succeed?</td></tr>
+</tbody>
+</table>
+<p>Use the OpenTelemetry GenAI semantic conventions for names where they exist (<code>gen_ai.request.model</code>, <code>gen_ai.usage.input_tokens</code>, <code>gen_ai.usage.output_tokens</code>, <code>gen_ai.tool.name</code>). The conventions are still marked experimental and some names have changed between releases, but following them means any OTel-compatible backend (open-source or commercial LLM tracing tools, general APM products) can read your data, and you are not locked into one vendor's SDK.</p>
+<p>The <strong>prompt version</strong> attribute deserves emphasis. Prompts change more often than code and change behaviour more. Tagging every model span with the template version lets you compare any metric before and after a prompt change, which is the most common question after "something got worse".</p>
+</section>
+
+<section data-label="Step 4: propagating context across boundaries">
+<p>Spans join into one trace only if every component knows the current trace and parent span. Inside one process, SDKs keep this in a context variable, so a span started inside another automatically becomes its child. Across processes it must travel with the request. The W3C <code>traceparent</code> HTTP header carries it in a fixed format: version, 32-hex-digit trace ID, 16-hex-digit parent span ID, and flags (whether this trace is being sampled):</p>
+<pre data-lang="bash">traceparent: 00-7d3e1c0a9b4f42e8a1c5d6e7f8091a2b-3c4d5e6f7a8b9c0d-01</pre>
+<p>Where propagation usually breaks in LLM systems:</p>
+<ul>
+<li><strong>Queues and background jobs.</strong> An agent step handed to a task queue loses the context unless you put the trace context in the message and restore it in the worker.</li>
+<li><strong>Thread pools and async tasks</strong> started without copying the context.</li>
+<li><strong>Calls to your own tool services</strong> made with a plain HTTP client that does not inject the header.</li>
+<li><strong>Streaming responses</strong>, where the span must stay open until the last token, not end when the first chunk is sent.</li>
+</ul>
+<p>A broken link shows up as a trace that stops halfway and a second, orphaned trace that starts with no parent. Checking for orphans is a quick health test of your instrumentation.</p>
+</section>
+
+<section data-label="Step 5: from spans to metrics">
+<p>Traces explain one request. Metrics describe all of them, cheaply enough to keep for a year and query in a second. Derive them from the same instrumentation, before any sampling, so they count every request:</p>
+<ul>
+<li><strong>Traffic, errors, duration</strong> per route and per step: request rate, error rate, latency histograms (p50, p95, p99), TTFT and time per output token for model calls.</li>
+<li><strong>Tokens and cost</strong>: input, cached and output tokens and dollars, per model, feature and tenant. Cost per successful task is the business number (see <a href="@@production/cost-performance@@">Cost &amp; latency</a>).</li>
+<li><strong>Agent shape</strong>: steps per task, tool-call counts and tool error rates, how often the step limit is hit. A rise in steps per task often precedes a cost incident by days.</li>
+<li><strong>Quality</strong>: the signals in Step 6.</li>
+</ul>
+<p>Two rules prevent the classic mistakes. First, percentiles cannot be averaged: the p95 of the whole fleet is not the mean of each server's p95, so record <strong>histograms</strong> and compute percentiles from the combined buckets. Second, keep label <strong>cardinality</strong> low. Labelling a metric by tenant (hundreds of values) is fine; by user ID or trace ID (millions) creates millions of time series. High-cardinality detail belongs in traces, linked from metrics through exemplars.</p>
+</section>
+
+<section data-label="Step 6: measuring quality in production">
+<p>The wrong refund raised no error. Quality failures have to be detected by signals you design, in three tiers:</p>
+<ul>
+<li><strong>Explicit feedback</strong>: thumbs up and down, ratings, complaint tickets. High value, but sparse (often a few percent of conversations) and biased toward angry users. Store the trace ID with every piece of feedback, so each complaint leads straight to its trace.</li>
+<li><strong>Implicit signals</strong>: the user rephrases the same question, abandons mid-conversation, asks for a human, or reverses the agent's action. These are available for every conversation and correlate with failure; define a few and chart them.</li>
+<li><strong>Automated checks on live traffic</strong> (online evaluation). Cheap deterministic checks run on every request: output parses against its schema, cited document IDs exist, the refund amount matches a charge on the order. Expensive checks run on a sample: an LLM judge scores groundedness or policy compliance on, say, 2% of conversations.</li>
+</ul>
+<p>Sampling is a statistics question. Judging 2% of 200,000 daily conversations is 4,000 judgements a day; at an illustrative $0.01 each that is $40 a day. With 4,000 samples and a 95% pass rate, the standard error is \(\sqrt{0.95 \times 0.05 / 4{,}000} \approx 0.34\) percentage points, so a drop to 92% is about nine standard errors (about six when you compare two days, each with its own noise): visible within one day. Judges have their own errors, so calibrate them against human labels before trusting their trend (see <a href="@@production/evals@@">Evaluating LLM features</a>).</p>
+<p>In the running example, a cheap deterministic check would have caught the bug on the first occurrence: "the refunded charge belongs to the order in the conversation" is a single comparison of two span attributes.</p>
+</section>
+
+<section data-label="Step 7: what to keep, and for how long">
+<p>Full traces are large because they contain prompts. Our trace has four model calls with about 7,000 tokens of input each; stored as text with outputs, tool results and metadata, call it 125 KB per conversation. At 200,000 conversations a day that is <strong>25 GB a day</strong>, 750 GB a month, before indexing and replication. Keeping everything is possible but rarely sensible.</p>
+<p><strong>Head sampling</strong> decides at the start of a request (keep 5% at random). It is cheap but blind: it throws away 95% of errors too. <strong>Tail sampling</strong> buffers each trace until it finishes, then decides with full knowledge: keep every trace that errored, got negative feedback, failed a check or ran unusually long, plus a small random share of normal ones as a baseline. In a simulated day with 2% errors, 1.5% thumbs-down and 2.4% of conversations over 20 seconds, keeping all of those plus 5% of the rest retains about <strong>10% of traces (2.6 GB a day)</strong> and every single error.</p>
+<p>Two further savings: store the large repeated parts once (the 6,000-token system prompt is the same in every call, so store its version and hash, not its text), and keep different data for different periods (metrics for a year, sampled traces for a few weeks, raw prompts for days unless needed for evaluation sets).</p>
+</section>
+
+<section data-label="Step 8: prompts are user data">
+<p>The trace of our refund conversation contains a customer's name, order numbers, charge IDs and perhaps a card's last four digits. Storing traces means operating a store of personal data, with obligations that follow:</p>
+<ul>
+<li><strong>Redact at the source</strong>, before data leaves the application: mask emails, phone numbers, card and account numbers with pattern matchers or a PII detector. Redacting later, in the backend, means the raw data already crossed the network and possibly a vendor's boundary.</li>
+<li><strong>Restrict access</strong>: debugging access to full prompts should be narrower than access to dashboards.</li>
+<li><strong>Support deletion</strong>: if a user asks to be forgotten, you must be able to find and delete their traces, which requires a (hashed) user identifier on the root span.</li>
+<li><strong>Never record secrets</strong>: API keys and tokens in tool arguments or headers must be stripped by the instrumentation.</li>
+</ul>
+<p>These constraints shape the design: the more you redact, the harder some bugs are to diagnose. A common compromise is redacted traces by default and short-lived, access-controlled raw traces for the sampled failures.</p>
+</section>
+
+<section data-label="Step 9: alerting on what users feel">
+<p>Alert on symptoms users experience, not on every internal anomaly, and make each alert actionable. A <strong>service-level objective</strong> defines the symptom: "99.5% of conversations succeed over 30 days", where success means no error, no timeout, valid output, and no failed deterministic check. The 0.5% that may fail is the <strong>error budget</strong>.</p>
+<p>A fixed error-rate threshold either pages too often or too late. <strong>Burn-rate alerts</strong> ask how fast the budget is being spent:</p>
+\[ \text{burn rate} = \frac{\text{observed failure rate}}{1 - \text{SLO}} \]
+<p>A 30-day budget lasts 720 hours. A burn rate of 14.4 sustained for one hour spends \(14.4 / 720 = 2\%\) of the month's budget in that hour, a common threshold for paging someone. A burn rate of 6 over six hours spends 5%, a common threshold for a ticket. With a 99.5% SLO, those correspond to failure rates of 7.2% and 3%. A ten-minute spike to 20% failures averages \(20\% \times 10/60 \approx 3.3\%\) over the hour, a burn rate of 6.7, and pages nobody; a sustained 7.35% (burn rate 14.7) pages within the hour.</p>
+<p>Alongside the SLO, LLM systems need a few specific alerts:</p>
+<ul>
+<li><strong>Spend</strong> per tenant or feature above a multiple of its recent baseline: catches loops and prompt bloat.</li>
+<li><strong>Steps per task</strong> or step-limit hits rising: catches agents stuck in loops.</li>
+<li><strong>Quality signals</strong> (judge pass rate, rephrase rate) dropping beyond their noise band: catches silent regressions, such as a provider silently updating a model behind the same name.</li>
+</ul>
+</section>
+
+<section data-label="Step 10: the debugging loop">
+<p>Put the pieces together and observability becomes a loop, not a dashboard:</p>
+<ol>
+<li><strong>Detect</strong>: an alert, a metric trend or a complaint. Here: a complaint, then a deterministic check added in Step 6 that flags 0.3% of refunds as "charge not on the order".</li>
+<li><strong>Locate</strong>: from the metric, open exemplar traces; from the complaint, open its trace by ID.</li>
+<li><strong>Explain</strong>: read the spans. The list tool returns charges for every order; the model chose by amount.</li>
+<li><strong>Fix</strong>: change the tool to filter by order ID and return the order with each charge; add a check in the refund tool that the charge matches the order in context.</li>
+<li><strong>Prevent</strong>: add this conversation, redacted, to the evaluation set, so the next prompt or model change is tested against it (<a href="@@production/evals@@">Evaluating LLM features</a>).</li>
+</ol>
+<p>The last step is what makes observability pay for itself: production failures become test cases, and the test set comes to reflect what actually goes wrong rather than what the team imagined.</p>
+</section>
+
+<section data-label="In code: tracing, sampling and burn rate">
+<p>The running example instrumented with the OpenTelemetry Python SDK (runs as written with <code>opentelemetry-sdk</code> installed). It uses an in-memory exporter and a simulated clock so it is instant and deterministic; in production you would export over OTLP to a collector and let real time pass.</p>
+<pre data-lang="python">from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
+exporter = InMemorySpanExporter()                   # in production: an OTLP exporter to a collector
+provider = TracerProvider()
+provider.add_span_processor(SimpleSpanProcessor(exporter))
+tracer = provider.get_tracer("refund-agent")
+
+clock = 1_700_000_000 * 10**9                       # simulated clock in ns, so the demo is instant
+
+def span(name, secs, parent_ctx, **attrs):
+    """Record one finished span of `secs` seconds starting at the simulated clock."""
+    global clock
+    s = tracer.start_span(name, context=parent_ctx, start_time=clock, attributes=attrs)
+    clock += int(secs * 1e9)
+    s.end(end_time=clock)
+
+root = tracer.start_span("POST /chat", start_time=clock, attributes={"app.tenant": "acme"})
+ctx = trace.set_span_in_context(root)                # children point at the root as parent
+llm = lambda step, tin, tout, secs: span(
+    f"chat step {step}", secs, ctx, **{"gen_ai.operation.name": "chat",
+    "gen_ai.request.model": "large-model-v3", "gen_ai.usage.input_tokens": tin,
+    "gen_ai.usage.output_tokens": tout, "app.prompt_version": "refund-v14"})
+tool = lambda name, secs, **a: span(f"execute_tool {name}", secs, ctx,
+                                    **{"gen_ai.tool.name": name, **{f"app.{k}": v for k, v in a.items()}})
+
+tool("input_guardrail", 0.12)
+tool("retrieve_policy", 0.15, doc_ids="refund-policy#3")
+llm(1, 6200, 120, 1.9); tool("get_order", 0.18, order_id="8812")
+llm(2, 6900, 90, 2.1);  tool("list_charges", 6.3, attempts=3, charges="ch_1:8812,ch_7:9020")
+llm(3, 7600, 80, 1.6);  tool("refund", 0.40, charge_id="ch_7")     # a charge from the wrong order
+llm(4, 7900, 60, 1.4);  tool("output_guardrail", 0.10)
+root.end(end_time=clock + int(0.05e9))
+
+spans = exporter.get_finished_spans()
+top = next(s for s in spans if s.parent is None)
+dur = lambda s: (s.end_time - s.start_time) / 1e9
+tin = sum(s.attributes.get("gen_ai.usage.input_tokens", 0) for s in spans)
+tout = sum(s.attributes.get("gen_ai.usage.output_tokens", 0) for s in spans)
+print(f"{len(spans)} spans, {dur(top):.2f} s, {tin} in / {tout} out tokens, ${(tin*3 + tout*15)/1e6:.3f}")
+for s in sorted((s for s in spans if s is not top), key=lambda s: s.start_time):
+    print(f"  {s.name:30s} {dur(s):5.2f} s {dur(s)/dur(top):6.1%}  {s.attributes.get('app.charge_id', '')}")
+</pre>
+<p>It prints 11 spans, 14.30 s, 28,600 input and 350 output tokens, $0.091, and a per-span breakdown in which <code>list_charges</code> is 44.1% of the time and the refund span shows <code>ch_7</code>.</p>
+<p>Tail sampling over a simulated day, and the storage it saves:</p>
+<pre data-lang="python">import random
+
+def keep(trace, base_rate=0.05, rng=random.Random(7)):
+    """Tail sampling: decide after the trace finishes, so the interesting ones are always kept."""
+    if trace["error"] or trace["thumbs_down"] or trace["latency_s"] &gt; 20:
+        return True
+    return rng.random() &lt; base_rate
+
+rng = random.Random(1)
+day = [{"error": rng.random() &lt; 0.02, "thumbs_down": rng.random() &lt; 0.015,
+        "latency_s": rng.lognormvariate(2.0, 0.5)} for _ in range(200_000)]
+kept = [t for t in day if keep(t)]
+KB = 125                                             # stored size of one full trace, in KB
+print(f"slow (&gt;20 s): {sum(t['latency_s'] &gt; 20 for t in day)/len(day):.1%}")
+print(f"kept {len(kept)/len(day):.1%} of traces: {len(kept)*KB/1e6:.1f} GB/day "
+      f"instead of {len(day)*KB/1e6:.0f} GB/day")
+print(f"errors kept: {sum(t['error'] for t in kept)} of {sum(t['error'] for t in day)}")
+</pre>
+<p>And the burn-rate rule from Step 9:</p>
+<pre data-lang="python">def burn_rate(bad, total, slo=0.995):
+    """How fast the error budget is being spent: 1.0 means exactly on budget."""
+    return (bad / total) / (1 - slo)
+
+# 30-day budget = 720 hours. Spending 2% of it in 1 hour is a burn rate of 0.02 * 720 = 14.4;
+# spending 5% of it in 6 hours is 0.05 * 720 / 6 = 6.
+RULES = {"1h": (14.4, "PAGE"), "6h": (6.0, "TICKET")}
+for window, bad, total in [("1h", 610, 8_300), ("6h", 1_550, 50_000), ("6h", 300, 50_000)]:
+    br = burn_rate(bad, total)
+    limit, action = RULES[window]
+    print(f"last {window}: error rate {bad/total:.2%}, burn rate {br:4.1f} -&gt; {action if br &gt;= limit else 'ok'}")
+</pre>
+<p>Output: a 7.35% failure rate in the last hour is a burn rate of 14.7 and pages; 3.10% over six hours (6.2) opens a ticket; 0.60% (1.2) is within normal variation.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"We log every prompt and response, so we have observability."</strong> Flat logs cannot show which step of which request caused what, or where time went. Structure them as spans in traces.</li>
+<li><strong>"No errors, so quality is fine."</strong> Most LLM failures return success. Quality needs explicit signals: feedback, implicit behaviour, deterministic checks and sampled judging.</li>
+<li><strong>Not recording versions.</strong> Without prompt version, model snapshot and index version on each span, you cannot tell which change caused a regression.</li>
+<li><strong>Head sampling at 1% "to save money".</strong> It discards 99% of the errors you most need. Sample at the tail, keeping all failures and outliers.</li>
+<li><strong>Averaging percentiles.</strong> The mean of per-server p95s is not the fleet p95. Aggregate histograms, then compute the percentile.</li>
+<li><strong>Labelling metrics by user or trace ID.</strong> Cardinality explodes. Put that detail on traces and link with exemplars.</li>
+<li><strong>Storing raw prompts forever.</strong> They are user data. Redact at the source, limit retention and access, and support deletion.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>In the refund trace, the four model calls took 7.0 s and <code>list_charges</code> took 6.3 s. A colleague proposes switching to a faster model to cut latency. What do you say?</summary><div class="answer">The single biggest span is the tool, slowed by two retries on rate limits. Fixing the billing API's rate limit (or caching, or raising the quota) removes up to about 6 s; a faster model saves a fraction of the 7.0 s at some quality risk. Fix the tool first.</div></details>
+<details><summary>Which span attributes would let you answer "did yesterday's prompt change make answers longer and more expensive?"</summary><div class="answer">Prompt template version on each model span, plus output and input token counts (and cost). Group by version and compare distributions before and after the change.</div></details>
+<details><summary>Your traces for an agent stop after the first tool call, and a separate trace with no parent appears for each tool. What broke?</summary><div class="answer">Context propagation: the tool service (or the queue or thread pool that calls it) is not receiving or restoring the trace context, for example the <code>traceparent</code> header is not injected, so it starts new traces.</div></details>
+<details><summary>200,000 traces a day at 125 KB each. Errors are 2%. You keep all errors and 5% of the rest. Roughly how much do you store per day?</summary><div class="answer">Kept share: \(0.02 + 0.05 \times 0.98 \approx 6.9\%\), so about 13,800 traces, roughly 1.7 GB a day instead of 25 GB. (Adding slow and negative-feedback traces raises it toward 10%.)</div></details>
+<details><summary>SLO is 99.9% over 30 days. In the last hour 1.2% of requests failed. Page or not, using a 14.4 burn-rate threshold?</summary><div class="answer">Burn rate = \(0.012 / 0.001 = 12\), below 14.4, so no page from the one-hour rule; but it would spend about 1.7% of the monthly budget per hour, so the six-hour rule (threshold 6) will fire if it continues.</div></details>
+<details><summary>You judge 1% of 50,000 daily conversations with an LLM judge; the pass rate is 90%. Can you detect a 2-point drop within a day?</summary><div class="answer">500 judgements: standard error \(\sqrt{0.9 \times 0.1 / 500} \approx 1.34\) points, so a 2-point drop is about 1.5 standard errors, not reliably detectable in a day. Judge more (around 2,000 a day gives about 0.67 points) or aggregate over several days.</div></details>
+<details><summary>Name a cheap check that would have caught the wrong refund on day one, and where it runs.</summary><div class="answer">"The charge being refunded belongs to the order under discussion": compare the refund tool's charge's order ID with the order ID in context. Run it inside the refund tool as a guard (blocking), and as an online check that counts violations (alerting).</div></details>
+</section>

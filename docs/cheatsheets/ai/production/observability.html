@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
@@ -31,22 +35,34 @@
   <a href="#online-feedback-loop"><span class="num">11</span> Online Feedback Loop</a>
   <a href="#tools-comparison"><span class="num">12</span> Tools Comparison</a>
   <a href="#full-instrumentation-example"><span class="num">13</span> Full Instrumentation Example</a>
-  <a href="#observability-seeing-inside-a-12-step-agent"><span class="num">14</span> Observability: seeing inside a 12-step agent</a>
-  <a href="#the-tracing-decorator-otel-genai-conventions-60-lines"><span class="num">15</span> The tracing decorator: OTel GenAI conventions, ~60 lines</a>
-  <a href="#what-a-trace-looks-like"><span class="num">16</span> What a trace looks like</a>
-  <a href="#metrics-definitions-and-alert-thresholds"><span class="num">17</span> Metrics: definitions and alert thresholds</a>
-  <a href="#sampling-and-privacy-trace-everything-keep-less"><span class="num">18</span> Sampling and privacy: trace everything, keep less</a>
-  <a href="#production-ops"><span class="num">19</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">20</span> Related topics</a>
-  <a href="#where-people-get-lost"><span class="num">21</span> Where people get lost</a>
-  <a href="#how-this-connects"><span class="num">22</span> How this connects</a>
-  <a href="#check-yourself"><span class="num">23</span> Check yourself</a>
+  <a href="#the-question"><span class="num">14</span> The question</a>
+  <a href="#step-1-why-ordinary-monitoring-is-not-enough"><span class="num">15</span> Step 1: why ordinary monitoring is not enough</a>
+  <a href="#step-2-traces-and-spans-the-data-model"><span class="num">16</span> Step 2: traces and spans, the data model</a>
+  <a href="#step-3-what-to-put-on-each-span"><span class="num">17</span> Step 3: what to put on each span</a>
+  <a href="#step-4-propagating-context-across-boundaries"><span class="num">18</span> Step 4: propagating context across boundaries</a>
+  <a href="#step-5-from-spans-to-metrics"><span class="num">19</span> Step 5: from spans to metrics</a>
+  <a href="#step-6-measuring-quality-in-production"><span class="num">20</span> Step 6: measuring quality in production</a>
+  <a href="#step-7-what-to-keep-and-for-how-long"><span class="num">21</span> Step 7: what to keep, and for how long</a>
+  <a href="#step-8-prompts-are-user-data"><span class="num">22</span> Step 8: prompts are user data</a>
+  <a href="#step-9-alerting-on-what-users-feel"><span class="num">23</span> Step 9: alerting on what users feel</a>
+  <a href="#step-10-the-debugging-loop"><span class="num">24</span> Step 10: the debugging loop</a>
+  <a href="#in-code-tracing-sampling-and-burn-rate"><span class="num">25</span> In code: tracing, sampling and burn rate</a>
+  <a href="#observability-seeing-inside-a-12-step-agent"><span class="num">26</span> Observability: seeing inside a 12-step agent</a>
+  <a href="#the-tracing-decorator-otel-genai-conventions-60-lines"><span class="num">27</span> The tracing decorator: OTel GenAI conventions, ~60 lines</a>
+  <a href="#what-a-trace-looks-like"><span class="num">28</span> What a trace looks like</a>
+  <a href="#metrics-definitions-and-alert-thresholds"><span class="num">29</span> Metrics: definitions and alert thresholds</a>
+  <a href="#sampling-and-privacy-trace-everything-keep-less"><span class="num">30</span> Sampling and privacy: trace everything, keep less</a>
+  <a href="#production-ops"><span class="num">31</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">32</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">33</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">34</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">35</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Observability <span>// Production &amp; evals</span></h1>
   <p>Seeing inside a twelve-step agent: traces, spans, metrics, tools, and what to alert on.</p>
-  <div class="tags"><span class="tag">15 min read</span><span class="tag">3 diagrams</span></div>
+  <div class="tags"><span class="tag">34 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -56,7 +72,7 @@
 </section>
 <section id="new-words">
   <h2>02 &mdash; New words</h2>
-<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Trajectory eval</strong></td><td>Checking the agent steps/tool-use were sane, not just the answer.</td></tr></tbody></table>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Trace</strong></td><td>The record of one request's whole journey through the system, made of spans that share one trace ID.</td></tr><tr><td><strong>Span</strong></td><td>One timed operation inside a trace (a model call, a tool call, a retrieval) with a start, an end, a parent and attributes.</td></tr><tr><td><strong>Attributes</strong></td><td>Key-value facts attached to a span: model name, token counts, prompt version, tool arguments, document IDs.</td></tr><tr><td><strong>Context propagation</strong></td><td>Passing the trace ID and current span ID along with a request, across threads, queues and services, so all spans join one trace.</td></tr><tr><td><strong>OpenTelemetry (OTel)</strong></td><td>The vendor-neutral standard and SDKs for producing traces, metrics and logs. Its GenAI conventions name LLM attributes (<code>gen_ai.*</code>).</td></tr><tr><td><strong>Metric</strong></td><td>A number aggregated over many requests: a counter, a gauge or a histogram (for latency percentiles).</td></tr><tr><td><strong>Cardinality</strong></td><td>How many distinct values a metric label can take. Labels like user ID explode it and the metrics bill with it.</td></tr><tr><td><strong>Head / tail sampling</strong></td><td>Deciding whether to keep a trace when it starts (cheap, blind) or after it ends (can keep every error and slow trace).</td></tr><tr><td><strong>Online evaluation</strong></td><td>Scoring a sample of live traffic for quality (format checks, groundedness, an LLM judge) instead of only offline test sets.</td></tr><tr><td><strong>SLO and error budget</strong></td><td>A target such as "99.5% of conversations succeed in 30 days"; the 0.5% allowed to fail is the budget.</td></tr><tr><td><strong>Burn rate</strong></td><td>How fast the error budget is being used: observed failure rate ÷ allowed failure rate. 1.0 means exactly on budget.</td></tr><tr><td><strong>Exemplar</strong></td><td>A concrete trace linked from a metric, so you can jump from "p95 rose" to a request that shows why.</td></tr><tr><td><strong>Trajectory eval</strong></td><td>Checking the agent steps/tool-use were sane, not just the answer.</td></tr></tbody></table>
 </section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
@@ -277,8 +293,229 @@ def rag_answer(query: str, tenant_id: str) -&gt; dict:
 <p>Store <code>trace_id</code> on every API response. Support tickets link directly to LangSmith run replay. Feed thumbs-down into golden dataset per <a href="evals.html">Evaluating LLM features</a>.</p></div>
 </section>
 <p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>14 &mdash; The question</h2>
+<p>A web service fails loudly: an exception, a 500, a timeout. An LLM application mostly fails quietly. The request returns 200, the answer is fluent, and it is wrong: the retriever fetched the wrong document, the model picked the wrong tool argument, a prompt change made answers longer and costs higher. Observability is how you see these failures, explain them from evidence, and catch them early next time.</p>
+<p>The questions interviewers ask:</p>
+<ol>
+<li>What would you record for every LLM call and agent step, and why each field?</li>
+<li>An agent occasionally takes 15 seconds and sometimes does the wrong thing. How do you find out why?</li>
+<li>What do you alert on, given that most quality failures do not raise errors?</li>
+<li>How do you afford to keep this data, and what about the user data inside the prompts?</li>
+</ol>
+<p><strong>Running example.</strong> A customer-support agent handles about 200,000 conversations a day. One customer writes: "I was charged twice for order 8812, please refund the duplicate." The agent replies that it has refunded the duplicate, but the customer complains a day later: the refund went to a different order, and the reply took 14 seconds. With no observability you have a complaint and a log line saying 200 OK. We will instrument this request, read its trace, turn traces into metrics and alerts, and decide what to keep.</p>
+</section>
+<section id="step-1-why-ordinary-monitoring-is-not-enough">
+  <h2>15 &mdash; Step 1: why ordinary monitoring is not enough</h2>
+<p>Traditional application monitoring watches request rate, error rate and latency, the "RED" metrics. They still matter for LLM applications, and they catch outages, but they miss what makes these systems different:</p>
+<ul>
+<li><strong>Correctness is not visible in status codes.</strong> The wrong refund succeeded technically. Quality must be measured explicitly.</li>
+<li><strong>One request is many steps.</strong> Our agent made four model calls and six tool or guardrail calls. A request-level latency number cannot say which step was slow or which decision was wrong.</li>
+<li><strong>Cost varies per request.</strong> One conversation uses 3,000 tokens, another 300,000 after a tool loop. Spend must be measured per request, per feature and per tenant, not estimated.</li>
+<li><strong>Behaviour depends on versions you do not deploy as code</strong>: the prompt, the model snapshot behind an API name, the retrieval index, decoding settings. If these are not recorded, "did Tuesday's change cause this?" cannot be answered.</li>
+<li><strong>The same input can produce different outputs.</strong> You cannot always reproduce a failure by rerunning it, so you must capture enough of the original to inspect it.</li>
+</ul>
+<p>The answer is <strong>tracing</strong> first, metrics derived from traces second, and quality signals added on top.</p>
+</section>
+<section id="step-2-traces-and-spans-the-data-model">
+  <h2>16 &mdash; Step 2: traces and spans, the data model</h2>
+<p>A <strong>span</strong> is a record of one operation: a name, a start and end time, a status, a parent span ID, and attributes. A <strong>trace</strong> is the tree of spans that share a trace ID. Instrumenting our agent produces this trace (11 spans):</p>
+<pre class="ascii-diagram">POST /chat                         14.30 s   tenant=acme
+├─ execute_tool input_guardrail     0.12 s
+├─ execute_tool retrieve_policy     0.15 s   doc_ids=refund-policy#3
+├─ chat step 1                      1.90 s   in 6,200  out 120   → call get_order
+├─ execute_tool get_order           0.18 s   order_id=8812
+├─ chat step 2                      2.10 s   in 6,900  out 90    → call list_charges
+├─ execute_tool list_charges        6.30 s   attempts=3  charges=ch_1:8812, ch_7:9020
+├─ chat step 3                      1.60 s   in 7,600  out 80    → call refund
+├─ execute_tool refund              0.40 s   charge_id=ch_7
+├─ chat step 4                      1.40 s   in 7,900  out 60    → final answer
+└─ execute_tool output_guardrail    0.10 s</pre>
+<p>Read it the way you would in an incident:</p>
+<ul>
+<li><strong>Where did the time go?</strong> <code>list_charges</code> took 6.3 s, 44% of the request, and its <code>attempts=3</code> attribute says why: it was retried twice (the attempt events would show two rate-limit responses). The four model calls together took 7.0 s, the other 49%. The fix for "slow" is the billing API's rate limit, not the model.</li>
+<li><strong>Why was the answer wrong?</strong> <code>list_charges</code> returned charges for <em>two</em> orders (8812 and 9020) because it lists by customer, not by order. The model refunded <code>ch_7</code>, which belongs to order 9020. The model's choice is visible in step 3's output; the root cause is a tool whose result made the wrong choice easy.</li>
+<li><strong>What did it cost?</strong> 28,600 input and 350 output tokens: about $0.091 at illustrative prices of $3 and $15 per million. Note that input grew every step, because each call resends the whole conversation.</li>
+</ul>
+<p>None of this was available from the request log. All of it was available from one trace, in a minute. That is the case for tracing.</p>
+</section>
+<section id="step-3-what-to-put-on-each-span">
+  <h2>17 &mdash; Step 3: what to put on each span</h2>
+<p>Every attribute should answer a question you will ask during an incident. A practical set, by span type:</p>
+<table>
+<thead><tr><th>Span</th><th>Attributes</th><th>Question it answers</th></tr></thead>
+<tbody>
+<tr><td>Model call</td><td>model and snapshot, provider, temperature and max tokens, input/output/cached token counts, finish reason, TTFT, prompt template version</td><td>Which model and prompt produced this? Was it cut off? What did it cost?</td></tr>
+<tr><td>Model call (content)</td><td>the messages sent and received, or a reference to them in separate storage</td><td>What exactly did the model see and say?</td></tr>
+<tr><td>Tool call</td><td>tool name, arguments, result summary, status, attempts</td><td>What did the agent decide to do, and what came back?</td></tr>
+<tr><td>Retrieval</td><td>query, index version, returned document IDs and scores</td><td>Was the right evidence available to the model?</td></tr>
+<tr><td>Root</td><td>tenant, feature, user or session ID (hashed if needed), app version, outcome</td><td>Whose request was it, and did it succeed?</td></tr>
+</tbody>
+</table>
+<p>Use the OpenTelemetry GenAI semantic conventions for names where they exist (<code>gen_ai.request.model</code>, <code>gen_ai.usage.input_tokens</code>, <code>gen_ai.usage.output_tokens</code>, <code>gen_ai.tool.name</code>). The conventions are still marked experimental and some names have changed between releases, but following them means any OTel-compatible backend (open-source or commercial LLM tracing tools, general APM products) can read your data, and you are not locked into one vendor's SDK.</p>
+<p>The <strong>prompt version</strong> attribute deserves emphasis. Prompts change more often than code and change behaviour more. Tagging every model span with the template version lets you compare any metric before and after a prompt change, which is the most common question after "something got worse".</p>
+</section>
+<section id="step-4-propagating-context-across-boundaries">
+  <h2>18 &mdash; Step 4: propagating context across boundaries</h2>
+<p>Spans join into one trace only if every component knows the current trace and parent span. Inside one process, SDKs keep this in a context variable, so a span started inside another automatically becomes its child. Across processes it must travel with the request. The W3C <code>traceparent</code> HTTP header carries it in a fixed format: version, 32-hex-digit trace ID, 16-hex-digit parent span ID, and flags (whether this trace is being sampled):</p>
+<pre>traceparent: <span class="nr">00</span>-7d3e1c0a9b4f42e8a1c5d6e7f8091a2b-3c4d5e6f7a8b9c0d-01</pre>
+<p>Where propagation usually breaks in LLM systems:</p>
+<ul>
+<li><strong>Queues and background jobs.</strong> An agent step handed to a task queue loses the context unless you put the trace context in the message and restore it in the worker.</li>
+<li><strong>Thread pools and async tasks</strong> started without copying the context.</li>
+<li><strong>Calls to your own tool services</strong> made with a plain HTTP client that does not inject the header.</li>
+<li><strong>Streaming responses</strong>, where the span must stay open until the last token, not end when the first chunk is sent.</li>
+</ul>
+<p>A broken link shows up as a trace that stops halfway and a second, orphaned trace that starts with no parent. Checking for orphans is a quick health test of your instrumentation.</p>
+</section>
+<section id="step-5-from-spans-to-metrics">
+  <h2>19 &mdash; Step 5: from spans to metrics</h2>
+<p>Traces explain one request. Metrics describe all of them, cheaply enough to keep for a year and query in a second. Derive them from the same instrumentation, before any sampling, so they count every request:</p>
+<ul>
+<li><strong>Traffic, errors, duration</strong> per route and per step: request rate, error rate, latency histograms (p50, p95, p99), TTFT and time per output token for model calls.</li>
+<li><strong>Tokens and cost</strong>: input, cached and output tokens and dollars, per model, feature and tenant. Cost per successful task is the business number (see <a href="cost-performance.html">Cost &amp; latency</a>).</li>
+<li><strong>Agent shape</strong>: steps per task, tool-call counts and tool error rates, how often the step limit is hit. A rise in steps per task often precedes a cost incident by days.</li>
+<li><strong>Quality</strong>: the signals in Step 6.</li>
+</ul>
+<p>Two rules prevent the classic mistakes. First, percentiles cannot be averaged: the p95 of the whole fleet is not the mean of each server's p95, so record <strong>histograms</strong> and compute percentiles from the combined buckets. Second, keep label <strong>cardinality</strong> low. Labelling a metric by tenant (hundreds of values) is fine; by user ID or trace ID (millions) creates millions of time series. High-cardinality detail belongs in traces, linked from metrics through exemplars.</p>
+</section>
+<section id="step-6-measuring-quality-in-production">
+  <h2>20 &mdash; Step 6: measuring quality in production</h2>
+<p>The wrong refund raised no error. Quality failures have to be detected by signals you design, in three tiers:</p>
+<ul>
+<li><strong>Explicit feedback</strong>: thumbs up and down, ratings, complaint tickets. High value, but sparse (often a few percent of conversations) and biased toward angry users. Store the trace ID with every piece of feedback, so each complaint leads straight to its trace.</li>
+<li><strong>Implicit signals</strong>: the user rephrases the same question, abandons mid-conversation, asks for a human, or reverses the agent's action. These are available for every conversation and correlate with failure; define a few and chart them.</li>
+<li><strong>Automated checks on live traffic</strong> (online evaluation). Cheap deterministic checks run on every request: output parses against its schema, cited document IDs exist, the refund amount matches a charge on the order. Expensive checks run on a sample: an LLM judge scores groundedness or policy compliance on, say, 2% of conversations.</li>
+</ul>
+<p>Sampling is a statistics question. Judging 2% of 200,000 daily conversations is 4,000 judgements a day; at an illustrative $0.01 each that is $40 a day. With 4,000 samples and a 95% pass rate, the standard error is \(\sqrt{0.95 \times 0.05 / 4{,}000} \approx 0.34\) percentage points, so a drop to 92% is about nine standard errors (about six when you compare two days, each with its own noise): visible within one day. Judges have their own errors, so calibrate them against human labels before trusting their trend (see <a href="evals.html">Evaluating LLM features</a>).</p>
+<p>In the running example, a cheap deterministic check would have caught the bug on the first occurrence: "the refunded charge belongs to the order in the conversation" is a single comparison of two span attributes.</p>
+</section>
+<section id="step-7-what-to-keep-and-for-how-long">
+  <h2>21 &mdash; Step 7: what to keep, and for how long</h2>
+<p>Full traces are large because they contain prompts. Our trace has four model calls with about 7,000 tokens of input each; stored as text with outputs, tool results and metadata, call it 125 KB per conversation. At 200,000 conversations a day that is <strong>25 GB a day</strong>, 750 GB a month, before indexing and replication. Keeping everything is possible but rarely sensible.</p>
+<p><strong>Head sampling</strong> decides at the start of a request (keep 5% at random). It is cheap but blind: it throws away 95% of errors too. <strong>Tail sampling</strong> buffers each trace until it finishes, then decides with full knowledge: keep every trace that errored, got negative feedback, failed a check or ran unusually long, plus a small random share of normal ones as a baseline. In a simulated day with 2% errors, 1.5% thumbs-down and 2.4% of conversations over 20 seconds, keeping all of those plus 5% of the rest retains about <strong>10% of traces (2.6 GB a day)</strong> and every single error.</p>
+<p>Two further savings: store the large repeated parts once (the 6,000-token system prompt is the same in every call, so store its version and hash, not its text), and keep different data for different periods (metrics for a year, sampled traces for a few weeks, raw prompts for days unless needed for evaluation sets).</p>
+</section>
+<section id="step-8-prompts-are-user-data">
+  <h2>22 &mdash; Step 8: prompts are user data</h2>
+<p>The trace of our refund conversation contains a customer's name, order numbers, charge IDs and perhaps a card's last four digits. Storing traces means operating a store of personal data, with obligations that follow:</p>
+<ul>
+<li><strong>Redact at the source</strong>, before data leaves the application: mask emails, phone numbers, card and account numbers with pattern matchers or a PII detector. Redacting later, in the backend, means the raw data already crossed the network and possibly a vendor's boundary.</li>
+<li><strong>Restrict access</strong>: debugging access to full prompts should be narrower than access to dashboards.</li>
+<li><strong>Support deletion</strong>: if a user asks to be forgotten, you must be able to find and delete their traces, which requires a (hashed) user identifier on the root span.</li>
+<li><strong>Never record secrets</strong>: API keys and tokens in tool arguments or headers must be stripped by the instrumentation.</li>
+</ul>
+<p>These constraints shape the design: the more you redact, the harder some bugs are to diagnose. A common compromise is redacted traces by default and short-lived, access-controlled raw traces for the sampled failures.</p>
+</section>
+<section id="step-9-alerting-on-what-users-feel">
+  <h2>23 &mdash; Step 9: alerting on what users feel</h2>
+<p>Alert on symptoms users experience, not on every internal anomaly, and make each alert actionable. A <strong>service-level objective</strong> defines the symptom: "99.5% of conversations succeed over 30 days", where success means no error, no timeout, valid output, and no failed deterministic check. The 0.5% that may fail is the <strong>error budget</strong>.</p>
+<p>A fixed error-rate threshold either pages too often or too late. <strong>Burn-rate alerts</strong> ask how fast the budget is being spent:</p>
+\[ \text{burn rate} = \frac{\text{observed failure rate}}{1 - \text{SLO}} \]
+<p>A 30-day budget lasts 720 hours. A burn rate of 14.4 sustained for one hour spends \(14.4 / 720 = 2\%\) of the month's budget in that hour, a common threshold for paging someone. A burn rate of 6 over six hours spends 5%, a common threshold for a ticket. With a 99.5% SLO, those correspond to failure rates of 7.2% and 3%. A ten-minute spike to 20% failures averages \(20\% \times 10/60 \approx 3.3\%\) over the hour, a burn rate of 6.7, and pages nobody; a sustained 7.35% (burn rate 14.7) pages within the hour.</p>
+<p>Alongside the SLO, LLM systems need a few specific alerts:</p>
+<ul>
+<li><strong>Spend</strong> per tenant or feature above a multiple of its recent baseline: catches loops and prompt bloat.</li>
+<li><strong>Steps per task</strong> or step-limit hits rising: catches agents stuck in loops.</li>
+<li><strong>Quality signals</strong> (judge pass rate, rephrase rate) dropping beyond their noise band: catches silent regressions, such as a provider silently updating a model behind the same name.</li>
+</ul>
+</section>
+<section id="step-10-the-debugging-loop">
+  <h2>24 &mdash; Step 10: the debugging loop</h2>
+<p>Put the pieces together and observability becomes a loop, not a dashboard:</p>
+<ol>
+<li><strong>Detect</strong>: an alert, a metric trend or a complaint. Here: a complaint, then a deterministic check added in Step 6 that flags 0.3% of refunds as "charge not on the order".</li>
+<li><strong>Locate</strong>: from the metric, open exemplar traces; from the complaint, open its trace by ID.</li>
+<li><strong>Explain</strong>: read the spans. The list tool returns charges for every order; the model chose by amount.</li>
+<li><strong>Fix</strong>: change the tool to filter by order ID and return the order with each charge; add a check in the refund tool that the charge matches the order in context.</li>
+<li><strong>Prevent</strong>: add this conversation, redacted, to the evaluation set, so the next prompt or model change is tested against it (<a href="evals.html">Evaluating LLM features</a>).</li>
+</ol>
+<p>The last step is what makes observability pay for itself: production failures become test cases, and the test set comes to reflect what actually goes wrong rather than what the team imagined.</p>
+</section>
+<section id="in-code-tracing-sampling-and-burn-rate">
+  <h2>25 &mdash; In code: tracing, sampling and burn rate</h2>
+<p>The running example instrumented with the OpenTelemetry Python SDK (runs as written with <code>opentelemetry-sdk</code> installed). It uses an in-memory exporter and a simulated clock so it is instant and deterministic; in production you would export over OTLP to a collector and let real time pass.</p>
+<pre><span class="kw">from</span> opentelemetry <span class="kw">import</span> trace
+<span class="kw">from</span> opentelemetry.sdk.trace <span class="kw">import</span> TracerProvider
+<span class="kw">from</span> opentelemetry.sdk.trace.export <span class="kw">import</span> SimpleSpanProcessor
+<span class="kw">from</span> opentelemetry.sdk.trace.export.in_memory_span_exporter <span class="kw">import</span> InMemorySpanExporter
+
+exporter = InMemorySpanExporter()                   <span class="cm"># in production: an OTLP exporter to a collector</span>
+provider = TracerProvider()
+provider.add_span_processor(SimpleSpanProcessor(exporter))
+tracer = provider.get_tracer(<span class="st">"</span><span class="st">refund-agent</span><span class="st">"</span>)
+
+clock = <span class="nr">1_700_000_000</span> * <span class="nr">10</span>**<span class="nr">9</span> <span class="cm"># simulated clock in ns, so the demo is instant</span>
+<span class="kw">def</span> <span class="fn">span</span>(name, secs, parent_ctx, **attrs):
+    <span class="st">"""Record one finished span of `secs` seconds starting at the simulated clock."""</span>
+<span class="kw">global</span> clock
+    s = tracer.start_span(name, context=parent_ctx, start_time=clock, attributes=attrs)
+    clock += <span class="tp">int</span>(secs * <span class="nr">1e9</span>)
+    s.end(end_time=clock)
+
+root = tracer.start_span(<span class="st">"</span><span class="st">POST /chat</span><span class="st">"</span>, start_time=clock, attributes={<span class="st">"</span><span class="st">app.tenant</span><span class="st">"</span>: <span class="st">"</span><span class="st">acme</span><span class="st">"</span>})
+ctx = trace.set_span_in_context(root)                <span class="cm"># children point at the root as parent</span>
+llm = <span class="kw">lambda</span> step, tin, tout, secs: span(
+    <span class="st">f</span><span class="st">"</span><span class="st">chat step </span><span class="st">{</span>step<span class="st">}</span><span class="st">"</span>, secs, ctx, **{<span class="st">"</span><span class="st">gen_ai.operation.name</span><span class="st">"</span>: <span class="st">"</span><span class="st">chat</span><span class="st">"</span>,
+    <span class="st">"</span><span class="st">gen_ai.request.model</span><span class="st">"</span>: <span class="st">"</span><span class="st">large-model-v3</span><span class="st">"</span>, <span class="st">"</span><span class="st">gen_ai.usage.input_tokens</span><span class="st">"</span>: tin,
+    <span class="st">"</span><span class="st">gen_ai.usage.output_tokens</span><span class="st">"</span>: tout, <span class="st">"</span><span class="st">app.prompt_version</span><span class="st">"</span>: <span class="st">"</span><span class="st">refund-v14</span><span class="st">"</span>})
+tool = <span class="kw">lambda</span> name, secs, **a: span(<span class="st">f</span><span class="st">"</span><span class="st">execute_tool </span><span class="st">{</span>name<span class="st">}</span><span class="st">"</span>, secs, ctx,
+                                    **{<span class="st">"</span><span class="st">gen_ai.tool.name</span><span class="st">"</span>: name, **{<span class="st">f</span><span class="st">"</span><span class="st">app.</span><span class="st">{</span>k<span class="st">}</span><span class="st">"</span>: v <span class="kw">for</span> k, v in a.items()}})
+
+tool(<span class="st">"</span><span class="st">input_guardrail</span><span class="st">"</span>, <span class="nr">0.12</span>)
+tool(<span class="st">"</span><span class="st">retrieve_policy</span><span class="st">"</span>, <span class="nr">0.15</span>, doc_ids=<span class="st">"</span><span class="st">refund-policy#3</span><span class="st">"</span>)
+llm(<span class="nr">1</span>, <span class="nr">6200</span>, <span class="nr">120</span>, <span class="nr">1.9</span>); tool(<span class="st">"</span><span class="st">get_order</span><span class="st">"</span>, <span class="nr">0.18</span>, order_id=<span class="st">"</span><span class="st">8812</span><span class="st">"</span>)
+llm(<span class="nr">2</span>, <span class="nr">6900</span>, <span class="nr">90</span>, <span class="nr">2.1</span>);  tool(<span class="st">"</span><span class="st">list_charges</span><span class="st">"</span>, <span class="nr">6.3</span>, attempts=<span class="nr">3</span>, charges=<span class="st">"</span><span class="st">ch_1:8812,ch_7:9020</span><span class="st">"</span>)
+llm(<span class="nr">3</span>, <span class="nr">7600</span>, <span class="nr">80</span>, <span class="nr">1.6</span>);  tool(<span class="st">"</span><span class="st">refund</span><span class="st">"</span>, <span class="nr">0.40</span>, charge_id=<span class="st">"</span><span class="st">ch_7</span><span class="st">"</span>)     <span class="cm"># a charge from the wrong order</span>
+llm(<span class="nr">4</span>, <span class="nr">7900</span>, <span class="nr">60</span>, <span class="nr">1.4</span>);  tool(<span class="st">"</span><span class="st">output_guardrail</span><span class="st">"</span>, <span class="nr">0.10</span>)
+root.end(end_time=clock + <span class="tp">int</span>(<span class="nr">0.05e9</span>))
+
+spans = exporter.get_finished_spans()
+top = <span class="tp">next</span>(s <span class="kw">for</span> s in spans <span class="kw">if</span> s.parent is <span class="nr">None</span>)
+dur = <span class="kw">lambda</span> s: (s.end_time - s.start_time) / <span class="nr">1e9</span>
+tin = <span class="tp">sum</span>(s.attributes.get(<span class="st">"</span><span class="st">gen_ai.usage.input_tokens</span><span class="st">"</span>, <span class="nr">0</span>) <span class="kw">for</span> s in spans)
+tout = <span class="tp">sum</span>(s.attributes.get(<span class="st">"</span><span class="st">gen_ai.usage.output_tokens</span><span class="st">"</span>, <span class="nr">0</span>) <span class="kw">for</span> s in spans)
+<span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">{</span><span class="tp">len</span>(spans)<span class="st">}</span><span class="st"> spans, </span><span class="st">{</span>dur(top)<span class="st">:</span><span class="st">.2f</span><span class="st">}</span><span class="st"> s, </span><span class="st">{</span>tin<span class="st">}</span><span class="st"> in / </span><span class="st">{</span>tout<span class="st">}</span><span class="st"> out tokens, $</span><span class="st">{</span>(tin*<span class="nr">3</span> + tout*<span class="nr">15</span>)/<span class="nr">1e6</span><span class="st">:</span><span class="st">.3f</span><span class="st">}</span><span class="st">"</span>)
+<span class="kw">for</span> s in <span class="tp">sorted</span>((s <span class="kw">for</span> s in spans <span class="kw">if</span> s is not top), key=<span class="kw">lambda</span> s: s.start_time):
+    <span class="tp">print</span>(<span class="st">f</span><span class="st">"</span> <span class="st">{</span>s.name<span class="st">:</span><span class="st">30s</span><span class="st">}</span> <span class="st">{</span>dur(s)<span class="st">:</span><span class="st">5.2f</span><span class="st">}</span><span class="st"> s </span><span class="st">{</span>dur(s)/dur(top)<span class="st">:</span><span class="st">6.1%</span><span class="st">}</span> <span class="st">{</span>s.attributes.get(<span class="st">'</span><span class="st">app.charge_id</span><span class="st">'</span>, <span class="st">'</span><span class="st">'</span>)<span class="st">}</span><span class="st">"</span>)
+</pre>
+<p>It prints 11 spans, 14.30 s, 28,600 input and 350 output tokens, $0.091, and a per-span breakdown in which <code>list_charges</code> is 44.1% of the time and the refund span shows <code>ch_7</code>.</p>
+<p>Tail sampling over a simulated day, and the storage it saves:</p>
+<pre><span class="kw">import</span> random
+
+<span class="kw">def</span> <span class="fn">keep</span>(trace, base_rate=<span class="nr">0.05</span>, rng=random.Random(<span class="nr">7</span>)):
+    <span class="st">"""Tail sampling: decide after the trace finishes, so the interesting ones are always kept."""</span>
+<span class="kw">if</span> trace[<span class="st">"</span><span class="st">error</span><span class="st">"</span>] or trace[<span class="st">"</span><span class="st">thumbs_down</span><span class="st">"</span>] or trace[<span class="st">"</span><span class="st">latency_s</span><span class="st">"</span>] &gt; <span class="nr">20</span>:
+        <span class="kw">return</span> <span class="nr">True</span>
+<span class="kw">return</span> rng.random() &lt; base_rate
+
+rng = random.Random(<span class="nr">1</span>)
+day = [{<span class="st">"</span><span class="st">error</span><span class="st">"</span>: rng.random() &lt; <span class="nr">0.02</span>, <span class="st">"</span><span class="st">thumbs_down</span><span class="st">"</span>: rng.random() &lt; <span class="nr">0.015</span>,
+        <span class="st">"</span><span class="st">latency_s</span><span class="st">"</span>: rng.lognormvariate(<span class="nr">2.0</span>, <span class="nr">0.5</span>)} <span class="kw">for</span> _ in <span class="tp">range</span>(<span class="nr">200_000</span>)]
+kept = [t <span class="kw">for</span> t in day <span class="kw">if</span> keep(t)]
+KB = <span class="nr">125</span> <span class="cm"># stored size of one full trace, in KB</span>
+<span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">slow (&gt;20 s): </span><span class="st">{</span><span class="tp">sum</span>(t[<span class="st">'</span><span class="st">latency_s</span><span class="st">'</span>] &gt; <span class="nr">20</span> <span class="kw">for</span> t in day)/<span class="tp">len</span>(day)<span class="st">:</span><span class="st">.1%</span><span class="st">}</span><span class="st">"</span>)
+<span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">kept </span><span class="st">{</span><span class="tp">len</span>(kept)/<span class="tp">len</span>(day)<span class="st">:</span><span class="st">.1%</span><span class="st">}</span><span class="st"> of traces: </span><span class="st">{</span><span class="tp">len</span>(kept)*KB/<span class="nr">1e6</span><span class="st">:</span><span class="st">.1f</span><span class="st">}</span><span class="st"> GB/day </span><span class="st">"</span>
+<span class="st">f</span><span class="st">"</span><span class="st">instead of </span><span class="st">{</span><span class="tp">len</span>(day)*KB/<span class="nr">1e6</span><span class="st">:</span><span class="st">.0f</span><span class="st">}</span><span class="st"> GB/day</span><span class="st">"</span>)
+<span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">errors kept: </span><span class="st">{</span><span class="tp">sum</span>(t[<span class="st">'</span><span class="st">error</span><span class="st">'</span>] <span class="kw">for</span> t in kept)<span class="st">}</span><span class="st"> of </span><span class="st">{</span><span class="tp">sum</span>(t[<span class="st">'</span><span class="st">error</span><span class="st">'</span>] <span class="kw">for</span> t in day)<span class="st">}</span><span class="st">"</span>)
+</pre>
+<p>And the burn-rate rule from Step 9:</p>
+<pre><span class="kw">def</span> <span class="fn">burn_rate</span>(bad, total, slo=<span class="nr">0.995</span>):
+    <span class="st">"""How fast the error budget is being spent: 1.0 means exactly on budget."""</span>
+<span class="kw">return</span> (bad / total) / (<span class="nr">1</span> - slo)
+
+<span class="cm"># 30-day budget = 720 hours. Spending 2% of it in 1 hour is a burn rate of 0.02 * 720 = 14.4;</span>
+<span class="cm"># spending 5% of it in 6 hours is 0.05 * 720 / 6 = 6.</span>
+RULES = {<span class="st">"</span><span class="st">1h</span><span class="st">"</span>: (<span class="nr">14.4</span>, <span class="st">"</span><span class="st">PAGE</span><span class="st">"</span>), <span class="st">"</span><span class="st">6h</span><span class="st">"</span>: (<span class="nr">6.0</span>, <span class="st">"</span><span class="st">TICKET</span><span class="st">"</span>)}
+<span class="kw">for</span> window, bad, total in [(<span class="st">"</span><span class="st">1h</span><span class="st">"</span>, <span class="nr">610</span>, <span class="nr">8_300</span>), (<span class="st">"</span><span class="st">6h</span><span class="st">"</span>, <span class="nr">1_550</span>, <span class="nr">50_000</span>), (<span class="st">"</span><span class="st">6h</span><span class="st">"</span>, <span class="nr">300</span>, <span class="nr">50_000</span>)]:
+    br = burn_rate(bad, total)
+    limit, action = RULES[window]
+    <span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">last </span><span class="st">{</span>window<span class="st">}</span><span class="st">: error rate </span><span class="st">{</span>bad/total<span class="st">:</span><span class="st">.2%</span><span class="st">}</span><span class="st">, burn rate </span><span class="st">{</span>br<span class="st">:</span><span class="st">4.1f</span><span class="st">}</span><span class="st"> -&gt; </span><span class="st">{</span>action <span class="kw">if</span> br &gt;= limit <span class="kw">else</span> <span class="st">'</span><span class="st">ok</span><span class="st">'</span><span class="st">}</span><span class="st">"</span>)
+</pre>
+<p>Output: a 7.35% failure rate in the last hour is a burn rate of 14.7 and pages; 3.10% over six hours (6.2) opens a ticket; 0.60% (1.2) is within normal variation.</p>
+</section>
 <section id="observability-seeing-inside-a-12-step-agent">
-  <h2>14 &mdash; Observability: seeing inside a 12-step agent</h2>
+  <h2>26 &mdash; Observability: seeing inside a 12-step agent</h2>
 <p>You cannot debug a non-deterministic, multi-step, tool-calling system from print statements. Trace everything — with OpenTelemetry-shaped spans so the data outlives your current vendor — then aggregate the spans into metrics with alert thresholds you've actually chosen.</p>
 <h3>What to capture on every step</h3>
 <ul>
@@ -291,7 +528,7 @@ def rag_answer(query: str, tenant_id: str) -&gt; dict:
 </ul>
 </section>
 <section id="the-tracing-decorator-otel-genai-conventions-60-lines">
-  <h2>15 &mdash; The tracing decorator: OTel GenAI conventions, ~60 lines</h2>
+  <h2>27 &mdash; The tracing decorator: OTel GenAI conventions, ~60 lines</h2>
 <p>Two decorators — one for LLM calls, one for tools — plus a root span per request. Attribute names follow the OpenTelemetry GenAI semantic conventions (<code>gen_ai.*</code>), so LangSmith, Langfuse, Phoenix, or a bare OTLP collector all ingest it. This is the <code>trace</code> hook <a href="../tech/frameworks.html">Choosing an agent framework</a> left as <code>null_trace</code>, grown up.</p>
 <div class="code-block"><div class="code-file"><span>tracing.py — spans for LLM + tool calls, vendor-neutral</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> functools, json, time
 <span class="kw">from</span> opentelemetry <span class="kw">import</span> trace <span class="kw">as</span> ot
@@ -352,7 +589,7 @@ PRICES = {<span class="st">"</span><span class="st">claude-sonnet-4-5</span><spa
         <span class="kw">return</span> fn()   <span class="cm"># the harness loop runs here; nested spans attach themselves</span></pre></div>
 </section>
 <section id="what-a-trace-looks-like">
-  <h2>16 &mdash; What a trace looks like</h2>
+  <h2>28 &mdash; What a trace looks like</h2>
 <p>One production request, rendered as its span tree. This is the artifact you stare at when someone forwards a bad answer — the shape alone often gives the diagnosis before you read a single prompt:</p>
 <pre class="ascii-diagram">agent.request  trace=4f2a…  user=h_91ac  prompt=support_v14  sha=b3e91f   [4,213ms]
  ├─ guardrail.input   verdict=ok                                    [  61ms]
@@ -372,7 +609,7 @@ PRICES = {<span class="st">"</span><span class="st">claude-sonnet-4-5</span><spa
 <p>Read the diagnosis straight off the tree: iteration 1 called <code>refund</code> on a status question — a prompt bug (an over-eager instruction added in <code>support_v14</code>), caught because the span records <i>which prompt version</i> ran. The guardrailed tool correctly refused. This request now becomes a trajectory eval case (<a href="evals.html">Evaluating LLM features</a>): <code>forbidden_tools: ["refund"]</code> for status intents.</p>
 </section>
 <section id="metrics-definitions-and-alert-thresholds">
-  <h2>17 &mdash; Metrics: definitions and alert thresholds</h2>
+  <h2>29 &mdash; Metrics: definitions and alert thresholds</h2>
 <p>Traces answer "why did this request fail?"; metrics answer "is the system healthy?". Every metric below is an aggregation over span attributes — no separate instrumentation needed. Thresholds are starting points to tune against your own baselines (alert on <i>change</i>, not just absolutes).</p>
 <table>
 <tr><th>Metric</th><th>Definition (from spans)</th><th>Warn</th><th>Page</th></tr>
@@ -390,7 +627,7 @@ PRICES = {<span class="st">"</span><span class="st">claude-sonnet-4-5</span><spa
 <p>The two most underrated rows: <b>cost per hour</b> (the only alert that catches a retry storm, a context leak, and a prompt-cache miss regression with one signal) and <b>iterations p95</b> (agents degrade by flailing longer before they degrade by failing).</p>
 </section>
 <section id="sampling-and-privacy-trace-everything-keep-less">
-  <h2>18 &mdash; Sampling and privacy: trace everything, keep less</h2>
+  <h2>30 &mdash; Sampling and privacy: trace everything, keep less</h2>
 <p>Full prompt/response capture collides with two realities: volume (traces can cost more than storage of your actual DB) and privacy (prompts contain names, orders, health details). Policy: <b>metrics from 100% of spans; full payloads sampled and redacted; errors always kept in full (redacted)</b>.</p>
 <div class="code-block"><div class="code-file"><span>sampling_redaction.py — keep what you'll need, scrub what you mustn't keep</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> hashlib, hmac, random, re
 
@@ -437,7 +674,7 @@ PATTERNS = [
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>19 &mdash; Production &amp; Ops</h2>
+  <h2>31 &mdash; Production &amp; Ops</h2>
 <div class="card"><table>
 <tr><th>Concern</th><th>Practice</th></tr>
 <tr><td>PII</td><td>Regex scrub emails/SSN; hash user_id; never log API keys</td></tr>
@@ -448,7 +685,7 @@ PATTERNS = [
 </table></div>
 </section>
 <section id="related-topics">
-  <h2>20 &mdash; Related topics</h2>
+  <h2>32 &mdash; Related topics</h2>
 <div class="card"><ul>
 <li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — trace every retrieve → rerank → generate stage</li>
 <li><a href="../rag/vector-search.html">Vector search &amp; databases</a> — log chunk IDs + ANN scores in retrieval span</li>
@@ -459,7 +696,7 @@ PATTERNS = [
 </ul></div>
 </section>
 <section id="where-people-get-lost">
-  <h2>21 &mdash; Where people get lost</h2>
+  <h2>33 &mdash; Where people get lost</h2>
 <div class="card"><ul>
 <li><strong>Log full prompts with PII/secrets</strong> — scrub at SDK boundary</li>
 <li><strong>No eval CI</strong> — silent regressions on prompt/model deploy</li>
@@ -468,13 +705,29 @@ PATTERNS = [
 <li><strong>Ignore cost metrics</strong> — prompt bloat discovered at invoice time</li>
 <li><strong>No trace_id in UI</strong> — support cannot replay failures</li>
 </ul></div>
+<ul>
+<li><strong>"We log every prompt and response, so we have observability."</strong> Flat logs cannot show which step of which request caused what, or where time went. Structure them as spans in traces.</li>
+<li><strong>"No errors, so quality is fine."</strong> Most LLM failures return success. Quality needs explicit signals: feedback, implicit behaviour, deterministic checks and sampled judging.</li>
+<li><strong>Not recording versions.</strong> Without prompt version, model snapshot and index version on each span, you cannot tell which change caused a regression.</li>
+<li><strong>Head sampling at 1% "to save money".</strong> It discards 99% of the errors you most need. Sample at the tail, keeping all failures and outliers.</li>
+<li><strong>Averaging percentiles.</strong> The mean of per-server p95s is not the fleet p95. Aggregate histograms, then compute the percentile.</li>
+<li><strong>Labelling metrics by user or trace ID.</strong> Cardinality explodes. Put that detail on traces and link with exemplars.</li>
+<li><strong>Storing raw prompts forever.</strong> They are user data. Redact at the source, limit retention and access, and support deletion.</li>
+</ul>
 </section>
 <section id="how-this-connects">
-  <h2>22 &mdash; How this connects</h2>
-<h3>Builds on</h3><ul><li><a href="../fundamentals/api.html">Calling a model</a> &mdash; The API call end to end: messages, roles, streaming, tool calls, errors and retries, across providers.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="../agents/agent-loop.html">The agent loop</a> &mdash; The loop in depth and in code: budgets, errors, human approval, reliability, safety, and how to evaluate an agent.</li><li><a href="evals.html">Evaluating LLM features</a> &mdash; Golden sets, graders, LLM-as-judge done properly, statistics, an eval harness in CI, online evaluation and error analysis.</li></ul><h3>Where this shows up later</h3><ul><li><a href="mlops-drift.html">MLOps &amp; drift</a> &mdash; Version everything that changes behaviour, and notice when the world moves.</li><li><a href="../tech/frameworks.html">Choosing an agent framework</a> &mdash; The landscape, the same agent in five frameworks, and framework vs thin harness vs raw.</li><li><a href="../tech/langgraph.html">LangGraph</a> &mdash; Agents as explicit state graphs: nodes, edges, checkpoints, interrupts.</li><li><a href="../tech/langchain.html">LangChain</a> &mdash; Chains, runnables, retrievers and the integrations layer.</li></ul>
+  <h2>34 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../fundamentals/api.html">Calling a model</a> &mdash; The API call end to end: messages, roles, streaming, tool calls, errors and retries, across providers.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="../agents/agent-loop.html">The agent loop</a> &mdash; The loop in depth and in code: budgets, errors, human approval, reliability, safety, and how to evaluate an agent.</li><li><a href="evals.html">Evaluating LLM features</a> &mdash; Golden sets, graders, LLM-as-judge done properly, statistics, an eval harness in CI, online evaluation and error analysis.</li></ul><h3>Where this shows up later</h3><ul><li><a href="security.html">Security &amp; guardrails</a> &mdash; How agents expand the attack surface, input and output guardrails, and the defences that hold.</li><li><a href="cost-performance.html">Cost &amp; latency</a> &mdash; Where the money and the milliseconds go: pricing, prefill vs decode, routing, batching and prompt caching.</li><li><a href="mlops-drift.html">MLOps &amp; drift</a> &mdash; Version everything that changes behaviour, and notice when the world moves.</li><li><a href="../tech/frameworks.html">Choosing an agent framework</a> &mdash; The landscape, the same agent in five frameworks, and framework vs thin harness vs raw.</li><li><a href="../tech/langgraph.html">LangGraph</a> &mdash; Agents as explicit state graphs: nodes, edges, checkpoints, interrupts.</li><li><a href="../tech/langchain.html">LangChain</a> &mdash; Chains, runnables, retrievers and the integrations layer.</li><li><a href="../tech/crewai.html">CrewAI</a> &mdash; Role-based multi-agent crews: agents, tasks, processes.</li></ul>
 </section>
 <section id="check-yourself">
-  <h2>23 &mdash; Check yourself</h2>
+  <h2>35 &mdash; Check yourself</h2>
+<details><summary>In the refund trace, the four model calls took 7.0 s and <code>list_charges</code> took 6.3 s. A colleague proposes switching to a faster model to cut latency. What do you say?</summary><div class="answer">The single biggest span is the tool, slowed by two retries on rate limits. Fixing the billing API's rate limit (or caching, or raising the quota) removes up to about 6 s; a faster model saves a fraction of the 7.0 s at some quality risk. Fix the tool first.</div></details>
+<details><summary>Which span attributes would let you answer "did yesterday's prompt change make answers longer and more expensive?"</summary><div class="answer">Prompt template version on each model span, plus output and input token counts (and cost). Group by version and compare distributions before and after the change.</div></details>
+<details><summary>Your traces for an agent stop after the first tool call, and a separate trace with no parent appears for each tool. What broke?</summary><div class="answer">Context propagation: the tool service (or the queue or thread pool that calls it) is not receiving or restoring the trace context, for example the <code>traceparent</code> header is not injected, so it starts new traces.</div></details>
+<details><summary>200,000 traces a day at 125 KB each. Errors are 2%. You keep all errors and 5% of the rest. Roughly how much do you store per day?</summary><div class="answer">Kept share: \(0.02 + 0.05 \times 0.98 \approx 6.9\%\), so about 13,800 traces, roughly 1.7 GB a day instead of 25 GB. (Adding slow and negative-feedback traces raises it toward 10%.)</div></details>
+<details><summary>SLO is 99.9% over 30 days. In the last hour 1.2% of requests failed. Page or not, using a 14.4 burn-rate threshold?</summary><div class="answer">Burn rate = \(0.012 / 0.001 = 12\), below 14.4, so no page from the one-hour rule; but it would spend about 1.7% of the monthly budget per hour, so the six-hour rule (threshold 6) will fire if it continues.</div></details>
+<details><summary>You judge 1% of 50,000 daily conversations with an LLM judge; the pass rate is 90%. Can you detect a 2-point drop within a day?</summary><div class="answer">500 judgements: standard error \(\sqrt{0.9 \times 0.1 / 500} \approx 1.34\) points, so a 2-point drop is about 1.5 standard errors, not reliably detectable in a day. Judge more (around 2,000 a day gives about 0.67 points) or aggregate over several days.</div></details>
+<details><summary>Name a cheap check that would have caught the wrong refund on day one, and where it runs.</summary><div class="answer">"The charge being refunded belongs to the order under discussion": compare the refund tool's charge's order ID with the order ID in context. Run it inside the refund tool as a guard (blocking), and as an online check that counts violations (alerting).</div></details>
 <details>
 <summary>What should you trace in a RAG pipeline?</summary>
 <div class="answer">Query text (redacted), embed model + latency, vector DB namespace, chunk IDs + ANN scores, rerank order + scores, prompt template version, LLM model + tokens + output, total latency per stage, user feedback linkage.</div>

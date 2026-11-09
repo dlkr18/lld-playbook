@@ -1,0 +1,220 @@
+<!-- Deep lesson: Pinecone. Merged into tech/pinecone by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Managed vector database</td><td>A service that stores and indexes your vectors and answers similarity queries over an API. You never run servers or tune index files.</td></tr>
+<tr><td>Index</td><td>Pinecone's top-level container. Has a fixed dimension and a fixed similarity metric chosen at creation.</td></tr>
+<tr><td>Namespace</td><td>A partition inside an index. Every write and query names one namespace, and a query only ever sees that namespace's records.</td></tr>
+<tr><td>Record</td><td>One stored item: an id, a dense vector, an optional sparse vector, and optional metadata.</td></tr>
+<tr><td>Serverless</td><td>The deployment model where you pay for storage and for the reads and writes you make, and capacity scales automatically.</td></tr>
+<tr><td>Pod-based</td><td>The older model where you rent fixed-size capacity units (pods), with replicas for throughput and a fixed bill.</td></tr>
+<tr><td>Read units / write units</td><td>The usage measures serverless billing counts. A query's read cost grows with how much data it has to consider and return.</td></tr>
+<tr><td>Metadata filter</td><td>A condition on record metadata (equals, in, range, and/or) applied inside the search, so top-k is computed among matching records only.</td></tr>
+<tr><td>Sparse vector</td><td>A vector with a weight for only a few vocabulary terms, used for keyword-style matching alongside the dense vector.</td></tr>
+<tr><td>Eventual consistency</td><td>A write is acknowledged before it is searchable; it becomes visible to queries a short time later.</td></tr>
+<tr><td>Blue/green index</td><td>Building a new index or namespace next to the live one (for a new embedding model), testing it, then switching traffic.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>A vector database in production has to do several hard things at once: keep an approximate nearest-neighbour index fast as data grows, stay available when machines fail, apply filters without wrecking recall, and keep one customer's data away from another's. You can run software that does this yourself, or you can pay someone to. Pinecone is the best-known "pay someone" option: a fully managed vector database you reach over an API, with no servers, index files or capacity planning on your side.</p>
+<p>The interview questions:</p>
+<ol>
+<li>What is Pinecone's data model, and what happens on a write and a query?</li>
+<li>How do you design multi-tenancy: a namespace per tenant, or one namespace with a tenant filter?</li>
+<li>What drives the bill and the latency, and what are the failure modes?</li>
+<li>When would you pick it over pgvector, Weaviate or something self-hosted?</li>
+</ol>
+<p>The running example: a B2B contract-review product. Each customer company (tenant) uploads its contracts; the assistant answers questions like "what is our indemnification cap with Acme?" using only that tenant's documents. There are 2,000 tenants and 30 million chunks in total, embedded with a 1,024-dimension model. Tenant sizes are very uneven, as they always are: the median tenant has about 5,000 chunks, the largest about 2 million.</p>
+</section>
+
+<section data-label="Step 1: the mental model, an API in front of someone else's index">
+<p>With Pinecone you own three things: the vectors (you compute them, or ask its hosted embedding models to), the metadata, and the ids. Pinecone owns everything else: index structure, sharding, replication, scaling and upgrades. The hierarchy is short:</p>
+<pre class="ascii-diagram">project
+  index  "contracts-v1"   dimension = 1024, metric = cosine | dotproduct | euclidean
+    namespace "tenant-acme"     records: id, values[1024], sparse_values?, metadata{}
+    namespace "tenant-globex"
+    ...</pre>
+<p>The dimension and metric are fixed when the index is created. That has a direct consequence: changing embedding model means a new index (or at least new namespaces), filled in parallel and switched to when it tests better. Plan for that from day one; it is the most common "migration" a RAG team does.</p>
+<p>The metric must match how the embedding model was trained, usually cosine. Choose dot product if you need hybrid sparse-dense search in one index (Step 6) and your dense vectors are normalised, in which case dot product and cosine rank identically.</p>
+</section>
+
+<section data-label="Step 2: inside serverless, storage separated from compute">
+<p>The serverless architecture explains most of Pinecone's behaviour, so it is worth holding a simplified picture (the internals are the vendor's and evolve; this is the shape that matters):</p>
+<pre class="ascii-diagram">upsert --> write log (durable, acknowledged)
+              |
+              +--> fresh layer: recent writes, searchable within seconds
+              |
+              +--> index builder --> immutable index files in object storage
+                                          |
+query  --> query nodes: cache index files from object storage,
+           search the files + the fresh layer, merge, filter, return top-k</pre>
+<p>Three behaviours follow from it.</p>
+<p><strong>Writes are eventually consistent.</strong> An upsert returns once it is durably logged, not once it is searchable. There is a short window, typically seconds, when a query will not see it. Your product rarely notices (a contract uploaded now and queried a minute later is fine), but your tests will: "upsert then immediately query" is flaky. Tests should poll with <code>fetch</code> by id, or wait until the namespace's record count reflects the write, before asserting.</p>
+<p><strong>Storage is cheap, compute is paid per use.</strong> Vectors sit in object storage, which costs little per gigabyte; compute is spent when you query. That is why serverless suits workloads where most data is rarely queried, such as 2,000 tenants of whom a few hundred are active at any moment.</p>
+<p><strong>Cold data is slower.</strong> A namespace nobody has queried recently may need its files fetched into a query node's cache, so its first query is slower than the hundredth. For a demo or a latency-sensitive tenant, a warm-up query after deploy hides it.</p>
+<p>The older <strong>pod-based</strong> model is the opposite trade: you rent fixed capacity, the index lives on that capacity, and you add replicas for throughput. It gives predictable latency and a fixed bill for steady, high query volumes, and you pay for it whether or not it is used.</p>
+</section>
+
+<section data-label="Step 3: namespaces are the unit of isolation and of work">
+<p>The most important design decision for our contract product is how to separate tenants. There are two options.</p>
+<p><strong>Option A: one namespace, tenant as metadata.</strong> Every record carries <code>tenant_id</code>, and every query adds the filter <code>tenant_id = acme</code>. Simple to set up. But the filter is now the only thing between one customer and another's contracts: one code path that forgets it is a data leak, and nothing in the database will notice. And each query runs against an index built over all 30 million records.</p>
+<p><strong>Option B: one namespace per tenant.</strong> Acme's records go into <code>tenant-acme</code>, and the query names that namespace. A query cannot see another namespace at all, so a forgotten filter cannot leak. And the work a query does is proportional to its own namespace, not to the whole index.</p>
+<p>Put numbers on the second point. Raw vectors are 1,024 dimensions × 4 bytes = 4 KB each.</p>
+<ul>
+<li>The whole index: \(30{,}000{,}000 \times 4\text{ KB} \approx 122.9\) GB of vectors.</li>
+<li>The median tenant's namespace: \(5{,}000 \times 4\text{ KB} \approx 20.5\) MB.</li>
+<li>The largest tenant's namespace: \(2{,}000{,}000 \times 4\text{ KB} \approx 8.2\) GB.</li>
+</ul>
+<p>In serverless pricing, read cost grows with the size of the namespace a query searches (with a minimum per query). A median tenant's query in Option B considers about 6,000 times less data than a query over the shared index, so it is both cheaper and faster, and small tenants do not pay for large ones.</p>
+<p>Namespaces suit the case where a query belongs to exactly one partition (one tenant, one embedding-model version). They do not suit cases where queries must span partitions: a query runs against one namespace, so cross-tenant search (an internal admin view) means fanning out one query per namespace and merging the results (recent clients include a helper that does exactly this), or keeping a separate index for it. Use namespaces for hard partitions, metadata filters for everything a query might combine.</p>
+</section>
+
+<section data-label="Step 4: metadata and filtering">
+<p>Within a namespace, metadata filters narrow results by fields such as <code>doc_type</code>, <code>counterparty</code>, <code>effective_date</code> or <code>access_groups</code>. The filter language is a small set of operators (equals, not equals, in, not in, greater or less than, exists, and/or), written as JSON with operator names prefixed by a dollar sign, in the style of MongoDB.</p>
+<p>Pinecone applies the filter during the vector search, not after it, so <code>top_k=10</code> with a filter returns the ten best <em>matching</em> records rather than the best ten overall minus the ones that fail. The reason this matters for permissions is in <a href="@@rag/rag-in-production@@">making RAG good</a>: searching first and filtering after can leave a user with an empty context.</p>
+<p>Design metadata deliberately:</p>
+<ul>
+<li><strong>Keep it small.</strong> There is a per-record metadata size limit (tens of kilobytes at the time of writing), and metadata is stored and returned with every match. Store the chunk text if you want it back with results, but not entire documents; keep large payloads in your own database or object store keyed by the record id.</li>
+<li><strong>Filter on low-cardinality, structured fields.</strong> Document type, dates as numbers (epoch seconds, so range filters work), group ids as a list. Do not invent a filter on a free-text field.</li>
+<li><strong>Treat it as a copy, not the source of truth.</strong> Permissions and document status live in your application database; metadata is a synchronised copy for filtering, and needs a re-sync when the source changes.</li>
+</ul>
+</section>
+
+<section data-label="Step 5: the write path, ids and deletes">
+<p>Ingestion for a new contract: parse, chunk, embed, then upsert records in batches into the tenant's namespace. Four practices make it reliable.</p>
+<p><strong>Deterministic ids.</strong> Use <code>tenant#document#chunk</code>, for example <code>acme#msa-2024#0007</code>. An upsert with an existing id replaces the record, so a crashed ingestion can simply be rerun. And because serverless indexes can list ids by prefix, all chunks of one document can be found later without a separate lookup table.</p>
+<p><strong>Batch by size.</strong> Requests have a size limit (a few megabytes at the time of writing). A 1,024-dimension vector is 4 KB in binary but about 10 KB as JSON text, plus metadata, so batches of one or two hundred records per request are typical over the REST client; the gRPC client is more compact. Send batches in parallel, and back off and retry on rate-limit responses (HTTP 429).</p>
+<p><strong>Replacing a document.</strong> When Acme uploads a revised MSA, list the ids with prefix <code>acme#msa-2024#</code>, delete them, and upsert the new chunks. If the new version has fewer chunks than the old, an upsert alone would leave stale chunks 0031 to 0040 behind, still retrievable.</p>
+<p><strong>Deleting a tenant.</strong> With a namespace per tenant, offboarding is "delete the namespace", one call, and nothing is left behind. With a shared namespace, it is a search for every record of that tenant, which is slower and easier to get wrong. For data-protection requests, the namespace design is much easier to prove correct.</p>
+</section>
+
+<section data-label="Step 6: the query path and hybrid search">
+<p>A query names the namespace, supplies the query vector, <code>top_k</code>, an optional filter, and whether to include metadata and values. It returns matches with ids, scores and (optionally) metadata. Scores are similarities for cosine and dot product, so higher is better, the opposite convention from databases that return distances.</p>
+<p>Contracts are full of exact strings: clause numbers, defined terms, party names. Dense embeddings blur them; a user asking about "clause 14.2" wants the chunk that says "14.2". Pinecone supports this with <strong>sparse-dense</strong> records: each record has a dense vector and a sparse vector of term weights (from BM25-style weighting or a learned sparse model), in an index using the dot-product metric. A query also carries both. The score is one dot product over both parts, so weighting dense against sparse is done by scaling the query:</p>
+\[ \text{score} = \alpha \,(q_d \cdot d_d) + (1 - \alpha)\,(q_s \cdot d_s) \]
+<p>where \(q_d, d_d\) are the dense query and document vectors, \(q_s, d_s\) the sparse ones, and \(\alpha\) between 0 and 1 is the weight on meaning versus exact terms. Multiply the dense query by \(\alpha\) and every sparse query weight by \(1 - \alpha\), send that, and the database's dot product computes exactly this sum.</p>
+<p>Worked, for the query "indemnification cap clause 14.2". Chunk A paraphrases the indemnity terms without the exact words: dense similarity 0.96, sparse score 0. Chunk B quotes clause 14.2 verbatim: dense 0.80, sparse 1.40. At \(\alpha = 1\) (dense only), A wins 0.96 to 0.80. At \(\alpha = 0.75\): A scores \(0.75 \times 0.96 = 0.72\); B scores \(0.75 \times 0.80 + 0.25 \times 1.40 = 0.95\), so B wins. Note that sparse scores are not on the same scale as cosine similarities (1.40 is above 1), so \(\alpha\) is not a pure "percent keyword"; tune it on a golden set with identifier-heavy questions.</p>
+<p>The alternative is a separate keyword index (another sparse-only index, or a search engine), two queries, and fusion in your code with reciprocal rank fusion, which ignores score scales altogether. Both approaches, and when each wins, are covered in <a href="@@rag/hybrid-search@@">hybrid search</a>. After retrieval, a reranker over the top 20 to 50 usually adds more than tuning \(\alpha\) does (see <a href="@@rag/reranking@@">reranking</a>); Pinecone can host one, or you call your own.</p>
+</section>
+
+<section data-label="Step 7: what drives cost and latency">
+<p>Serverless bills three things, and each maps to a design choice:</p>
+<table>
+<thead><tr><th>Cost driver</th><th>Grows with</th><th>Lever</th></tr></thead>
+<tbody>
+<tr><td>Storage</td><td>Records × (dimension × 4 bytes + metadata)</td><td>Smaller dimension models; lean metadata; delete stale versions</td></tr>
+<tr><td>Writes</td><td>Records written and their size</td><td>Skip re-embedding unchanged chunks (hash the text); avoid full nightly rewrites</td></tr>
+<tr><td>Reads</td><td>Size of the namespace searched, results returned, metadata included</td><td>Namespace per tenant; modest <code>top_k</code>; include metadata only when needed</td></tr>
+</tbody>
+</table>
+<p>For our product, storage is about 123 GB of vectors plus metadata: at an illustrative object-storage-like price, a modest monthly line. Reads are the line that can surprise you, and only if you search large namespaces at high volume. A rule worth remembering: the same query load costs very different amounts depending on namespace design, because reads scale with what each query must consider.</p>
+<p>Latency has three parts: the network round trip to the region (choose the region where your application runs; a cross-continent hop adds tens of milliseconds), the search itself (typically tens of milliseconds for warm namespaces), and cold-cache effects for rarely used namespaces. For p99 targets, measure with your real namespace size distribution, including the largest tenant, because that is where the slowest queries are.</p>
+<p>When does provisioned capacity (pod-based indexes, or dedicated read capacity where the vendor offers it) win? When query volume is high and steady around the clock, so paying per read exceeds the cost of reserved capacity, or when you need tightly bounded latency for one very large, very hot namespace. The serverless default suits spiky and long-tailed workloads, which multi-tenant SaaS usually is.</p>
+</section>
+
+<section data-label="Step 8: failure modes and operations">
+<ul>
+<li><strong>Wrong namespace, empty answer.</strong> Querying a namespace that does not exist is not an error; it returns no matches. A typo in the namespace name looks like "the bot knows nothing". Validate tenant-to-namespace mapping in one place and alert on zero-match rates.</li>
+<li><strong>Dimension mismatch.</strong> Upserting 1,536-dimension vectors into a 1,024-dimension index fails loudly, which is good. Querying with vectors from a different model of the same dimension fails silently, which is bad: pin the model name in your configuration next to the index name.</li>
+<li><strong>Eventual consistency.</strong> Read-your-writes is not guaranteed. Design the UI ("processing your document") and tests around it.</li>
+<li><strong>Rate limits.</strong> Bulk ingestion can hit per-index request limits. Use bounded parallelism and exponential backoff with jitter (see <a href="@@production/reliability@@">reliability</a>).</li>
+<li><strong>Outage dependency.</strong> Retrieval now depends on a third-party service and a network path. Decide what the product does when it is unavailable: degrade to "search is temporarily unavailable", not to an ungrounded answer.</li>
+<li><strong>Data residency and lock-in.</strong> Pick the cloud and region to match customers' residency needs. Keep the source documents and the embedding pipeline yours, so a move to another store is a re-upload, not a rescue.</li>
+</ul>
+</section>
+
+<section data-label="Choosing Pinecone">
+<table>
+<thead><tr><th>Situation</th><th>Pinecone?</th><th>Alternative and why</th></tr></thead>
+<tbody>
+<tr><td>Multi-tenant SaaS, many tenants, no team to run a database</td><td>Strong fit</td><td>Namespaces give isolation and per-tenant cost</td></tr>
+<tr><td>Tens of millions of vectors, spiky load</td><td>Strong fit</td><td>Serverless absorbs spikes without capacity planning</td></tr>
+<tr><td>Already on Postgres, a few million vectors, need joins and transactions with app data</td><td>Usually not</td><td><a href="@@tech/pgvector@@">pgvector</a>: one database, one transaction, no new vendor</td></tr>
+<tr><td>Need open source, self-hosting or on-premises</td><td>No</td><td><a href="@@tech/weaviate@@">Weaviate</a> or another self-hostable engine</td></tr>
+<tr><td>Prototype or CI tests</td><td>Overkill</td><td><a href="@@tech/chroma@@">Chroma</a>, in-process and offline</td></tr>
+<tr><td>Strict read-after-write consistency for every query</td><td>Design around it</td><td>A transactional store such as pgvector gives it natively</td></tr>
+</tbody>
+</table>
+<p>The one-sentence answer for an interview: Pinecone trades control and some cost at very high steady load for zero operations, elastic scaling and clean tenant isolation; choose it when operating a vector database is not a competence you want to build. The broader comparison is in <a href="@@rag/vector-search@@">vector search and databases</a>.</p>
+</section>
+
+<section data-label="In code: the client, and the hybrid arithmetic">
+<pre data-lang="python"># Not run here: needs `pip install pinecone` and an API key. Written against the Pinecone Python client's documented API (2025).
+import os
+from pinecone import Pinecone, ServerlessSpec
+
+OP = "$"   # filter operators are a dollar sign plus a name: eq, in, gte, and, or ...
+pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
+pc.create_index(name="contracts-v1", dimension=1024, metric="dotproduct",   # dotproduct for sparse-dense
+                spec=ServerlessSpec(cloud="aws", region="us-east-1"))
+index = pc.Index("contracts-v1")
+
+index.upsert(namespace="tenant-acme", vectors=[{
+    "id": "acme#msa-2024#0007",
+    "values": dense_vec,                                     # 1,024 floats, normalised
+    "sparse_values": {"indices": [101, 202], "values": [0.4, 1.2]},
+    "metadata": {"doc_id": "msa-2024", "doc_type": "msa", "effective": 1704067200,
+                 "text": "14.2 Indemnification cap ..."},
+}])
+
+res = index.query(namespace="tenant-acme", vector=q_dense, sparse_vector=q_sparse,
+                  top_k=20, filter={"doc_type": {OP + "in": ["msa", "sow"]}},
+                  include_metadata=True)                     # scores: higher is better
+
+for ids in index.list(prefix="acme#msa-2024#", namespace="tenant-acme"):   # replace a document
+    index.delete(ids=ids, namespace="tenant-acme")
+</pre>
+<p>The hybrid weighting from Step 6, runnable with numpy: scaling the query makes one dot product equal \(\alpha \cdot \text{dense} + (1 - \alpha) \cdot \text{sparse}\).</p>
+<pre data-lang="python">import numpy as np
+
+def hybrid_query(dense, sparse, alpha):
+    """Scale the query so that one dot product = alpha*dense + (1-alpha)*sparse."""
+    return [alpha * x for x in dense], {i: (1 - alpha) * w for i, w in sparse.items()}
+
+def score(q_dense, q_sparse, d_dense, d_sparse):
+    dense = float(np.dot(q_dense, d_dense))
+    sparse = sum(w * d_sparse.get(i, 0.0) for i, w in q_sparse.items())
+    return dense + sparse
+
+# query "indemnification cap clause 14.2": unit dense vector + sparse term weights
+q_dense = np.array([0.6, 0.8])
+q_sparse = {101: 0.5, 202: 1.0}          # token ids for "indemnification", "14.2"
+docs = {
+    "A (paraphrase, no exact terms)": (np.array([0.8, 0.6]), {}),
+    "B (cites clause 14.2 verbatim)": (np.array([0.0, 1.0]), {101: 0.4, 202: 1.2}),
+}
+for alpha in (1.0, 0.75, 0.5):
+    qd, qs = hybrid_query(q_dense, q_sparse, alpha)
+    print(f"alpha={alpha}:", {name: round(score(qd, qs, d, s), 3) for name, (d, s) in docs.items()})
+
+# namespaces vs one shared index: how much data a single query must consider
+dim, bytes_per = 1024, 4
+total, median_tenant = 30_000_000, 5_000
+print("shared index GB:", round(total * dim * bytes_per / 1e9, 1),
+      "| median tenant namespace MB:", round(median_tenant * dim * bytes_per / 1e6, 1))
+</pre>
+<p>It prints A ahead at \(\alpha = 1\) (0.96 against 0.80), B ahead at 0.75 (0.95 against 0.72) and further ahead at 0.5, then 122.9 GB against 20.5 MB: the numbers from Steps 3 and 6.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"A tenant filter is enough isolation."</strong> One forgotten filter leaks data, and every query does work over the whole index. Use a namespace per tenant when queries never span tenants.</li>
+<li><strong>"Upsert then query" in tests.</strong> Writes are eventually consistent; poll by id before asserting.</li>
+<li><strong>Replacing a document with upserts only.</strong> If the new version has fewer chunks, old chunks remain retrievable. Delete by id prefix, then upsert.</li>
+<li><strong>Putting whole documents in metadata.</strong> It hits size limits and inflates storage and read costs. Store text elsewhere or only the chunk.</li>
+<li><strong>Reading \(\alpha\) as "percent keyword".</strong> Sparse and dense scores are on different scales. Tune \(\alpha\) on a labelled set, or fuse ranks instead.</li>
+<li><strong>Changing embedding model in place.</strong> Dimension and metric are fixed, and mixing models corrupts similarity. Build a new index or namespaces, test, switch.</li>
+<li><strong>Treating zero matches as "no relevant content".</strong> It is often a wrong namespace name. Alert on it.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>A tenant has 400,000 chunks at 1,536 dimensions. How large is its namespace's raw vector data?</summary><div class="answer">\(400{,}000 \times 1{,}536 \times 4\) bytes \(\approx 2.46\) GB, before metadata.</div></details>
+<details><summary>With \(\alpha = 0.6\), chunk X has dense 0.90 and sparse 0.2; chunk Y has dense 0.75 and sparse 1.1. Which ranks first?</summary><div class="answer">X: \(0.6 \times 0.90 + 0.4 \times 0.2 = 0.62\). Y: \(0.6 \times 0.75 + 0.4 \times 1.1 = 0.89\). Y ranks first.</div></details>
+<details><summary>Your integration test upserts five chunks and immediately queries; it fails one run in ten. Why, and what is the fix?</summary><div class="answer">Writes are eventually consistent: the upsert is acknowledged before the records are searchable. Poll with <code>fetch</code> by id (or the namespace record count) until they appear, with a timeout, before querying.</div></details>
+<details><summary>An internal analytics team wants to search across all 2,000 tenants' contracts. You use a namespace per tenant. What do you do?</summary><div class="answer">Each query searches one namespace. Either fan out to the relevant namespaces and merge results (fine for a few), or maintain a separate index for the cross-tenant use case with a tenant field, under its own access controls.</div></details>
+<details><summary>A customer cancels and asks for deletion of all their data. Compare the work under the two tenancy designs.</summary><div class="answer">Namespace per tenant: delete the namespace, one operation, easy to prove complete. Shared namespace: find and delete every record carrying that tenant id, in batches, then verify none remain; slower and error-prone. Also delete source files, caches and logs that hold their content.</div></details>
+<details><summary>Your team already runs a highly available Postgres with the customer and document tables, and expects 3 million chunks. Pinecone or pgvector?</summary><div class="answer">Likely pgvector: the scale fits, vectors live in the same transaction as documents and permissions, joins are possible, and there is no new vendor or network hop. Pinecone wins when scale, tenant count or the wish to avoid operating the index outweigh that.</div></details>
+<details><summary>Queries for the largest tenant (2M chunks) have a p99 three times the median tenant's. Name two causes and two fixes.</summary><div class="answer">Causes: much larger namespace to search; more filter work and larger result payloads. Fixes: split the large tenant by a natural key (for example per business unit or per year) into several namespaces; reduce <code>top_k</code> and avoid including metadata in the first pass; consider provisioned capacity for that tenant if its load is steady.</div></details>
+</section>

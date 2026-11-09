@@ -1,0 +1,255 @@
+<!-- Deep lesson: Chunking. Merged into rag/chunking by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Chunk</td><td>A piece of a document that is embedded as one vector and retrieved as one unit.</td></tr>
+<tr><td>Chunk size</td><td>The maximum length of a chunk, usually counted in tokens (often 200 to 800).</td></tr>
+<tr><td>Overlap</td><td>Tokens repeated at the end of one chunk and the start of the next, so text cut at a boundary appears whole in at least one chunk.</td></tr>
+<tr><td>Fixed-size chunking</td><td>Cutting every \(n\) tokens, regardless of sentences or sections.</td></tr>
+<tr><td>Recursive splitting</td><td>Splitting on the coarsest natural boundary available (section, paragraph, line, sentence, word), and going finer only for pieces still too long.</td></tr>
+<tr><td>Structure-aware chunking</td><td>Using the document's own structure (headings, list items, table rows, code blocks) to decide boundaries.</td></tr>
+<tr><td>Heading path</td><td>The chain of headings above a chunk, such as "Refund policy &gt; Annual plans &gt; Enterprise plans", stored and often embedded with it.</td></tr>
+<tr><td>Semantic chunking</td><td>Placing boundaries where the meaning shifts, detected by a drop in embedding similarity between adjacent sentences.</td></tr>
+<tr><td>Parent-child (small-to-big)</td><td>Search over small chunks for precision, but hand the language model the larger section each belongs to.</td></tr>
+<tr><td>Contextual chunk text</td><td>A short description of where a chunk sits in its document, added before embedding so the chunk makes sense alone.</td></tr>
+<tr><td>Dangling reference</td><td>A chunk that says "it", "this plan" or "after that" while the thing referred to is in a different chunk.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>A retriever does not return documents; it returns chunks. Whatever boundaries you draw at ingestion become the only units the system can ever find and show to the language model. Draw them badly and the answer is split across two chunks, or buried in a chunk about something else, or separated from the words that say what it applies to. No embedding model, reranker or prompt downstream can repair that, because the right unit of text does not exist in the index.</p>
+<p>Interviewers ask:</p>
+<ol>
+<li>Why chunk at all, and how do you choose a chunk size?</li>
+<li>What is the difference between fixed, recursive, structure-aware and semantic chunking, and when does each fail?</li>
+<li>What are overlap and parent-child retrieval for?</li>
+<li>How would you know your chunking is good?</li>
+</ol>
+<p>The running example is one help-centre document from the course's support assistant, a refund policy (shown here in miniature; the real one is about 1,800 tokens):</p>
+<pre class="ascii-diagram"># Refund policy
+This policy explains when and how customers can get their money back.
+## Monthly plans
+Monthly plans can be cancelled at any time. We do not refund partial months. ...
+## Annual plans
+Annual plans are refundable in full within 30 days of purchase. After 30 days,
+the plan stays active until the end of the term and is not refunded.
+### Enterprise plans
+Enterprise customers on annual contracts may request a prorated refund within
+60 days of the renewal date. After that, the contract terms apply. ...
+## How to request a refund
+Open Billing, choose the invoice, and click Request refund. ...</pre>
+<p>The customer asks: <strong>"Can enterprise customers get a refund after 30 days?"</strong> The correct answer is yes, a prorated refund within 60 days, and it sits under a heading the answer sentence itself barely repeats. Right above it is a general rule that says the opposite. That is the trap we will watch each method fall into or avoid.</p>
+</section>
+
+<section data-label="Step 1: why split documents at all">
+<p>Three separate reasons, each of which would be enough on its own.</p>
+<p><strong>The embedding model has an input limit.</strong> Often 512 tokens, sometimes 8,192. Text beyond the limit is usually dropped without an error, so the end of a long document never reaches its vector.</p>
+<p><strong>One vector cannot point at many topics.</strong> An embedding is one direction in space (see <a href="@@rag/embeddings@@">embeddings</a>). Text covering several topics produces a vector near the average of their directions, and an average is far from each of its parts. In the idealised case of \(k\) unrelated topics (orthogonal unit vectors), the normalised average has cosine \(1/\sqrt{k}\) with each topic: 1.000 for one topic, 0.707 for two, 0.447 for five, 0.354 for eight. Our 1,800-token policy covers at least four distinct rules; embedded whole, it matches a question about any one of them only weakly, and loses to a shorter, single-topic page that is less useful.</p>
+<p><strong>The chunk is what the language model reads.</strong> Retrieval passes the top few chunks into the prompt. Big chunks spend the context budget on text that does not answer the question, which costs money, adds latency, and gives the model more irrelevant material to be distracted by.</p>
+<p>So chunking is a trade: small enough that each vector means one thing and each retrieved chunk is mostly relevant; large enough that each chunk carries the context needed to understand it.</p>
+</section>
+
+<section data-label="Step 2: the size trade-off in numbers">
+<p>Both ends of the size range fail in specific ways.</p>
+<p><strong>Too small</strong> (one sentence, about 20 to 50 tokens). The sentence "After that, the contract terms apply." is a perfectly good chunk by length, and useless alone: after what, which contract? Small chunks match queries sharply but often lack the subject of their own sentence. They also multiply the number of vectors: 9 million corpus tokens at 50 tokens per chunk is 180,000 vectors; at 400 tokens it is 22,500.</p>
+<p><strong>Too large</strong> (a whole section or page, 1,500+ tokens). Each chunk is diluted across topics, and every retrieved chunk costs context. Passing the top 5 chunks at 1,500 tokens is 7,500 prompt tokens per question; at 300 tokens it is 1,500. At 2 million questions a month, that difference is 12 billion input tokens a month.</p>
+<p>The usual starting range is 200 to 500 tokens for prose, adjusted per document type: FAQ entries are naturally one question and answer each; runbooks have numbered steps that belong together; legal text has clauses that must not be split. The right size is an empirical result on your own questions (Step 8), not a constant.</p>
+</section>
+
+<section data-label="Step 3: fixed-size chunks and overlap">
+<p>The simplest method cuts every \(s\) tokens. To soften the cuts, consecutive chunks share \(o\) tokens of overlap, so each new chunk starts \(s - o\) tokens after the previous one. A document of \(N\) tokens produces</p>
+\[ n = \left\lceil \frac{N - o}{s - o} \right\rceil \]
+<p>chunks. For our 1,800-token policy with \(s = 400\) and \(o = 50\): \(\lceil 1{,}750 / 350 \rceil = 5\) chunks, storing \(1{,}800 + 4 \times 50 = 2{,}000\) tokens, 11% more than the original. Overlap costs storage and embedding work in proportion to \(o / (s - o)\).</p>
+<p>Run fixed chunking on the miniature policy (30 words per chunk, 5 words overlap) and look at what comes out:</p>
+<pre class="ascii-diagram">2: Annual plans Annual plans are refundable in full within 30 days of purchase.
+   After 30 days, the plan stays active until the end of the term and is not refunded.
+3: term and is not refunded. ### Enterprise plans Enterprise customers on annual
+   contracts may request a prorated refund within 60 days of the renewal date.
+   After that, the contract terms
+4: After that, the contract terms apply. Refunds go to the original payment method
+   and take 5 to 10 business days. ## How to request a refund Open Billing, choose the</pre>
+<p>Three problems are visible. Chunk 2 states the general rule, "after 30 days ... not refunded", and is a strong match for our question ("refund after 30 days"); if it outranks chunk 3, the model answers "no". Chunk 3 starts with the tail of the previous rule. Chunk 4 joins the end of the enterprise rule to the start of a different section, and its first words refer back to text it does not contain.</p>
+<p>Overlap helps a sentence cut at a boundary appear whole somewhere, but it does nothing for the deeper issue: fixed windows ignore the document's structure. They are acceptable for unstructured text (transcripts, long emails) and as a baseline to beat.</p>
+</section>
+
+<section data-label="Step 4: recursive splitting, follow the natural boundaries">
+<p><strong>Recursive splitting</strong> tries a list of separators from coarse to fine: section breaks, then blank lines (paragraphs), then line breaks, then sentence ends, then spaces. It splits on the coarsest separator present, greedily packs the pieces back together up to the size limit, and recurses with finer separators only into pieces that are still too long.</p>
+<p>The effect is that a chunk boundary falls on a paragraph end where possible, a sentence end otherwise, and mid-sentence only for a single sentence longer than the limit. Text that belongs together stays together as long as it fits. This is why recursive splitting with a few hundred tokens and modest overlap became the default in most RAG frameworks: it is cheap, needs no model, and avoids the worst cuts of fixed windows.</p>
+<p>It still knows nothing about what a heading is. It can keep "Enterprise customers ... may request a prorated refund within 60 days" as one sentence, but the chunk does not say this is a refund rule for enterprise annual plans, beyond the word "Enterprise" itself. For our question that is borderline; for a chunk that begins "This plan is not eligible", it is fatal.</p>
+</section>
+
+<section data-label="Step 5: structure-aware chunks with heading paths">
+<p>Most business documents already carry structure: Markdown and HTML headings, numbered lists, tables, code blocks. A <strong>structure-aware</strong> chunker parses that structure first (see <a href="@@rag/document-ingestion@@">document ingestion</a> for getting it out of PDFs and HTML), treats each section as a unit, and applies recursive splitting only inside sections that are too long. Two rules make the biggest difference:</p>
+<ol>
+<li><strong>Never cross a section boundary.</strong> A chunk belongs to exactly one section, so it is about one thing.</li>
+<li><strong>Carry the heading path.</strong> Store "Refund policy &gt; Annual plans &gt; Enterprise plans" on each chunk, and prepend it to the text that gets embedded.</li>
+</ol>
+<p>On the miniature policy (limit 20 words, to force splits):</p>
+<pre class="ascii-diagram">[11] Refund policy &gt; Annual plans | Annual plans are refundable in full within 30 days of purchase.
+[17] Refund policy &gt; Annual plans | After 30 days, the plan stays active until the end of the term ...
+[17] Refund policy &gt; Annual plans &gt; Enterprise plans | Enterprise customers on annual contracts
+     may request a prorated refund within 60 days of the renewal date.
+[20] Refund policy &gt; Annual plans &gt; Enterprise plans | After that, the contract terms apply.
+     Refunds go to the original payment method and take 5 to 10 business days.</pre>
+<p>The enterprise chunk's embedded text now contains "Refund policy", "Annual plans" and "Enterprise plans" as well as its own sentence, so it is a strong match for "Can enterprise customers get a refund after 30 days?". Every chunk can be understood on its own, citations can link to the exact section anchor, and the heading path doubles as a filterable field.</p>
+<p>Notice the last chunk still begins "After that": the split inside the section left a dangling reference. Overlap or parent-child retrieval (Step 7) handles it.</p>
+<p><strong>Special content</strong> needs its own rules. Keep a table whole if it fits; if not, split by rows and repeat the header row in every piece, because a row of numbers without column names means nothing. Keep code blocks whole, and FAQ question-answer pairs together. Lists are kept with the sentence that introduces them.</p>
+</section>
+
+<section data-label="Step 6: semantic chunking, cut where the meaning shifts">
+<p>Some text has no reliable structure: transcripts, scraped pages, long emails. <strong>Semantic chunking</strong> finds boundaries from the content: embed every sentence, compute the cosine between each pair of neighbours, and start a new chunk wherever the similarity drops below a threshold (often a percentile of all the neighbour similarities in the document).</p>
+<p>A six-sentence toy: three sentences about refunds, two about passwords, one about invoices. Neighbour similarities come out as 0.990, 0.949, <strong>0.374</strong>, 0.966, <strong>0.630</strong>. With a threshold of 0.8, the cuts land after sentence 3 and after sentence 5, giving three chunks that each hold one topic.</p>
+<p>The trade-offs are real. It costs one embedding per sentence at ingestion. It produces uneven sizes (a long single-topic stretch becomes one huge chunk unless a size cap is also applied). And single sentences are noisy to embed, so boundaries wobble. Where documents have headings, structure-aware chunking usually does as well for far less work; use semantic chunking for unstructured text, and judge it by the evaluation in Step 8, not by how sensible the boundaries look.</p>
+</section>
+
+<section data-label="Step 7: decoupling what you search from what you show">
+<p>Everything so far uses one chunk for two jobs: matching the query and informing the model. Those jobs want different sizes. Matching wants small, focused text; informing wants enough surrounding context. <strong>Parent-child</strong> (also called small-to-big) retrieval gives each job its own unit:</p>
+<ol>
+<li>Split each section (the <em>parent</em>, say up to 1,000 tokens) into small <em>children</em> (100 to 200 tokens, or single sentences).</li>
+<li>Embed and index only the children, each storing its parent's ID.</li>
+<li>At query time, search the children, then replace them by their parents, removing duplicates when two children share a parent.</li>
+</ol>
+<p>For our question, the child "Enterprise customers on annual contracts may request a prorated refund within 60 days" matches sharply, and the model receives the whole "Enterprise plans" section, including "After that, the contract terms apply", now with its antecedent. A lighter variant, the <strong>sentence window</strong>, returns each matched sentence plus a fixed number of its neighbours.</p>
+<p>The cost is prompt size: parents are bigger, so you pass fewer of them. Five parents at 800 tokens is 4,000 tokens; budget for it (see <a href="@@rag/rag-pipeline@@">the RAG pipeline</a> on context assembly).</p>
+<p>A related fix for dangling context is to <strong>write context into each chunk</strong> before embedding. The heading path is the cheap version. The expensive version asks a language model, for every chunk, to write one or two sentences situating it in its document ("This section of the refund policy covers exceptions for enterprise annual contracts"). For our corpus that is 30,000 calls, each sending its whole document (about 7,500 tokens on average) plus the chunk: roughly 234 million input tokens per full re-index, or about $234 at an illustrative $1 per million input tokens, and much less with prompt caching, since all chunks of a document share the same long prefix. Worth it when chunks are routinely ambiguous out of context; measure first.</p>
+</section>
+
+<section data-label="Step 8: measuring whether chunking is good">
+<p>Chunking is tuned like any other retrieval setting: on a golden set of real questions with labelled answers (built as in <a href="@@rag/embedding-models@@">choosing an embedding model</a>). Two details are specific to chunking.</p>
+<p><strong>Label answers, not chunk IDs.</strong> Every chunking change renumbers the chunks, so labels attached to chunk IDs break. Label each question with the answering passage (document plus a quoted span, or a section anchor), and count a retrieved chunk as a hit if it contains that span. Then any chunking can be scored against the same labels.</p>
+<p><strong>Compare at equal token budgets.</strong> Retrieving the top 5 of 800-token chunks gives the model 4,000 tokens; the top 5 of 200-token chunks gives 1,000. Bigger chunks will "win" on recall@5 simply because they show more text. Fair comparisons fix the budget (say 2,000 tokens: the top 10 of 200-token chunks against the top 2 or 3 of 800-token chunks) and ask which configuration puts the answer inside it more often.</p>
+<p>Then read failures. For each miss, look at the chunk that should have matched: was the answer split across a boundary, diluted in a long chunk, or missing its subject? The fix follows from the cause: different boundaries, smaller size, or added context.</p>
+</section>
+
+<section data-label="A recipe that works for most corpora">
+<table>
+<thead><tr><th>Content</th><th>Method</th><th>Size</th></tr></thead>
+<tbody>
+<tr><td>Docs with headings (Markdown, HTML, well-parsed PDFs)</td><td>Structure-aware, heading path embedded, recursive inside long sections</td><td>200 to 500 tokens, overlap 0 to 15%</td></tr>
+<tr><td>FAQs</td><td>One question and answer per chunk</td><td>As they come</td></tr>
+<tr><td>Tables</td><td>Whole table, or row groups with the header repeated</td><td>Fit the limit</td></tr>
+<tr><td>Code</td><td>By function or class, with file path and signature</td><td>Whole unit where possible</td></tr>
+<tr><td>Transcripts, emails, scraped text</td><td>Recursive with overlap, or semantic with a size cap</td><td>300 to 600 tokens, overlap 10 to 20%</td></tr>
+<tr><td>Questions needing surrounding context</td><td>Parent-child: index children, return parents</td><td>Children 100 to 200, parents up to about 1,000</td></tr>
+</tbody>
+</table>
+<p>Store with every chunk: document ID, section anchor, heading path, position in the document, token count, a content hash (for incremental re-indexing), and access-control fields.</p>
+</section>
+
+<section data-label="In code: fixed versus structure-aware chunking">
+<p>A whitespace word count stands in for a tokenizer so the example runs anywhere; swap in a real tokenizer for production. Output matches the excerpts in Steps 3 and 5:</p>
+<pre data-lang="python">import re
+import numpy as np
+
+DOC = """# Refund policy
+This policy explains when and how customers can get their money back.
+
+## Monthly plans
+Monthly plans can be cancelled at any time. We do not refund partial months. If you were charged after cancelling, contact support within 14 days and we will reverse the charge.
+
+## Annual plans
+Annual plans are refundable in full within 30 days of purchase. After 30 days, the plan stays active until the end of the term and is not refunded.
+
+### Enterprise plans
+Enterprise customers on annual contracts may request a prorated refund within 60 days of the renewal date. After that, the contract terms apply. Refunds go to the original payment method and take 5 to 10 business days.
+
+## How to request a refund
+Open Billing, choose the invoice, and click Request refund. You will get an email confirmation with a case number.
+"""
+
+def tokens(text):
+    return len(text.split())                     # stand-in for a real tokenizer
+
+def fixed_chunks(text, size, overlap):
+    w = text.split()
+    return [" ".join(w[i:i + size]) for i in range(0, max(len(w) - overlap, 1), size - overlap)]
+
+def sections(md):
+    """[(heading_path, body)] for each heading-delimited section of a Markdown doc."""
+    out, path, body = [], [], []
+    def flush():
+        if "".join(body).strip():
+            out.append((list(path), "\n".join(body).strip()))
+    for line in md.splitlines():
+        m = re.match(r"^(#+)\s+(.*)", line)
+        if m:
+            flush()
+            path[:] = path[:len(m.group(1)) - 1] + [m.group(2)]
+            body.clear()
+        else:
+            body.append(line)
+    flush()
+    return out
+
+def recursive_split(text, max_tokens, seps=("\n\n", "\n", ". ", " ")):
+    """Split on the coarsest separator present; recurse only into pieces still too big."""
+    if tokens(text) &lt;= max_tokens or not seps:
+        return [text.strip()]
+    sep, rest = seps[0], seps[1:]
+    if sep not in text:
+        return recursive_split(text, max_tokens, rest)
+    parts = text.split(sep)
+    parts = [p + sep for p in parts[:-1]] + [parts[-1]]  # keep the separator (e.g. the full stop)
+    pieces, current = [], ""
+    for part in parts:
+        if current and tokens(current + part) &gt; max_tokens:
+            pieces.append(current)
+            current = part
+        else:
+            current += part
+    pieces.append(current)
+    return [q for p in pieces for q in recursive_split(p, max_tokens, rest)]
+
+def structured_chunks(md, max_tokens):
+    out = []
+    for path, body in sections(md):
+        trail = " &gt; ".join(path)
+        for piece in recursive_split(body, max_tokens):
+            out.append({"heading": trail, "text": piece, "embed_text": trail + "\n" + piece})
+    return out
+
+print("fixed, 30 words, overlap 5:")
+for i, c in enumerate(fixed_chunks(DOC, 30, 5)):
+    print(f"  {i}: {c}")
+print("structured, max 20 words:")
+for c in structured_chunks(DOC, 20):
+    print(f"  [{tokens(c['text']):2d}] {c['heading']} | {c['text']}")
+
+# one vector for k unrelated topics: similarity to any one of them falls as 1/sqrt(k)
+for k in (1, 2, 5, 8):
+    topics = np.eye(16)[:k]
+    mixed = topics.mean(0); mixed /= np.linalg.norm(mixed)
+    print(f"{k} topics in one chunk -&gt; cosine with one topic {mixed @ topics[0]:.3f}")
+
+# semantic chunking: cut where neighbouring sentences stop resembling each other
+S = np.array([[0.9, 0.2, 0.1], [0.8, 0.3, 0.1], [0.85, 0.1, 0.3],    # refunds
+              [0.2, 0.9, 0.2], [0.1, 0.8, 0.4],                      # passwords
+              [0.3, 0.2, 0.9]])                                      # invoices
+S /= np.linalg.norm(S, axis=1, keepdims=True)
+adjacent = [S[i] @ S[i + 1] for i in range(len(S) - 1)]
+print("neighbour similarity:", [round(float(a), 3) for a in adjacent])
+print("cut after sentences:", [i + 1 for i, a in enumerate(adjacent) if a &lt; 0.8])
+</pre>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"There is a best chunk size."</strong> It depends on the documents, the questions and the embedding model. Start at 200 to 500 tokens and tune on a golden set.</li>
+<li><strong>Comparing chunk sizes at equal \(k\).</strong> Larger chunks show more text and win recall@k unfairly. Compare at equal token budgets.</li>
+<li><strong>Labelling the golden set by chunk ID.</strong> Every re-chunk breaks the labels. Label answer spans or section anchors.</li>
+<li><strong>Throwing away headings.</strong> The heading path is often the only place a chunk's subject is named. Store it and embed it.</li>
+<li><strong>Splitting tables and code like prose.</strong> A table row without its header, or half a function, is unusable. Keep units whole or repeat headers.</li>
+<li><strong>Expecting overlap to fix structure.</strong> Overlap rescues sentences cut at a boundary; it does not stop chunks mixing sections or losing their subject.</li>
+<li><strong>Adopting semantic chunking because it sounds smarter.</strong> It costs an embedding per sentence and often matches structure-aware chunking on structured documents. Measure.</li>
+<li><strong>Forgetting the general rule beats the exception.</strong> "Not refunded after 30 days" will often outrank the enterprise exception. Heading paths, parent-child retrieval and a <a href="@@rag/reranking@@">reranker</a> are how the exception gets found.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>A 5,000-token document is chunked with size 500 and overlap 100. How many chunks, and how many tokens are stored?</summary><div class="answer">\(\lceil (5{,}000 - 100) / 400 \rceil = \lceil 12.25 \rceil = 13\) chunks. Stored tokens are about \(5{,}000 + 12 \times 100 = 6{,}200\), 24% more than the original (the last chunk is shorter).</div></details>
+<details><summary>Why does embedding a whole 2,000-token page often lose to a short, less useful page?</summary><div class="answer">The page's vector is near the average of its several topics, and an average is far from each part (for \(k\) unrelated topics, cosine \(1/\sqrt{k}\) with each). A short single-topic page points straight at one topic and outscores it, even if it is less informative.</div></details>
+<details><summary>A chunk reads "This option is not available on the Starter tier." and is never retrieved for "Can Starter users export to CSV?". What is wrong, and what are two fixes?</summary><div class="answer">The chunk does not name its subject: "this option" refers to CSV export in a heading or an earlier chunk. Embed the heading path with the chunk (for example "Exports &gt; CSV export"), or use parent-child retrieval so the matched child returns its whole section; contextual chunk text written by an LLM is a heavier option.</div></details>
+<details><summary>You compare 200-token chunks with top 10 against 800-token chunks with top 10, and the 800-token setup has higher recall. What is wrong with the comparison?</summary><div class="answer">The 800-token setup shows the model 8,000 tokens against 2,000. Fix the token budget (for example 2,000 tokens: top 10 small versus top 2 or 3 large) and compare again; also compare answer quality and cost, since larger contexts are more expensive and more distracting.</div></details>
+<details><summary>How would you chunk a pricing table with 40 rows and 6 columns that exceeds the chunk limit?</summary><div class="answer">Split it into groups of rows that fit, repeat the header row in every group, and prepend the table's title and heading path. Optionally also store a short text summary of the table as its own chunk.</div></details>
+<details><summary>In parent-child retrieval, three of the top five children share a parent. What do you pass to the model?</summary><div class="answer">That parent once, plus the parents of the other two children: three parents, deduplicated, ordered by their best child's score, within the token budget.</div></details>
+</section>

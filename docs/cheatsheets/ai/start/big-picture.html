@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
@@ -19,38 +23,209 @@
   <h2>The big picture</h2>
   <a href="index.html">&larr; Start here</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#the-whole-field-in-five-minutes"><span class="num">02</span> The whole field in five minutes</a>
-  <a href="#1-an-llm-is-a-next-word-predictor"><span class="num">03</span> 1. An LLM is a next-word predictor</a>
-  <a href="#2-it-only-knows-what-s-in-front-of-it"><span class="num">04</span> 2. It only knows what&#x27;s in front of it</a>
-  <a href="#3-to-make-it-useful-we-bolt-on-four-things"><span class="num">05</span> 3. To make it useful, we bolt on four things</a>
-  <a href="#4-an-agent-is-just-a-loop-around-the-model"><span class="num">06</span> 4. An &quot;agent&quot; is just a loop around the model</a>
-  <a href="#how-to-use-this-guide"><span class="num">07</span> How to use this guide</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#the-question"><span class="num">03</span> The question</a>
+  <a href="#step-1-text-becomes-tokens"><span class="num">04</span> Step 1: text becomes tokens</a>
+  <a href="#step-2-the-second-engine-finds-the-evidence"><span class="num">05</span> Step 2: the second engine finds the evidence</a>
+  <a href="#step-3-the-prompt-is-assembled"><span class="num">06</span> Step 3: the prompt is assembled</a>
+  <a href="#step-4-prefill-the-model-reads-the-prompt"><span class="num">07</span> Step 4: prefill, the model reads the prompt</a>
+  <a href="#step-5-decoding-picks-one-token"><span class="num">08</span> Step 5: decoding picks one token</a>
+  <a href="#step-6-the-decode-loop-writes-the-answer"><span class="num">09</span> Step 6: the decode loop writes the answer</a>
+  <a href="#step-7-when-the-model-needs-to-act"><span class="num">10</span> Step 7: when the model needs to act</a>
+  <a href="#step-8-checking-the-answer-before-and-after-it-ships"><span class="num">11</span> Step 8: checking the answer before and after it ships</a>
+  <a href="#step-9-serving-time-and-money-for-the-whole-trip"><span class="num">12</span> Step 9: serving, time and money for the whole trip</a>
+  <a href="#using-the-map-which-hop-do-you-change"><span class="num">13</span> Using the map: which hop do you change?</a>
+  <a href="#in-code-the-request-hop-by-hop"><span class="num">14</span> In code: the request, hop by hop</a>
+  <a href="#the-whole-field-in-five-minutes"><span class="num">15</span> The whole field in five minutes</a>
+  <a href="#1-an-llm-is-a-next-word-predictor"><span class="num">16</span> 1. An LLM is a next-word predictor</a>
+  <a href="#2-it-only-knows-what-s-in-front-of-it"><span class="num">17</span> 2. It only knows what&#x27;s in front of it</a>
+  <a href="#3-to-make-it-useful-we-bolt-on-four-things"><span class="num">18</span> 3. To make it useful, we bolt on four things</a>
+  <a href="#4-an-agent-is-just-a-loop-around-the-model"><span class="num">19</span> 4. An &quot;agent&quot; is just a loop around the model</a>
+  <a href="#how-to-use-this-guide"><span class="num">20</span> How to use this guide</a>
+  <a href="#where-people-get-lost"><span class="num">21</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">22</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">23</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>The big picture <span>// Start here</span></h1>
   <p>Two engines, four add-ons, one loop: the mental model everything else hangs on.</p>
-  <div class="tags"><span class="tag">2 min read</span><span class="tag">1 diagram</span></div>
+  <div class="tags"><span class="tag">15 min read</span><span class="tag">1 diagram</span></div>
 </div>
 
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
 <div class="diagram"><img src="../img/big-picture.png" alt="Two engines and four add-ons. Everything else in AI engineering is plumbing around a generative model and an embedding model."></div><p class="diagram-caption">Two engines and four add-ons. Everything else in AI engineering is plumbing around a generative model and an embedding model.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Token</strong></td><td>The unit a model reads and writes: a word, part of a word, or punctuation. English averages roughly four characters per token.</td></tr><tr><td><strong>Tokenizer</strong></td><td>The fixed lookup that turns text into token ids and back. Most use byte-pair encoding (BPE): common character sequences become single tokens.</td></tr><tr><td><strong>Embedding model</strong></td><td>A model that turns a piece of text into one vector (a list of, say, 1,024 numbers) so that texts with similar meaning get nearby vectors.</td></tr><tr><td><strong>Generative model (LLM)</strong></td><td>A model that, given a sequence of tokens, outputs a score for every possible next token. Run repeatedly, it writes text.</td></tr><tr><td><strong>Context window</strong></td><td>The maximum number of tokens the model can take in one call: instructions, evidence, conversation and its own output so far.</td></tr><tr><td><strong>Logits</strong></td><td>The raw scores for every token in the vocabulary at one step, before they are turned into probabilities.</td></tr><tr><td><strong>Prefill</strong></td><td>The model's first pass over the whole prompt, done in parallel. Sets the time to first token.</td></tr><tr><td><strong>Decode</strong></td><td>Generating the answer one token at a time, each step feeding the new token back in.</td></tr><tr><td><strong>KV cache</strong></td><td>Stored intermediate results (attention keys and values) for every token so far, so each decode step does not reprocess the prompt.</td></tr><tr><td><strong>Tool call</strong></td><td>Structured output (a name and JSON arguments) asking your code to run a function. The model never runs anything itself.</td></tr><tr><td><strong>Eval</strong></td><td>A repeatable measurement of whether the system's outputs are right, on a fixed set of inputs.</td></tr><tr><td><strong>Serving</strong></td><td>Running models for many users at once: batching requests on GPUs, queueing, rate limits.</td></tr></tbody></table>
+</section>
+<p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>03 &mdash; The question</h2>
+<p>AI engineering looks like a hundred separate topics: tokenizers, transformers, sampling, embeddings, vector databases, agents, evals, GPUs. It is really one path that every request travels, with each topic owning one hop. If you can follow a single request from the keyboard to the answer, naming what happens at each hop and roughly how long it takes and what it costs, every later topic has a place to hang, and most interview questions become "which hop is this about?".</p>
+<p>The questions this page prepares you for:</p>
+<ol>
+<li>Walk me through what happens when a user sends a message to an LLM application.</li>
+<li>Where does the time go, and where does the money go?</li>
+<li>What does the model know by itself, and what must the application give it?</li>
+<li>An answer is wrong, slow or expensive: which part would you change?</li>
+</ol>
+<p>The running example is one request to the course's capstone, an internal support assistant. A support agent types:</p>
+<p><em>"Can an enterprise customer on annual billing get a partial refund after a mid-term downgrade?"</em></p>
+<p>We follow it through nine hops. Where a hop runs on a hosted API whose internals are private, we use a public open model of known shape (8 billion parameters, 32 layers) on one H100 GPU to show the mechanism with real arithmetic. Every number is computed in the code at the end.</p>
+</section>
+<section id="step-1-text-becomes-tokens">
+  <h2>04 &mdash; Step 1: text becomes tokens</h2>
+<p>Models do not read characters or words. The tokenizer splits the text into pieces from a fixed vocabulary (about 100,000 entries for the tokenizer used here; each model family has its own) and replaces each with its id. Our 93-character, 15-word question becomes <strong>17 tokens</strong>: most words are one token each (" enterprise", " billing", " refund"), while "mid-term" splits into " mid" and "-term".</p>
+<p>Why care about tokens? Because everything downstream is measured in them. The model's limit is a token count, prices are per token, and generation speed is tokens per second. Rare strings fragment: an invoice code like "INV-ADJ-CR" becomes six tokens with little meaning each, which is why exact codes are hard for meaning-based search (Step 2). Details in <a href="../fundamentals/tokens-context-cost.html">tokens, context and cost</a>.</p>
+</section>
+<section id="step-2-the-second-engine-finds-the-evidence">
+  <h2>05 &mdash; Step 2: the second engine finds the evidence</h2>
+<p>The generative model was trained on public text up to some date. It has never seen this company's refund policy. So before the model writes anything, the application must find the relevant policy passages and put them in front of it. That is retrieval, and it uses a different model.</p>
+<p>An <strong>embedding model</strong> turns the question into a vector of 1,024 numbers. Every chunk of the company's 1,200 policy documents (about 40,000 chunks) was turned into a vector the same way when it was indexed. Texts with similar meaning point in similar directions, so the closest chunks by cosine similarity (the cosine of the angle between two vectors) are likely relevant. Comparing against all 40,000 by brute force is about 41 million multiply-adds, a few milliseconds; at millions of chunks an approximate index such as HNSW visits only a few thousand.</p>
+<p>The capstone does more than that: it also runs keyword search (to catch exact terms), merges both rankings, and reranks the top 30 with a more precise model to keep the best 5. For our question it should return the enterprise refund policy and the downgrade billing rules. If it does not, nothing later can save the answer. That is why this is the hop teams measure first, and why the course spends a whole stage on it, starting with <a href="../rag/embeddings.html">embeddings</a> and <a href="../rag/rag-pipeline.html">the RAG pipeline</a>.</p>
+<p>So an LLM application has <strong>two engines</strong>: an embedding model that finds things, and a generative model that writes. Everything else is plumbing around them.</p>
+</section>
+<section id="step-3-the-prompt-is-assembled">
+  <h2>06 &mdash; Step 3: the prompt is assembled</h2>
+<p>The model sees only one thing: the token sequence the application sends. For our request the application assembles about 3,500 tokens:</p>
+<table>
+<thead><tr><th>Part</th><th>Tokens</th><th>Purpose</th></tr></thead>
+<tbody>
+<tr><td>System instructions and output format</td><td>~1,200</td><td>"answer only from the sources, cite each claim, say INSUFFICIENT_EVIDENCE if they don't cover it"</td></tr>
+<tr><td>Five retrieved chunks, numbered</td><td>~2,000</td><td>the evidence</td></tr>
+<tr><td>Conversation so far and the question</td><td>~300</td><td>what to answer</td></tr>
+</tbody>
+</table>
+<p>This is the whole of what the model "knows" about the request. It has no memory of earlier calls and no access to the database unless the application puts results into this text. Instructions matter (<a href="../prompting/prompt-anatomy.html">prompt anatomy</a>), but the most important tokens here are the evidence: a perfectly worded prompt with the wrong five chunks produces a confident wrong answer.</p>
+</section>
+<section id="step-4-prefill-the-model-reads-the-prompt">
+  <h2>07 &mdash; Step 4: prefill, the model reads the prompt</h2>
+<p>Inside the model, each of the 3,500 token ids is replaced by a learned vector, and the vectors pass through 32 identical layers. In each layer, <strong>attention</strong> lets every token gather information from the tokens before it (this is how "it" gets linked to "refund", and the question to the evidence), and a feed-forward block transforms each token's vector. The output for the last position is a score for every token in the vocabulary. How these layers work is in <a href="../fundamentals/transformers.html">transformers</a>.</p>
+<p>Processing the prompt costs about 2 floating-point operations per parameter per token:</p>
+\[ 2 \times 8.03 \times 10^{9} \times 3{,}500 \approx 5.6 \times 10^{13}\ \text{FLOPs} \]
+<p>An H100 peaks near 989 trillion operations per second on this kind of work; at a realistic 40% of that, prefill takes about <strong>0.14 s</strong>. All prompt tokens are processed in parallel, which is why prefill is fast per token.</p>
+<p>Prefill also leaves behind the <strong>KV cache</strong>: for each layer and token, the attention keys and values, so they never need recomputing. For this model shape (32 layers, 8 key-value heads of 128 numbers, 2 bytes each, for both keys and values) that is 128 KiB per token, <strong>437.5 MiB</strong> for our prompt. It is the reason long contexts and many simultaneous users compete for GPU memory.</p>
+</section>
+<section id="step-5-decoding-picks-one-token">
+  <h2>08 &mdash; Step 5: decoding picks one token</h2>
+<p>The model's output is not text but one score per entry in its vocabulary: about 128,000 scores for the 8B example model. Say the top candidates for the first answer token are "Yes" (3.1), "Enterprise" (2.2), "No" (1.0) and "It" (0.4). Softmax turns scores into probabilities: at temperature 1 they are 0.626, 0.255, 0.077 and 0.042. The capstone answers policy questions at temperature 0.2, which divides the scores by 0.2 before softmax and sharpens the distribution: "Yes" becomes 0.989.</p>
+<p>Which token is chosen is a decision made outside the model, by the sampler, and it is yours: low temperature for factual answers, higher for brainstorming, constrained decoding when the output must be valid JSON. This one hop explains why the same model can be repetitive or creative and why "temperature 0" is still not perfectly repeatable. See <a href="../fundamentals/decoding.html">decoding</a>.</p>
+</section>
+<section id="step-6-the-decode-loop-writes-the-answer">
+  <h2>09 &mdash; Step 6: the decode loop writes the answer</h2>
+<p>The chosen token is appended, the model runs again on just that one new token (attending to everything earlier through the KV cache), picks the next, and so on until it emits an end token or hits the length limit. Our answer is about 250 tokens: "Yes, as a prorated account credit for the unused term [1], provided the downgrade is…", each claim with a citation number pointing at one of the five chunks.</p>
+<p>Each decode step does little arithmetic (about 16 billion operations) but must read every one of the model's 16 GB of weights from GPU memory. At 3.35 TB/s of memory bandwidth, that takes about <strong>4.8 ms per token</strong>, so 250 tokens take about 1.2 s for a single request: generation is limited by memory bandwidth, not compute. Hosted mid-tier models are larger and shared between many users; the capstone's budget assumes about 80 tokens per second, so the answer streams for about 3 s. That is why output length is the biggest latency lever and why tokens appear one by one. Mechanics in <a href="../inference/inference-internals.html">inference internals</a>.</p>
+</section>
+<section id="step-7-when-the-model-needs-to-act">
+  <h2>10 &mdash; Step 7: when the model needs to act</h2>
+<p>Our question needed only documents. Had the agent typed "ORD-114532 was charged twice, sort it out", the first hop after the gateway (a small router model that classifies each request) would have sent it down the agent path instead. There the model receives tool definitions as part of the prompt and, instead of answering, outputs a structured request:</p>
+<pre>{<span class="tp">"type"</span>: <span class="st">"tool_use"</span>, <span class="tp">"name"</span>: <span class="st">"get_charges"</span>, <span class="tp">"input"</span>: {<span class="tp">"order_id"</span>: <span class="st">"ORD-114532"</span>}}</pre>
+<p>The application validates it, runs the real function, appends the result to the conversation and calls the model again. That loop, model proposes and code executes, repeated until the model answers or a budget runs out, is the entire idea of an <strong>agent</strong>. Every loop re-sends the growing conversation, so cost grows faster than the number of steps, and every write action needs checks the model cannot override. See <a href="../agents/what-is-an-agent.html">what an agent is</a> and <a href="../agents/tool-calling.html">tool calling</a>.</p>
+</section>
+<section id="step-8-checking-the-answer-before-and-after-it-ships">
+  <h2>11 &mdash; Step 8: checking the answer before and after it ships</h2>
+<p>Before the answer reaches the screen, plain code checks it: every citation number refers to a supplied chunk, and policy claims carry citations. If the model said INSUFFICIENT_EVIDENCE, the question goes to a human with the retrieved chunks attached. Every step (router verdict, retrieved chunk ids, token counts, latencies, the answer) is written to a trace.</p>
+<p>After the fact, this request might be one of the questions in the offline <strong>eval</strong> set, where its answer is graded for correctness and groundedness every time a prompt, model or index changes. In production, a sample of answers is graded by a calibrated judge model, and thumbs-down and edits from the support agent feed a weekly review. Evals are what turn "it seemed fine when I tried it" into a number that can block a bad release. See <a href="../production/evals.html">evals</a> and <a href="../production/observability.html">observability</a>.</p>
+</section>
+<section id="step-9-serving-time-and-money-for-the-whole-trip">
+  <h2>12 &mdash; Step 9: serving, time and money for the whole trip</h2>
+<p>Our request did not run alone. At peak, 15 others were in flight. The model provider batches many users' decode steps together, so each read of the weights serves dozens of requests; that is how hosted models are affordable. The application's own limits are the provider's tokens-per-minute quota and its rate limiter, not its CPUs. See <a href="../inference/serving.html">serving</a>.</p>
+<p>The trip, end to end, with the capstone's numbers:</p>
+<table>
+<thead><tr><th>Hop</th><th>What happens</th><th>Time (median)</th><th>Cost</th></tr></thead>
+<tbody>
+<tr><td>Gateway, router</td><td>auth; small model labels the intent</td><td>~0.5 s</td><td>$0.0001</td></tr>
+<tr><td>Retrieval (in parallel with router)</td><td>embed, hybrid search, rerank 30 → 5</td><td>~0.3 s</td><td>$0.0004</td></tr>
+<tr><td>Prompt and prefill</td><td>3,500 tokens read, first token chosen</td><td>~0.7 s</td><td rowspan="2">$0.0143</td></tr>
+<tr><td>Decode</td><td>250 tokens streamed</td><td>~3.1 s</td></tr>
+<tr><td>Validation, trace</td><td>citation check, logging</td><td>~0.03 s</td><td>≈ 0</td></tr>
+<tr><td><strong>Total</strong></td><td></td><td><strong>first token ~1.2 s, done ~4.3 s</strong></td><td><strong>≈ $0.015</strong></td></tr>
+</tbody>
+</table>
+<p>Prices are illustrative ($3 per million input tokens and $15 per million output for the answer model). Two facts fall out of the table and are worth memorising: most of the <em>time</em> is output tokens, and most of the <em>money</em> is the answer model's input and output, while the retrieval that decides whether the answer is right costs almost nothing. The full sizing is in <a href="../projects/build-spec.html">the capstone spec</a>.</p>
+</section>
+<section id="using-the-map-which-hop-do-you-change">
+  <h2>13 &mdash; Using the map: which hop do you change?</h2>
+<table>
+<thead><tr><th>Symptom</th><th>Hop to inspect first</th><th>Typical fix</th></tr></thead>
+<tbody>
+<tr><td>Confident wrong answer</td><td>retrieval (did the right chunk arrive?)</td><td>chunking, hybrid search, reranking</td></tr>
+<tr><td>Right chunk arrived, answer still wrong</td><td>prompt and model</td><td>clearer instructions, citations, a stronger model, abstention</td></tr>
+<tr><td>Slow to start</td><td>router, retrieval, prefill</td><td>parallelise, prompt caching, shorter prompt</td></tr>
+<tr><td>Slow to finish</td><td>decode</td><td>shorter answers, faster model</td></tr>
+<tr><td>Too expensive</td><td>answer model tokens, agent loops</td><td>caching, smaller model for easy cases, step caps</td></tr>
+<tr><td>Did something it shouldn't</td><td>tools and policy</td><td>narrower tools, code-enforced limits, approvals</td></tr>
+<tr><td>Got worse after a change</td><td>evals</td><td>a gate that would have caught it</td></tr>
+</tbody>
+</table>
+</section>
+<section id="in-code-the-request-hop-by-hop">
+  <h2>14 &mdash; In code: the request, hop by hop</h2>
+<p>This script reproduces the numbers above. It needs numpy and the <code>tiktoken</code> tokenizer package (which downloads its vocabulary file on first use).</p>
+<pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> tiktoken                       <span class="cm"># OpenAI's BPE tokenizer; downloads its table once</span>
+
+question = (<span class="st">"</span><span class="st">Can an enterprise customer on annual billing get a partial </span><span class="st">"</span>
+<span class="st">"</span><span class="st">refund after a mid-term downgrade?</span><span class="st">"</span>)
+enc = tiktoken.get_encoding(<span class="st">"</span><span class="st">cl100k_base</span><span class="st">"</span>)
+ids = enc.encode(question)
+<span class="tp">print</span>(<span class="st">"</span><span class="st">hop 1  tokens:</span><span class="st">"</span>, <span class="tp">len</span>(ids), [enc.decode([i]) <span class="kw">for</span> i in ids][-<span class="nr">5</span>:])
+
+<span class="cm"># hop 2: retrieval scores are cosine similarities between unit vectors</span>
+rng = np.random.default_rng(<span class="nr">0</span>)
+chunks = rng.standard_normal((<span class="nr">40_000</span>, <span class="nr">1024</span>)).astype(np.float32)
+chunks /= np.linalg.norm(chunks, axis=<span class="nr">1</span>, keepdims=<span class="nr">True</span>)
+q = chunks[<span class="nr">123</span>] + <span class="nr">0.03</span> * rng.standard_normal(<span class="nr">1024</span>).astype(np.float32)  <span class="cm"># a query near chunk 123</span>
+q /= np.linalg.norm(q)
+sims = chunks @ q
+top5 = np.argsort(-sims)[:<span class="nr">5</span>]
+<span class="tp">print</span>(<span class="st">"</span><span class="st">hop 2  </span><span class="st">%d</span><span class="st"> multiply-adds; top hit chunk </span><span class="st">%d</span><span class="st"> at cosine </span><span class="st">%.2f</span><span class="st">, runner-up </span><span class="st">%.2f</span><span class="st">"</span>
+      % (chunks.size, top5[<span class="nr">0</span>], sims[top5[<span class="nr">0</span>]], sims[top5[<span class="nr">1</span>]]))
+
+<span class="cm"># hop 4: prefill compute and KV cache for an 8B, 32-layer, 8-KV-head model in bf16</span>
+params, prompt = <span class="nr">8.03e9</span>, <span class="nr">3500</span>
+flops = <span class="nr">2</span> * params * prompt
+<span class="tp">print</span>(<span class="st">"</span><span class="st">hop 4  prefill </span><span class="st">%.1e</span><span class="st"> FLOPs = </span><span class="st">%.2f</span><span class="st"> s on one H100 at 40</span><span class="st">%%</span><span class="st"> utilisation</span><span class="st">"</span>
+      % (flops, flops / (<span class="nr">0.4</span> * <span class="nr">989e12</span>)))
+kv_per_token = <span class="nr">2</span> * <span class="nr">32</span> * <span class="nr">8</span> * <span class="nr">128</span> * <span class="nr">2</span>
+<span class="tp">print</span>(<span class="st">"</span><span class="st">       KV cache </span><span class="st">%.1f</span><span class="st"> MiB for the prompt</span><span class="st">"</span> % (kv_per_token * prompt / <span class="nr">2</span>**<span class="nr">20</span>))
+
+<span class="cm"># hop 5: logits to probabilities for the first answer token</span>
+logits = np.array([<span class="nr">3.1</span>, <span class="nr">2.2</span>, <span class="nr">1.0</span>, <span class="nr">0.4</span>])            <span class="cm"># "Yes", "Enterprise", "No", "It"</span>
+<span class="kw">for</span> T in (<span class="nr">1.0</span>, <span class="nr">0.2</span>):
+    p = np.exp(logits / T - (logits / T).max()); p /= p.sum()
+    <span class="tp">print</span>(<span class="st">"</span><span class="st">hop 5  T=</span><span class="st">%.1f</span><span class="st"> -&gt; </span><span class="st">%s</span><span class="st">"</span> % (T, np.round(p, <span class="nr">3</span>)))
+
+<span class="cm"># hop 6: decoding is bandwidth-bound: read all weights for every token</span>
+weight_bytes, bandwidth = <span class="nr">16.06e9</span>, <span class="nr">3.35e12</span>
+<span class="tp">print</span>(<span class="st">"</span><span class="st">hop 6  </span><span class="st">%.1f</span><span class="st"> ms per token, </span><span class="st">%.1f</span><span class="st"> s for 250 tokens at batch 1</span><span class="st">"</span>
+      % (<span class="nr">1e3</span> * weight_bytes / bandwidth, <span class="nr">250</span> * weight_bytes / bandwidth))
+
+<span class="cm"># hop 9: what the request cost on a hosted API (illustrative prices)</span>
+router = <span class="nr">400</span> * <span class="nr">0.25e-6</span> + <span class="nr">30</span> * <span class="nr">1.25e-6</span>
+answer = <span class="nr">3500</span> * <span class="nr">3e-6</span> + <span class="nr">250</span> * <span class="nr">15e-6</span>
+<span class="tp">print</span>(<span class="st">"</span><span class="st">hop 9  $</span><span class="st">%.4f</span><span class="st"> = router $</span><span class="st">%.4f</span><span class="st"> + answer $</span><span class="st">%.4f</span><span class="st"> + retrieval $0.0004</span><span class="st">"</span>
+      % (router + answer + <span class="nr">0.0004</span>, router, answer))
+</pre>
+<p>It prints 17 tokens ending in " mid", "-term", " downgrade", "?"; the brute-force search finding the planted chunk (random vectors are nearly orthogonal, so the runner-up scores low; real embeddings sit closer together); 5.6e13 FLOPs and 0.14 s; 437.5 MiB of KV cache; the two probability rows; 4.8 ms per token and 1.2 s for 250 tokens; and $0.0148 for the request.</p>
+</section>
 <section id="the-whole-field-in-five-minutes">
-  <h2>02 &mdash; The whole field in five minutes</h2>
+  <h2>15 &mdash; The whole field in five minutes</h2>
 <p>Before any detail, here's the entire landscape so later topics have a place to hang.</p>
 </section>
 <section id="1-an-llm-is-a-next-word-predictor">
-  <h2>03 &mdash; 1. An LLM is a next-word predictor</h2>
+  <h2>16 &mdash; 1. An LLM is a next-word predictor</h2>
 <p>A Large Language Model is trained on enormous amounts of text to do one thing: <b>given some text, predict the next chunk of text.</b> Do that repeatedly and you get sentences, code, answers. <em>It's autocomplete that read the whole internet.</em> Everything "smart" it does is this one trick applied well.</p>
 </section>
 <section id="2-it-only-knows-what-s-in-front-of-it">
-  <h2>04 &mdash; 2. It only knows what&#x27;s in front of it</h2>
+  <h2>17 &mdash; 2. It only knows what&#x27;s in front of it</h2>
 <p>The model has no memory and no live internet. It sees only the text you send (the <b>prompt</b>) plus what it has written so far. That text-it-can-see is the <b>context</b>, and it's finite.</p>
 </section>
 <section id="3-to-make-it-useful-we-bolt-on-four-things">
-  <h2>05 &mdash; 3. To make it useful, we bolt on four things</h2>
+  <h2>18 &mdash; 3. To make it useful, we bolt on four things</h2>
 <pre class="ascii-diagram">           ┌──────────────────────────────────────────────┐
   PROMPTING │ word it well so the output is good            │
        RAG  │ look facts up first, paste them into context │
@@ -59,16 +234,42 @@
            └──────────────────────────────────────────────┘</pre>
 </section>
 <section id="4-an-agent-is-just-a-loop-around-the-model">
-  <h2>06 &mdash; 4. An &quot;agent&quot; is just a loop around the model</h2>
+  <h2>19 &mdash; 4. An &quot;agent&quot; is just a loop around the model</h2>
 <p>Give the model a <b>goal</b> and some <b>tools</b>, then run: <i>the model picks an action → your code runs it → you feed the result back → repeat until done.</i> That loop is the entire idea behind "AI agents." Multi-agent systems are just several of these loops cooperating.</p>
 <div class="callout"><p><strong>Plain-English glossary (just these for now)</strong></p>
 <b>Token</b> = a word-fragment, the unit models read. <b>Prompt</b> = the text you send. <b>Context window</b> = how much text it can consider at once. <b>Tool</b> = a function the model can ask you to run. <b>Agent</b> = model + goal + tools + a loop. We'll go deep on each.</div>
 <p>That's the skeleton. The rest of this guide is putting muscle on it — starting with what's actually happening inside the model.</p>
 </section>
 <section id="how-to-use-this-guide">
-  <h2>07 &mdash; How to use this guide</h2>
+  <h2>20 &mdash; How to use this guide</h2>
 <p>This is a from-scratch guide. If you've never made an API call, start at the first stage and walk forward — every term is explained the first time it appears. If you're already building, jump to any stage from the map.</p>
 <div class="callout"><p><strong>Who this is for</strong></p>Total beginners (we start at "what is a token"), developers who can code but are new to LLMs, and engineers who need <b>production-grade</b> patterns. Three reading paths below.</div>
+</section>
+<p class="part-divider">In production</p>
+<section id="where-people-get-lost">
+  <h2>21 &mdash; Where people get lost</h2>
+<ul>
+<li><strong>"The model knows our data."</strong> It knows its training data. Company facts reach it only as tokens in the prompt, which retrieval or tools put there.</li>
+<li><strong>"The model remembers the conversation."</strong> Each call is independent; the application re-sends the history every time.</li>
+<li><strong>"Words are the unit."</strong> Tokens are. Limits, prices and speeds are all per token, and rare strings cost several.</li>
+<li><strong>"The model runs the tools."</strong> It writes a request; your code decides whether and how to run it.</li>
+<li><strong>"Generation is slow because the maths is heavy."</strong> Each token needs little arithmetic; it is slow because all the weights are read from memory for every token.</li>
+<li><strong>"A better prompt fixes wrong answers."</strong> Most wrong answers in grounded systems start at retrieval: the right passage never arrived.</li>
+<li><strong>"Temperature is a creativity dial inside the model."</strong> It is applied outside the model, to its scores, when choosing a token.</li>
+</ul>
+</section>
+<section id="how-this-connects">
+  <h2>22 &mdash; How this connects</h2>
+<h3>Where this shows up later</h3><ul><li><a href="learning-path.html">Learning path</a> &mdash; What to read first, and the builds that teach the most.</li></ul>
+</section>
+<section id="check-yourself">
+  <h2>23 &mdash; Check yourself</h2>
+<details><summary>Name the two engines of an LLM application and what each contributes to our request.</summary><div class="answer">The embedding model turns the question into a vector to find the five relevant policy chunks; the generative model reads the assembled prompt and writes the cited answer.</div></details>
+<details><summary>The prompt grows from 3,500 to 7,000 tokens. Using the 8B example, what happens to prefill compute and KV cache?</summary><div class="answer">Both double: about \(1.1 \times 10^{14}\) FLOPs (about 0.28 s at 40% of an H100) and about 875 MiB of KV cache. Cost per call roughly doubles on the input side too.</div></details>
+<details><summary>Answers are about 250 tokens and take 3.1 s to stream. Product wants every answer to finish streaming within 2 s of its first token. What is the most direct lever?</summary><div class="answer">Shorter answers: at about 80 tokens per second, 2 s of streaming is about 160 tokens, so ask for concise answers and set <code>max_tokens</code> near that, or use a faster model.</div></details>
+<details><summary>Why does the model's own knowledge not answer "partial refund after a mid-term downgrade" for this company?</summary><div class="answer">The policy is private and changes over time; it was never in the training data, and even if similar text were, the model cannot know this company's current rule. It must come from retrieved documents in the prompt.</div></details>
+<details><summary>A single decode step for the 8B model does about 16 billion operations and reads 16 GB. Is it compute-bound or memory-bound on an H100, and why?</summary><div class="answer">Memory-bound: about 1 operation per byte, while the H100 can do about 295 operations per byte of bandwidth before compute becomes the limit. The weights take about 4.8 ms to read; the arithmetic would take a fraction of that.</div></details>
+<details><summary>The answer is wrong and cites chunk [2], which turns out to be an old version of the policy. Which hop failed, and what fixes it?</summary><div class="answer">Retrieval and indexing: a withdrawn or outdated document is still in the index. Ingestion must delete or replace chunks when documents change, and the eval set should include a question that catches stale policy.</div></details>
 </section>
 
 <div class="sheet-pager"><span></span><a class="next" href="interviews.html"><span>Next</span>What AI interviews test</a></div>

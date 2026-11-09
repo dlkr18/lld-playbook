@@ -1,0 +1,317 @@
+<!-- Deep lesson: The agent loop. Merged into agents/agent-loop by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Turn</td><td>One model call and the message it produces. An agent run is a sequence of turns separated by tool executions.</td></tr>
+<tr><td>Stop reason</td><td>A field on every model response saying why generation ended: it finished (<code>end_turn</code>), it wants tools run (<code>tool_use</code>), or it hit the output limit (<code>max_tokens</code>).</td></tr>
+<tr><td>Tool use block</td><td>The part of a model response that requests one tool call: a unique id, a tool name and JSON arguments.</td></tr>
+<tr><td>Tool result block</td><td>What your code sends back: the result (or error) for one tool use, tagged with that tool use's id.</td></tr>
+<tr><td>Transient error</td><td>A failure that may succeed if simply retried: a timeout, a rate limit, a dropped connection.</td></tr>
+<tr><td>Idempotency key</td><td>A unique string sent with a write so the receiving system performs it at most once, however many times the request arrives.</td></tr>
+<tr><td>Exponential backoff</td><td>Waiting longer between each retry (for example 0.5 s, 1 s, 2 s), usually with random jitter, so retries do not pile onto a struggling service.</td></tr>
+<tr><td>Budget</td><td>A hard limit the runtime enforces on a run: steps, tokens, money or wall-clock time.</td></tr>
+<tr><td>Human-in-the-loop (HITL)</td><td>Pausing the run before a risky action until a person approves or rejects it.</td></tr>
+<tr><td>Checkpoint</td><td>A saved copy of the run's state (messages, step count, pending action) from which it can be resumed.</td></tr>
+<tr><td>Trace</td><td>A structured log of one run: every model call and tool call with inputs, outputs, tokens and timings.</td></tr>
+<tr><td>pass@k / pass^k</td><td>The chance that at least one of \(k\) runs succeeds, versus the chance that all \(k\) runs succeed.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p><a href="@@agents/what-is-an-agent@@">What an agent is</a> established the definition: the model decides the next step. This lesson is about the code that makes that possible, the loop. It is short (the core fits in fifteen lines), but almost every production agent failure lives in the parts tutorials skip: what happens when a tool times out, when the model's output is cut off, when an action needs a human, when the process crashes halfway, and how you know the agent works at all.</p>
+<p>The questions you will be asked:</p>
+<ol>
+<li>Walk me through the agent loop. What exactly goes back and forth with the model?</li>
+<li>How do you handle tool errors and retries without the agent doing something twice?</li>
+<li>How do you stop an agent from running forever or spending too much?</li>
+<li>How do you add human approval, and how do you evaluate an agent?</li>
+</ol>
+<p><strong>The running example.</strong> The same order-support agent: a customer writes "I was charged twice for ORD-482913." The agent has two read tools, <code>get_order</code> and <code>get_charges</code>, and one write tool, <code>refund</code>. Two complications make it realistic. Refunds need a human's approval. And the payments API, on the first refund attempt, performs the refund but then times out before replying. A naive loop will refund the customer twice, which would be a fitting way to resolve a duplicate-charge complaint. We will build a loop that does not.</p>
+</section>
+
+<section data-label="Step 1: the loop, and the conversation it maintains">
+<p>A model API takes a list of messages and returns one new message. The loop is the code that keeps calling it:</p>
+<pre class="ascii-diagram">messages = [user goal]
+repeat:
+    response = model(system, tools, messages)
+    messages.append(response)                    # role: assistant
+    if response.stop_reason == "end_turn":  return the text
+    results = run every tool_use block in response
+    messages.append(results)                     # role: user, one tool_result per tool_use
+until a budget is hit</pre>
+<p>Run once on our request, the message list grows like this:</p>
+<table>
+<thead><tr><th>#</th><th>Role</th><th>Content</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>user</td><td>"I was charged twice for ORD-482913."</td></tr>
+<tr><td>1</td><td>assistant</td><td>tool_use <code>tu_1</code> get_order; tool_use <code>tu_2</code> get_charges</td></tr>
+<tr><td>2</td><td>user</td><td>tool_result for <code>tu_1</code> (total $59.99); tool_result for <code>tu_2</code> (two charges)</td></tr>
+<tr><td>3</td><td>assistant</td><td>text "Two identical charges; refunding the second."; tool_use <code>tu_3</code> refund(ch_2, 59.99)</td></tr>
+<tr><td>4</td><td>user</td><td>tool_result for <code>tu_3</code> (refund re_1)</td></tr>
+<tr><td>5</td><td>assistant</td><td>text "Refunded $59.99 (charge ch_2)." stop_reason end_turn</td></tr>
+</tbody>
+</table>
+<p>Four facts about this structure matter in practice:</p>
+<ul>
+<li><strong>Tool results are sent with the user role</strong>, though no person typed them. The protocol has only two speakers, so everything from the outside world arrives as "user".</li>
+<li><strong>Every tool use must get a result, matched by id</strong>, in the very next message. If you skip one (because it was not approved, or it crashed), the API rejects the next call. A rejected or failed tool still gets a result: an error message.</li>
+<li><strong>One response can request several tools</strong> (message 1 asks for two). They are independent reads, so the runtime can run them concurrently and return both results in one message. That saves a whole turn.</li>
+<li><strong>The model is stateless.</strong> Each call re-sends the whole list. The list <em>is</em> the agent's memory of this run.</li>
+</ul>
+<p>Message formats differ slightly between providers (OpenAI puts calls in a <code>tool_calls</code> field and results in messages with role <code>tool</code>), but the shape is the same everywhere. <a href="@@agents/tool-calling@@">Tool calling</a> covers the wire format in detail.</p>
+</section>
+
+<section data-label="Step 2: every stop reason needs a branch">
+<p>The loop's exit test is the stop reason, and a robust loop handles every value, not only the happy two. The names below are the Anthropic Messages API's; OpenAI's equivalents are <code>finish_reason</code> values <code>tool_calls</code>, <code>stop</code>, <code>length</code> and <code>content_filter</code>:</p>
+<table>
+<thead><tr><th>Stop reason</th><th>Meaning</th><th>What the loop does</th></tr></thead>
+<tbody>
+<tr><td><code>tool_use</code></td><td>The model wants tools run</td><td>Execute them, append results, continue</td></tr>
+<tr><td><code>end_turn</code></td><td>The model considers itself done</td><td>Return the final text (optionally verify it first)</td></tr>
+<tr><td><code>max_tokens</code></td><td>Output hit the limit you set</td><td>Do not execute anything from this turn: a tool call's JSON may be cut off. Retry with a higher limit, or stop with an error</td></tr>
+<tr><td><code>stop_sequence</code></td><td>Output hit a stop string you supplied</td><td>Treat like <code>end_turn</code> (or like your own protocol says)</td></tr>
+<tr><td><code>pause_turn</code></td><td>A long-running server-side tool (such as provider-hosted web search) was paused mid-turn</td><td>Send the response back as-is so the model continues; it is not a final answer</td></tr>
+<tr><td><code>refusal</code> or a content filter</td><td>The model or a safety layer declined</td><td>Stop and return a safe message or escalate; do not loop on it</td></tr>
+</tbody>
+</table>
+<p>The <code>max_tokens</code> case is the one people miss. A model that is writing a long tool argument (a document, a SQL query) can be cut off halfway; parsing the truncated JSON either fails or, worse, succeeds on a shorter value. Treat that turn as unusable.</p>
+</section>
+
+<section data-label="Step 3: executing a tool safely">
+<p>Between "the model asked for <code>refund(ch_2, 59.99)</code>" and "the refund API is called" sits code that the model never sees, and it is where most of the safety lives. For each tool use block, the runtime:</p>
+<ol>
+<li><strong>Checks the tool exists and the caller may use it.</strong> The model can name a tool that does not exist or one this user must not access. Permission is decided by your code from the authenticated user, never from anything in the prompt.</li>
+<li><strong>Validates the arguments</strong> against the tool's JSON schema: required fields present, types right, enums respected, amounts in range. A missing <code>charge_id</code> is returned to the model as an error it can fix.</li>
+<li><strong>Applies policy</strong>: is a refund of $59.99 allowed without approval? (In our shop, no: every refund needs a human.)</li>
+<li><strong>Runs the function with a timeout</strong>, so one hung API does not hang the agent.</li>
+<li><strong>Shapes the result</strong>: serialise it, strip fields the model does not need, and cap its size.</li>
+</ol>
+<p>The size cap deserves a number. A tool that returns a 40,000-token log dump is not paid for once: the result stays in the message list and is re-sent on every later turn. Five more turns at an illustrative $3 per million input tokens cost \(40{,}000 \times 5 \times 3/10^6 = \$0.60\), for one careless tool, on one run. Return a summary or the first N rows and a note saying how to get more.</p>
+</section>
+
+<section data-label="Step 4: errors are observations, sorted into three kinds">
+<p>When a tool fails, the loop has three options, and the right one depends on the kind of failure:</p>
+<table>
+<thead><tr><th>Kind</th><th>Examples</th><th>Who handles it</th></tr></thead>
+<tbody>
+<tr><td>Transient</td><td>Timeout, HTTP 429 or 503, connection reset</td><td>The runtime retries with backoff. The model never sees it unless retries run out.</td></tr>
+<tr><td>Model-correctable</td><td>Unknown order id, invalid argument, "date must be ISO format"</td><td>Returned to the model as a tool result marked as an error, with a message that says how to fix it.</td></tr>
+<tr><td>Fatal</td><td>Permission denied, policy violation, budget exhausted</td><td>The runtime stops the run (or tells the model plainly that the action is impossible and must not be retried).</td></tr>
+</tbody>
+</table>
+<p>The middle row is what makes agents worth having. The error message is an observation, and a good one turns a failure into a next step: <code>"ORDER_NOT_FOUND: no order ORD-48291. Order ids have 6 digits; ask the customer to confirm."</code> leads the model straight to asking. A bare <code>"Error 404"</code> leads it to guess.</p>
+<p>Retries in the runtime are cheap insurance. If a call fails transiently 10% of the time, independently, then with up to three attempts the chance all three fail is \(0.1^3 = 0.001\): from one failure in ten calls to one in a thousand. Waits of 0.5 s, 1 s, 2 s (doubling, plus random jitter so many clients do not retry in lock-step) give a struggling service room to recover. Retries do not help with model-correctable or fatal errors: retrying "order not found" three times gets "order not found" three times.</p>
+</section>
+
+<section data-label="Step 5: the retry that refunds twice, and idempotency">
+<p>Now the trap in our example. The runtime calls the payments API to refund <code>ch_2</code>. The provider performs the refund, then the response is lost and the call raises a timeout. The runtime, following Step 4, retries. Without protection, the provider sees a second, perfectly valid refund request and performs it again. The customer, who was charged twice, is now refunded twice.</p>
+<p>The root problem is that a timeout does not tell you whether the action happened. For reads that does not matter: reading twice is harmless. For writes it is the central problem, and the standard fix comes from payments engineering: an <strong>idempotency key</strong>. The caller sends a unique key with the write; the receiving system stores the key with the result and, if the same key arrives again, returns the stored result instead of acting again.</p>
+<p>The key must be <em>stable across retries of the same intended action</em> and <em>different for different actions</em>. A good choice in an agent is the run id plus the tool use id (<code>run_42:tu_3</code>): every retry of that one tool call carries the same key, and a genuinely new refund requested later in the run gets a new tool use id. Do not generate a fresh random key per attempt; that defeats the purpose. If the downstream API has no idempotency support, the tool wrapper must provide it: record the intended action in your own database before calling, and check the record before acting.</p>
+<div class="callout warn"><p><strong>The model can also repeat a write.</strong> Even with perfect runtime retries, the model may, two turns later, decide to call <code>refund</code> again because it is unsure the first one worked. Tool-use-id keys do not stop that, because it is a new tool use. Business-level checks do: the refund tool should refuse a second refund on the same charge and say so in its result.</p></div>
+</section>
+
+<section data-label="Step 6: budgets, and why the loop must not trust the model to stop">
+<p>Models sometimes never decide they are done: they repeat a failing call with the same arguments, alternate between two tools, or keep "double-checking". The runtime enforces limits on every run, checked at the top of every iteration:</p>
+<ul>
+<li><strong>Steps</strong>: the number of model calls. The simplest and most important.</li>
+<li><strong>Tokens and money</strong>: because input grows each turn, cost per step rises.</li>
+<li><strong>Wall-clock time</strong>: for user-facing runs, the latency promise.</li>
+<li><strong>Repetition</strong>: the same tool with the same arguments three times in a row is almost always a loop.</li>
+</ul>
+<p>Setting the step limit from a money budget is a worked calculation. With the cost model from the previous lesson (1,550 input tokens on the first call, each turn adding about 370 tokens, 120 output tokens per turn, illustrative prices of $3 and $15 per million), the cumulative cost of a run is:</p>
+<table>
+<thead><tr><th>Model calls</th><th>4</th><th>8</th><th>9</th><th>10</th><th>12</th><th>16</th><th>20</th></tr></thead>
+<tbody><tr><td>Cumulative cost</td><td>$0.032</td><td>$0.083</td><td>$0.098</td><td>$0.114</td><td>$0.151</td><td>$0.236</td><td>$0.340</td></tr></tbody>
+</table>
+<p>A $0.10 per-run budget therefore allows 9 calls. Doubling the steps from 10 to 20 roughly triples the cost, because input grows with every turn. In practice, set the step limit from the distribution of successful runs: if 99% of successful runs in your evaluation take 6 or fewer calls, a limit of 10 stops runaways without cutting off real work.</p>
+<p>What happens at the limit matters as much as the limit. Do not raise an exception and lose the work. Return a structured outcome: what was found, what was not done, and an escalation to a human with the trace attached.</p>
+</section>
+
+<section data-label="Step 7: human approval means the loop must pause and resume">
+<p>Classify every tool by risk before writing any approval code:</p>
+<table>
+<thead><tr><th>Class</th><th>Example</th><th>Policy</th></tr></thead>
+<tbody>
+<tr><td>Read</td><td>get_order, get_charges</td><td>Run automatically</td></tr>
+<tr><td>Reversible write</td><td>Add an internal note, draft an email</td><td>Run automatically, log it</td></tr>
+<tr><td>Irreversible or costly write</td><td>Refund, send email, delete, deploy</td><td>Require approval (or allow below a threshold, such as refunds under $20)</td></tr>
+</tbody>
+</table>
+<p>The naive implementation blocks the loop while waiting for a human: <code>input("approve?")</code>, or a thread waiting on a queue. That fails in production because approvals take minutes or hours, servers restart, and you cannot hold thousands of threads open. The real implementation makes the loop <strong>resumable</strong>:</p>
+<ol>
+<li>When the model requests <code>refund</code>, the runtime does not execute it. It saves the run's state (message list, step count, the pending tool use) to a database and returns <code>awaiting_approval</code> with the proposed action.</li>
+<li>A reviewer sees "Refund $59.99 on ch_2 for ORD-482913, reason: duplicate charge", with the evidence (the two charges).</li>
+<li>On approval, any process loads the state, executes the pending tool and appends its result. On rejection, it appends an error result such as "Rejected by a human reviewer. Do not retry; explain to the customer." Either way the tool use gets its result, and the loop continues.</li>
+</ol>
+<p>Show the reviewer the exact arguments that will execute, not the model's prose description of them. A model can write "refund the duplicate $59.99" while the arguments say $599.90.</p>
+</section>
+
+<section data-label="Step 8: checkpoints, crashes and replays">
+<p>The approval pause is a special case of a general need: an agent run is a long-lived, multi-step process, and the process running it can die at any point. Saving state after every step (a <strong>checkpoint</strong>) means a crash costs one step, not the run. On restart, load the latest checkpoint and continue.</p>
+<p>Checkpointing creates the same hazard as retries: if the process died after calling the refund API but before saving the result, the resumed run will call it again. The idempotency key from Step 5 makes that replay safe, because the key is built from ids already in the checkpoint. This is why "durable execution" frameworks (and LangGraph's checkpointers, see <a href="@@tech/langgraph@@">LangGraph</a>) insist that side-effecting steps be idempotent.</p>
+</section>
+
+<section data-label="Step 9: traces, so you can see what happened">
+<p>An agent's behaviour is decided at runtime, so you cannot understand a failure by reading code; you have to read the trajectory. Record one trace per run with a span per model call and per tool call. For each model call: the model, the input and output token counts, the latency, the stop reason, and the full messages (with personal data redacted). For each tool call: name, arguments, result size, duration, error kind, retry count and idempotency key. Tag the run with user, tenant, prompt version and outcome.</p>
+<p>From traces come the numbers that run an agent in production: success rate, steps per run, cost per run (and its long tail: alert on runs costing ten times the median, which are usually loops or oversized tool results), tool error rates and approval rates. See <a href="@@production/observability@@">observability</a>.</p>
+</section>
+
+<section data-label="Step 10: evaluating an agent">
+<p>A single successful demo proves almost nothing, because runs are not deterministic. Evaluation needs a task set (say 50 realistic requests, including the awkward ones: wrong order id, three charges, a pending charge), each with a checkable definition of success, and several runs per task.</p>
+<p>Check outcomes at three levels:</p>
+<ul>
+<li><strong>End state</strong>: inspect the world, not the reply. After the duplicate-charge task, exactly one refund of $59.99 exists against <code>ch_2</code>, and none against <code>ch_1</code>. A reply saying "refunded" while no refund exists is a failure; so is a correct reply with two refunds.</li>
+<li><strong>Trajectory</strong>: did it read the charges before refunding? Did it ask for approval? Did it stay within 6 steps? These catch an agent that gets the right answer by luck.</li>
+<li><strong>Reply quality</strong>: is the message accurate and appropriate? Often scored by a model judge against a rubric (see <a href="@@production/evals@@">evals</a>).</li>
+</ul>
+<p>Then report reliability properly. If one run succeeds with probability \(p\), two numbers describe \(k\) runs:</p>
+\[ \text{pass@}k = 1 - (1-p)^k \qquad\qquad \text{pass}^k = p^k \]
+<p>pass@k (at least one of \(k\) succeeds) suits tasks where you can generate several attempts and pick a verified one. pass^k (all \(k\) succeed) is what a customer experiences: the agent has to work every time. With \(p = 0.8\): pass@3 = 0.992, which looks superb; pass^3 = 0.512, meaning only half the time would three customers in a row all be served correctly. Report pass^k for anything user-facing.</p>
+<p>Finally, size the evaluation. With 50 tasks × 5 runs = 250 runs at \(p \approx 0.8\), the standard error is \(\sqrt{0.8 \times 0.2 / 250} \approx 0.025\), so a 95% interval is about ±5 points. Comparing two prompt versions, the difference has a standard error of about 0.036, so differences smaller than about 7 points are noise. With only 50 runs the interval is ±11 points: "my change improved success from 76% to 82%" means nothing at that size.</p>
+</section>
+
+<section data-label="A worked run, start to finish">
+<p>Putting it together on the running example, with the loop below:</p>
+<ol>
+<li><strong>Turn 1.</strong> The model requests <code>get_order</code> and <code>get_charges</code> in one response. Both are reads: the runtime validates, runs them, and appends two results in one user message.</li>
+<li><strong>Turn 2.</strong> The model sees two $59.99 charges and requests <code>refund(ch_2, 59.99)</code>. It is a write: the runtime saves state and returns <code>awaiting_approval</code>. Nothing has been refunded.</li>
+<li><strong>Approval.</strong> Later, perhaps in another process, the state is loaded and a human approves. The runtime calls the payments API with key <code>run_42:tu_3</code>. The provider refunds, the reply times out; the runtime backs off and retries with the same key; the provider returns the stored refund <code>re_1</code> without acting again.</li>
+<li><strong>Turn 3.</strong> The model sees the result and ends: "Refunded $59.99 (charge ch_2)." Three model calls, one refund, a full trace.</li>
+</ol>
+</section>
+
+<section data-label="In code: a loop with retries, idempotency and approval">
+<p>This runs without an API key: <code>fake_model</code> returns turns in the same shape a real Messages API returns, so the runtime around it is the real thing.</p>
+<pre data-lang="python">import json, time
+
+# ---------- the environment: a payments API that times out once AFTER doing the work
+REFUNDS = {}            # idempotency_key -> refund record (the payment provider's table)
+_flaky = {"left": 1}
+def payments_refund(charge_id, amount, idempotency_key):
+    if idempotency_key in REFUNDS:                    # provider dedupes on the key
+        return REFUNDS[idempotency_key]
+    REFUNDS[idempotency_key] = {"refund_id": f"re_{len(REFUNDS)+1}", "charge": charge_id, "amount": amount}
+    if _flaky["left"]:                                # refund happened, but the reply is lost
+        _flaky["left"] -= 1
+        raise TimeoutError("payments API timed out")
+    return REFUNDS[idempotency_key]
+
+TOOLS = {
+    "get_order":   {"risk": "read",  "fn": lambda a, ctx: {"order_id": a["order_id"], "total": 59.99}},
+    "get_charges": {"risk": "read",  "fn": lambda a, ctx: [{"id": "ch_1", "amount": 59.99}, {"id": "ch_2", "amount": 59.99}]},
+    "refund":      {"risk": "write", "fn": lambda a, ctx: payments_refund(a["charge_id"], a["amount"], ctx["idem"])},
+}
+REQUIRED = {"get_order": ["order_id"], "get_charges": ["order_id"], "refund": ["charge_id", "amount"]}
+
+# ---------- a scripted stand-in for the model: returns Messages-API-shaped turns
+def fake_model(messages):
+    results = [b for m in messages if m["role"] == "user" and isinstance(m["content"], list)
+               for b in m["content"] if b["type"] == "tool_result"]
+    if not results:      # step 1: two independent reads, requested in parallel
+        return {"stop_reason": "tool_use", "content": [
+            {"type": "tool_use", "id": "tu_1", "name": "get_order",   "input": {"order_id": "ORD-482913"}},
+            {"type": "tool_use", "id": "tu_2", "name": "get_charges", "input": {"order_id": "ORD-482913"}}]}
+    if len(results) == 2:
+        return {"stop_reason": "tool_use", "content": [
+            {"type": "text", "text": "Two identical charges; refunding the second."},
+            {"type": "tool_use", "id": "tu_3", "name": "refund", "input": {"charge_id": "ch_2", "amount": 59.99}}]}
+    return {"stop_reason": "end_turn", "content": [{"type": "text", "text": "Refunded $59.99 (charge ch_2)."}]}
+
+# ---------- the runtime: everything below is your code, not the model's
+def execute(block, run_id, retries=3):
+    name, args = block["name"], block["input"]
+    if name not in TOOLS:
+        return f"Unknown tool {name}. Available: {list(TOOLS)}", True
+    missing = [k for k in REQUIRED[name] if k not in args]
+    if missing:                                        # model-correctable: tell it what is wrong
+        return f"Missing arguments {missing}", True
+    ctx = {"idem": f"{run_id}:{block['id']}"}          # stable across retries and replays
+    for attempt in range(retries):
+        try:
+            return json.dumps(TOOLS[name]["fn"](args, ctx)), False
+        except TimeoutError as e:                       # transient: retry here, invisibly
+            time.sleep(0.01 * 2 ** attempt)             # backoff (scaled down for the demo)
+            last = str(e)
+    return f"{name} failed after {retries} attempts: {last}", True
+
+def run(state, max_steps=8, approve=None):
+    msgs = state["messages"]
+    while state["steps"] &lt; max_steps:
+        if state.get("pending"):                       # resuming after a human decision
+            if approve is None:                        # no decision yet: stay paused
+                return {"status": "awaiting_approval", "action": state["pending"]}
+            block, state["pending"] = state["pending"], None
+            if approve:
+                out, err = execute(block, state["run_id"])
+            else:
+                out, err = "Rejected by a human reviewer. Do not retry; explain to the customer.", True
+            msgs.append({"role": "user", "content": [
+                {"type": "tool_result", "tool_use_id": block["id"], "content": out, "is_error": err}]})
+        turn = fake_model(msgs)
+        state["steps"] += 1
+        msgs.append({"role": "assistant", "content": turn["content"]})
+        if turn["stop_reason"] == "end_turn":
+            return {"status": "done", "answer": turn["content"][-1]["text"], "steps": state["steps"]}
+        if turn["stop_reason"] == "max_tokens":
+            return {"status": "error", "reason": "output cut off mid-turn"}
+        calls = [b for b in turn["content"] if b["type"] == "tool_use"]
+        risky = [b for b in calls if TOOLS.get(b["name"], {}).get("risk") == "write"]
+        if risky:                                      # pause: persist state, ask a human
+            state["pending"] = risky[0]
+            return {"status": "awaiting_approval", "action": risky[0]}
+        results = []
+        for b in calls:                                # independent reads; could run concurrently
+            out, err = execute(b, state["run_id"])
+            results.append({"type": "tool_result", "tool_use_id": b["id"], "content": out, "is_error": err})
+        msgs.append({"role": "user", "content": results})   # every tool_use gets a result
+    return {"status": "budget_exhausted", "steps": state["steps"]}
+
+state = {"run_id": "run_42", "steps": 0, "pending": None,
+         "messages": [{"role": "user", "content": "I was charged twice for ORD-482913."}]}
+r = run(state)
+print(r["status"], r["action"]["name"], r["action"]["input"])   # awaiting_approval refund {...}
+saved = json.dumps(state)                       # in production: write to a database
+state = json.loads(saved)                       # ...hours later, possibly another process
+print(run(state, approve=True))                 # done, 3 model calls
+print(REFUNDS)                                  # exactly ONE refund despite the timeout
+</pre>
+<p>It prints <code>awaiting_approval refund {'charge_id': 'ch_2', 'amount': 59.99}</code>, then <code>{'status': 'done', 'answer': 'Refunded $59.99 (charge ch_2).', 'steps': 3}</code>, and a refunds table with exactly one entry under key <code>run_42:tu_3</code>, though the provider was called twice. Pass a fresh <code>uuid.uuid4().hex</code> as the key on each attempt instead and run it again: two refunds, <code>re_1</code> and <code>re_2</code>. (This simplified version pauses on the first write in a turn; a real one would execute the turn's reads, then pause.)</p>
+<p>With a real model, only <code>fake_model</code> changes. Written against the Anthropic Python SDK's Messages API as documented in 2025 (needs the <code>anthropic</code> package and an API key):</p>
+<pre data-lang="python"># Requires: pip install anthropic, ANTHROPIC_API_KEY set. Not run here.
+import anthropic
+client = anthropic.Anthropic()
+TOOL_SCHEMAS = [{"name": "get_charges", "description": "List charges for one order, newest first.",
+                 "input_schema": {"type": "object",
+                                  "properties": {"order_id": {"type": "string", "pattern": "^ORD-\\d{6}$"}},
+                                  "required": ["order_id"]}}]   # ...plus get_order and refund
+
+def real_model(messages):
+    resp = client.messages.create(model="YOUR_MODEL_ID", max_tokens=1024, system="You are a support agent...",
+                                  tools=TOOL_SCHEMAS, messages=messages)
+    return {"stop_reason": resp.stop_reason,                  # "tool_use", "end_turn", "max_tokens", ...
+            "content": [b.model_dump() for b in resp.content]} # text and tool_use blocks as dicts
+</pre>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"The model will stop when it is done."</strong> Usually, not always. A step limit, a money budget and repetition detection are mandatory, with a useful outcome when they trigger.</li>
+<li><strong>Dropping a tool result.</strong> Every tool use needs a matching result in the next message, including rejected and failed ones; otherwise the next API call fails.</li>
+<li><strong>Retrying writes without an idempotency key.</strong> A timeout does not mean the action failed. Retrying a non-idempotent write is how a duplicate charge becomes a duplicate refund.</li>
+<li><strong>A new random idempotency key per attempt.</strong> The key must be the same for every retry of one intended action, or it protects nothing.</li>
+<li><strong>Raising exceptions out of the loop on tool errors.</strong> Most errors should be observations the model can act on; write error messages that say what to do next.</li>
+<li><strong>Blocking a thread while a human approves.</strong> Persist state and resume; approvals take hours and processes restart.</li>
+<li><strong>Executing tool calls from a <code>max_tokens</code> turn.</strong> The arguments may be truncated.</li>
+<li><strong>Judging an agent by one demo, or by pass@k.</strong> Users experience pass^k; measure on a task set with several runs each and enough runs for the difference you care about.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>The model returns two tool use blocks in one response; you approve one and the human rejects the other. What must the next message contain?</summary><div class="answer">A user message with two tool result blocks: the approved tool's real result, and an error result for the rejected one (for example "Rejected by reviewer; do not retry"), each matched by its tool use id. Omitting the rejected one makes the next API call invalid.</div></details>
+<details><summary>A tool fails transiently 5% of the time. With up to three attempts, what is the failure rate, and when would retries not help?</summary><div class="answer">\(0.05^3 = 0.000125\), about 1 in 8,000. Retries do not help for model-correctable errors (bad arguments, unknown id) or fatal ones (permission denied); those need a different action, not the same one again.</div></details>
+<details><summary>Why is <code>run_id:tool_use_id</code> a good idempotency key, and what does it not protect against?</summary><div class="answer">It is identical for every retry or replay of one intended tool call and different for every other call, so the provider acts at most once per call. It does not stop the model from issuing a <em>new</em> refund tool use for the same charge later; a business-level check in the tool (one refund per charge) handles that.</div></details>
+<details><summary>Using the cost table in Step 6, what step limit fits a $0.15 per-run budget, and why does doubling steps more than double cost?</summary><div class="answer">11 calls: 12 cost about $0.151, just over. Cost more than doubles because every call re-sends all earlier messages, so input tokens grow roughly with the square of the number of steps.</div></details>
+<details><summary>An agent succeeds on 80% of runs. A product manager reads pass@3 = 99.2% and wants to launch. What do you say?</summary><div class="answer">pass@3 counts a task as solved if any of three attempts works, which only matters if you can run three times and automatically pick the right one. A customer gets one run; three customers in a row are all served correctly only \(0.8^3 = 51\%\) of the time. Launch decisions should use the single-run rate and pass^k.</div></details>
+<details><summary>You compare two prompts on 20 tasks × 3 runs each: 70% versus 77%. Is the improvement real?</summary><div class="answer">Probably not demonstrable. With 60 runs each, the standard error of each rate is about \(\sqrt{0.75 \times 0.25 / 60} \approx 0.056\), and of the difference about 0.079, so a 95% interval on the 7-point gap is roughly ±15 points. You need several hundred runs per variant to detect a 7-point difference.</div></details>
+<details><summary>Why should the approval screen show the tool arguments rather than the model's explanation?</summary><div class="answer">The arguments are what will execute. The model's prose can disagree with its arguments (through error or prompt injection), so a reviewer approving the prose could approve a different action.</div></details>
+</section>

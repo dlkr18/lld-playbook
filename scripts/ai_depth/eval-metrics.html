@@ -1,0 +1,246 @@
+<!-- Deep lesson: Evaluation metrics. Merged into production/eval-metrics by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Reference answer</td><td>A human-written "correct" output that a model's output is compared against.</td></tr>
+<tr><td>Perplexity</td><td>How surprised a model is by a text: the exponential of the average negative log-probability per token. Lower means the model predicted the text better.</td></tr>
+<tr><td>Bits per byte</td><td>Total negative log-probability of a text, in bits, divided by its length in bytes. Like perplexity, but comparable across tokenizers.</td></tr>
+<tr><td>n-gram</td><td>A run of \(n\) consecutive words (or tokens): "opened audio" is a 2-gram.</td></tr>
+<tr><td>BLEU</td><td>A precision-based overlap score: what fraction of the output's n-grams appear in the reference, with a penalty for outputs that are too short.</td></tr>
+<tr><td>ROUGE</td><td>A recall-oriented overlap score: how much of the reference appears in the output. ROUGE-L uses the longest common subsequence.</td></tr>
+<tr><td>Exact match / token F1</td><td>Short-answer metrics: whether the normalised output equals the reference, and the word-overlap F1 between them.</td></tr>
+<tr><td>pass@k</td><td>For code: the probability that at least one of \(k\) sampled programs passes the tests.</td></tr>
+<tr><td>Benchmark</td><td>A fixed public test set with a scoring rule (multiple-choice exams, coding problems, maths problems), used to compare models.</td></tr>
+<tr><td>Contamination</td><td>Test questions (or their answers) having appeared in a model's training data, which inflates its score.</td></tr>
+<tr><td>LLM-as-judge</td><td>Using a strong model, with a rubric, to grade or compare outputs in place of a human.</td></tr>
+<tr><td>Win rate / Elo</td><td>From pairwise comparisons: the fraction of matchups a model wins, and a rating scale derived from those wins.</td></tr>
+<tr><td>Cohen's kappa</td><td>Agreement between two raters, corrected for the agreement they would reach by chance.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>"How good is this model?" has no single answer, because "good" means different things: predicting text well, matching a known answer, being judged helpful by people, beating another model. Each evaluation metric answers one of these narrower questions, and each has a precise mechanism that decides what it can and cannot see. Knowing the mechanism is what lets you pick metrics that track what your product needs, and spot a metric that is lying.</p>
+<p>Interviewers ask:</p>
+<ol>
+<li>What does perplexity measure, and why is it not a measure of answer quality?</li>
+<li>How do BLEU and ROUGE work, and why do they fail for chat and RAG answers?</li>
+<li>How should you read a benchmark score or a leaderboard rating?</li>
+<li>When are LLM judges and human ratings trustworthy, and how do you check?</li>
+</ol>
+<p>Running example: the electronics shop's help-centre assistant (built in <a href="@@tech/langchain@@">LangChain</a>). For the question <em>"Can I return opened headphones after 20 days?"</em> the reference answer is:</p>
+<p><strong>Reference:</strong> "yes opened audio products can be returned within 30 days if undamaged"</p>
+<p>and we will score three candidate answers with every metric:</p>
+<table>
+<thead><tr><th>Candidate</th><th>Text</th><th>Actually correct?</th></tr></thead>
+<tbody>
+<tr><td>Paraphrase</td><td>"yes you have 30 days to send back opened headphones as long as they are not damaged"</td><td>Yes</td></tr>
+<tr><td>Negated</td><td>"no opened audio products cannot be returned within 30 days if undamaged"</td><td>No: the opposite</td></tr>
+<tr><td>Truncated</td><td>"yes opened audio products can be returned within 30 days"</td><td>Yes, missing the condition</td></tr>
+</tbody>
+</table>
+<p>(Lower-cased, punctuation removed, split on spaces, as overlap metrics usually do.) This page is about what each metric measures. How to build an evaluation process around them (golden sets, grader design, statistics, CI) is in <a href="@@production/evals@@">Evaluating LLM features</a>.</p>
+</section>
+
+<section data-label="Step 1: four kinds of evaluation question">
+<p>Sort metrics by the question they answer:</p>
+<ul>
+<li><strong>Intrinsic</strong>: how well does the model predict text? (Perplexity.) Needs no task, only text.</li>
+<li><strong>Reference-based</strong>: how close is the output to a known answer? (Exact match, F1, BLEU, ROUGE, embedding similarity, tests for code.) Needs a reference per input.</li>
+<li><strong>Reference-free</strong>: is this output good, judged directly? (Human ratings, LLM judges with a rubric.) Needs a judge, not a reference.</li>
+<li><strong>Comparative</strong>: is model A better than model B? (Pairwise preferences, win rates, Elo-style ratings.) Needs two outputs and a judge.</li>
+</ul>
+<p>The further down the list, the closer the metric gets to "would a user be satisfied", and the more expensive and noisy it becomes. A sound evaluation usually combines a cheap automatic metric that runs on everything with an expensive judged metric on a sample.</p>
+</section>
+
+<section data-label="Step 2: perplexity">
+<p>A language model assigns a probability to each next token. For a text of \(T\) tokens, the average negative log-probability is the <strong>cross-entropy</strong>, and perplexity is its exponential:</p>
+\[ \text{PPL} = \exp\Big(-\frac{1}{T}\sum_{t=1}^{T} \log p(w_t \mid w_{&lt;t})\Big) \]
+<p>Worked: a model gives the six tokens of a short answer probabilities 0.6, 0.3, 0.9, 0.5, 0.8 and 0.7. The average negative log-probability is 0.516 nats, so perplexity is \(e^{0.516} \approx 1.67\): on average the model was about as uncertain as choosing among 1.67 equally likely tokens. A perplexity of 1 would mean certainty about every token.</p>
+<p>Perplexity is the training objective made readable, which makes it the right metric for pretraining and for comparing checkpoints of the same model on the same held-out text. It has three limits:</p>
+<ul>
+<li><strong>It measures prediction, not usefulness.</strong> A model can assign high probability to the reference answer and still, when sampling, produce something else; and chat tuning often <em>raises</em> perplexity on plain web text while making the model far more useful.</li>
+<li><strong>It depends on the tokenizer.</strong> Model A splits a 60-byte text into 15 tokens with total negative log-probability 30 nats (perplexity \(e^{2} = 7.39\)). Model B uses 20 tokens and 32 nats (perplexity \(e^{1.6} = 4.95\)). B has lower perplexity but predicts the text <em>worse</em>: it spends more total surprise. Per byte, A is 0.72 bits and B 0.77. Compare models with different tokenizers in bits per byte.</li>
+<li><strong>Closed models often do not expose it.</strong> You need token log-probabilities for the whole text.</li>
+</ul>
+</section>
+
+<section data-label="Step 3: exact match and token F1">
+<p>For short factual answers (a date, a name, yes or no), the simplest metrics are the strongest. <strong>Exact match</strong> is 1 if the output equals the reference after normalisation (lower-case, strip punctuation and articles), else 0. <strong>Token F1</strong> treats each as a bag of words: precision is the fraction of output words found in the reference, recall the fraction of reference words found in the output, and F1 their harmonic mean.</p>
+<p>On our candidates, none is an exact match, and token F1 gives the paraphrase 0.28, the negated answer 0.83 and the truncated answer 0.91. The wrong answer scores three times higher than a correct one, because it reuses the reference's words and swaps just two small ones ("yes" for "no", "can" for "cannot"), which flips its meaning. That pattern, high overlap with opposite meaning, is the central weakness of every overlap metric that follows.</p>
+<p>The fix for short answers is to make the answer short: ask the model for a structured field (<code>{"returnable": true, "window_days": 30}</code>) and compare fields exactly. Exact match on a field is a far better metric than F1 on a sentence.</p>
+</section>
+
+<section data-label="Step 4: BLEU, precision of n-grams">
+<p>BLEU was designed for machine translation. For each \(n\) from 1 up to 4 it computes a <strong>clipped n-gram precision</strong>: the fraction of the output's n-grams that appear in the reference, where each reference n-gram can be matched at most as many times as it occurs (so repeating "the the the" earns nothing). It combines them with a geometric mean and multiplies by a <strong>brevity penalty</strong>, because precision alone rewards very short outputs:</p>
+\[ \text{BLEU} = \text{BP} \cdot \exp\Big(\frac{1}{N}\sum_{n=1}^{N} \log p_n\Big), \qquad \text{BP} = \begin{cases} 1 &amp; c &gt; r \\ e^{1 - r/c} &amp; c \le r \end{cases} \]
+<p>where \(p_n\) is the clipped \(n\)-gram precision, \(c\) the output length and \(r\) the reference length. With \(N = 2\) (BLEU-2, to keep the arithmetic readable):</p>
+<table>
+<thead><tr><th>Candidate</th><th>\(p_1\)</th><th>\(p_2\)</th><th>BP</th><th>BLEU-2</th></tr></thead>
+<tbody>
+<tr><td>Paraphrase (correct)</td><td>0.24</td><td>0.06</td><td>1</td><td>0.12</td></tr>
+<tr><td>Negated (wrong)</td><td>0.83</td><td>0.73</td><td>1</td><td>0.78</td></tr>
+<tr><td>Truncated (correct)</td><td>1.00</td><td>1.00</td><td>\(e^{1 - 12/10} = 0.82\)</td><td>0.82</td></tr>
+</tbody>
+</table>
+<p>The truncated answer has perfect precision; only the brevity penalty stops it scoring 1. The paraphrase shares almost no 2-grams with the reference and scores 0.12. The opposite answer scores 0.78.</p>
+<p>BLEU works tolerably for its original setting: translation, scored over a whole test corpus rather than one sentence, ideally against several reference translations, where a correct output must reuse most of the reference's words. For open-ended generation there are many correct phrasings, so overlap with one reference mostly measures phrasing, not correctness. At the sentence level with \(N = 4\), any output without a matching 4-gram scores exactly 0 unless smoothing is added, another sign it was not designed for this use.</p>
+</section>
+
+<section data-label="Step 5: ROUGE, recall of the reference">
+<p>ROUGE was designed for summarisation, where the worry is missing content, so it emphasises <strong>recall</strong>: how much of the reference appears in the output. ROUGE-1 and ROUGE-2 count overlapping 1-grams and 2-grams. <strong>ROUGE-L</strong> uses the <strong>longest common subsequence</strong> (LCS): the longest sequence of words appearing in both texts in the same order, not necessarily adjacent. It rewards preserved word order without requiring exact phrases. The usual reported figure is an F-measure of LCS-based precision and recall.</p>
+<p>ROUGE-L F on our candidates: paraphrase 0.21, negated 0.83, truncated 0.91. Same story: the LCS of the negated answer and the reference is ten words long, missing only "yes" and "can"; the two words it puts in their place reverse the meaning, and ROUGE cannot tell.</p>
+<p>Both BLEU and ROUGE are fast, cheap, deterministic and reproducible, which is why they persist. Use them as regression alarms on tasks where wording should be stable (template-like summaries, translation of UI strings), never as the main quality metric for chat or RAG.</p>
+</section>
+
+<section data-label="Step 6: meaning-based similarity">
+<p>The obvious repair is to compare meanings instead of words:</p>
+<ul>
+<li><strong>Embedding similarity</strong>: embed output and reference with a sentence embedding model and take the cosine similarity. The paraphrase scores much higher than under BLEU. But embeddings capture topic more than logic, and "can be returned" and "cannot be returned" often sit close together, so negation is still poorly handled. See <a href="@@rag/embeddings@@">Embeddings</a>.</li>
+<li><strong>BERTScore</strong>: match each token of the output to its most similar token in the reference using contextual embeddings, and average. More robust to paraphrase than n-grams; same blind spot for small logical changes.</li>
+<li><strong>Entailment (NLI) checks</strong>: a natural-language-inference model judges whether the output is entailed by, neutral to, or contradicts the reference. This is the first method here that directly targets "does the answer say the same thing", and it flags the negated candidate as a contradiction. It is also the basis of many faithfulness checks for RAG (is each claim supported by the retrieved text?).</li>
+</ul>
+<p>The trend is clear: as metrics move from surface form to meaning, they need a model to compute them, and the next step is to ask a capable model to judge directly.</p>
+</section>
+
+<section data-label="Step 7: metrics shaped like the task">
+<p>Often the best metric is not a text metric at all, because the output has a checkable structure:</p>
+<ul>
+<li><strong>Extraction and classification</strong>: per-field precision, recall and F1, and a confusion matrix per class. A ticket-triage model is measured on whether <code>category</code> is right, not on how its JSON is worded. See <a href="@@adaptation/fine-tuning@@">Fine-tuning</a>.</li>
+<li><strong>Code</strong>: run the tests. <strong>pass@k</strong> is the probability that at least one of \(k\) samples passes. Estimate it by drawing \(n \ge k\) samples, counting the \(c\) that pass, and computing \(1 - \binom{n-c}{k} / \binom{n}{k}\), the chance that a random subset of \(k\) contains at least one passing sample. With \(n = 10\) and \(c = 3\): pass@1 = 0.30 and pass@5 = \(1 - \binom{7}{5}/\binom{10}{5} = 1 - 21/252 \approx 0.92\). Using this unbiased estimator matters: simply taking the best of the first \(k\) samples from one run is a much noisier estimate.</li>
+<li><strong>Retrieval</strong>: recall@k, MRR and nDCG measure whether the right documents were retrieved and ranked high, separately from whether the answer was good. See <a href="@@rag/rag-in-production@@">RAG in production</a>.</li>
+<li><strong>Format</strong>: valid-JSON rate, schema-conformance rate, refusal rate. Trivial to compute, and frequent causes of production incidents.</li>
+</ul>
+</section>
+
+<section data-label="Step 8: benchmarks and how to read them">
+<p>A benchmark is a fixed test set plus a scoring rule. Multiple-choice knowledge exams are scored either by comparing the model's log-probabilities of the options or by letting it generate an answer letter; the two methods can give noticeably different scores for the same model, as can the prompt format and the number of examples in the prompt. When comparing scores, check they were produced the same way.</p>
+<p>Three more things to check before trusting a number:</p>
+<ul>
+<li><strong>Sampling error.</strong> On a 1,000-question benchmark, a 70% score has a 95% interval of about ±2.8 points. A 1-point lead is noise.</li>
+<li><strong>Contamination.</strong> If test items leaked into training data, scores overstate ability. Signs: much better performance on older items than on newer, equivalent ones, or the model completing questions verbatim.</li>
+<li><strong>Saturation and relevance.</strong> When top models all score near the ceiling, the benchmark no longer separates them. And a general benchmark says little about your task: a model's exam score does not predict how it handles the shop's return policy.</li>
+</ul>
+<p>Use public benchmarks to build a shortlist. Make the final choice on your own evaluation set.</p>
+</section>
+
+<section data-label="Step 9: LLM-as-judge">
+<p>A judge model reads the question, the answer, often the reference or retrieved context, and a rubric, and returns a grade. Two forms:</p>
+<ul>
+<li><strong>Pointwise</strong>: score one answer against a rubric ("Is the return window correct? Is the condition stated? Is it grounded in the context?"). Works best as several binary checks rather than one 1-to-10 score, because binary questions are more consistent.</li>
+<li><strong>Pairwise</strong>: which of two answers is better? Matches how people judge, and is the basis of win rates.</li>
+</ul>
+<p>Given the reference, a capable judge easily marks the negated answer wrong and both others right (noting the missing "if undamaged" in the truncated one). That is why judges have largely replaced overlap metrics for open-ended output. Their known biases: <strong>position</strong> (favouring the first or second answer), <strong>verbosity</strong> (favouring longer answers), <strong>self-preference</strong> (favouring outputs in their own style), and inconsistency on genuinely close calls. A judge is a model you must evaluate: label 100 to 200 examples by hand and measure the judge's agreement with you before trusting it. The full procedure is in <a href="@@production/evals@@">Evaluating LLM features</a>.</p>
+</section>
+
+<section data-label="Step 10: win rates and ratings">
+<p>Pairwise comparisons produce a <strong>win rate</strong>: the fraction of comparisons model A wins against model B (ties counted as half, or reported separately). Many comparisons across many models can be summarised with a <strong>Bradley–Terry</strong> or <strong>Elo</strong>-style rating, where the difference in ratings predicts the win probability. Under Bradley–Terry, a 60% win rate corresponds to a strength difference of \(\ln(0.6/0.4) \approx 0.41\); on the Elo scale (400 points per factor of 10 in odds), that is \(400 \log_{10}(1.5) \approx 70\) points.</p>
+<p>So a 70-point lead means "wins 60% of head-to-head comparisons on this prompt mix with these judges", not "60% more accurate" or "better at everything". Crowd-sourced arena ratings reflect the prompts people chose to try and the preferences of those voting, including the usual pull toward longer, more confident, nicely formatted answers. Like benchmarks, they are good for shortlisting.</p>
+</section>
+
+<section data-label="Step 11: human evaluation and its noise">
+<p>Human judgement is the reference standard, but it is noisy too, so measure the raters before trusting the ratings. Have two raters label the same sample and compute <strong>Cohen's kappa</strong>:</p>
+\[ \kappa = \frac{p_o - p_e}{1 - p_e} \]
+<p>where \(p_o\) is the observed agreement and \(p_e\) the agreement expected by chance given each rater's label frequencies. Worked: two raters mark 200 answers correct or incorrect and agree on 170 (\(p_o = 0.85\)). Rater 1 marks 120 correct, rater 2 marks 130. Chance agreement is \(0.6 \times 0.65 + 0.4 \times 0.35 = 0.53\), so \(\kappa = (0.85 - 0.53)/(1 - 0.53) \approx 0.68\): substantial agreement, but well short of perfect. Raw 85% agreement looked better than it is because both raters mark most answers correct.</p>
+<p>Low agreement means the guidelines are ambiguous; fix them before collecting more labels. Agreement between your raters also sets the ceiling for any automatic judge: a judge cannot be validated more precisely than the humans it is compared with.</p>
+</section>
+
+<section data-label="Choosing metrics for the help-centre assistant">
+<table>
+<thead><tr><th>What to know</th><th>Metric</th><th>Why this one</th></tr></thead>
+<tbody>
+<tr><td>Did retrieval find the right policy?</td><td>Recall@6 on a labelled question set</td><td>Separates retrieval failures from generation failures</td></tr>
+<tr><td>Is the answer correct?</td><td>LLM judge with the reference and binary rubric checks, validated against human labels</td><td>Handles paraphrase and catches negation; overlap metrics do neither</td></tr>
+<tr><td>Is it grounded?</td><td>Entailment or judge check of each claim against retrieved text</td><td>Targets hallucination specifically</td></tr>
+<tr><td>Did the format break?</td><td>Citation-present rate, length, refusal rate</td><td>Cheap, runs on all traffic</td></tr>
+<tr><td>Is version 2 better than version 1?</td><td>Pairwise win rate on the same questions, both orders</td><td>Matches the decision being made</td></tr>
+<tr><td>Which base model to try?</td><td>Public benchmarks, then your own set</td><td>Shortlist cheaply, decide on your data</td></tr>
+</tbody>
+</table>
+<p>Not on the list: BLEU, ROUGE and perplexity. Each measures something real, and none of those things is what the shop needs to know about its answers.</p>
+</section>
+
+<section data-label="In code: every metric on the running example">
+<pre data-lang="python">import math
+from collections import Counter
+from math import comb
+
+ref = "yes opened audio products can be returned within 30 days if undamaged".split()
+cands = {
+    "paraphrase (correct)": "yes you have 30 days to send back opened headphones as long as they are not damaged".split(),
+    "negated (wrong)":      "no opened audio products cannot be returned within 30 days if undamaged".split(),
+    "truncated (correct)":  "yes opened audio products can be returned within 30 days".split(),
+}
+
+def ngrams(toks, n):
+    return Counter(tuple(toks[i:i + n]) for i in range(len(toks) - n + 1))
+
+def bleu(c, r, max_n=2):
+    """Sentence BLEU up to max_n-grams: clipped n-gram precisions, geometric mean, brevity penalty."""
+    precs = []
+    for n in range(1, max_n + 1):
+        cn, rn = ngrams(c, n), ngrams(r, n)
+        overlap = sum(min(k, rn[g]) for g, k in cn.items())
+        precs.append(overlap / max(sum(cn.values()), 1))
+    if min(precs) == 0:
+        return 0.0, precs
+    bp = 1.0 if len(c) &gt; len(r) else math.exp(1 - len(r) / len(c))
+    return bp * math.exp(sum(math.log(p) for p in precs) / max_n), precs
+
+def lcs(a, b):
+    t = [[0] * (len(b) + 1) for _ in range(len(a) + 1)]
+    for i in range(len(a)):
+        for j in range(len(b)):
+            t[i + 1][j + 1] = t[i][j] + 1 if a[i] == b[j] else max(t[i][j + 1], t[i + 1][j])
+    return t[-1][-1]
+
+def rouge_l(c, r):
+    l = lcs(c, r); p, rec = l / len(c), l / len(r)
+    return 0 if l == 0 else 2 * p * rec / (p + rec)
+
+def token_f1(c, r):
+    common = sum((Counter(c) &amp; Counter(r)).values())
+    if common == 0: return 0.0
+    p, rec = common / len(c), common / len(r)
+    return 2 * p * rec / (p + rec)
+
+for name, c in cands.items():
+    b, precs = bleu(c, ref)
+    print(f"{name:22s} BLEU-2 {b:.2f} (p1 {precs[0]:.2f}, p2 {precs[1]:.2f})  "
+          f"ROUGE-L {rouge_l(c, ref):.2f}  token-F1 {token_f1(c, ref):.2f}  exact {c == ref}")
+
+probs = [0.6, 0.3, 0.9, 0.5, 0.8, 0.7]                       # perplexity
+print("perplexity:", round(math.exp(-sum(map(math.log, probs)) / len(probs)), 2))
+print("bits/byte A vs B:", round(30 / math.log(2) / 60, 2), round(32 / math.log(2) / 60, 2))
+
+pass_at_k = lambda n, c, k: 1 - comb(n - c, k) / comb(n, k)   # unbiased pass@k
+print("pass@1, pass@5:", round(pass_at_k(10, 3, 1), 2), round(pass_at_k(10, 3, 5), 2))
+
+print("Elo gap for 60% wins:", round(400 * math.log10(0.6 / 0.4)))
+po, pe = 170 / 200, (120 / 200) * (130 / 200) + (80 / 200) * (70 / 200)
+print("Cohen's kappa:", round((po - pe) / (1 - pe), 2))
+</pre>
+<p>It prints the BLEU-2, ROUGE-L and token-F1 rows from Steps 3 to 5 (paraphrase 0.12, 0.21, 0.28; negated 0.78, 0.83, 0.83; truncated 0.82, 0.91, 0.91; no exact matches), then perplexity 1.67, bits per byte 0.72 and 0.77, pass@1 0.3 and pass@5 0.92, an Elo gap of 70 and a kappa of 0.68.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"Lower perplexity means a better assistant."</strong> It means better next-token prediction on that text. Chat tuning can raise perplexity while making the model far more useful.</li>
+<li><strong>Comparing perplexity across tokenizers.</strong> Fewer, larger tokens change the per-token average. Use bits per byte.</li>
+<li><strong>Using BLEU or ROUGE for chat and RAG.</strong> They reward reused wording: a correct paraphrase scores 0.12 and the opposite answer 0.78 on our example.</li>
+<li><strong>Trusting embedding similarity to catch errors.</strong> "Can" and "cannot be returned" are close in embedding space. Use entailment or a judge for correctness.</li>
+<li><strong>Reading a 1-point benchmark lead as real.</strong> On 1,000 questions the interval is about ±2.8 points; check evaluation settings and contamination too.</li>
+<li><strong>Treating an Elo gap as accuracy.</strong> 70 points means winning 60% of comparisons on that prompt mix, with those judges' preferences.</li>
+<li><strong>Using an unvalidated judge.</strong> Measure its agreement with human labels first, and control for position and length bias.</li>
+<li><strong>Reporting raw agreement between raters.</strong> When most labels are "correct", chance agreement is high; report kappa.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>A model assigns a 4-token answer probabilities 0.5, 0.5, 0.25 and 1.0. What is its perplexity on that answer?</summary><div class="answer">Average negative log-probability: \((\ln 2 + \ln 2 + \ln 4 + 0)/4 = (4 \ln 2)/4 = \ln 2\). Perplexity \(= e^{\ln 2} = 2\).</div></details>
+<details><summary>Why does BLEU need a brevity penalty, and why does ROUGE emphasise recall?</summary><div class="answer">BLEU is precision-based, so a very short output containing only safe words would score highly; the penalty offsets that. ROUGE was built for summarisation, where the main failure is omitting content from the reference, which recall measures.</div></details>
+<details><summary>The negated answer scores 0.83 on ROUGE-L. Explain mechanically why.</summary><div class="answer">ROUGE-L uses the longest common subsequence. The negated answer shares ten of the reference's twelve words in the same order, so LCS-based precision and recall are both about 0.83. The two words it changes ("no", "cannot") reverse the meaning, which order-and-overlap counting cannot detect.</div></details>
+<details><summary>A coding model is sampled 20 times per problem and 4 samples pass. What is pass@1 and pass@10?</summary><div class="answer">pass@1 \(= 4/20 = 0.2\). pass@10 \(= 1 - \binom{16}{10}/\binom{20}{10} = 1 - 8{,}008/184{,}756 \approx 0.957\).</div></details>
+<details><summary>Model X scores 71.0% and model Y 70.2% on a 1,000-question multiple-choice benchmark. What do you conclude, and what would you check?</summary><div class="answer">Nothing yet: the 95% interval is about ±2.8 points, so the gap is noise. Check both were scored with the same method and prompt format, look for contamination, and decide on your own task evaluation instead.</div></details>
+<details><summary>Which metric would you use to decide whether the help-centre bot's new prompt is better than the old one?</summary><div class="answer">A pairwise win rate on the same held-out questions, judged by a validated LLM judge (or people) with the reference available, run in both answer orders, plus retrieval recall and format checks to locate any regressions. Not BLEU or ROUGE.</div></details>
+<details><summary>Two raters agree on 90% of 100 labels, but each marks 95% of answers "correct". Is that good agreement?</summary><div class="answer">Chance agreement is \(0.95 \times 0.95 + 0.05 \times 0.05 = 0.905\), so \(\kappa = (0.90 - 0.905)/(1 - 0.905) \approx -0.05\): no better than chance. They agree only because almost everything is labelled correct; they do not agree on which answers are wrong.</div></details>
+</section>

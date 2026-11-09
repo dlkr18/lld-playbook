@@ -1,0 +1,261 @@
+<!-- Deep lesson: Hybrid search & query understanding. Merged into rag/hybrid-search by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Lexical (sparse) retrieval</td><td>Finding documents by the words they contain. "Sparse" because a document is a vector with one slot per vocabulary word, almost all zero.</td></tr>
+<tr><td>Inverted index</td><td>A map from each word to the list of documents containing it (its postings list). It is what makes keyword search fast.</td></tr>
+<tr><td>Term frequency (TF)</td><td>How many times a query word appears in a document.</td></tr>
+<tr><td>Document frequency / IDF</td><td>How many documents contain a word; inverse document frequency turns that into a weight that is high for rare words.</td></tr>
+<tr><td>BM25</td><td>The standard lexical scoring formula: rare query words count most, repeats help with diminishing returns, long documents are discounted.</td></tr>
+<tr><td>\(k_1\), \(b\)</td><td>BM25's two knobs: how fast repeated words saturate, and how strongly document length is normalised.</td></tr>
+<tr><td>Stemming</td><td>Reducing words to a common root ("exporting", "exports" → "export") so variants match.</td></tr>
+<tr><td>Hybrid search</td><td>Running lexical and dense (embedding) retrieval for the same query and merging the results.</td></tr>
+<tr><td>Reciprocal rank fusion (RRF)</td><td>Merging ranked lists by summing \(1/(k + \text{rank})\) for each document across lists. Uses ranks only, never raw scores.</td></tr>
+<tr><td>Score fusion</td><td>Merging by a weighted sum of normalised scores from each retriever.</td></tr>
+<tr><td>Query rewriting</td><td>Using a model to turn the user's message into a better search query, for example a standalone question from a follow-up.</td></tr>
+<tr><td>HyDE</td><td>Hypothetical document embeddings: have a model write a plausible answer, and search with the embedding of that answer instead of the question.</td></tr>
+<tr><td>Learned sparse retrieval</td><td>Models (such as SPLADE) that output a sparse word-weight vector, including related words not in the text, searchable with an inverted index.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>Embedding search finds passages that mean the same thing as the query in different words. Keyword search finds passages that contain the exact rare tokens the user typed. Each is blind where the other is strong, and real query traffic contains both kinds of question. Hybrid search runs both and merges the results; query understanding fixes the query itself before either retriever sees it.</p>
+<p>Interviewers ask:</p>
+<ol>
+<li>Why not just use vector search? Give a query where it fails.</li>
+<li>How does BM25 score a document?</li>
+<li>How do you merge two result lists whose scores are on different scales? Why RRF?</li>
+<li>What can you do to the query before retrieval, and what does it cost?</li>
+</ol>
+<p>The running example is the support assistant's help centre, reduced to eight passages so every score can be checked by hand:</p>
+<table>
+<thead><tr><th>ID</th><th>Passage</th></tr></thead>
+<tbody>
+<tr><td>d1</td><td>Error E-4012: the export failed because the invoice has no tax ID. Add a tax ID and retry.</td></tr>
+<tr><td>d2</td><td>Exporting invoices to CSV: open Billing, select the invoices, and choose Export.</td></tr>
+<tr><td>d3</td><td>Refunds are issued to the original payment method within 30 days of purchase.</td></tr>
+<tr><td>d4</td><td>Error E-4007: payment declined. Ask the cardholder to contact their bank.</td></tr>
+<tr><td>d5</td><td>Troubleshooting export errors: most export failures are caused by missing invoice fields.</td></tr>
+<tr><td>d6</td><td>Annual plans can be cancelled at any time from the Billing page.</td></tr>
+<tr><td>d7</td><td>Scheduled exports send invoice reports to your email every Monday.</td></tr>
+<tr><td>d8</td><td>Invoice export formats: CSV, PDF and XLSX are supported.</td></tr>
+</tbody>
+</table>
+<p>Two customer queries arrive:</p>
+<ul>
+<li><strong>Q1: "error E-4012 when exporting invoices"</strong>. The answer is d1, and only d1 says what E-4012 means.</li>
+<li><strong>Q2: "how do I get my money back"</strong>. The answer is d3, which shares no word with the question.</li>
+</ul>
+</section>
+
+<section data-label="Step 1: each retriever fails on the other's queries">
+<p><strong>Dense retrieval on Q1.</strong> An embedding model reads "error E-4012 when exporting invoices" as "some export error about invoices". It has never learned what E-4012 means (the code is specific to this product), so the code contributes almost nothing to the vector. Every passage about export errors is close: d5 ("troubleshooting export errors") is the most typical, so it tends to rank first, with d2, d1 and d8 not far behind. The one passage that answers the question can easily land at rank 3 or 4, behind generic material. Worse, d4 is about <em>a different error code</em>; to an embedding, E-4012 and E-4007 look nearly the same.</p>
+<p><strong>Lexical retrieval on Q2.</strong> After removing stop words, Q2 is "money back". No passage contains either word, so BM25 returns nothing at all. This is the vocabulary mismatch problem from <a href="@@rag/embeddings@@">embeddings</a>.</p>
+<p>The pattern generalises. Lexical retrieval wins on identifiers (error codes, SKUs, ticket numbers, version strings), names, rare jargon and exact phrases. Dense retrieval wins on paraphrase, vague descriptions, other languages and questions phrased as needs. Support, legal, medical and engineering queries mix both constantly, which is why hybrid search is the default in production RAG rather than an optimisation.</p>
+</section>
+
+<section data-label="Step 2: how BM25 scores a document">
+<p>BM25 scores document \(D\) for query \(Q\) by adding up a contribution for each query term \(t\) that appears in \(D\):</p>
+\[ \text{BM25}(D, Q) = \sum_{t \in Q} \text{IDF}(t) \cdot \frac{f(t, D)\,(k_1 + 1)}{f(t, D) + k_1 \left(1 - b + b \,\frac{|D|}{\text{avgdl}}\right)} \]
+<p>where \(f(t, D)\) is how many times \(t\) occurs in \(D\), \(|D|\) is the document's length in tokens, and avgdl is the average length. Three ideas are packed in.</p>
+<p><strong>Rare words matter most.</strong> \(\text{IDF}(t) = \ln\!\left(\frac{N - n_t + 0.5}{n_t + 0.5} + 1\right)\), where \(N\) is the number of documents and \(n_t\) the number containing \(t\). In our eight passages, "e-4012" appears in one: \(\ln(7.5/1.5 + 1) = \ln 6 = 1.792\). "Export" appears in five: \(\ln(3.5/5.5 + 1) = 0.492\). At real scale the gap is far wider: in 30,000 chunks, a code appearing in 2 has IDF 9.39, while "export" in 600 has 3.91.</p>
+<p><strong>Repeats help, with diminishing returns.</strong> With \(k_1 = 1.2\), the term-frequency factor \(f(k_1+1)/(f + k_1)\) for a document of average length is 1.000 for one occurrence, 1.375 for two, 1.571 for three, 1.774 for five, 1.964 for ten, approaching a ceiling of \(k_1 + 1 = 2.2\). A page cannot win by repeating "export" fifty times.</p>
+<p><strong>Long documents are discounted.</strong> With \(b = 0.75\), a document twice the average length has its denominator raised: one occurrence scores \(2.2 / (1 + 2.1) = 0.71\) instead of 1.0. A long page mentions many words by chance; a short one that contains the word is more likely to be about it.</p>
+<p>Worked for d1 and Q1. Tokenised, stop-word-filtered and stemmed, Q1 is [error, e-4012, export, invoice]. d1 has 11 tokens, the average is 8.25, so the length part is \(1.2 \times (0.25 + 0.75 \times 11/8.25) = 1.5\). Each query term appears once, so each contributes \(\text{IDF} \times 2.2/2.5 = 0.88 \times \text{IDF}\):</p>
+<table>
+<thead><tr><th>Term</th><th>IDF</th><th>Contribution</th></tr></thead>
+<tbody>
+<tr><td>e-4012</td><td>1.792</td><td>1.577</td></tr>
+<tr><td>error</td><td>0.944</td><td>0.831</td></tr>
+<tr><td>export</td><td>0.492</td><td>0.433</td></tr>
+<tr><td>invoice</td><td>0.492</td><td>0.433</td></tr>
+<tr><td colspan="2"><strong>Total</strong></td><td><strong>3.275</strong></td></tr>
+</tbody>
+</table>
+<p>The full BM25 ranking for Q1 is d1 (3.275), d5 (2.046), d2 (1.321), d8 (1.050), d7 (0.997). The rare code put the right passage first. Note d4, with the wrong code, scores below them: "e-4007" is a different token entirely.</p>
+<p>Tokenisation decides what can match. Our tokeniser keeps "e-4012" as one token; one that split on hyphens would produce "e" and "4012", and match any passage containing "4012". Stemming lets "exporting" match "export". These choices are configuration in every search engine, and they matter most for exactly the identifiers that justify lexical search in the first place.</p>
+</section>
+
+<section data-label="Step 3: why lexical search is fast">
+<p>BM25 does not scan documents. An <strong>inverted index</strong> stores, for every term, the list of documents containing it with their term counts, and the per-document lengths. A query touches only the postings lists of its own terms: for Q1, four lists. Rare terms have short lists, so the most informative terms are also the cheapest to read, and engines skip documents that cannot reach the current top \(k\). Lexical search over millions of documents runs in milliseconds, and the index updates incrementally as documents change.</p>
+<p>This is the same index that powers Elasticsearch, OpenSearch, Lucene-based engines and Postgres full-text search. Many vector databases now include a BM25 index alongside the vector index, so both retrievers can run in one system and one query.</p>
+</section>
+
+<section data-label="Step 4: the fusion problem">
+<p>Now we have two ranked lists for Q1:</p>
+<ul>
+<li>BM25: d1 (3.275), d5 (2.046), d2 (1.321), d8 (1.050), d7 (0.997)</li>
+<li>Dense: suppose the embedder returns d5 (0.82), d2 (0.80), d1 (0.79), d8 (0.77), d7 (0.74)</li>
+</ul>
+<p>The scores cannot simply be added. BM25 scores are unbounded and depend on query length and corpus statistics: a four-term query scores higher than a two-term query for no reason related to relevance. Cosine scores sit in a narrow band (here 0.74 to 0.82) whose position depends on the embedding model. Adding them, the BM25 numbers dominate; and neither scale means the same thing from one query to the next. Two solutions are standard: fuse by rank, or normalise scores and weight them.</p>
+</section>
+
+<section data-label="Step 5: reciprocal rank fusion">
+<p>RRF ignores scores and uses only positions. Each document receives, from each list it appears in,</p>
+\[ \text{RRF}(d) = \sum_{\text{lists } L} \frac{1}{k + \text{rank}_L(d)} \]
+<p>with \(k = 60\) by convention. Documents missing from a list get nothing from it. For Q1:</p>
+<table>
+<thead><tr><th>Doc</th><th>BM25 rank</th><th>Dense rank</th><th>RRF score</th></tr></thead>
+<tbody>
+<tr><td>d5</td><td>2</td><td>1</td><td>\(1/62 + 1/61 = 0.0325\)</td></tr>
+<tr><td>d1</td><td>1</td><td>3</td><td>\(1/61 + 1/63 = 0.0323\)</td></tr>
+<tr><td>d2</td><td>3</td><td>2</td><td>\(1/63 + 1/62 = 0.0320\)</td></tr>
+<tr><td>d8</td><td>4</td><td>4</td><td>\(2/64 = 0.0312\)</td></tr>
+<tr><td>d7</td><td>5</td><td>5</td><td>\(2/65 = 0.0308\)</td></tr>
+</tbody>
+</table>
+<p>Why this shape works:</p>
+<ul>
+<li><strong>No calibration needed.</strong> Ranks are comparable across retrievers even when scores are not, so RRF works out of the box with any pair of retrievers and needs no training data.</li>
+<li><strong>Agreement wins.</strong> A document near the top of both lists beats one that is first in one list and absent from the other: rank 1 in one list alone gives \(1/61 = 0.0164\), less than rank 30 in both (\(2/90 = 0.0222\)).</li>
+<li><strong>\(k\) flattens the top.</strong> With \(k = 60\), rank 1 is worth 0.0164 and rank 5 is worth 0.0154: the fused order is decided mostly by agreement, not by small differences in position. A smaller \(k\) gives the top positions more weight.</li>
+</ul>
+<p>Look at the outcome honestly: d1, the answer, is second, a hair behind d5. RRF did not "pick" the right answer; it produced a good <em>candidate set</em> containing the best of both retrievers. That is the job of the fusion stage. Choosing between d5 and d1 requires reading the question and passage together, which is what a <a href="@@rag/reranking@@">reranker</a> does next.</p>
+<p>For Q2, BM25 returns nothing, so RRF simply passes through the dense ranking, with d3 first. Fusion never makes the better retriever's list worse when the other has nothing to say.</p>
+</section>
+
+<section data-label="Step 6: weighted score fusion">
+<p>The alternative normalises each list's scores to the range 0 to 1 (min-max scaling within the list) and combines them:</p>
+\[ s(d) = \alpha \cdot \hat s_{\text{dense}}(d) + (1 - \alpha) \cdot \hat s_{\text{sparse}}(d) \]
+<p>With \(\alpha = 0.5\) on Q1, d1 gets \(0.5 \times 0.625 + 0.5 \times 1.0 = 0.813\) (its dense 0.79 is 62.5% of the way from 0.74 to 0.82), d5 gets 0.730, d2 0.446, d8 0.199, d7 0.0. Here the strong BM25 margin of d1 survives, and it comes first.</p>
+<p>Score fusion keeps information RRF throws away (how <em>much</em> better the top result was), so a well-tuned \(\alpha\) can beat RRF. Its weaknesses: min-max scaling is distorted by outliers and by how many results each list returned; the bottom document always gets 0 and the top always 1, even when all are equally poor; and \(\alpha\) must be tuned on a golden set and may differ by query type. A practical approach: start with RRF; switch to score fusion only if a tuned \(\alpha\) wins clearly on your evaluation, and consider making \(\alpha\) depend on the query (more lexical weight when the query contains a code or quoted phrase).</p>
+<p><strong>Learned sparse retrieval</strong> is a third option worth knowing. Models such as SPLADE output a weight per vocabulary word, including words <em>not</em> in the text (a passage about refunds also gets weight on "money" and "reimbursement"). The result is still sparse, so it is served from an inverted index, but it closes part of the vocabulary gap. In a hybrid system it usually takes BM25's slot (or sits beside it), with dense retrieval still running alongside; it costs a model forward pass per document at indexing and per query at search time, which BM25 does not.</p>
+</section>
+
+<section data-label="Step 7: fixing the query before retrieval">
+<p>Both retrievers assume the query is a good description of what is needed. Often it is not, and a language model call before retrieval can repair it. Four techniques, each aimed at a specific failure:</p>
+<p><strong>Conversational rewriting.</strong> In a chat, the second message is "what about enterprise?". Embedded alone, it matches nothing useful. A small model rewrites it, using the conversation, into a standalone question: "Can enterprise customers get a refund after 30 days?". This is the one rewrite almost every chat-based RAG system needs.</p>
+<p><strong>Multi-query expansion.</strong> Generate three to five paraphrases of the question, retrieve for each, and fuse all the lists with RRF. It widens recall for vague or oddly worded questions at the cost of several retrievals.</p>
+<p><strong>Decomposition.</strong> "Which plans include SSO, and what do they cost per seat?" needs two retrievals (SSO availability, per-seat pricing). Split into sub-questions, retrieve for each, and pass all results on. Questions that need a chain of lookups belong to agentic retrieval; see <a href="@@rag/graphrag@@">agentic RAG</a>.</p>
+<p><strong>HyDE.</strong> Questions and answers look different: short and interrogative versus long and declarative. HyDE asks a model to write a hypothetical answer ("Refunds are available within 30 days of purchase and are returned to the original payment method..."), embeds that, and searches with it. The fake answer may be wrong in its facts, but it is shaped like the passages being searched, so it lands near them. It helps most when the embedding model is weak on question-to-passage matching; it can hurt when the model invents a confident answer in the wrong direction, or for identifier queries, where it dilutes the code with generic prose.</p>
+<p><strong>Extracting filters and routing.</strong> "Refund rules for annual plans updated this year" contains a filter (plan type = annual, date ≥ January 1) that is better applied as metadata than left to similarity. A model can extract structured filters, or route the query to the right index (billing docs versus API docs).</p>
+<p>Each technique costs an LLM call before retrieval can start. With a small, fast model, that is on the order of a few hundred milliseconds and a fraction of a cent per query (order of magnitude), often the largest single latency item in the retrieval path. Apply rewriting where needed (follow-up messages, very short queries), not on every query by default, and measure the gain on the golden set.</p>
+</section>
+
+<section data-label="Step 8: putting the retrieval stage together">
+<pre class="ascii-diagram">user message (+ conversation)
+   -&gt; [optional] rewrite / expand / extract filters      (LLM, ~100s of ms)
+   -&gt; BM25 top 50  ||  dense top 50                     (in parallel, ~10-30 ms each)
+        both with the same metadata filters (tenant, ACL, language)
+   -&gt; RRF fuse, deduplicate                               (&lt; 1 ms)
+   -&gt; rerank top 50 -&gt; keep 5 to 8                         (see reranking)</pre>
+<p>Three details that interviewers check:</p>
+<ul>
+<li><strong>Run both retrievers in parallel.</strong> Stage latency is the slower of the two, not the sum.</li>
+<li><strong>Apply filters to both.</strong> A permission or tenant filter applied only to the vector side leaks restricted documents through the keyword side.</li>
+<li><strong>Retrieve deeper than you keep.</strong> Each retriever returns 20 to 100 candidates, because fusion and reranking need material to work with; recall at this depth is the number to measure (see <a href="@@rag/embedding-models@@">choosing an embedding model</a> for the metrics).</li>
+</ul>
+</section>
+
+<section data-label="Settings that work as a starting point">
+<table>
+<thead><tr><th>Setting</th><th>Start with</th><th>Tune when</th></tr></thead>
+<tbody>
+<tr><td>BM25 \(k_1\), \(b\)</td><td>1.2, 0.75 (engine defaults)</td><td>Rarely; very short documents (titles, FAQs) may want lower \(b\).</td></tr>
+<tr><td>Tokeniser</td><td>Keep codes like "E-4012" whole; stemming on for prose</td><td>Identifiers are split or fail to match.</td></tr>
+<tr><td>Candidates per retriever</td><td>50</td><td>Recall@50 is low: go deeper; latency is high: go shallower.</td></tr>
+<tr><td>Fusion</td><td>RRF, \(k = 60\)</td><td>A tuned \(\alpha\) wins clearly on the golden set.</td></tr>
+<tr><td>Query rewriting</td><td>Only for follow-up turns</td><td>Golden-set slices (vague or multi-part questions) show gains.</td></tr>
+</tbody>
+</table>
+</section>
+
+<section data-label="In code: BM25 and two kinds of fusion from scratch">
+<p>Pure Python; reproduces every number in Steps 2, 5 and 6. The dense list is given, standing in for an embedding model:</p>
+<pre data-lang="python">import math, re
+from collections import Counter
+
+DOCS = {
+    "d1": "Error E-4012: the export failed because the invoice has no tax ID. Add a tax ID and retry.",
+    "d2": "Exporting invoices to CSV: open Billing, select the invoices, and choose Export.",
+    "d3": "Refunds are issued to the original payment method within 30 days of purchase.",
+    "d4": "Error E-4007: payment declined. Ask the cardholder to contact their bank.",
+    "d5": "Troubleshooting export errors: most export failures are caused by missing invoice fields.",
+    "d6": "Annual plans can be cancelled at any time from the Billing page.",
+    "d7": "Scheduled exports send invoice reports to your email every Monday.",
+    "d8": "Invoice export formats: CSV, PDF and XLSX are supported.",
+}
+STOP = {"the", "a", "an", "to", "and", "of", "is", "are", "by", "has", "no", "when", "how", "do", "i",
+        "my", "from", "at", "any", "can", "be", "their", "most", "because", "within", "get", "your"}
+
+def stem(t):                                   # crude: exporting -&gt; export, invoices -&gt; invoice
+    for suffix in ("ing", "s"):
+        if len(t) &gt; len(suffix) + 3 and t.endswith(suffix):
+            return t[: -len(suffix)]
+    return t
+
+def tokenize(text):                            # keeps codes like "e-4012" as one token
+    return [stem(t) for t in re.findall(r"[a-z0-9]+(?:-[a-z0-9]+)*", text.lower()) if t not in STOP]
+
+class BM25:
+    def __init__(self, docs, k1=1.2, b=0.75):
+        self.k1, self.b = k1, b
+        self.tf = {d: Counter(tokenize(t)) for d, t in docs.items()}
+        self.len = {d: sum(c.values()) for d, c in self.tf.items()}
+        self.avgdl = sum(self.len.values()) / len(docs)
+        df = Counter(term for c in self.tf.values() for term in c)
+        n = len(docs)
+        self.idf = {t: math.log((n - m + 0.5) / (m + 0.5) + 1) for t, m in df.items()}
+
+    def score(self, query, d):
+        s = 0.0
+        for t in tokenize(query):
+            f = self.tf[d].get(t, 0)
+            if f:
+                s += self.idf[t] * f * (self.k1 + 1) / (f + self.k1 * (1 - self.b + self.b * self.len[d] / self.avgdl))
+        return s
+
+    def search(self, query, k=5):
+        hits = sorted(((self.score(query, d), d) for d in self.tf), reverse=True)
+        return [(d, round(s, 3)) for s, d in hits[:k] if s &gt; 0]
+
+def rrf(rankings, k=60):
+    fused = Counter()
+    for ranking in rankings:
+        for rank, d in enumerate(ranking, 1):
+            fused[d] += 1 / (k + rank)
+    return [(d, round(s, 4)) for d, s in fused.most_common()]
+
+def minmax_fusion(sparse, dense, alpha=0.5):
+    """alpha * dense + (1 - alpha) * sparse, each min-max scaled to [0, 1]; missing = 0."""
+    def scale(scores):
+        lo, hi = min(scores.values()), max(scores.values())
+        return {d: (s - lo) / (hi - lo) for d, s in scores.items()}
+    s, v = scale(sparse), scale(dense)
+    fused = {d: alpha * v.get(d, 0) + (1 - alpha) * s.get(d, 0) for d in set(s) | set(v)}
+    return sorted(((d, round(x, 3)) for d, x in fused.items()), key=lambda p: -p[1])
+
+bm25 = BM25(DOCS)
+q1 = "error E-4012 when exporting invoices"
+print("tokens:", tokenize(q1))
+print("idf:", {t: round(bm25.idf[t], 3) for t in tokenize(q1)})
+sparse = bm25.search(q1)
+print("BM25:", sparse)
+dense = [("d5", 0.82), ("d2", 0.80), ("d1", 0.79), ("d8", 0.77), ("d7", 0.74)]   # suppose the embedder returns this
+print("RRF:", rrf([[d for d, _ in sparse], [d for d, _ in dense]]))
+print("min-max, alpha 0.5:", minmax_fusion(dict(sparse), dict(dense)))
+print("BM25 for 'how do I get my money back':", bm25.search("how do I get my money back"))
+</pre>
+<p>Expected output: BM25 puts d1 first at 3.275; RRF gives d5 0.0325, d1 0.0323, d2 0.0320; min-max fusion gives d1 0.813, d5 0.730; and BM25 returns an empty list for the money-back query.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"Embeddings understand everything, so keyword search is obsolete."</strong> They blur identifiers and rare names. Error codes, SKUs and product names are where BM25 is irreplaceable.</li>
+<li><strong>Adding raw BM25 and cosine scores.</strong> They are on unrelated scales; BM25 dominates and the sum means nothing. Fuse by rank, or normalise and weight.</li>
+<li><strong>Expecting fusion to choose the answer.</strong> Fusion builds a good candidate set; a reranker orders it.</li>
+<li><strong>Ignoring the tokeniser.</strong> If "E-4012" is split into "e" and "4012", lexical search loses the very matches it exists for.</li>
+<li><strong>Filtering only one side.</strong> Tenant and permission filters must apply to both retrievers, or the keyword path leaks documents.</li>
+<li><strong>Rewriting every query with an LLM by default.</strong> It adds hundreds of milliseconds and can drift from what the user asked. Use it where it measurably helps, starting with follow-up messages.</li>
+<li><strong>Using HyDE for identifier queries.</strong> The invented answer drowns the code in generic prose. Keep lexical retrieval on the original text.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>In a corpus of 10,000 chunks, "SSO" appears in 40 and "plan" in 4,000. What are their IDFs, and what does that mean for the query "SSO plan"?</summary><div class="answer">IDF(SSO) = \(\ln(9{,}960.5/40.5 + 1) = \ln(246.9) \approx 5.51\); IDF(plan) = \(\ln(6{,}000.5/4{,}000.5 + 1) = \ln(2.5) \approx 0.92\). "SSO" carries about six times the weight, so chunks mentioning SSO dominate the ranking, which is what you want.</div></details>
+<details><summary>A document is ranked 1st by BM25 and absent from the dense top 50. Another is 10th in both. Which wins under RRF with \(k = 60\)?</summary><div class="answer">The first scores \(1/61 = 0.0164\); the second scores \(2/70 = 0.0286\). The document both retrievers agree on wins.</div></details>
+<details><summary>Why does BM25 return nothing for "how do I get my money back", and what retrieves the answer?</summary><div class="answer">After stop words, the query is "money back", and no passage contains either word. Dense retrieval matches it to the refund passage by meaning; in a hybrid system RRF passes the dense ranking through unchanged.</div></details>
+<details><summary>Your bot answers follow-ups like "and for annual plans?" badly, though first questions are fine. What is the likely cause and fix?</summary><div class="answer">The follow-up is retrieved on its own, without the conversation, so it matches little. Add a conversational rewrite step that produces a standalone question from the history before retrieval.</div></details>
+<details><summary>With min-max scaled scores, a document has dense 0.4 and sparse 0.9. At what \(\alpha\) does it tie with a document at dense 0.8 and sparse 0.3?</summary><div class="answer">Set \(0.4\alpha + 0.9(1-\alpha) = 0.8\alpha + 0.3(1-\alpha)\): \(0.9 - 0.5\alpha = 0.3 + 0.5\alpha\), so \(\alpha = 0.6\). Below 0.6 the first wins; above it, the second.</div></details>
+<details><summary>Which query-understanding technique would you use for "Compare the export limits of the Pro and Business plans", and why?</summary><div class="answer">Decomposition: it needs two separate facts (Pro limits, Business limits) that probably live in different chunks. Retrieve for each sub-question and pass both results to generation.</div></details>
+</section>

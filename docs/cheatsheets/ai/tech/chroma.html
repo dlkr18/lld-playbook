@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
@@ -19,27 +23,40 @@
   <h2>Chroma</h2>
   <a href="index.html">&larr; Tech &amp; tools</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-interface-surface"><span class="num">04</span> API / Interface Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#deep-dive-collections"><span class="num">07</span> Deep Dive: Collections</a>
-  <a href="#deep-dive-embedding-functions"><span class="num">08</span> Deep Dive: Embedding Functions</a>
-  <a href="#client-server-modes"><span class="num">09</span> Client / Server Modes</a>
-  <a href="#integrations"><span class="num">10</span> Integrations</a>
-  <a href="#graduation-path"><span class="num">11</span> Graduation Path</a>
-  <a href="#production-ops"><span class="num">12</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">13</span> Related topics</a>
-  <a href="#where-people-get-lost"><span class="num">14</span> Where people get lost</a>
-  <a href="#how-this-connects"><span class="num">15</span> How this connects</a>
-  <a href="#check-yourself"><span class="num">16</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-interface-surface"><span class="num">05</span> API / Interface Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#deep-dive-collections"><span class="num">08</span> Deep Dive: Collections</a>
+  <a href="#deep-dive-embedding-functions"><span class="num">09</span> Deep Dive: Embedding Functions</a>
+  <a href="#client-server-modes"><span class="num">10</span> Client / Server Modes</a>
+  <a href="#integrations"><span class="num">11</span> Integrations</a>
+  <a href="#graduation-path"><span class="num">12</span> Graduation Path</a>
+  <a href="#the-question"><span class="num">13</span> The question</a>
+  <a href="#step-1-the-mental-model-a-library-that-happens-to-be-a-datab"><span class="num">14</span> Step 1: the mental model, a library that happens to be a database</a>
+  <a href="#step-2-the-data-model-four-parallel-fields"><span class="num">15</span> Step 2: the data model, four parallel fields</a>
+  <a href="#step-3-distance-spaces-and-embedding-functions-the-silent-fa"><span class="num">16</span> Step 3: distance spaces and embedding functions, the silent failures</a>
+  <a href="#step-4-the-write-path"><span class="num">17</span> Step 4: the write path</a>
+  <a href="#step-5-the-query-path-and-how-filters-work"><span class="num">18</span> Step 5: the query path and how filters work</a>
+  <a href="#step-6-sizing-it-on-one-machine"><span class="num">19</span> Step 6: sizing it on one machine</a>
+  <a href="#step-7-concurrency-durability-and-operations"><span class="num">20</span> Step 7: concurrency, durability and operations</a>
+  <a href="#step-8-chroma-as-a-test-fixture"><span class="num">21</span> Step 8: Chroma as a test fixture</a>
+  <a href="#a-worked-example-from-notebook-to-the-graduation-point"><span class="num">22</span> A worked example: from notebook to the graduation point</a>
+  <a href="#when-to-choose-chroma"><span class="num">23</span> When to choose Chroma</a>
+  <a href="#in-code-the-real-api-and-a-model-of-it"><span class="num">24</span> In code: the real API, and a model of it</a>
+  <a href="#production-ops"><span class="num">25</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">26</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">27</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">28</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">29</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Chroma <span>// Tech &amp; tools</span></h1>
   <p>Lightweight embedded vector store for prototypes and local RAG.</p>
-  <div class="tags"><span class="tag">7 min read</span><span class="tag">3 diagrams</span></div>
+  <div class="tags"><span class="tag">25 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -49,9 +66,13 @@
 <img alt="Chroma embedded vector database architecture" src="../tech/img/chroma-main.png"/>
 </div><p class="diagram-caption">Chroma: Python client → Collection (ids + embeddings + documents + metadatas) → HNSW in-process or Chroma server → query top-k. Ideal for notebooks and CI; graduate before paying-customer SLAs.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Embedded database</strong></td><td>A database that runs as a library inside your application's process, with no separate server. SQLite is the classic example.</td></tr><tr><td><strong>Collection</strong></td><td>Chroma's unit of storage: a named set of records, each with an id, a vector, an optional document text and optional metadata.</td></tr><tr><td><strong>Embedding function</strong></td><td>A function attached to a collection that turns text into vectors, so you can add and query with text instead of vectors.</td></tr><tr><td><strong>Distance space</strong></td><td>How "near" is measured: squared Euclidean (<code>l2</code>), cosine distance, or inner product. Fixed when the collection is created.</td></tr><tr><td><strong>HNSW</strong></td><td>Hierarchical navigable small world graph: the approximate nearest-neighbour index Chroma uses. Fast search by walking a graph of neighbours.</td></tr><tr><td><strong>Brute-force (exact) search</strong></td><td>Comparing the query with every candidate vector. Always correct; cost grows linearly with the number of candidates.</td></tr><tr><td><strong>Metadata filter (<code>where</code>)</strong></td><td>A condition on metadata fields (equals, greater than, in a list, and/or) that restricts which records may be returned.</td></tr><tr><td><strong>Document filter (<code>where_document</code>)</strong></td><td>A condition on the stored text, such as "contains this substring". A filter, not a relevance ranking.</td></tr><tr><td><strong>Upsert</strong></td><td>Insert a record, or replace it if the id already exists. Makes re-running ingestion safe.</td></tr><tr><td><strong>Tombstone</strong></td><td>A marker that a record was deleted. The graph node stays until the index is rebuilt or compacted.</td></tr><tr><td><strong>Persistent / ephemeral / HTTP client</strong></td><td>The three ways to run Chroma: on-disk in your process, in-memory in your process, or as a server you call over the network.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card">
 <p><strong>Chroma</strong> is the fastest path to a working vector store in Python — zero cloud signup, zero infra. It wraps HNSW indexing, metadata filtering, and optional auto-embedding behind a simple Collection API. It is a <strong>development and prototyping</strong> tool, not a production multi-tenant vector platform.</p>
 <h3>Functional requirements</h3>
@@ -73,7 +94,7 @@
 </div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card"><table>
 <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
 <tr><td><strong>Collection</strong></td><td>Named set of embeddings + docs + metadata.</td><td>Like <a href="pinecone.html">Pinecone</a>; one per use case / embed version.</td></tr>
@@ -86,7 +107,7 @@
 </table></div>
 </section>
 <section id="api-interface-surface">
-  <h2>04 &mdash; API / Interface Surface</h2>
+  <h2>05 &mdash; API / Interface Surface</h2>
 <div class="card">
 <h3>Basic usage (persistent + OpenAI embed)</h3>
 <pre>import chromadb
@@ -131,7 +152,7 @@ col.query(
 </div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card"><table>
 <tr><th>Scenario</th><th>Use Chroma</th><th>Alternative</th></tr>
 <tr><td>Notebook RAG demo</td><td>Yes — 5 lines to working retrieval</td><td>—</td></tr>
@@ -144,7 +165,7 @@ col.query(
 </table></div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card highlight">
 <div class="flow">
 <div class="step" data-num="1"><span class="label">Client modes</span><div class="detail">PersistentClient (SQLite + HNSW on disk), EphemeralClient (RAM), HttpClient (remote server).</div></div>
@@ -161,7 +182,7 @@ col.query(
 </div>
 </section>
 <section id="deep-dive-collections">
-  <h2>07 &mdash; Deep Dive: Collections</h2>
+  <h2>08 &mdash; Deep Dive: Collections</h2>
 <div class="card">
 <p>A <strong>Collection</strong> is the unit of organization — analogous to a <a href="pinecone.html">Pinecone</a> or a pgvector table.</p>
 <table>
@@ -194,7 +215,7 @@ col.query(
 <p class="diagram-caption">Collection schema: parallel arrays for ids, embeddings, documents, metadatas. Query with <code>where</code> metadata filter and <code>n_results</code> top-k.</p>
 </section>
 <section id="deep-dive-embedding-functions">
-  <h2>08 &mdash; Deep Dive: Embedding Functions</h2>
+  <h2>09 &mdash; Deep Dive: Embedding Functions</h2>
 <div class="card">
 <p>Chroma can embed for you via <strong>EmbeddingFunction</strong> plugins — convenient for demos, dangerous if the demo model differs from production.</p>
 <table>
@@ -222,7 +243,7 @@ col.add(ids=["1"], embeddings=vectors, documents=["..."], metadatas=[{}])</pre>
 <p class="diagram-caption">Embedding path: document text → EmbeddingFunction (e.g. OpenAI) → stored vector. Query must use the same function or BYO query vector.</p>
 </section>
 <section id="client-server-modes">
-  <h2>09 &mdash; Client / Server Modes</h2>
+  <h2>10 &mdash; Client / Server Modes</h2>
 <div class="card">
 <table>
 <tr><th>Mode</th><th>Code</th><th>Use case</th></tr>
@@ -239,7 +260,7 @@ col = client.get_or_create_collection("shared_docs")</pre>
 </div>
 </section>
 <section id="integrations">
-  <h2>10 &mdash; Integrations</h2>
+  <h2>11 &mdash; Integrations</h2>
 <div class="card">
 <h3>LangChain</h3>
 <pre>from langchain_chroma import Chroma
@@ -262,7 +283,7 @@ vector_store = ChromaVectorStore(chroma_collection=chroma_collection)</pre>
 </div>
 </section>
 <section id="graduation-path">
-  <h2>11 &mdash; Graduation Path</h2>
+  <h2>12 &mdash; Graduation Path</h2>
 <div class="card">
 <p>Design your retriever interface so Chroma is swappable from day one:</p>
 <ol>
@@ -280,9 +301,216 @@ vector_store = ChromaVectorStore(chroma_collection=chroma_collection)</pre>
 </table>
 </div>
 </section>
+<p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>13 &mdash; The question</h2>
+<p>Every RAG system needs somewhere to store vectors and find the nearest ones. When you are building the first version, you do not want a cloud account, a cluster, or a schema migration; you want to write five lines in a notebook and have retrieval working. Chroma exists for that moment. It is an open-source vector store that you install with <code>pip</code>, that runs inside your Python process, and that keeps vectors, text and metadata together in one directory on disk.</p>
+<p>Interviewers ask about it in three ways:</p>
+<ol>
+<li>What does Chroma actually do when you add and query, and where does the data live?</li>
+<li>What breaks as the prototype grows, and what are the numbers at which it breaks?</li>
+<li>When would you choose it, and what would you move to and why?</li>
+</ol>
+<p>The running example: you are building a support assistant for a company that makes home Wi-Fi routers. Version one indexes the manuals for two products, the X100 and X200: 3,000 chunks of about 400 tokens, embedded with a small 384-dimension model. Later the company wants every manual for 400 products plus two million community forum posts, embedded with a 1,536-dimension model. We will follow Chroma from the first notebook to the point where it should be replaced.</p>
+</section>
+<section id="step-1-the-mental-model-a-library-that-happens-to-be-a-datab">
+  <h2>14 &mdash; Step 1: the mental model, a library that happens to be a database</h2>
+<p>Chroma's design choice is that the database is a library. Import it, point it at a directory, and the index lives in your process's memory while the data lives in files under that directory. There is no network hop, no connection pool, and no separate service to deploy. That is the reason it is pleasant in notebooks and tests, and it is also the source of every limit discussed later.</p>
+<p>There are three ways to run it, and they are the same API underneath:</p>
+<ul>
+<li><strong>Ephemeral (in-memory)</strong>: everything vanishes when the process exits. Ideal for unit tests, where each test gets a fresh store.</li>
+<li><strong>Persistent</strong>: in-process, saved to a directory. Ideal for a notebook or a single-user app; restart and the data is still there.</li>
+<li><strong>Client/server</strong>: run Chroma as a server (for example in a container) and connect with an HTTP client. Now several processes can share one store, at the cost of a network hop. A hosted cloud version follows the same client API.</li>
+</ul>
+<p>Hold this picture: one process owns the index; other processes, if any, talk to that process. Most production questions about Chroma reduce to "what happens when that one process is not enough?"</p>
+</section>
+<section id="step-2-the-data-model-four-parallel-fields">
+  <h2>15 &mdash; Step 2: the data model, four parallel fields</h2>
+<p>A collection stores records with four fields, passed as parallel lists:</p>
+<table>
+<thead><tr><th>Field</th><th>Example for one router-manual chunk</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>ids</code></td><td><code>"x200-manual:ch07:3"</code></td><td>Unique string you choose. Deterministic ids make re-ingestion idempotent.</td></tr>
+<tr><td><code>embeddings</code></td><td>384 floats</td><td>Optional if the collection has an embedding function.</td></tr>
+<tr><td><code>documents</code></td><td>The chunk text</td><td>Returned with results, so RAG can put it straight into a prompt.</td></tr>
+<tr><td><code>metadatas</code></td><td><code>{"product": "x200", "section": "firmware", "page": 41}</code></td><td>Flat key-value pairs of strings, numbers and booleans; used in filters.</td></tr>
+</tbody>
+</table>
+<p>The id deserves thought. If ids are random, re-running ingestion after a crash duplicates every chunk, and you cannot find "all chunks of the X200 manual" to replace them. If ids are <code>document:section:index</code>, ingestion becomes an upsert that is safe to repeat, and a document's chunks can be found and deleted by id or by a <code>doc_id</code> metadata field.</p>
+<p>Two rules for collections follow from the next step: <strong>one collection per embedding model</strong> (vectors from different models are not comparable), and <strong>one collection per distance space</strong> (it is fixed at creation). A common pattern is to name collections after both, such as <code>manuals_minilm_cosine_v1</code>, so a model change is a new collection built side by side rather than an in-place edit.</p>
+</section>
+<section id="step-3-distance-spaces-and-embedding-functions-the-silent-fa">
+  <h2>16 &mdash; Step 3: distance spaces and embedding functions, the silent failures</h2>
+<p>Chroma's default distance is squared Euclidean (<code>l2</code>), not cosine. That matters because most text-embedding models are trained and evaluated with cosine similarity, which ignores vector length, while Euclidean distance does not.</p>
+<p>A two-dimensional example shows the difference. The query is \(q = (1.5, 1.0)\). Record <em>b</em> \(= (3.0, 2.0)\) points in exactly the same direction as \(q\) but is twice as long; record <em>a</em> \(= (1.0, 0.1)\) is shorter and points elsewhere. Under cosine distance, <em>b</em> is a perfect match (distance 0). Under squared L2, <em>b</em> is at \((1.5^2 + 1^2) = 3.25\) and <em>a</em> at \(0.5^2 + 0.9^2 = 1.06\), so <em>a</em> ranks first. Same data, opposite answer.</p>
+<p>When vectors are normalised to length 1, the two agree on order, because for unit vectors</p>
+\[ \lVert u - v \rVert^2 = 2 - 2\cos(u, v) \]
+<p>so a cosine similarity of 0.6 is always a squared L2 distance of 0.8. Many embedding models output unit vectors, in which case the default is harmless; some do not. The safe habit is to set the space to cosine explicitly at creation, and to know which way your scores run: Chroma returns <em>distances</em>, where smaller is better, not similarities.</p>
+<p>The second silent failure is the <strong>embedding function</strong>. If you add text and let the collection embed it, and later query with vectors from a different model (or the same model at a different version), every query returns confident nonsense with no error. Chroma's built-in default is a small local sentence-transformer, which is convenient for a demo and almost never the model you will use in production. Prefer to compute embeddings yourself with the production model and pass <code>embeddings=</code> on both add and query, so one piece of code owns the model choice; or attach the production model's embedding function explicitly and never rely on the default. Choosing that model is covered in <a href="../rag/embedding-models.html">choosing an embedding model</a>.</p>
+</section>
+<section id="step-4-the-write-path">
+  <h2>17 &mdash; Step 4: the write path</h2>
+<p>In the single-node implementation, an <code>add</code> or <code>upsert</code> does roughly this:</p>
+<pre class="ascii-diagram">upsert(ids, embeddings, documents, metadatas)
+   |
+   |-- embed text if no vectors were given (embedding function)
+   |-- validate: dimensions match the collection, ids unique within the batch
+   v
+write log (SQLite)                       durable record of the operation
+   |
+   +--&gt; metadata segment (SQLite)        ids, metadata, document text,
+   |                                     full-text index for where_document
+   +--&gt; vector segment                   new vectors go to a small exact buffer,
+                                         merged into the HNSW graph in batches;
+                                         graph files saved to disk periodically</pre>
+<p>Three consequences are worth knowing.</p>
+<p><strong>Batch your writes.</strong> Each call pays fixed overhead (validation, a SQLite transaction, possibly an embedding call). Adding the 3,000 manual chunks one at a time is far slower than a few calls of a few hundred each. There is a maximum batch size per call, which the client can report; chunk large ingestions to stay under it.</p>
+<p><strong>Updates and deletes are not free in the graph.</strong> HNSW is a graph of links between vectors. Removing a node cleanly would mean repairing its neighbours' links, so deleted records are marked as deleted (tombstoned) and skipped during search. A collection with heavy churn (re-ingesting the forum every night) accumulates tombstones that still occupy memory and slow the walk, until the index is rebuilt. If most of a collection changes regularly, building a fresh collection and switching to it is often cleaner than upserting in place.</p>
+<p><strong>The index lives in memory.</strong> The HNSW graph must be loaded into RAM to be searched. Opening a large persisted collection means reading the graph from disk first, which is part of why a cold start on a big collection is slow.</p>
+</section>
+<section id="step-5-the-query-path-and-how-filters-work">
+  <h2>18 &mdash; Step 5: the query path and how filters work</h2>
+<p>A query takes either text (embedded with the collection's function) or a vector, a number of results, optional filters, and an <code>include</code> list that controls what comes back (documents, metadata, distances, embeddings). The path:</p>
+<ol>
+<li><strong>Filter first.</strong> If there is a <code>where</code> or <code>where_document</code> condition, the metadata segment evaluates it in SQLite and produces the set of allowed ids.</li>
+<li><strong>Search within the allowed set.</strong> The vector segment walks the HNSW graph, skipping ids outside the allowed set; recent writes still in the exact buffer (Step 4) are compared directly. How small allowed sets are handled (graph walk or brute force) differs between versions, so measure filtered recall rather than assuming it.</li>
+<li><strong>Fetch payloads.</strong> For the top results, documents and metadata are read from SQLite and returned with distances.</li>
+</ol>
+<p>Because the filter is applied before ranking, a query for "firmware update" restricted to <code>{"product": "x200"}</code> returns the best X200 chunks, not the best overall chunks with the X100 ones thrown away afterwards. That is the right semantics for permissions and product scoping (the reasons are in <a href="../rag/rag-in-production.html">making RAG good</a>). The cost shows up with filters that keep very few records spread thinly across the graph: the walk must skip many neighbours, and results can be slower or, in the worst case, fewer than requested. If one filter value dominates your queries (say, product), a separate collection per value avoids the problem entirely.</p>
+<p>Know what <code>where_document</code> is: a substring or pattern test on the stored text. It can require that a chunk contains "WPS", but it does not rank by keyword relevance the way BM25 does. If exact terms such as model numbers and error codes matter to relevance, you need real <a href="../rag/hybrid-search.html">hybrid search</a>, which means a keyword index alongside Chroma and fusion in your code, or a database with hybrid built in.</p>
+</section>
+<section id="step-6-sizing-it-on-one-machine">
+  <h2>19 &mdash; Step 6: sizing it on one machine</h2>
+<p>Memory is the first limit, so put numbers on it. Raw vectors cost dimensions × 4 bytes (32-bit floats). The HNSW graph adds neighbour links: with the common setting of \(M = 16\), the bottom layer keeps up to \(2M = 32\) neighbour ids per vector, about 128 bytes, plus a little for upper layers.</p>
+<table>
+<thead><tr><th>Corpus</th><th>Vectors</th><th>Graph links</th><th>Verdict</th></tr></thead>
+<tbody>
+<tr><td>Version one: 3,000 chunks × 384 dims</td><td>4.6 MB</td><td>under 0.5 MB</td><td>Trivial. Even exact search is instant.</td></tr>
+<tr><td>Grown: 2M chunks × 384 dims</td><td>3.1 GB</td><td>about 0.26 GB</td><td>Fits a large laptop or one server.</td></tr>
+<tr><td>Grown: 2M chunks × 1,536 dims</td><td>12.3 GB</td><td>about 0.26 GB</td><td>Needs a dedicated machine with headroom; cold load takes a while.</td></tr>
+</tbody>
+</table>
+<p>Two things follow. First, dimensions dominate: moving from a 384-dimension to a 1,536-dimension model quadruples memory. Second, the documents and metadata live on disk in SQLite, so text size affects disk and fetch time but not the RAM needed for search.</p>
+<p>Search quality and speed are tuned with the HNSW parameters: \(M\) (links per node; more links, better recall, more memory), the construction search width (better graph, slower build) and the query search width (better recall, slower queries). The trade-offs are the same in every HNSW-based database and are explained in <a href="../rag/vector-search.html">vector search</a>. For the 3,000-chunk prototype, none of this matters; at millions, measure recall@10 against exact search on a sample of queries before trusting the defaults.</p>
+</section>
+<section id="step-7-concurrency-durability-and-operations">
+  <h2>20 &mdash; Step 7: concurrency, durability and operations</h2>
+<p>The embedded design has consequences beyond memory.</p>
+<ul>
+<li><strong>One writer process.</strong> Two processes opening the same persistent directory and writing to it can corrupt or lose data: each holds its own copy of the in-memory index and neither knows about the other's writes. As soon as more than one process (an ingestion worker and a web server, or several web workers) needs the store, run Chroma as a server and have everyone connect to it.</li>
+<li><strong>No replication.</strong> A single server is a single point of failure. If it is down, retrieval is down. There is no built-in failover in the self-hosted single node, so availability targets have to be met some other way (a hosted service, or a different database).</li>
+<li><strong>Backups are file copies.</strong> The persistent directory is the database. Copy it while nothing is writing, or snapshot the volume. Keep the source documents and the ingestion code as the real source of truth, so the index can always be rebuilt from scratch.</li>
+<li><strong>Upgrades.</strong> The on-disk format has changed across major versions. Pin the version, and treat an upgrade as "rebuild or migrate the index, then run the retrieval tests".</li>
+</ul>
+<p>None of these is a flaw for the use case Chroma targets. They are the reason the honest answer to "can we put this in production?" is "for a single-service, single-region workload with a rebuildable index and modest availability needs, yes; beyond that, choose something built for it".</p>
+</section>
+<section id="step-8-chroma-as-a-test-fixture">
+  <h2>21 &mdash; Step 8: Chroma as a test fixture</h2>
+<p>One of Chroma's best production uses is not in production at all. Retrieval code needs tests, and tests need a vector store that starts empty, runs without a network, and behaves like the real one. An ephemeral collection, filled with a small fixture corpus, gives exactly that.</p>
+<p>For the router assistant, a CI test might load 200 fixture chunks with precomputed embeddings (stored in the repository, so the test needs no model), run the 30 golden questions, and assert that recall@5 is at least 0.9 and that no X100 chunk is returned when the filter says X200. That catches the bugs that matter most in retrieval code: a wrong filter, a dropped field, a changed id scheme, a distance flipped from cosine to L2. It is the same golden-set discipline as in <a href="../production/evals.html">evaluating LLM features</a>, scaled down to run in seconds.</p>
+</section>
+<section id="a-worked-example-from-notebook-to-the-graduation-point">
+  <h2>22 &mdash; A worked example: from notebook to the graduation point</h2>
+<p>Follow the router assistant through three stages.</p>
+<p><strong>Week 1, notebook.</strong> A persistent client, one collection <code>manuals_minilm_cosine_v1</code> with the space set to cosine, 3,000 chunks with ids like <code>x200-manual:ch07:3</code> and metadata for product, section and page. Queries filter by the product the customer owns. 4.6 MB of vectors: everything is instant, and the team spends its time on chunking and prompts, which is where it should go.</p>
+<p><strong>Month 2, internal pilot.</strong> A small web service and a nightly ingestion job both need the store, so Chroma moves to server mode in a container with a persistent volume. The team switches to a stronger 1,536-dimension embedding model by building <code>manuals_large_cosine_v1</code> beside the old collection, comparing recall on the golden set, then pointing the service at the new one. Still well within one machine.</p>
+<p><strong>Month 6, launch planning.</strong> Requirements arrive: all 400 products plus 2 million forum posts (2M vectors, 12.3 GB at 1,536 dimensions), forum posts re-ingested nightly (heavy churn and tombstones), 99.9% availability for a customer-facing product, keyword matching on model numbers and error codes, and per-customer data for an enterprise tier. Every one of these presses on a limit from Steps 5 to 7. This is the graduation point, and the choice depends on what the company already runs:</p>
+<ul>
+<li>Already operating Postgres, with relational data to join (customers, products, entitlements): <a href="pgvector.html">pgvector</a>.</li>
+<li>No appetite for running a database, needs managed scaling and per-tenant isolation: <a href="pinecone.html">Pinecone</a>.</li>
+<li>Wants built-in hybrid search and native multi-tenancy, self-hosted or managed: <a href="weaviate.html">Weaviate</a>.</li>
+</ul>
+<p>The migration is cheap if the earlier stages were disciplined: deterministic ids, embeddings computed by your own code, metadata as flat fields, and a golden set to prove the new store retrieves at least as well as the old.</p>
+</section>
+<section id="when-to-choose-chroma">
+  <h2>23 &mdash; When to choose Chroma</h2>
+<table>
+<thead><tr><th>Situation</th><th>Chroma?</th><th>Reason</th></tr></thead>
+<tbody>
+<tr><td>Notebook, prototype, hackathon</td><td>Yes</td><td>Zero setup, text and metadata stored with vectors</td></tr>
+<tr><td>Unit and integration tests for retrieval code</td><td>Yes</td><td>Ephemeral, offline, same API as the real store</td></tr>
+<tr><td>Desktop or single-user local app</td><td>Yes</td><td>Embedded, no server to install</td></tr>
+<tr><td>Internal tool, one service, under a few million vectors, rebuildable index</td><td>Reasonable</td><td>Server mode on one machine is enough</td></tr>
+<tr><td>Customer-facing with an availability target</td><td>Rarely self-hosted</td><td>No replication or failover in a single node</td></tr>
+<tr><td>Data that must join relational tables transactionally</td><td>No</td><td>pgvector keeps vectors and rows in one transaction</td></tr>
+<tr><td>Keyword relevance (codes, names) matters</td><td>Only with an external keyword index</td><td>Document filters are not BM25 ranking</td></tr>
+</tbody>
+</table>
+</section>
+<section id="in-code-the-real-api-and-a-model-of-it">
+  <h2>24 &mdash; In code: the real API, and a model of it</h2>
+<pre><span class="cm"># Not run here: needs `pip install chromadb`. Written against chromadb's documented Python API (2025).</span>
+<span class="kw">import</span> chromadb
+
+OP = <span class="st">"</span><span class="st">$</span><span class="st">"</span> <span class="cm"># filter operators are a dollar sign plus a name: and, or, eq, gte, in, contains ...</span>
+
+client = chromadb.PersistentClient(path=<span class="st">"</span><span class="st">./chroma_data</span><span class="st">"</span>)        <span class="cm"># or EphemeralClient() in tests</span>
+col = client.get_or_create_collection(
+    name=<span class="st">"</span><span class="st">manuals_large_cosine_v1</span><span class="st">"</span>,
+    metadata={<span class="st">"</span><span class="st">hnsw:space</span><span class="st">"</span>: <span class="st">"</span><span class="st">cosine</span><span class="st">"</span>},     <span class="cm"># newer versions also accept configuration={"hnsw": {"space": "cosine"}}</span>
+)
+
+col.upsert(                                <span class="cm"># idempotent: same ids replace, not duplicate</span>
+    ids=[<span class="st">"</span><span class="st">x200-manual:ch07:3</span><span class="st">"</span>, <span class="st">"</span><span class="st">x100-manual:ch02:1</span><span class="st">"</span>],
+    embeddings=[emb_a, emb_b],             <span class="cm"># computed by YOUR production embedding model</span>
+    documents=[<span class="st">"</span><span class="st">To update firmware, open Settings ...</span><span class="st">"</span>, <span class="st">"</span><span class="st">Press WPS for 3 seconds ...</span><span class="st">"</span>],
+    metadatas=[{<span class="st">"</span><span class="st">product</span><span class="st">"</span>: <span class="st">"</span><span class="st">x200</span><span class="st">"</span>, <span class="st">"</span><span class="st">section</span><span class="st">"</span>: <span class="st">"</span><span class="st">firmware</span><span class="st">"</span>, <span class="st">"</span><span class="st">page</span><span class="st">"</span>: <span class="nr">41</span>, <span class="st">"</span><span class="st">doc_id</span><span class="st">"</span>: <span class="st">"</span><span class="st">x200-manual</span><span class="st">"</span>},
+               {<span class="st">"</span><span class="st">product</span><span class="st">"</span>: <span class="st">"</span><span class="st">x100</span><span class="st">"</span>, <span class="st">"</span><span class="st">section</span><span class="st">"</span>: <span class="st">"</span><span class="st">setup</span><span class="st">"</span>, <span class="st">"</span><span class="st">page</span><span class="st">"</span>: <span class="nr">6</span>, <span class="st">"</span><span class="st">doc_id</span><span class="st">"</span>: <span class="st">"</span><span class="st">x100-manual</span><span class="st">"</span>}],
+)
+
+res = col.query(
+    query_embeddings=[query_vec],
+    n_results=<span class="nr">5</span>,
+    where={OP + <span class="st">"</span><span class="st">and</span><span class="st">"</span>: [{<span class="st">"</span><span class="st">product</span><span class="st">"</span>: <span class="st">"</span><span class="st">x200</span><span class="st">"</span>}, {<span class="st">"</span><span class="st">page</span><span class="st">"</span>: {OP + <span class="st">"</span><span class="st">gte</span><span class="st">"</span>: <span class="nr">10</span>}}]},
+    where_document={OP + <span class="st">"</span><span class="st">contains</span><span class="st">"</span>: <span class="st">"</span><span class="st">firmware</span><span class="st">"</span>},
+    include=[<span class="st">"</span><span class="st">documents</span><span class="st">"</span>, <span class="st">"</span><span class="st">metadatas</span><span class="st">"</span>, <span class="st">"</span><span class="st">distances</span><span class="st">"</span>],   <span class="cm"># distances: smaller is closer</span>
+)
+
+col.delete(where={<span class="st">"</span><span class="st">doc_id</span><span class="st">"</span>: <span class="st">"</span><span class="st">x200-manual</span><span class="st">"</span>})            <span class="cm"># replace a manual: delete its chunks, then upsert</span>
+</pre>
+<p>The same ideas in a few lines of numpy, runnable anywhere: parallel fields, upsert by id, filter first, then rank in the collection's distance space.</p>
+<pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="kw">class</span> <span class="tp">MiniCollection</span>:
+    <span class="st">"""The shape of a Chroma collection: parallel ids / vectors / documents / metadata."""</span>
+<span class="kw">def</span> <span class="fn">__init__</span>(<span class="tp">self</span>, space=<span class="st">"</span><span class="st">l2</span><span class="st">"</span>):
+        <span class="tp">self</span>.space, <span class="tp">self</span>.ids, <span class="tp">self</span>.vecs, <span class="tp">self</span>.docs, <span class="tp">self</span>.meta = space, [], [], [], []
+
+    <span class="kw">def</span> <span class="fn">upsert</span>(<span class="tp">self</span>, ids, embeddings, documents, metadatas):
+        <span class="kw">for</span> i, e, d, m in <span class="tp">zip</span>(ids, embeddings, documents, metadatas):
+            <span class="kw">if</span> i in <span class="tp">self</span>.ids:                       <span class="cm"># upsert = replace by id</span>
+                k = <span class="tp">self</span>.ids.index(i)
+                <span class="tp">self</span>.vecs[k], <span class="tp">self</span>.docs[k], <span class="tp">self</span>.meta[k] = e, d, m
+            <span class="kw">else</span>:
+                <span class="tp">self</span>.ids.append(i); <span class="tp">self</span>.vecs.append(e); <span class="tp">self</span>.docs.append(d); <span class="tp">self</span>.meta.append(m)
+
+    <span class="kw">def</span> <span class="fn">query</span>(<span class="tp">self</span>, q, n_results, where=<span class="nr">None</span>):
+        allowed = [k <span class="kw">for</span> k, m in <span class="tp">enumerate</span>(<span class="tp">self</span>.meta)          <span class="cm"># 1. filter on metadata first</span>
+<span class="kw">if</span> not where or <span class="tp">all</span>(m.get(f) == v <span class="kw">for</span> f, v in where.items())]
+        V, q = np.array([<span class="tp">self</span>.vecs[k] <span class="kw">for</span> k in allowed]), np.asarray(q)
+        <span class="kw">if</span> <span class="tp">self</span>.space == <span class="st">"</span><span class="st">l2</span><span class="st">"</span>:                                  <span class="cm"># 2. distance in the collection's space</span>
+            dist = ((V - q) ** <span class="nr">2</span>).sum(<span class="nr">1</span>)                        <span class="cm">#    squared L2</span>
+<span class="kw">else</span>:
+            dist = <span class="nr">1</span> - V @ q / (np.linalg.norm(V, axis=<span class="nr">1</span>) * np.linalg.norm(q))
+        order = np.argsort(dist)[:n_results]                    <span class="cm"># 3. top-k of the allowed set</span>
+<span class="kw">return</span> [(<span class="tp">self</span>.ids[allowed[k]], <span class="tp">round</span>(<span class="tp">float</span>(dist[k]), <span class="nr">3</span>) + <span class="nr">0.0</span>) <span class="kw">for</span> k in order]
+
+vecs = {<span class="st">"</span><span class="st">a</span><span class="st">"</span>: [<span class="nr">1.0</span>, <span class="nr">0.1</span>], <span class="st">"</span><span class="st">b</span><span class="st">"</span>: [<span class="nr">3.0</span>, <span class="nr">2.0</span>], <span class="st">"</span><span class="st">c</span><span class="st">"</span>: [<span class="nr">0.4</span>, <span class="nr">0.5</span>]}     <span class="cm"># b points the same way as q but is long</span>
+meta = {<span class="st">"</span><span class="st">a</span><span class="st">"</span>: {<span class="st">"</span><span class="st">product</span><span class="st">"</span>: <span class="st">"</span><span class="st">x200</span><span class="st">"</span>}, <span class="st">"</span><span class="st">b</span><span class="st">"</span>: {<span class="st">"</span><span class="st">product</span><span class="st">"</span>: <span class="st">"</span><span class="st">x200</span><span class="st">"</span>}, <span class="st">"</span><span class="st">c</span><span class="st">"</span>: {<span class="st">"</span><span class="st">product</span><span class="st">"</span>: <span class="st">"</span><span class="st">x100</span><span class="st">"</span>}}
+q = [<span class="nr">1.5</span>, <span class="nr">1.0</span>]
+<span class="kw">for</span> space in (<span class="st">"</span><span class="st">l2</span><span class="st">"</span>, <span class="st">"</span><span class="st">cosine</span><span class="st">"</span>):
+    col = MiniCollection(space)
+    col.upsert(<span class="tp">list</span>(vecs), <span class="tp">list</span>(vecs.values()), [<span class="st">"</span><span class="st">...</span><span class="st">"</span>] * <span class="nr">3</span>, [meta[i] <span class="kw">for</span> i in vecs])
+    <span class="tp">print</span>(space, col.query(q, <span class="nr">2</span>), <span class="st">"</span><span class="st">| x200 only:</span><span class="st">"</span>, col.query(q, <span class="nr">2</span>, where={<span class="st">"</span><span class="st">product</span><span class="st">"</span>: <span class="st">"</span><span class="st">x200</span><span class="st">"</span>}))
+
+u, v = np.array([<span class="nr">0.6</span>, <span class="nr">0.8</span>]), np.array([<span class="nr">1.0</span>, <span class="nr">0.0</span>])               <span class="cm"># unit vectors</span>
+<span class="tp">print</span>(<span class="st">"</span><span class="st">cos</span><span class="st">"</span>, u @ v, <span class="st">"</span><span class="st">squared L2</span><span class="st">"</span>, <span class="tp">round</span>(((u - v) ** <span class="nr">2</span>).sum(), <span class="nr">3</span>), <span class="st">"</span><span class="st">= 2 - 2cos</span><span class="st">"</span>, <span class="nr">2</span> - <span class="nr">2</span> * (u @ v))
+</pre>
+<p>Under <code>l2</code> the top result is <em>a</em> at 1.06; under cosine it is <em>b</em> at 0.0: Step 3's reversal. With the X200 filter, <em>c</em> can never appear, and the last line confirms that for unit vectors a cosine of 0.6 is a squared L2 distance of 0.8.</p>
+</section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>12 &mdash; Production &amp; Ops</h2>
+  <h2>25 &mdash; Production &amp; Ops</h2>
 <div class="card">
 <p><strong>Chroma is not recommended for production multi-tenant SLAs.</strong> If forced into a single-tenant internal tool:</p>
 <ul>
@@ -295,7 +523,7 @@ vector_store = ChromaVectorStore(chroma_collection=chroma_collection)</pre>
 </div>
 </section>
 <section id="related-topics">
-  <h2>13 &mdash; Related topics</h2>
+  <h2>26 &mdash; Related topics</h2>
 <div class="card"><ul>
 <li><a href="../rag/vector-search.html">Vector search &amp; databases</a> — when to graduate from Chroma</li>
 <li><a href="pinecone.html">Pinecone</a> · <a href="pgvector.html">pgvector</a> · <a href="weaviate.html">Weaviate</a> — production targets</li>
@@ -305,7 +533,7 @@ vector_store = ChromaVectorStore(chroma_collection=chroma_collection)</pre>
 </ul></div>
 </section>
 <section id="where-people-get-lost">
-  <h2>14 &mdash; Where people get lost</h2>
+  <h2>27 &mdash; Where people get lost</h2>
 <div class="card"><ul>
 <li><strong>Chroma in prod with paying users:</strong> no HA, weak multi-tenant isolation.</li>
 <li><strong>Default embed model ≠ prod model:</strong> demo recall misleads.</li>
@@ -315,13 +543,29 @@ vector_store = ChromaVectorStore(chroma_collection=chroma_collection)</pre>
 <li><strong>Expecting hybrid search:</strong> where_document is contains, not BM25 — use <a href="weaviate.html">Weaviate</a>.</li>
 <li><strong>One collection for staging + prod:</strong> test data pollutes retrieval.</li>
 </ul></div>
+<ul>
+<li><strong>"Distances are similarities."</strong> Chroma returns distances: smaller is closer. A threshold written as "keep scores above 0.8" silently keeps the worst matches.</li>
+<li><strong>Leaving the default L2 space with unnormalised embeddings.</strong> Rankings change with vector length. Set cosine explicitly at creation; it cannot be changed later.</li>
+<li><strong>Relying on the default embedding function.</strong> The demo model is not your production model, and mixing models between add and query fails silently. Compute embeddings in your own code.</li>
+<li><strong>Two processes writing one persistent directory.</strong> Each holds its own in-memory index; data is lost or corrupted. Use server mode for more than one process.</li>
+<li><strong>Random ids.</strong> Re-ingestion duplicates everything and documents cannot be replaced. Use deterministic <code>doc:section:index</code> ids and a <code>doc_id</code> field.</li>
+<li><strong>Treating <code>where_document</code> as keyword search.</strong> It filters by substring; it does not rank. Exact-term relevance needs a real hybrid setup.</li>
+<li><strong>Upserting a high-churn corpus forever.</strong> Tombstones accumulate in the graph. Rebuild into a fresh collection and switch.</li>
+</ul>
 </section>
 <section id="how-this-connects">
-  <h2>15 &mdash; How this connects</h2>
-<h3>Builds on</h3><ul><li><a href="../rag/embedding-models.html">Choosing an embedding model</a> &mdash; Model families, dimensions, benchmarks, cost, and when to fine-tune or switch.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="langchain.html">LangChain</a> &mdash; Chains, runnables, retrievers and the integrations layer.</li><li><a href="llamaindex.html">LlamaIndex</a> &mdash; Data-first RAG framework: loaders, indexes, query engines.</li><li><a href="pgvector.html">pgvector</a> &mdash; Vector search inside Postgres: HNSW/IVFFlat, hybrid with full-text, operations.</li></ul>
+  <h2>28 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../rag/embedding-models.html">Choosing an embedding model</a> &mdash; Model families, dimensions, benchmarks, cost, and when to fine-tune or switch.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="../rag/hybrid-search.html">Hybrid search &amp; query understanding</a> &mdash; BM25 plus vectors fused with RRF, query rewriting, decomposition and HyDE.</li><li><a href="../rag/rag-in-production.html">Making RAG good &amp; measuring it</a> &mdash; Advanced RAG, a production RAG chatbot design, retrieval and answer metrics, freshness, ACLs, latency, injection.</li><li><a href="../production/evals.html">Evaluating LLM features</a> &mdash; Golden sets, graders, LLM-as-judge done properly, statistics, an eval harness in CI, online evaluation and error analysis.</li></ul>
 </section>
 <section id="check-yourself">
-  <h2>16 &mdash; Check yourself</h2>
+  <h2>29 &mdash; Check yourself</h2>
+<details><summary>Your query returns chunks with distances 0.21, 0.35 and 0.90, and your code keeps results with "score &gt; 0.3". What goes wrong?</summary><div class="answer">These are distances, smaller is better. The filter drops the best match (0.21) and keeps the worst (0.90). Compare distances with "&lt; threshold", or convert to similarity explicitly (for cosine, similarity = 1 − distance).</div></details>
+<details><summary>How much RAM do the raw vectors of 5 million chunks need at 768 dimensions, and what roughly does an \(M = 16\) HNSW graph add?</summary><div class="answer">\(5{,}000{,}000 \times 768 \times 4 \approx 15.4\) GB of vectors. The bottom layer adds about \(32 \times 4 = 128\) bytes per vector, about 0.64 GB. Plan for more than 16 GB for the index alone, plus headroom.</div></details>
+<details><summary>For unit-length vectors, a match has cosine similarity 0.9. What squared L2 distance will an <code>l2</code> collection report?</summary><div class="answer">\(2 - 2 \times 0.9 = 0.2\). For normalised vectors the two spaces rank identically; only the numbers differ.</div></details>
+<details><summary>An ingestion worker and a FastAPI app with four workers all open the same <code>PersistentClient</code> path. What happens, and what is the fix?</summary><div class="answer">Five processes each load their own copy of the index; writes by one are invisible to the others and concurrent writes can corrupt files. Run Chroma in server mode and have all processes connect with the HTTP client.</div></details>
+<details><summary>You are changing from a 384-dimension to a 1,536-dimension embedding model. Describe the migration.</summary><div class="answer">Create a new collection (new name, cosine space), re-embed every chunk with the new model using the same ids and metadata, run the golden set against both collections, switch the application's collection name when the new one is at least as good, then delete the old one. Never mix models in one collection.</div></details>
+<details><summary>A product manager wants the router assistant launched to all customers with 99.9% availability next quarter. Do you keep Chroma?</summary><div class="answer">Not self-hosted on a single node: there is no replication or failover. Move to a store built for it (Pinecone if you want it managed, pgvector if you already run highly available Postgres, Weaviate if you need hybrid search and multi-tenancy), or a hosted Chroma offering if its guarantees fit. Keep Chroma for tests.</div></details>
+<details><summary>Users search for error code "E-1042" and get chunks about unrelated errors. Will adding a <code>where_document</code> "contains E-1042" filter fix it?</summary><div class="answer">Partly and dangerously: it forces the substring, so queries without the exact string return nothing and near-variants ("E1042") are missed. The real fix is hybrid search: a keyword index such as BM25 alongside the vectors, fused with reciprocal rank fusion.</div></details>
 <details>
 <summary>What is Chroma best for?</summary>
 <div class="answer">Local dev, notebooks, CI tests, hackathons — vector search in ~5 lines without cloud signup or Postgres setup. Fastest path to prove a RAG idea.</div>

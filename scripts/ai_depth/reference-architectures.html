@@ -1,0 +1,272 @@
+<!-- Deep lesson: Reference architectures. Merged into production/reference-architectures by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Reference architecture</td><td>A proven arrangement of components for a class of problem, used as a starting point rather than a blueprint.</td></tr>
+<tr><td>Contract</td><td>The agreed input and output of a component, for a model call usually a prompt template plus an output schema that code validates.</td></tr>
+<tr><td>Workflow</td><td>A fixed sequence or graph of steps written in code, some of which call a model. The path is decided by you, not by the model.</td></tr>
+<tr><td>Agent</td><td>A loop in which the model chooses the next step (which tool, with what arguments) until it decides it is done.</td></tr>
+<tr><td>Router</td><td>A component, often a small model, that classifies a request and sends it to the right handler or model.</td></tr>
+<tr><td>Map-reduce</td><td>Run the same model step on many pieces in parallel (map), then combine the results (reduce).</td></tr>
+<tr><td>Model gateway</td><td>An internal service through which all model calls pass: provider keys, quotas, retries, fallbacks, logging and cost tracking in one place.</td></tr>
+<tr><td>Orchestrator</td><td>The code that runs a request's steps: calls retrieval, models and tools, holds state, enforces budgets.</td></tr>
+<tr><td>Sync / async path</td><td>Sync: the user waits and sees a streamed answer. Async: the work is queued and the user is notified when it is done.</td></tr>
+<tr><td>Side effect</td><td>A change in the outside world (a filed claim, a sent email) as opposed to just producing text.</td></tr>
+<tr><td>Peak factor</td><td>How much busier the busiest period is than the average. Capacity is planned for the peak.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>Every LLM system design question ("design a support assistant", "design a document-processing pipeline", "design a coding agent") is answered by composing a small number of patterns around model calls: a single call with a strict contract, retrieval, fixed workflows, routing, agents, and the operational layers that surround them. The skill being tested is not knowing the patterns' names; it is choosing the <em>least complex</em> combination that meets the requirements, and justifying it with numbers.</p>
+<p>What interviewers ask:</p>
+<ol>
+<li>Given these requirements, what architecture would you build, and why not something simpler or more agentic?</li>
+<li>Where does knowledge come from: retrieval, a long context window, or fine-tuning?</li>
+<li>What surrounds the model in production, and where do state, permissions and side effects live?</li>
+<li>How much traffic, latency and cost does the design imply, and what changes at ten times the scale?</li>
+</ol>
+<p><strong>Running example: an expense assistant</strong> for a company of 10,000 employees. It must do three jobs: <strong>answer questions about the expense policy</strong> (a 300-page document set that changes quarterly, about 3,000 questions a day), <strong>check submitted expense reports against policy</strong> (about 1,500 reports a day, averaging 6 receipt images each), and <strong>fix or adjust claims on request</strong> ("my hotel was split across two cards, merge them", about 200 a day). Interactive use is concentrated in an 8-hour working day. Prices are illustrative: $3 and $15 per million input and output tokens for a large model, $0.25 and $1.25 for a small one.</p>
+</section>
+
+<section data-label="Step 1: start from the jobs, not the boxes">
+<p>The most common design mistake is to start with "an agent with tools" and fit every requirement into it. Instead, describe each job along four dimensions that decide the architecture:</p>
+<table>
+<thead><tr><th>Job</th><th>Knowledge</th><th>Actions</th><th>Who waits</th><th>Risk</th></tr></thead>
+<tbody>
+<tr><td>Policy questions</td><td>Private, changes quarterly</td><td>Read only</td><td>A person, interactively</td><td>Wrong answer misleads; low direct harm</td></tr>
+<tr><td>Report checks</td><td>Policy rules plus receipt contents</td><td>Read only; produces a verdict</td><td>Nobody (minutes is fine)</td><td>Wrong verdict costs money or annoys staff</td></tr>
+<tr><td>Claim fixes</td><td>The employee's claims and cards</td><td>Writes to the finance system</td><td>A person, can wait some seconds</td><td>Wrong change moves money</td></tr>
+</tbody>
+</table>
+<p>The table already decides a lot. The three jobs need three different shapes: interactive retrieval, an offline batch pipeline, and a tool-using loop with approval. Each later step picks the simplest shape for one row.</p>
+</section>
+
+<section data-label="Step 2: the unit, one call with a contract">
+<p>The smallest reliable building block is a single model call with a contract: a fixed prompt template, an output schema, and code that validates the output and decides what happens next. Checking one receipt fits exactly:</p>
+<ol>
+<li>The model reads the receipt image and returns <code>{merchant, category, amount, currency, date}</code> in a strict schema (see <a href="@@prompting/structured-output@@">Structured output</a>).</li>
+<li>Code validates it. An unreadable amount fails validation and goes to human review instead of becoming a guess.</li>
+<li>Code applies the policy: the meal limit is $75, the hotel limit $250. The model never decides whether $310 is over $250.</li>
+</ol>
+<p>This division, <strong>the model extracts, code decides</strong>, is the most useful single idea in LLM system design (developed in <a href="@@production/hybrid-patterns@@">Hybrid LLM patterns</a>). Rules in code are exact, auditable, cheap and testable; the model handles only what code cannot, which is reading messy input. Every additional responsibility you give the model is a new way to be wrong.</p>
+<p>Because extraction from a clear receipt is easy, it can run on the small model. At about 1,200 input and 150 output tokens per receipt, that costs about $0.0005 per receipt.</p>
+</section>
+
+<section data-label="Step 3: adding knowledge, retrieval versus long context versus fine-tuning">
+<p>Policy questions need knowledge the model does not have. Three ways to supply it:</p>
+<ul>
+<li><strong>Put the whole policy in every prompt.</strong> 300 pages is about 150,000 tokens. At $3 per million, that is $0.45 of input per question, about <strong>$1,360 a day</strong> for 3,000 questions, and every question pays seconds of prefill latency. Prompt caching would cut the input cost by roughly 90% (to around $150 a day), but answers still have to be found in a very long context, where models are less reliable.</li>
+<li><strong>Retrieve the relevant passages.</strong> Search the policy for the 6 to 8 most relevant chunks and send about 4,500 tokens: about $0.017 per question, <strong>$52 a day</strong>, with each answer citing the passages it used. This is <a href="@@rag/rag-pipeline@@">The RAG pipeline</a>.</li>
+<li><strong>Fine-tune the model on the policy.</strong> Fine-tuning teaches style and format well and facts poorly; it cannot cite sources, and every quarterly policy change means retraining. It is the wrong tool for changing facts (see <a href="@@adaptation/fine-tuning@@">Fine-tuning, LoRA &amp; QLoRA</a>).</li>
+</ul>
+<p>Retrieval wins on cost, freshness (re-index a changed page in minutes) and auditability (citations). Long context is a reasonable choice when the knowledge is small, or for one-off analysis of a single long document. The retrieval system brings its own design questions (chunking, hybrid search, reranking, access control), which have their own topics in the RAG section.</p>
+</section>
+
+<section data-label="Step 4: workflows, when the path is known">
+<p>Checking a whole report is several steps whose order never changes: extract every receipt, apply the rules to each, check report-level rules (duplicate receipts, totals per trip), then write a short explanation of any violation for the employee. Because the path is known in advance, it should be written as a <strong>workflow</strong> in code, not left to a model to plan.</p>
+<p>Two properties follow from writing it as a workflow:</p>
+<ul>
+<li><strong>Parallelism.</strong> The six receipt extractions are independent, so they run at the same time (a map step), then the results are combined (reduce). If each extraction takes about 4 s, sequential processing takes about 24 s and parallel processing about 4 s plus the combining step.</li>
+<li><strong>Batch economics.</strong> Nobody is waiting on a report check in real time, so the whole pipeline can run asynchronously: the report is accepted, queued, processed, and the employee notified. That opens up batch APIs at a discount (half price is a common illustrative figure). The 9,000 receipt extractions a day then cost about <strong>$2 a day</strong>.</li>
+</ul>
+<p>Workflows are also easier to test and observe than agents: each step has a contract, an expected output and a place in a trace. Most production LLM systems are mostly workflows, with model calls at a few well-chosen steps.</p>
+</section>
+
+<section data-label="Step 5: routing, one front door">
+<p>Employees will not choose between three tools; they will type into one chat box. A <strong>router</strong> classifies each message (policy question, report check, claim change, out of scope) and sends it to the right handler. A small model is enough: about 600 input tokens and a one-word answer, roughly $0.0002 per message.</p>
+<p>The router is also where you can choose the <em>model</em> per request: a simple policy lookup may be answered well by a small model, a nuanced exception by the large one. That is a cascade, and its economics are worked through in <a href="@@production/cost-performance@@">Cost &amp; latency</a>.</p>
+<p>Design for misroutes. A report check sent to the policy-answer path produces a confident but useless reply. Give each handler a way to say "this is not mine" and hand back, log misroutes, and include routing cases in the evaluation set. Ambiguous messages can be resolved by asking the user one clarifying question, which is cheaper than guessing.</p>
+</section>
+
+<section data-label="Step 6: agents, only where the path is unknown">
+<p>"My hotel was split across two cards, merge them into one claim" cannot be written as a fixed workflow: the system must look up the claims, find the two charges, check whether they are the same stay, decide what merged claim to create, and perhaps ask the employee a question. The sequence depends on what each lookup returns. This is what an <strong>agent</strong> is for: the model chooses the next tool call, observes the result, and repeats (see <a href="@@agents/agent-loop@@">The agent loop</a>).</p>
+<p>Agents cost more and are less predictable, and the numbers show why. Each step resends the growing conversation. With a 3,000-token starting context that grows by 1,500 tokens per step, a six-step run processes \(3{,}000 + 4{,}500 + \dots + 10{,}500 = 40{,}500\) input tokens, about $0.14 per run including output, eight times the cost of a policy answer. Latency adds up the same way: six model calls of 2 to 3 seconds each plus tool time.</p>
+<p>So use an agent only for the job that needs one, and constrain it:</p>
+<ul>
+<li>a small tool set designed for this task (look up claims, propose a merge), with identity taken from the session, never from the model;</li>
+<li>a step cap and a token budget per run;</li>
+<li>writes that are <em>proposed</em> by the agent and <em>executed</em> by code only after the employee approves a summary rendered from the actual arguments;</li>
+<li>idempotency keys on every write, so a retry cannot file a claim twice (see <a href="@@production/reliability@@">Reliability engineering</a> and <a href="@@production/security@@">Security &amp; guardrails</a>).</li>
+</ul>
+<p>The ordering to remember, from simplest to most complex: single call, call plus retrieval, workflow, routed workflows, agent, multiple agents. Move up only when the job requires it. Multi-agent designs (<a href="@@agents/multi-agent@@">Multi-agent systems</a>) add coordination cost on top and are rarely the first answer.</p>
+</section>
+
+<section data-label="Step 7: the layers around the model">
+<p>Around the patterns sit the components every production system needs. Each has its own topic; here is what each contributes to this design:</p>
+<ul>
+<li><strong>API gateway</strong>: authentication (which employee, which region), per-user quotas, input size limits, streaming to the client.</li>
+<li><strong>Model gateway</strong>: one place for provider keys, rate-limit handling, retries, fallbacks to a second provider, and per-feature cost accounting. Handlers call it instead of calling providers directly, so these policies are implemented once.</li>
+<li><strong>Guardrails</strong>: input checks on chat messages; output checks that answers cite retrieved passages; policy checks on every proposed write.</li>
+<li><strong>Caches</strong>: prompt caching for the stable system prompt and tool definitions; a response cache for repeated policy questions (<a href="@@production/semantic-cache@@">Semantic caching</a>).</li>
+<li><strong>Observability</strong>: a trace per request across router, retrieval, model calls and tools, tagged with the release version (<a href="@@production/observability@@">Observability</a>).</li>
+<li><strong>Evaluation</strong>: a test set per job (answer correctness with citations, extraction accuracy per field, agent task success) that gates every prompt, model or index change (<a href="@@production/evals@@">Evaluating LLM features</a>).</li>
+</ul>
+<p>In an interview, name these layers briefly and spend your time on the one or two the requirements make critical. Here, those are permissions on writes and the accuracy of report verdicts.</p>
+</section>
+
+<section data-label="Step 8: state, permissions and side effects">
+<p>Three questions decide whether the design is safe to run:</p>
+<ul>
+<li><strong>Where does state live?</strong> Conversation history in a session store keyed by conversation ID; report-check jobs in a queue and a job table with status; the agent's in-progress plan in a checkpoint, so a crash in step 4 resumes rather than restarts. The model itself is stateless; everything it "remembers" is something you stored and resent.</li>
+<li><strong>Who may see what?</strong> Policies differ by country and some documents are for managers only. Access control must be applied in the retrieval query, filtering chunks by the employee's attributes, before the model sees anything. Asking the model not to reveal manager-only text it has already been given is not access control.</li>
+<li><strong>Who may change what?</strong> The finance system is the source of truth. The agent never writes to it directly; it proposes, the user approves, and a service that enforces the same permissions as the normal UI executes. Every write is recorded in an audit log with the conversation and trace ID.</li>
+</ul>
+</section>
+
+<section data-label="Step 9: sizing the design">
+<p>Turn the requirements into load, cost and latency, because they decide quotas, budgets and whether anything needs to change:</p>
+<table>
+<thead><tr><th>Part</th><th>Volume per day</th><th>Tokens per unit</th><th>Cost per day</th></tr></thead>
+<tbody>
+<tr><td>Router (small model)</td><td>3,200 messages</td><td>600 in, 5 out</td><td>$0.50</td></tr>
+<tr><td>Policy answers (RAG, large model)</td><td>3,000 questions</td><td>4,500 in, 250 out</td><td>$51.75</td></tr>
+<tr><td>Report checks (small model, batch)</td><td>9,000 receipts</td><td>1,200 in, 150 out</td><td>$2.19</td></tr>
+<tr><td>Claim-fix agent (large model)</td><td>200 runs</td><td>40,500 in, 1,200 out</td><td>$27.90</td></tr>
+<tr><td><strong>Total</strong></td><td></td><td></td><td><strong>about $82</strong></td></tr>
+</tbody>
+</table>
+<p>About $82 a day, or roughly $2,500 a month, for 10,000 employees. Two things stand out. The agent is about 6% of interactive traffic but a third of the cost. And stuffing the policy into every prompt instead of retrieving would have multiplied the total by about seventeen.</p>
+<p><strong>Peak load.</strong> 3,200 interactive messages in an 8-hour day is 0.11 per second on average; with a peak factor of 3, about 0.33 per second. Policy answers then need about \(0.33 \times 4{,}500 \times 60 \approx 90{,}000\) input tokens per minute at peak, well within typical provider quotas. This system is small: no self-hosting, no special serving work, and the design effort belongs in correctness and permissions.</p>
+<p><strong>Latency budget</strong> for a policy answer: gateway and router about 0.4 s, retrieval with reranking about 0.3 s, model time to first token about 0.8 s, so about 1.5 s until text starts streaming, and 5 to 6 s to the end of a 250-token answer. Report checks are asynchronous and have a budget in minutes. Claim fixes stream progress ("looking up your claims...") during their 10 to 20 seconds.</p>
+</section>
+
+<section data-label="Step 10: what changes as it grows">
+<p>Good designs say what they would change at higher scale, rather than building for it now:</p>
+<ul>
+<li><strong>At 10 times the traffic</strong> (a 100,000-person company): around $800 a day. Response caching for repeated policy questions and a small-model-first cascade for simple ones become worth their engineering. Provider quotas need checking at peak; a second provider behind the model gateway becomes a requirement for availability.</li>
+<li><strong>At 100 times</strong>: about $8,000 a day, roughly $250,000 a month, and steady, predictable traffic such as receipt extraction may be cheaper on a self-hosted open model (<a href="@@inference/serving@@">Serving &amp; scaling</a>). Fine-tuning a small model on accumulated, human-corrected extractions could replace the large model for that step.</li>
+<li><strong>Whatever the scale</strong>, the evaluation set and observability matter more over time, because every one of these changes is a behaviour change that must be shown not to lower accuracy.</li>
+</ul>
+</section>
+
+<section data-label="The whole design on one page">
+<pre class="ascii-diagram">employee ──► API gateway (auth, region, quotas, streaming)
+                 │
+                 ▼
+             router (small model) ──► out of scope / clarify
+        ┌────────┼──────────────────────────┐
+        ▼        ▼                          ▼
+  policy Q&amp;A   report check (async)       claim fix (agent)
+  retrieve      queue ─► map: extract each   loop: tools (read claims,
+  (ACL filter)  receipt (small model, batch)  propose change), step cap
+  rerank        ─► code applies rules        ─► user approves summary
+  answer with   ─► explain violations        ─► finance API executes
+  citations     ─► notify employee              (idempotent, audited)
+        └────────┴──────────────┬───────────┘
+                                ▼
+        model gateway: keys, retries, fallback provider, cost per feature
+        cross-cutting: traces + release IDs, guardrails, caches, eval gates</pre>
+<p>Present it in this order in an interview: the three jobs and their four dimensions (Step 1); the simplest pattern for each and why not a more complex one (Steps 2 to 6); the sizing table (Step 9); then go deep on the riskiest part, the agent's writes and their permissions, before touching the generic layers.</p>
+</section>
+
+<section data-label="In code: the skeleton of the design">
+<p>The three patterns in one small program: a router in front, a contract-validated extraction with policy rules in code, and a map-reduce report check. The model is stubbed so the structure runs anywhere; in production the stub is a call through the model gateway. Uses <code>pydantic</code> for the output contract.</p>
+<pre data-lang="python">from concurrent.futures import ThreadPoolExecutor
+from datetime import date
+from pydantic import BaseModel, ValidationError
+
+# ---- contracts: what each model call must return --------------------------------------------
+class Receipt(BaseModel):
+    merchant: str
+    category: str            # "meal", "hotel", "travel", "other"
+    amount: float
+    currency: str
+    day: date
+
+LIMITS = {"meal": 75.0, "hotel": 250.0, "travel": 1500.0, "other": 100.0}   # policy, in code
+
+# ---- stand-in for the model; in production these are API calls ------------------------------
+def fake_llm(task, payload):
+    if task == "route":
+        text = payload.lower()
+        return "action" if "fix" in text or "change" in text else "check" if "report" in text else "qa"
+    if task == "extract":                 # pretend the model read a receipt image
+        return payload
+    raise ValueError(task)
+
+# ---- pattern 1: single call + schema + code decides ------------------------------------------
+def check_receipt(raw):
+    try:
+        r = Receipt(**fake_llm("extract", raw))
+    except ValidationError as e:
+        return {"status": "needs_review", "why": f"unreadable receipt ({e.error_count()} field errors)"}
+    over = r.amount - LIMITS[r.category]
+    return {"status": "violation" if over &gt; 0 else "ok", "merchant": r.merchant, "over_by": max(over, 0)}
+
+# ---- pattern 2: fixed workflow, receipts checked in parallel (map), then combined (reduce) --
+def check_report(receipts):
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(check_receipt, receipts))
+    return {"violations": [r for r in results if r["status"] == "violation"],
+            "needs_review": [r for r in results if r["status"] == "needs_review"]}
+
+# ---- pattern 3: router in front of the handlers ----------------------------------------------
+def handle(message, receipts=()):
+    route = fake_llm("route", message)
+    if route == "check":
+        return route, check_report(receipts)
+    if route == "qa":
+        return route, "answer from the RAG pipeline, with citations"
+    return route, "agent loop with tools, step cap and approval before any write"
+
+report = [
+    {"merchant": "Cafe Uno", "category": "meal", "amount": 42.0, "currency": "EUR", "day": "2026-10-02"},
+    {"merchant": "Grand Hotel", "category": "hotel", "amount": 310.0, "currency": "EUR", "day": "2026-10-02"},
+    {"merchant": "???", "category": "meal", "amount": "blurred", "currency": "EUR", "day": "2026-10-03"},
+]
+route, out = handle("Please check my October report", report)
+print(route, out)
+print(handle("What is the hotel limit in Berlin?")[0], "|", handle("Fix my claim, the hotel was split")[0])
+assert out["violations"][0]["over_by"] == 60.0 and len(out["needs_review"]) == 1
+</pre>
+<p>The report check finds the hotel $60 over its limit and sends the blurred receipt to review rather than guessing; the other two messages route to <code>qa</code> and <code>action</code>.</p>
+<p>The sizing from Step 9, as a calculator to rerun with your own volumes and prices:</p>
+<pre data-lang="python">IN, OUT = 3.00, 15.00            # $ per million tokens, large model (illustrative)
+S_IN, S_OUT = 0.25, 1.25         # small model
+BATCH = 0.5                      # batch API discount factor (illustrative)
+
+def usd(tin, tout, pin=IN, pout=OUT):
+    return (tin * pin + tout * pout) / 1e6
+
+# 1) policy Q&amp;A: 3,000 questions/day, RAG prompt 4,500 tokens, 250-token answers
+qa = 3000 * usd(4500, 250)
+stuffed = 3000 * usd(150_000, 250)                     # the whole 300-page policy in every prompt
+# 2) report checks: 1,500 reports x 6 receipts, small model, 1,200 in / 150 out per receipt, batch
+checks = 1500 * 6 * usd(1200, 150, S_IN, S_OUT) * BATCH
+# 3) claim fixes: 200 agent runs/day, 6 steps, context 3,000 tokens growing 1,500 per step, 200 out
+agent_in = sum(3000 + 1500 * s for s in range(6))
+agent = 200 * usd(agent_in, 6 * 200)
+# router: every interactive message, small model, 600 in / 5 out
+router = 3200 * usd(600, 5, S_IN, S_OUT)
+
+for name, v in [("policy Q&amp;A (RAG)", qa), ("  ...if the policy were stuffed in", stuffed),
+                ("report checks (batch)", checks), ("claim-fix agent", agent), ("router", router)]:
+    print(f"{name:36s} ${v:8.2f}/day")
+print(f"total ${qa + checks + agent + router:.2f}/day; agent input tokens per run {agent_in:,}")
+
+# peak load for the interactive part: 3,200 messages in an 8-hour day, peak 3x average
+peak_rps = 3200 / (8 * 3600) * 3
+print(f"peak {peak_rps:.2f} msg/s -&gt; {peak_rps * 60 * 4500:,.0f} input tokens/min for Q&amp;A at peak")
+</pre>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"Make it an agent."</strong> Most jobs have a known path and should be workflows: cheaper, faster, testable. Reserve agents for the parts whose steps depend on what lookups return.</li>
+<li><strong>Letting the model apply business rules.</strong> Limits, eligibility and arithmetic belong in code. The model extracts and explains; code decides.</li>
+<li><strong>Fine-tuning to add knowledge.</strong> It is poor at facts, cannot cite, and must be redone when facts change. Retrieve changing facts.</li>
+<li><strong>Access control in the prompt.</strong> Filter documents and tool results by the user's permissions before the model sees them.</li>
+<li><strong>Making everything synchronous.</strong> If nobody is waiting, queue it: batch discounts, retries without user-visible latency, smoother load.</li>
+<li><strong>Drawing boxes without numbers.</strong> Volume, tokens per request, peak factor, cost per day and a latency budget turn a diagram into a design, and often show which part deserves the effort.</li>
+<li><strong>Building for 100 times the scale on day one.</strong> State what you would change at higher scale; build what today's numbers need.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>For each job, which pattern and why: (a) translate product descriptions into five languages nightly; (b) answer questions about an internal wiki; (c) reschedule a customer's delivery after checking stock and courier slots.</summary><div class="answer">(a) A batch workflow of single calls with output validation; the path is fixed and nobody waits. (b) RAG with access filtering and citations; knowledge is private and changes. (c) An agent (or a workflow with a model-chosen branch) with tools, a step cap and confirmation before the write, because the steps depend on what stock and slot lookups return.</div></details>
+<details><summary>A policy corpus is 80,000 tokens and gets 500 questions a day. Long context or RAG? Show the cost at $3 per million input tokens.</summary><div class="answer">Long context: \(500 \times 80{,}000 \times 3 / 10^6 = \$120\) a day of input (roughly $12 with prompt caching at 10%). RAG at about 4,000 tokens: $6 a day. RAG is cheaper, faster to first token and gives citations; long context with caching can be acceptable for a small corpus and low volume, if answer accuracy holds up on your eval set.</div></details>
+<details><summary>An agent's context starts at 2,000 tokens and grows by 1,000 per step. How many input tokens does a 10-step run process?</summary><div class="answer">\(\sum_{s=0}^{9} (2{,}000 + 1{,}000 s) = 20{,}000 + 45{,}000 = 65{,}000\) tokens. Cost and latency grow faster than the step count, which is why step caps and compaction matter.</div></details>
+<details><summary>Why should the claim-fix agent propose a change rather than call the finance API directly?</summary><div class="answer">So that a person approves a summary rendered from the real arguments, and a service enforcing normal permissions and idempotency executes it. This bounds the damage from model mistakes or injected instructions and gives an audit trail.</div></details>
+<details><summary>Managers-only policy pages must not reach other employees. Where is that enforced?</summary><div class="answer">In retrieval: the search query filters chunks by the employee's role and region, so restricted text never enters the prompt. Instructions to the model are not access control.</div></details>
+<details><summary>Your sizing shows the agent is about 6% of traffic but a third of cost. What could you do, and how would you know it is safe?</summary><div class="answer">Fewer steps (better tools that return what is needed in one call), context compaction, prompt caching of the stable prefix, a smaller model for simple lookups, or turning common cases into a fixed workflow. Each change goes through the agent's task-success eval set before rollout.</div></details>
+</section>

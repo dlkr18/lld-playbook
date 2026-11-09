@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
@@ -30,17 +34,30 @@
   <a href="#deep-dive-process-types"><span class="num">10</span> Deep Dive: Process Types</a>
   <a href="#deep-dive-tools"><span class="num">11</span> Deep Dive: Tools</a>
   <a href="#crewai-vs-langgraph"><span class="num">12</span> CrewAI vs LangGraph</a>
-  <a href="#production-ops"><span class="num">13</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">14</span> Related topics</a>
-  <a href="#where-people-get-lost"><span class="num">15</span> Where people get lost</a>
-  <a href="#how-this-connects"><span class="num">16</span> How this connects</a>
-  <a href="#check-yourself"><span class="num">17</span> Check yourself</a>
+  <a href="#the-question"><span class="num">13</span> The question</a>
+  <a href="#step-1-what-a-role-really-is"><span class="num">14</span> Step 1: what a role really is</a>
+  <a href="#step-2-inside-one-agent-a-tool-loop"><span class="num">15</span> Step 2: inside one agent, a tool loop</a>
+  <a href="#step-3-tasks-are-the-contract"><span class="num">16</span> Step 3: tasks are the contract</a>
+  <a href="#step-4-the-sequential-process"><span class="num">17</span> Step 4: the sequential process</a>
+  <a href="#step-5-the-hierarchical-process"><span class="num">18</span> Step 5: the hierarchical process</a>
+  <a href="#step-6-delegation-between-peers"><span class="num">19</span> Step 6: delegation between peers</a>
+  <a href="#step-7-memory-and-knowledge"><span class="num">20</span> Step 7: memory and knowledge</a>
+  <a href="#step-8-flows-for-the-parts-that-must-be-deterministic"><span class="num">21</span> Step 8: flows, for the parts that must be deterministic</a>
+  <a href="#step-9-what-it-costs-and-how-slow-it-is"><span class="num">22</span> Step 9: what it costs and how slow it is</a>
+  <a href="#step-10-making-a-crew-reliable"><span class="num">23</span> Step 10: making a crew reliable</a>
+  <a href="#choosing-crewai-or-not"><span class="num">24</span> Choosing CrewAI, or not</a>
+  <a href="#in-code-the-crew-and-a-cost-model-you-can-run"><span class="num">25</span> In code: the crew, and a cost model you can run</a>
+  <a href="#production-ops"><span class="num">26</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">27</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">28</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">29</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">30</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>CrewAI <span>// Tech &amp; tools</span></h1>
   <p>Role-based multi-agent crews: agents, tasks, processes.</p>
-  <div class="tags"><span class="tag">8 min read</span><span class="tag">5 diagrams</span></div>
+  <div class="tags"><span class="tag">25 min read</span><span class="tag">5 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -54,7 +71,7 @@
 </section>
 <section id="new-words">
   <h2>02 &mdash; New words</h2>
-<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Least privilege</strong></td><td>Scoped, minimal tool permissions to limit blast radius.</td></tr></tbody></table>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Agent (CrewAI)</strong></td><td>A model plus a persona (role, goal, backstory), a set of tools and an inner loop that keeps calling tools until it produces a final answer.</td></tr><tr><td><strong>Role, goal, backstory</strong></td><td>Three text fields that CrewAI composes into the agent's system prompt. They shape behaviour only through the prompt.</td></tr><tr><td><strong>Task</strong></td><td>One unit of work: a description, an <code>expected_output</code> (what "done" looks like), the agent assigned to it, and optionally the earlier tasks whose output it should see.</td></tr><tr><td><strong>Crew</strong></td><td>A set of agents and tasks plus a process that decides the order of work. <code>crew.kickoff(inputs=...)</code> runs it.</td></tr><tr><td><strong>Sequential process</strong></td><td>Tasks run in the listed order, each one's output passed forward as context.</td></tr><tr><td><strong>Hierarchical process</strong></td><td>A manager agent (an extra model) plans the work, delegates tasks to the other agents and checks their results.</td></tr><tr><td><strong>Delegation</strong></td><td>An agent asking a coworker agent to do work or answer a question, implemented by giving it extra tools that call the other agent.</td></tr><tr><td><strong>ReAct loop</strong></td><td>Reason-and-act: the model writes a thought, picks a tool and its input, sees the result (the observation), and repeats until it gives a final answer.</td></tr><tr><td><strong>max_iter</strong></td><td>The cap on an agent's tool-loop iterations for one task; the main guard against runaway loops.</td></tr><tr><td><strong>Flow</strong></td><td>CrewAI's layer for explicit, event-driven control: Python methods wired with decorators such as start, listen and router, sharing a typed state, that can call crews as steps.</td></tr><tr><td><strong>Guardrail</strong></td><td>A check run on a task's output (a function or a schema) that rejects it and asks the agent to retry if it fails.</td></tr><tr><td><strong>Least privilege</strong></td><td>Scoped, minimal tool permissions to limit blast radius.</td></tr></tbody></table>
 </section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
@@ -283,9 +300,225 @@ researcher = Agent(
 )</pre><p>Combines <a href="llamaindex.html">LlamaIndex</a> retrieval with CrewAI role orchestration. For customer-facing chat with HITL, wrap in LangGraph instead.</p>
 </div>
 </section>
+<p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>13 &mdash; The question</h2>
+<p>Some work naturally splits into specialist jobs: one person pulls the data, another reads customer comments, a third writes the summary. CrewAI lets you express an LLM application that way: you declare <strong>agents</strong> with roles and tools, <strong>tasks</strong> with expected outputs, and a <strong>process</strong> that runs them. It is the highest-level of the common agent frameworks: you describe a team and a plan, and it writes the prompts and runs the loops.</p>
+<p>That height is both the appeal and the risk. Interviewers ask:</p>
+<ol>
+<li>What does an agent's "role" actually do mechanically, and what does a crew run look like in model calls?</li>
+<li>Sequential versus hierarchical: what does the manager cost, and what can go wrong?</li>
+<li>How many tokens and calls does a crew spend compared with a plain pipeline doing the same job?</li>
+<li>When would you choose CrewAI over LangGraph or a few functions of your own?</li>
+</ol>
+<p>Running example: the electronics shop from <a href="langchain.html">LangChain</a> and <a href="langgraph.html">LangGraph</a> wants a <strong>weekly returns-insights report</strong> for its merchandising team. Three specialists: an <em>analyst</em> who queries the returns database, a <em>researcher</em> who reads the week's customer reviews of the most-returned products, and a <em>writer</em> who turns both into a one-page report. We will build it as a crew, count every model call and token, and then ask whether it should be a crew at all.</p>
+</section>
+<section id="step-1-what-a-role-really-is">
+  <h2>14 &mdash; Step 1: what a role really is</h2>
+<p>A CrewAI agent is declared like a job description:</p>
+<pre>analyst = Agent(
+    role=<span class="st">"</span><span class="st">Returns Analyst</span><span class="st">"</span>,
+    goal=<span class="st">"</span><span class="st">Find the top return reasons this week</span><span class="st">"</span>,
+    backstory=<span class="st">"</span><span class="st">You have run e-commerce analytics for ten years.</span><span class="st">"</span>,
+    tools=[query_returns_db],
+)
+</pre>
+<p>Nothing about "Returns Analyst" exists outside the prompt. CrewAI composes the three fields into a system message, roughly: "You are Returns Analyst. You have run e-commerce analytics for ten years. Your personal goal is: Find the top return reasons this week", followed by the tool descriptions and instructions for the answer format. The model then plays that character.</p>
+<p>Role-playing does help, for concrete reasons that have nothing to do with personality:</p>
+<ul>
+<li><strong>Narrow context.</strong> Each agent's prompt contains only its own job and tools, so the model is not choosing among twelve tools for every step.</li>
+<li><strong>Tool scoping.</strong> The writer gets no database tool, so it cannot run a query even if the model wants to. That is least privilege, enforced in code.</li>
+<li><strong>Separable outputs.</strong> Each task produces an inspectable intermediate result you can test and log on its own.</li>
+</ul>
+<p>What a role does not do: add knowledge or skill. "Ten years of analytics" does not make the model better at SQL; at most it nudges tone and thoroughness. Treat backstory as prompt engineering, and evaluate it as such.</p>
+</section>
+<section id="step-2-inside-one-agent-a-tool-loop">
+  <h2>15 &mdash; Step 2: inside one agent, a tool loop</h2>
+<p>When an agent works on a task, it runs a <strong>tool loop</strong>, the same loop described in <a href="../agents/agent-loop.html">The agent loop</a>:</p>
+<ol>
+<li>Send the system prompt, the task, any context and the work so far to the model.</li>
+<li>The model either requests a tool (with arguments) or gives a final answer.</li>
+<li>If a tool was requested, run it, append the result (the <strong>observation</strong>) and go to 1.</li>
+<li>Stop on a final answer, or when <code>max_iter</code> iterations are used up, in which case the agent is pushed to answer with what it has.</li>
+</ol>
+<p>Depending on the model, the tool request is either a native function call or text in a ReAct format ("Thought: ... Action: query_returns_db Action Input: {...}") that the framework parses. The text format has a specific failure: the model sometimes writes the "Observation:" line itself, inventing a tool result instead of waiting for one. Native function calling avoids that, so prefer models and settings that use it.</p>
+<p>The cost structure follows from the loop. Every iteration re-sends everything so far, so an agent that takes \(k\) iterations, with a fixed prompt \(F\), a task description \(D\), context \(C\) and about \(s\) tokens added per iteration, consumes</p>
+\[ \sum_{j=0}^{k-1} \big(F + D + C + s\,j\big) = k\,(F + D + C) + s\,\frac{k(k-1)}{2} \]
+<p>input tokens. Both \(k\) and \(C\) are things the crew design controls.</p>
+</section>
+<section id="step-3-tasks-are-the-contract">
+  <h2>16 &mdash; Step 3: tasks are the contract</h2>
+<p>A task binds a piece of work to an agent:</p>
+<pre>top_reasons = Task(
+    description=<span class="st">"</span><span class="st">Query this week</span><span class="st">'</span><span class="st">s returns. Rank the top 5 products by return count, with reasons.</span><span class="st">"</span>,
+    expected_output=<span class="st">"</span><span class="st">A table: product, returns, top reason, share of returns.</span><span class="st">"</span>,
+    agent=analyst,
+)
+</pre>
+<p><code>expected_output</code> is the most important field in CrewAI. It is appended to the prompt as the definition of done, so it acts as the agent's rubric: an agent told "a table with these four columns" produces one far more reliably than an agent told "analyse returns". Make it concrete: format, length, required fields.</p>
+<p>Tasks can go further than text. <code>output_pydantic</code> (or <code>output_json</code>) asks for the answer as a typed object and validates it, so the next step receives fields rather than prose. A <strong>guardrail</strong> function can inspect the output and reject it with a reason, which sends the agent back to try again. <code>human_input=True</code> asks a person to review the output before the crew moves on. And <code>context=[other_task]</code> declares which earlier outputs this task should see.</p>
+<p>The result of each task is a task output object holding the raw text and, if requested, the parsed object. The crew's result holds every task's output plus token usage, which is what you log.</p>
+</section>
+<section id="step-4-the-sequential-process">
+  <h2>17 &mdash; Step 4: the sequential process</h2>
+<p>With <code>process=Process.sequential</code>, the crew runs tasks in the order listed. A task with a <code>context</code> list receives exactly those tasks' outputs; without one, earlier output is passed along automatically (exactly which outputs varies by version, so be explicit). For the returns report:</p>
+<pre class="ascii-diagram">kickoff(inputs={"week": "2026-W45"})
+  |
+  v
+[top_reasons]  agent: analyst     tools: query_returns_db    -&gt; table of top 5 products
+  |  context
+  v
+[review_themes] agent: researcher tools: search_reviews       -&gt; themes per product, with quotes
+  |  context (both earlier outputs)
+  v
+[write_report] agent: writer      tools: none                 -&gt; one-page markdown report</pre>
+<p>Put numbers on it with the formula from Step 2. Assume a fixed prompt of 600 tokens for agents with tools (persona, tool schemas, format rules) and 300 for the writer, a 150-token task description, 250 tokens added per loop iteration, and 500-token task outputs passed on as context. The writer has no tools, so its two calls are a first draft and one rewrite after the report guardrail (Step 10) rejects it; a draft that passes first time is one call:</p>
+<table>
+<thead><tr><th>Task</th><th>Iterations \(k\)</th><th>Context \(C\)</th><th>Input tokens</th></tr></thead>
+<tbody>
+<tr><td>top_reasons (analyst)</td><td>4</td><td>0</td><td>4,500</td></tr>
+<tr><td>review_themes (researcher)</td><td>5</td><td>500</td><td>8,750</td></tr>
+<tr><td>write_report (writer)</td><td>2</td><td>1,000</td><td>3,150</td></tr>
+<tr><td><strong>Crew total</strong></td><td><strong>11 calls</strong></td><td></td><td><strong>16,400</strong></td></tr>
+</tbody>
+</table>
+<p>The sequential process is a pipeline with an agent loop in each stage. Its strengths are those of any pipeline: predictable order, inspectable intermediate outputs, and a cost you can estimate in advance. Independent tasks can be marked <code>async_execution=True</code> to run concurrently, with a later task listing them all in <code>context</code> to wait for them.</p>
+</section>
+<section id="step-5-the-hierarchical-process">
+  <h2>18 &mdash; Step 5: the hierarchical process</h2>
+<p>With <code>process=Process.hierarchical</code> and a <code>manager_llm</code> (or a custom manager agent), CrewAI adds a <strong>manager</strong>. The manager receives the list of tasks and the roster of agents, decides who should do each task, delegates it with instructions, reviews the result, and may send work back. The specialists no longer need to be assigned to tasks in advance.</p>
+<p>Mechanically, the manager is another agent whose tools are "delegate work to a coworker" and "ask a coworker a question". Each delegation is a tool call whose execution runs the chosen agent's own tool loop. So the manager adds model calls of its own and rewrites the task in its own words before the specialist sees it.</p>
+<p>For the report, suppose the manager makes about 2 calls per task (delegate, then review) at about 1,500 input tokens each, since it carries the roster and task list. That adds \(2 \times 3 \times 1{,}500 = 9{,}000\) tokens, about 55% more than the sequential crew, before any re-delegation. In exchange you get dynamic assignment, which helps when the right specialist is not known in advance (an incoming request might need the analyst, the researcher or both).</p>
+<p>Failure modes specific to the manager:</p>
+<ul>
+<li><strong>Lossy re-instruction.</strong> The manager paraphrases the task; requirements in your <code>expected_output</code> can be dropped.</li>
+<li><strong>Re-delegation loops.</strong> The manager is unhappy with a result and sends it back, repeatedly, until <code>max_iter</code>.</li>
+<li><strong>Premature "done".</strong> The manager summarises a partial result as complete.</li>
+</ul>
+<p>If the task-to-agent mapping is fixed, as in the weekly report, the sequential process is cheaper and more predictable. Use the hierarchical process only when routing genuinely needs judgment.</p>
+</section>
+<section id="step-6-delegation-between-peers">
+  <h2>19 &mdash; Step 6: delegation between peers</h2>
+<p><code>allow_delegation=True</code> on an ordinary agent gives it the same coworker tools the manager has. The researcher, unsure what "return reason code R7" means, can ask the analyst. This is useful in moderation and dangerous as a default:</p>
+<ul>
+<li>Every delegation runs another agent's whole tool loop, so one question can cost several calls.</li>
+<li>Two agents that may both delegate can bounce a question between them; only <code>max_iter</code> stops it.</li>
+<li>The cost of a run stops being predictable from the task list, which is the main thing that made the sequential process attractive.</li>
+</ul>
+<p>The production default is delegation off, with information an agent might need passed explicitly through <code>context</code> or included in its tools. Turn delegation on for a specific agent when you have seen it needed, and watch its call counts.</p>
+</section>
+<section id="step-7-memory-and-knowledge">
+  <h2>20 &mdash; Step 7: memory and knowledge</h2>
+<p>CrewAI can attach memory to a crew (<code>memory=True</code>). Conceptually there are a few kinds; the exact storage backends vary by version, so check the documentation of the one you install:</p>
+<ul>
+<li><strong>Short-term memory</strong>: recent outputs from this run, stored with embeddings and retrieved into later agents' prompts when relevant.</li>
+<li><strong>Long-term memory</strong>: results and evaluations of past runs, persisted so the crew can draw on earlier weeks.</li>
+<li><strong>Entity memory</strong>: facts about named things (a product, a supplier) gathered during runs.</li>
+<li><strong>Knowledge sources</strong>: documents (the returns policy, the product catalogue) indexed for retrieval by agents, which is RAG under another name; see <a href="../rag/rag-pipeline.html">The RAG pipeline</a>.</li>
+</ul>
+<p>Two cautions. Memory retrieval adds embedding calls and prompt tokens to every step that uses it. And long-term memory makes runs depend on history: this week's report can differ because of what was stored last week, which is a debugging and evaluation problem. For a weekly report, passing last week's report in explicitly as an input is often clearer than enabling persistent memory. See <a href="../agents/memory-context.html">Memory and context</a>.</p>
+</section>
+<section id="step-8-flows-for-the-parts-that-must-be-deterministic">
+  <h2>21 &mdash; Step 8: flows, for the parts that must be deterministic</h2>
+<p>A crew decides its own steps inside each task. Often you want the opposite around it: fixed control flow with LLM work in specific places. CrewAI's <strong>Flows</strong> provide that. A flow is a Python class whose methods are wired by decorators: a start method, methods that listen for another method's completion, and router methods that choose a branch from the state. Methods share a typed state object, and any method can call a crew, a single model call or plain code.</p>
+<p>For the report, a flow might be: a start method runs the SQL query in plain code (no agent needed), a router skips the review analysis if returns fell this week, a crew handles the review themes and writing, and a final method posts the report to Slack. The deterministic parts are code; the open-ended parts are agents. That split, "code for control, agents for judgment", is the same lesson LangGraph teaches with edges and nodes. Flows can persist their state, but LangGraph's checkpoint-per-step, interrupt and resume model is more developed if durability and human approval are central.</p>
+</section>
+<section id="step-9-what-it-costs-and-how-slow-it-is">
+  <h2>22 &mdash; Step 9: what it costs and how slow it is</h2>
+<p>From Step 4, the sequential crew spends 11 model calls and about 16,400 input tokens per report. At an illustrative $3 per million input tokens that is about $0.05 a week. For a weekly report, cost is irrelevant and latency (11 sequential calls at about 2 s each, so 20-plus seconds plus tool time) is fine.</p>
+<p>Now compare the same job done as a plain pipeline: code runs the SQL query and fetches the reviews; one model call summarises the review themes (about 4,000 input tokens of reviews); one call writes the report (about 1,500). That is 2 calls and about 5,500 input tokens, a third of the crew's tokens, with no loops and a fixed latency of two calls.</p>
+<p>The difference matters as soon as the work moves into a request path. If the shop wanted a per-customer "why are people returning this product?" answer at 50,000 requests a day, the crew design would cost about \(16{,}400 \times 50{,}000 \times \$3 / 10^6 \approx \$2{,}460\) a day against about $825 for the pipeline, and take 20 seconds instead of 3 or 4. The crew's extra cost buys flexibility (agents decide what to query and read); the question is whether the task needs it.</p>
+<div class="callout"><p><strong>The test.</strong> If you can write the steps of the job down in advance, it is a pipeline; build it with code and a few model calls. Use agents for the parts where the next step genuinely depends on what was found.</p></div>
+</section>
+<section id="step-10-making-a-crew-reliable">
+  <h2>23 &mdash; Step 10: making a crew reliable</h2>
+<ul>
+<li><strong>Bound everything.</strong> <code>max_iter</code> per agent, a rate limit on model requests (<code>max_rpm</code>), and a timeout on the whole kickoff.</li>
+<li><strong>Type the hand-offs.</strong> Use <code>output_pydantic</code> on every task whose output feeds another task, so the writer receives a validated list of products, not free text it must reinterpret.</li>
+<li><strong>Guard outputs.</strong> A guardrail on the report checks that every product named appears in the analyst's table, which catches invented products before a human reads them.</li>
+<li><strong>Scope tools.</strong> Read-only database credentials for the analyst; no tools for the writer.</li>
+<li><strong>Log per task.</strong> Record each task's output, call count and tokens, so a bad report can be traced to the stage that went wrong. See <a href="../production/observability.html">Observability</a>.</li>
+<li><strong>Evaluate the stages.</strong> A small golden set of past weeks with known top reasons lets you score the analyst stage on its own; judge the final report with a rubric (<a href="../production/evals.html">Evaluating LLM features</a>).</li>
+</ul>
+</section>
+<section id="choosing-crewai-or-not">
+  <h2>24 &mdash; Choosing CrewAI, or not</h2>
+<table>
+<thead><tr><th>Situation</th><th>Choice</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Research or reporting job with clear specialist stages, run occasionally</td><td>CrewAI, sequential process</td><td>Fastest to express; cost and latency do not matter at this volume.</td></tr>
+<tr><td>Prototype to explore whether a multi-agent split helps at all</td><td>CrewAI</td><td>Cheap to try roles and task boundaries before investing in a graph.</td></tr>
+<tr><td>Steps are knowable in advance</td><td>Plain pipeline (code plus a few model calls)</td><td>Fewer calls, fixed latency, easier to test.</td></tr>
+<tr><td>Agent with approvals, resumability, per-step audit</td><td><a href="langgraph.html">LangGraph</a></td><td>Checkpoints, interrupts and explicit edges.</td></tr>
+<tr><td>Request-path feature at high volume</td><td>Pipeline or a single tool-using agent</td><td>A crew multiplies calls and latency per request.</td></tr>
+</tbody>
+</table>
+<p>For the wider comparison, see <a href="frameworks.html">Choosing an agent framework</a>; for when multiple agents beat one, <a href="../agents/multi-agent.html">Multi-agent systems</a>.</p>
+</section>
+<section id="in-code-the-crew-and-a-cost-model-you-can-run">
+  <h2>25 &mdash; In code: the crew, and a cost model you can run</h2>
+<p>The crew itself, written against CrewAI's documented API (it needs the <code>crewai</code> package on a recent Python and a model API key):</p>
+<pre><span class="cm"># Needs crewai and a model API key; written against the documented API.</span>
+<span class="kw">from</span> crewai <span class="kw">import</span> Agent, Task, Crew, Process
+<span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel
+
+<span class="kw">class</span> <span class="tp">TopReturns</span>(BaseModel):
+    products: <span class="tp">list</span>[<span class="tp">dict</span>]          <span class="cm"># product, returns, top_reason, share</span>
+
+analyst = Agent(role=<span class="st">"</span><span class="st">Returns Analyst</span><span class="st">"</span>, goal=<span class="st">"</span><span class="st">Find the top return reasons in week </span><span class="st">{week}</span><span class="st">"</span>,
+                backstory=<span class="st">"</span><span class="st">You have run e-commerce analytics for ten years.</span><span class="st">"</span>,
+                tools=[query_returns_db], max_iter=<span class="nr">6</span>, allow_delegation=<span class="nr">False</span>)
+researcher = Agent(role=<span class="st">"</span><span class="st">Review Researcher</span><span class="st">"</span>, goal=<span class="st">"</span><span class="st">Explain why customers return these products</span><span class="st">"</span>,
+                   backstory=<span class="st">"</span><span class="st">You read customer reviews and extract recurring complaints.</span><span class="st">"</span>,
+                   tools=[search_reviews], max_iter=<span class="nr">6</span>, allow_delegation=<span class="nr">False</span>)
+writer = Agent(role=<span class="st">"</span><span class="st">Report Writer</span><span class="st">"</span>, goal=<span class="st">"</span><span class="st">Write a one-page report for merchandising</span><span class="st">"</span>,
+               backstory=<span class="st">"</span><span class="st">You write short, specific business reports.</span><span class="st">"</span>, tools=[])
+
+t1 = Task(description=<span class="st">"</span><span class="st">Rank the top 5 products by returns in week </span><span class="st">{week}</span><span class="st">, with reasons.</span><span class="st">"</span>,
+          expected_output=<span class="st">"</span><span class="st">Top 5 products with return count, top reason and share of returns.</span><span class="st">"</span>,
+          agent=analyst, output_pydantic=TopReturns)
+t2 = Task(description=<span class="st">"</span><span class="st">For each product, summarise the main complaint themes in reviews.</span><span class="st">"</span>,
+          expected_output=<span class="st">"</span><span class="st">Per product: 2-3 themes, each with one short customer quote.</span><span class="st">"</span>,
+          agent=researcher, context=[t1])
+t3 = Task(description=<span class="st">"</span><span class="st">Write the weekly returns report.</span><span class="st">"</span>,
+          expected_output=<span class="st">"</span><span class="st">Markdown, under 400 words: headline, table, one action per product.</span><span class="st">"</span>,
+          agent=writer, context=[t1, t2])
+
+crew = Crew(agents=[analyst, researcher, writer], tasks=[t1, t2, t3],
+            process=Process.sequential, max_rpm=<span class="nr">30</span>)
+result = crew.kickoff(inputs={<span class="st">"</span><span class="st">week</span><span class="st">"</span>: <span class="st">"</span><span class="st">2026-W45</span><span class="st">"</span>})
+<span class="tp">print</span>(result.raw, result.token_usage)
+</pre>
+<p>And the cost model from Steps 2, 4, 5 and 9, which runs anywhere:</p>
+<pre><span class="kw">def</span> <span class="fn">task_input_tokens</span>(fixed, task, context, iters, step=<span class="nr">250</span>):
+    <span class="st">"""Input tokens over one task's tool loop: each iteration re-sends everything so far."""</span>
+<span class="kw">return</span> <span class="tp">sum</span>(fixed + task + context + step * j <span class="kw">for</span> j in <span class="tp">range</span>(iters))
+
+TASK = <span class="nr">150</span> <span class="cm"># task description + expected_output</span>
+OUT = <span class="nr">500</span> <span class="cm"># each task's final answer, passed on as context</span>
+crew = [  <span class="cm"># (agent, fixed prompt tokens, context tokens, loop iterations)</span>
+    (<span class="st">"</span><span class="st">analyst</span><span class="st">"</span>,    <span class="nr">600</span>, <span class="nr">0</span>,        <span class="nr">4</span>),
+    (<span class="st">"</span><span class="st">researcher</span><span class="st">"</span>, <span class="nr">600</span>, OUT,      <span class="nr">5</span>),
+    (<span class="st">"</span><span class="st">writer</span><span class="st">"</span>,     <span class="nr">300</span>, <span class="nr">2</span> * OUT,  <span class="nr">2</span>),
+]
+total, calls = <span class="nr">0</span>, <span class="nr">0</span>
+<span class="kw">for</span> name, fixed, ctx, iters in crew:
+    t = task_input_tokens(fixed, TASK, ctx, iters)
+    total, calls = total + t, calls + iters
+    <span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">{</span>name<span class="st">:</span><span class="st">10s</span><span class="st">}</span><span class="st"> calls=</span><span class="st">{</span>iters<span class="st">}</span><span class="st">  input tokens=</span><span class="st">{</span>t<span class="st">:</span><span class="st">,</span><span class="st">}</span><span class="st">"</span>)
+<span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">sequential crew: </span><span class="st">{</span>calls<span class="st">}</span><span class="st"> calls, </span><span class="st">{</span>total<span class="st">:</span><span class="st">,</span><span class="st">}</span><span class="st"> input tokens</span><span class="st">"</span>)
+
+manager = <span class="nr">2</span> * <span class="nr">3</span> * <span class="nr">1500</span> <span class="cm"># hierarchical: ~2 manager calls per task, ~1,500 tokens each</span>
+<span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">hierarchical adds ~</span><span class="st">{</span>manager<span class="st">:</span><span class="st">,</span><span class="st">}</span><span class="st"> tokens (</span><span class="st">{</span>manager / total<span class="st">:</span><span class="st">.0%</span><span class="st">}</span><span class="st"> more)</span><span class="st">"</span>)
+
+pipeline = <span class="nr">4000</span> + <span class="nr">1500</span> <span class="cm"># code does the queries; 2 model calls</span>
+<span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">plain pipeline: 2 calls, </span><span class="st">{</span>pipeline<span class="st">:</span><span class="st">,</span><span class="st">}</span><span class="st"> input tokens; the crew uses </span><span class="st">{</span>total / pipeline<span class="st">:</span><span class="st">.1f</span><span class="st">}</span><span class="st">x</span><span class="st">"</span>)
+</pre>
+<p>It prints 4,500, 8,750 and 3,150 for the three tasks, a crew total of 11 calls and 16,400 tokens, 9,000 extra tokens (55%) for a hierarchical manager, and a pipeline at 5,500 tokens, with the crew using 3.0 times as many. Change <code>iters</code> or <code>OUT</code> and watch the quadratic term and the context term move.</p>
+</section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>13 &mdash; Production &amp; Ops</h2>
+  <h2>26 &mdash; Production &amp; Ops</h2>
 <div class="card">
 <table>
 <tr><th>Concern</th><th>Practice</th></tr>
@@ -298,25 +531,42 @@ researcher = Agent(
 </div>
 </section>
 <section id="related-topics">
-  <h2>14 &mdash; Related topics</h2>
+  <h2>27 &mdash; Related topics</h2>
 <div class="card">
 <ul><li><a href="../agents/multi-agent.html">Multi-agent systems</a> — crew vs supervisor patterns</li><li><a href="../agents/what-is-an-agent.html">What an agent is</a> — role-based teams</li><li><a href="langgraph.html">LangGraph</a> — production alternative</li><li><a href="langchain.html">LangChain</a> — underlying LLM/tool integrations</li><li><a href="../production/reference-architectures.html">Reference architectures</a> — when multi-agent helps</li><li><a href="../agents/agent-loop.html">The agent loop</a> — HITL requirements</li><li><a href="../production/cost-performance.html">Cost &amp; latency</a> — crew cost model</li><li><a href="../fundamentals/api.html">Calling a model</a> — underlying LLM calls</li></ul>
 </div>
 </section>
 <section id="where-people-get-lost">
-  <h2>15 &mdash; Where people get lost</h2>
+  <h2>28 &mdash; Where people get lost</h2>
 <div class="card">
 <ul><li><strong>Crew for 2-step tasks</strong> — overkill; use single agent or LCEL chain</li><li><strong>Unbounded delegation loops</strong> — agents ping-pong questions</li><li><strong>Identical tools on all agents</strong> — violates least privilege</li><li><strong>Vague expected_output</strong> — inconsistent format across runs</li><li><strong>No timeout on kickoff()</strong> — hung crew blocks worker</li><li><strong>Skipping eval</strong> — backstory changes silently degrade quality</li><li><strong>Manager model too weak</strong> — bad delegation in hierarchical mode</li><li><strong>No structured expected_output</strong> — downstream parsing breaks</li></ul>
 </div> <div class="card">
 <h3>Debugging checklist</h3><ol><li>Run with <code>verbose=True</code> on agents and crew</li><li>Log each task output before next task consumes it</li><li>Compare sequential vs hierarchical on same golden input</li><li>Isolate one agent/task pair to spot bad backstory or tool schema</li><li>Measure token usage per task in LangSmith or custom callback</li></ol>
 </div>
+<ul>
+<li><strong>"The backstory makes the agent an expert."</strong> It is prompt text. It can shape tone and thoroughness; it adds no knowledge. Evaluate it like any prompt change.</li>
+<li><strong>Vague <code>expected_output</code>.</strong> It is the definition of done. "Analyse returns" invites rambling; "a 5-row table with these columns" gets a table.</li>
+<li><strong>Defaulting to the hierarchical process.</strong> The manager adds calls, paraphrases your tasks and can loop. Use it only when task routing needs judgment.</li>
+<li><strong>Leaving delegation on everywhere.</strong> Delegation makes cost unpredictable and allows ping-pong between agents. Off by default; enable per agent.</li>
+<li><strong>Building a crew for a fixed pipeline.</strong> If you can list the steps in advance, code plus two model calls is cheaper, faster and easier to test.</li>
+<li><strong>Passing free text between tasks.</strong> Type the hand-offs with <code>output_pydantic</code> so the next agent receives fields, not prose to reinterpret.</li>
+<li><strong>Trusting text-format tool loops.</strong> A model can write a fake "Observation". Prefer native function calling and check tool outputs in logs.</li>
+<li><strong>Turning on memory without thinking about evaluation.</strong> Persistent memory makes runs depend on past runs, which makes failures hard to reproduce.</li>
+</ul>
 </section>
 <section id="how-this-connects">
-  <h2>16 &mdash; How this connects</h2>
-<h3>Builds on</h3><ul><li><a href="../fundamentals/api.html">Calling a model</a> &mdash; The API call end to end: messages, roles, streaming, tool calls, errors and retries, across providers.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../agents/tool-calling.html">Tool calling</a> &mdash; Why tools, what goes over the wire, and designing schemas the model uses well.</li><li><a href="../agents/what-is-an-agent.html">What an agent is</a> &mdash; Agents vs agentic AI, what makes something an agent, workflows vs agents, and agent architectures.</li><li><a href="../agents/agent-loop.html">The agent loop</a> &mdash; The loop in depth and in code: budgets, errors, human approval, reliability, safety, and how to evaluate an agent.</li><li><a href="../agents/memory-context.html">Memory &amp; context engineering</a> &mdash; Short- and long-term memory, compaction, and context engineering, the real production skill.</li></ul>
+  <h2>29 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../fundamentals/api.html">Calling a model</a> &mdash; The API call end to end: messages, roles, streaming, tool calls, errors and retries, across providers.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="../agents/tool-calling.html">Tool calling</a> &mdash; Why tools, what goes over the wire, and designing schemas the model uses well.</li><li><a href="../agents/what-is-an-agent.html">What an agent is</a> &mdash; Agents vs agentic AI, what makes something an agent, workflows vs agents, and agent architectures.</li><li><a href="../agents/agent-loop.html">The agent loop</a> &mdash; The loop in depth and in code: budgets, errors, human approval, reliability, safety, and how to evaluate an agent.</li></ul>
 </section>
 <section id="check-yourself">
-  <h2>17 &mdash; Check yourself</h2>
+  <h2>30 &mdash; Check yourself</h2>
+<details><summary>What does an agent's <code>role</code> change mechanically?</summary><div class="answer">Only the system prompt: CrewAI composes role, goal and backstory (plus tool descriptions and format instructions) into the text the model receives. Real separation comes from scoping each agent's tools and context, not from the persona.</div></details>
+<details><summary>An agent has a fixed prompt of 600 tokens, a 150-token task, 500 tokens of context and takes 5 loop iterations adding 250 tokens each. How many input tokens does the task use?</summary><div class="answer">\(5 \times (600 + 150 + 500) + 250 \times \frac{5 \times 4}{2} = 6{,}250 + 2{,}500 = 8{,}750\).</div></details>
+<details><summary>Why is the sequential process usually right for the weekly returns report, and what would justify the hierarchical one?</summary><div class="answer">The task-to-agent mapping is fixed, so a manager adds about 55% more tokens, paraphrases the tasks and can loop, with no benefit. Hierarchical is justified when the right specialist for each piece of work cannot be known in advance, such as varied incoming requests.</div></details>
+<details><summary>Product wants this crew to answer customers live, 50,000 times a day. What do you tell them, with numbers?</summary><div class="answer">The crew uses about 16,400 input tokens and 11 sequential calls per run: roughly $2,460 a day at an illustrative $3 per million tokens and 20-plus seconds per answer. A pipeline (code queries plus 2 model calls, about 5,500 tokens) costs about $825 a day and answers in a few seconds. Use the pipeline, or precompute the answer per product weekly and serve it from a cache.</div></details>
+<details><summary>Two agents with <code>allow_delegation=True</code> run up a large bill on one report. What probably happened, and how do you prevent it?</summary><div class="answer">They delegated to each other repeatedly, each delegation running a full tool loop, until <code>max_iter</code> stopped them. Turn delegation off, pass needed information through <code>context</code>, lower <code>max_iter</code>, and alert on per-task call counts.</div></details>
+<details><summary>Where do CrewAI Flows fit relative to crews, and when would you still pick LangGraph?</summary><div class="answer">Flows give fixed, event-driven control (start, listen, router, shared typed state) around steps that may be crews, single calls or plain code: code for control, agents for judgment. Pick LangGraph when durable per-step checkpoints, interrupts for human approval and resume after crashes are central requirements.</div></details>
+<details><summary>The writer's report names a product the analyst never listed. Name two controls that catch or prevent this.</summary><div class="answer">Type the analyst's output with <code>output_pydantic</code> so the writer receives an explicit product list, and add a guardrail on the report that rejects any product not in that list. Logging each task's output lets you confirm which stage introduced it.</div></details>
 <details>
 <summary>What is CrewAI optimized for?</summary>
 <div class="answer">Role-based multi-step workflows: research → analyze → write. Declarative agents/tasks faster than hand-rolling <a href="langgraph.html">LangGraph</a> for demos and internal tools.</div>

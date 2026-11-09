@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
@@ -30,32 +34,44 @@
   <a href="#deep-dive-positional-encoding-rope"><span class="num">10</span> Deep Dive: Positional Encoding (RoPE)</a>
   <a href="#deep-dive-ffn-residual-connections"><span class="num">11</span> Deep Dive: FFN &amp; Residual Connections</a>
   <a href="#deep-dive-complexity-optimizations"><span class="num">12</span> Deep Dive: Complexity &amp; Optimizations</a>
-  <a href="#transformer-internals-attention-for-real"><span class="num">13</span> Transformer internals — attention, for real</a>
-  <a href="#tokenization-bpe-in-one-paragraph"><span class="num">14</span> Tokenization: BPE in one paragraph</a>
-  <a href="#self-attention-the-actual-computation"><span class="num">15</span> Self-attention: the actual computation</a>
-  <a href="#the-block-and-the-shapes"><span class="num">16</span> The block, and the shapes</a>
-  <a href="#two-numbers-you-should-be-able-to-estimate"><span class="num">17</span> Two numbers you should be able to estimate</a>
-  <a href="#mini-scenario-the-count-the-letters-bug-report"><span class="num">18</span> Mini-scenario: the &quot;count the letters&quot; bug report</a>
-  <a href="#embeddings"><span class="num">19</span> Embeddings</a>
-  <a href="#scaled-dot-product-attention"><span class="num">20</span> Scaled dot-product attention</a>
-  <a href="#multi-head-attention-mqa-and-gqa"><span class="num">21</span> Multi-head attention, MQA and GQA</a>
-  <a href="#positional-encoding-and-rope"><span class="num">22</span> Positional encoding and RoPE</a>
-  <a href="#the-transformer-block"><span class="num">23</span> The transformer block</a>
-  <a href="#a-complete-mini-gpt-in-pytorch"><span class="num">24</span> A complete mini-GPT in PyTorch</a>
-  <a href="#counting-parameters-and-flops"><span class="num">25</span> Counting parameters and FLOPs</a>
-  <a href="#flashattention"><span class="num">26</span> FlashAttention</a>
-  <a href="#production-ops"><span class="num">27</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">28</span> Related topics</a>
-  <a href="#where-people-get-lost"><span class="num">29</span> Where people get lost</a>
-  <a href="#how-this-connects"><span class="num">30</span> How this connects</a>
-  <a href="#check-yourself"><span class="num">31</span> Check yourself</a>
-  <a href="#build-it"><span class="num">32</span> Build it</a>
+  <a href="#the-question"><span class="num">13</span> The question</a>
+  <a href="#step-1-tokens-become-vectors"><span class="num">14</span> Step 1: tokens become vectors</a>
+  <a href="#step-2-attention-is-a-soft-lookup"><span class="num">15</span> Step 2: attention is a soft lookup</a>
+  <a href="#step-3-why-divide-by-the-square-root-of-d-k"><span class="num">16</span> Step 3: why divide by the square root of d_k</a>
+  <a href="#step-4-the-causal-mask-and-why-training-is-parallel"><span class="num">17</span> Step 4: the causal mask, and why training is parallel</a>
+  <a href="#step-5-many-heads-and-sharing-keys-and-values"><span class="num">18</span> Step 5: many heads, and sharing keys and values</a>
+  <a href="#step-6-telling-the-model-where-each-token-is"><span class="num">19</span> Step 6: telling the model where each token is</a>
+  <a href="#step-7-the-block-and-the-residual-stream"><span class="num">20</span> Step 7: the block and the residual stream</a>
+  <a href="#step-8-what-attention-costs-as-context-grows"><span class="num">21</span> Step 8: what attention costs as context grows</a>
+  <a href="#step-9-flashattention-computes-the-same-thing-without-the-ma"><span class="num">22</span> Step 9: FlashAttention computes the same thing without the matrix</a>
+  <a href="#reading-a-model-config-like-an-engineer"><span class="num">23</span> Reading a model config like an engineer</a>
+  <a href="#in-code-attention-by-hand-then-a-real-block"><span class="num">24</span> In code: attention by hand, then a real block</a>
+  <a href="#transformer-internals-attention-for-real"><span class="num">25</span> Transformer internals — attention, for real</a>
+  <a href="#tokenization-bpe-in-one-paragraph"><span class="num">26</span> Tokenization: BPE in one paragraph</a>
+  <a href="#self-attention-the-actual-computation"><span class="num">27</span> Self-attention: the actual computation</a>
+  <a href="#the-block-and-the-shapes"><span class="num">28</span> The block, and the shapes</a>
+  <a href="#two-numbers-you-should-be-able-to-estimate"><span class="num">29</span> Two numbers you should be able to estimate</a>
+  <a href="#mini-scenario-the-count-the-letters-bug-report"><span class="num">30</span> Mini-scenario: the &quot;count the letters&quot; bug report</a>
+  <a href="#embeddings"><span class="num">31</span> Embeddings</a>
+  <a href="#scaled-dot-product-attention"><span class="num">32</span> Scaled dot-product attention</a>
+  <a href="#multi-head-attention-mqa-and-gqa"><span class="num">33</span> Multi-head attention, MQA and GQA</a>
+  <a href="#positional-encoding-and-rope"><span class="num">34</span> Positional encoding and RoPE</a>
+  <a href="#the-transformer-block"><span class="num">35</span> The transformer block</a>
+  <a href="#a-complete-mini-gpt-in-pytorch"><span class="num">36</span> A complete mini-GPT in PyTorch</a>
+  <a href="#counting-parameters-and-flops"><span class="num">37</span> Counting parameters and FLOPs</a>
+  <a href="#flashattention"><span class="num">38</span> FlashAttention</a>
+  <a href="#production-ops"><span class="num">39</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">40</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">41</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">42</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">43</span> Check yourself</a>
+  <a href="#build-it"><span class="num">44</span> Build it</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Transformers &amp; attention <span>// LLM fundamentals</span></h1>
   <p>Embeddings, attention, multi-head and GQA, RoPE, the block, a mini-GPT, FLOPs and FlashAttention.</p>
-  <div class="tags"><span class="tag">20 min read</span><span class="tag">4 diagrams</span></div>
+  <div class="tags"><span class="tag">39 min read</span><span class="tag">4 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -66,7 +82,7 @@
 </section>
 <section id="new-words">
   <h2>02 &mdash; New words</h2>
-<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Attention</strong></td><td>Lets each token weigh every other token to decide relevance.</td></tr><tr><td><strong>Softmax</strong></td><td>Turns scores into probabilities that sum to 1.</td></tr><tr><td><strong>Q / K / V</strong></td><td>Query, key, value projections; attention = softmax(QKᵀ/√dk)·V.</td></tr></tbody></table>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Embedding</strong></td><td>The vector a token is turned into at the model's input, looked up from a learned table with one row per vocabulary entry.</td></tr><tr><td><strong>Hidden size \(d\)</strong></td><td>The length of the vector carried for each token through the model, for example 4,096.</td></tr><tr><td><strong>Self-attention</strong></td><td>The operation that lets each token build its new vector as a weighted mix of other tokens' vectors, with weights computed from the tokens themselves.</td></tr><tr><td><strong>Query, key, value</strong></td><td>Three vectors computed from each token: the query says what it is looking for, the key what it offers to be matched on, the value what it passes on if matched.</td></tr><tr><td><strong>Causal mask</strong></td><td>The rule that a token may attend only to itself and earlier tokens, enforced by setting scores for later tokens to \(-\infty\).</td></tr><tr><td><strong>Head</strong></td><td>One independent attention computation on a slice of the vector. A layer runs many heads in parallel.</td></tr><tr><td><strong>MQA / GQA</strong></td><td>Multi-query and grouped-query attention: many query heads share one, or a few, key/value heads, shrinking the KV cache.</td></tr><tr><td><strong>KV cache</strong></td><td>The stored keys and values of all previous tokens, kept during generation so they are not recomputed for every new token.</td></tr><tr><td><strong>RoPE</strong></td><td>Rotary position embedding: rotating query and key vectors by angles proportional to position, so attention scores depend on relative distance.</td></tr><tr><td><strong>Feed-forward block (MLP)</strong></td><td>The per-token two-layer network in each block, where most parameters live.</td></tr><tr><td><strong>Residual stream</strong></td><td>The running vector for each token that every block reads from and adds its output back into.</td></tr><tr><td><strong>FlashAttention</strong></td><td>An exact attention algorithm that computes in on-chip tiles and never stores the full score matrix, cutting memory traffic.</td></tr><tr><td><strong>Transformer</strong></td><td>The neural-net architecture behind LLMs; core mechanism is attention.</td></tr><tr><td><strong>Attention</strong></td><td>Lets each token weigh every other token to decide relevance.</td></tr><tr><td><strong>Softmax</strong></td><td>Turns scores into probabilities that sum to 1.</td></tr><tr><td><strong>Q / K / V</strong></td><td>Query, key, value projections; attention = softmax(QKᵀ/√dk)·V.</td></tr></tbody></table>
 </section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
@@ -125,12 +141,184 @@ def scaled_dot_product_attention(q, k, v, mask=None):
 <div class="card"><ul><li><strong>Naive attention:</strong> O(n²d) time, O(n²) memory for n tokens</li><li><strong>KV cache:</strong> O(n) memory per layer at decode; see <a href="../inference/inference-internals.html">Inference internals</a></li><li><strong>FlashAttention:</strong> tiled computation, recomputes in SRAM</li><li><strong>GQA/MQA:</strong> share K/V heads across Q heads — fewer KV bytes</li></ul></div>
 </section>
 <p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>13 &mdash; The question</h2>
+<p>A language model must turn "everything written so far" into a prediction of the next token. Earlier networks (RNNs) read the text one token at a time, squeezing it into a fixed-size state; information from far back faded, and training could not be parallelised across positions. The transformer replaced that with one operation, <strong>attention</strong>, that lets every token look directly at every earlier token and pull in what it needs, for all positions at once. Stack that operation with a per-token MLP, residual connections and normalisation, a few dozen times, and you have almost every current LLM.</p>
+<p>Interviewers ask:</p>
+<ol>
+<li>Walk through self-attention. What are Q, K and V, and why divide by \(\sqrt{d_k}\)?</li>
+<li>Why multiple heads? What are MQA and GQA, and what do they save?</li>
+<li>How does the model know word order? What does RoPE do?</li>
+<li>What does attention cost as the context grows, and what does FlashAttention change?</li>
+</ol>
+<p>The running example is the sentence a support model might read in a ticket: <em>"The refund was late because it"</em>, six tokens, at the moment the model must predict what follows "it". To continue sensibly (<em>"…was sent to the wrong account"</em>), the model must work out that "it" refers to the refund, not the lateness. We will follow the vector for "it" through one attention head with small, hand-checkable numbers, then scale every quantity up to a real 7B-class model.</p>
+</section>
+<section id="step-1-tokens-become-vectors">
+  <h2>14 &mdash; Step 1: tokens become vectors</h2>
+<p>The six tokens are looked up in an <strong>embedding table</strong> of shape (vocabulary, \(d\)), giving a matrix of shape (6, \(d\)): one row per token. In a 7B model \(d = 4{,}096\) and the table has 32,000 to 128,000 rows. These vectors are learned: tokens used in similar ways end up near each other.</p>
+<p>At this point each row knows only its own token. The vector for "it" is the same whether the sentence is about a refund, a server or a cat. The job of the rest of the network is to rewrite each token's vector using its context, so that by the last layer the vector at "it" encodes something like "pronoun referring to a late refund; a reason is coming next", from which the next token can be predicted.</p>
+<p>Note also what is missing: nothing yet says which position each token is in. Attention, as we will see, treats its inputs as an unordered set, so order must be added explicitly (Step 6).</p>
+</section>
+<section id="step-2-attention-is-a-soft-lookup">
+  <h2>15 &mdash; Step 2: attention is a soft lookup</h2>
+<p>Each token's vector is multiplied by three learned matrices to produce three new vectors:</p>
+<ul>
+<li>a <strong>query</strong> \(q\): what this token is looking for;</li>
+<li>a <strong>key</strong> \(k\): what this token offers, to be matched against queries;</li>
+<li>a <strong>value</strong> \(v\): what this token hands over when it is matched.</li>
+</ul>
+<p>It is a lookup in a dictionary where matching is by similarity rather than equality, and the result is a blend of all entries weighted by how well they match. For one head with key size \(d_k = 4\), suppose the projections have produced these keys for our six tokens, and this query for "it" (think of the four numbers loosely as "is a thing", "is an action", "is about time", "is a function word"):</p>
+<table>
+<thead><tr><th>Token</th><th>Key \(k\)</th><th>Score \(q \cdot k\)</th><th>Scaled \(q \cdot k / \sqrt{4}\)</th><th>Weight</th></tr></thead>
+<tbody>
+<tr><td>The</td><td>[0, 0, 0, 1]</td><td>0</td><td>0</td><td>0.074</td></tr>
+<tr><td>refund</td><td>[2, 0, 0, 0.5]</td><td>4.0</td><td>2.0</td><td><strong>0.548</strong></td></tr>
+<tr><td>was</td><td>[0, 1, 0, 0]</td><td>0</td><td>0</td><td>0.074</td></tr>
+<tr><td>late</td><td>[0, 0.5, 1.5, 0]</td><td>0.75</td><td>0.375</td><td>0.108</td></tr>
+<tr><td>because</td><td>[0, 0, 0, 1]</td><td>0</td><td>0</td><td>0.074</td></tr>
+<tr><td>it</td><td>[0.5, 0, 0, 0]</td><td>1.0</td><td>0.5</td><td>0.122</td></tr>
+</tbody>
+</table>
+<p>The query for "it" is \(q = [2, 0, 0.5, 0]\): it is looking mainly for a thing, slightly for something about time. Its dot product with each key is a <strong>score</strong>; the scores are scaled (Step 3) and passed through softmax to give <strong>attention weights</strong> that sum to 1. "Refund" gets 55% of the attention.</p>
+<p>The output for "it" is the weighted sum of all the value vectors: \(\sum_j w_j v_j\). If the value of "refund" is \([1, 0, 0, 0]\) and the others carry their own features, the output is \([0.609, 0.074, 0.108, 0.209]\), dominated by the refund's value. That output is added to the "it" vector (Step 7), which now carries information about what "it" refers to. For all tokens at once, in matrix form:</p>
+\[ \mathrm{Attention}(Q, K, V) = \mathrm{softmax}\!\Big(\frac{Q K^{\top}}{\sqrt{d_k}} + M\Big)\, V \]
+<p>\(Q\), \(K\), \(V\) stack the six queries, keys and values as rows; \(QK^{\top}\) is the (6 × 6) table of every query against every key; \(M\) is the mask of Step 4. The weights are computed from the input itself, which is what makes attention different from a fixed layer: the same head routes information differently for every sentence.</p>
+</section>
+<section id="step-3-why-divide-by-the-square-root-of-d-k">
+  <h2>16 &mdash; Step 3: why divide by the square root of d_k</h2>
+<p>A dot product of two vectors with independent random entries of variance 1 has variance \(d_k\), so its typical size grows like \(\sqrt{d_k}\). Measured on random vectors: standard deviation 2.0 at \(d_k = 4\), 11.3 at \(d_k = 128\), 64 at \(d_k = 4{,}096\). Dividing by \(\sqrt{d_k}\) brings all of them back to about 1.</p>
+<p>Why it matters: softmax of large numbers is nearly one-hot. Eight random keys against a random query at \(d_k = 128\): unscaled, the scores range from −13.4 to 17.5, the top weight is 1.000 and the entropy of the weights is 0.002, so attention picks one token and ignores the rest. Scaled, the scores range from −1.2 to 1.5, the top weight is 0.44, and attention can blend. A near-one-hot softmax also has near-zero gradients for every other token, so the model cannot learn to shift its attention. The scaling keeps attention soft and trainable at initialisation, whatever the head size. In our toy example the effect is visible even at \(d_k = 4\): without scaling, "refund" would take 0.875 of the weight instead of 0.548.</p>
+</section>
+<section id="step-4-the-causal-mask-and-why-training-is-parallel">
+  <h2>17 &mdash; Step 4: the causal mask, and why training is parallel</h2>
+<p>A language model predicts each token from the ones before it, so token \(i\) must not see tokens after \(i\). The mask \(M\) is 0 where \(j \le i\) and \(-\infty\) where \(j &gt; i\); after softmax, \(e^{-\infty} = 0\), so future tokens get exactly zero weight. In our sentence, "refund" can attend only to "The" and itself; "it" can attend to all six.</p>
+<p>The mask is what makes transformer training efficient. One forward pass over a 4,096-token document computes 4,096 predictions at once, each correctly using only its own past, and each contributes a loss term. An RNN would need 4,096 sequential steps for the same document. This parallelism across positions, on hardware built for large matrix multiplies, is the main reason transformers displaced RNNs.</p>
+<p>At inference the mask has a second consequence. Because earlier tokens never look at later ones, the keys and values computed for the first five tokens never change when a sixth is added. Generation can store them, the <strong>KV cache</strong>, and compute only the new token's query, key and value at each step (<a href="../inference/inference-internals.html">Inference internals</a>).</p>
+</section>
+<section id="step-5-many-heads-and-sharing-keys-and-values">
+  <h2>18 &mdash; Step 5: many heads, and sharing keys and values</h2>
+<p>One head computes one pattern of attention. Language needs many at once: which noun a pronoun refers to, which verb goes with which subject, where the previous sentence ended, which earlier token matches the current one. <strong>Multi-head attention</strong> splits the \(d\)-dimensional vector into \(h\) slices of size \(d_k = d/h\) (for example 32 heads of 128) and runs an independent attention in each, with its own projections. The heads' outputs are concatenated and mixed by an output matrix. The total cost is about the same as one big head; what is gained is diversity, many different lookups per layer.</p>
+<p>The cost that heads add is in the KV cache, because every head stores its own keys and values for every past token. Per token, the cache holds \(2 \times \text{layers} \times \text{KV heads} \times d_k\) numbers. For a 70B-class configuration (80 layers, 64 query heads, \(d_k = 128\), 2 bytes per number):</p>
+<table>
+<thead><tr><th>Variant</th><th>KV heads</th><th>Cache per token</th><th>One 32k-token context</th></tr></thead>
+<tbody>
+<tr><td>Multi-head (MHA)</td><td>64</td><td>2.6 MB</td><td>86 GB</td></tr>
+<tr><td>Grouped-query (GQA), 8 groups</td><td>8</td><td>0.33 MB</td><td>10.7 GB</td></tr>
+<tr><td>Multi-query (MQA)</td><td>1</td><td>0.04 MB</td><td>1.3 GB</td></tr>
+</tbody>
+</table>
+<p>With MHA, a single long conversation's cache would exceed an 80 GB GPU. <strong>GQA</strong> lets groups of query heads share one key/value head: eight times less cache, so eight times more concurrent users or context per GPU, at a small quality cost that training largely absorbs. <strong>MQA</strong> goes to the extreme of one shared head and loses more quality. GQA is the standard choice in current open models. Since decoding is limited by reading memory, a smaller cache also means faster generation.</p>
+</section>
+<section id="step-6-telling-the-model-where-each-token-is">
+  <h2>19 &mdash; Step 6: telling the model where each token is</h2>
+<p>Attention computes the same scores whatever order the keys are in: shuffle "The refund was late" and each token's weights are unchanged, just shuffled. Order must be injected.</p>
+<p>The original transformer added a fixed pattern of sines and cosines to each position's embedding; GPT-2 learned one vector per position. Both give <em>absolute</em> positions, and both handle positions beyond the training length poorly. What matters for language is mostly <em>relative</em> position: the word two before this one, not the word at index 1,207.</p>
+<p><strong>RoPE</strong> (rotary position embedding) builds relative position into the score itself. Split each query and key into pairs of numbers, treat each pair as a point in a plane, and rotate it by an angle equal to the position times a frequency: pair \(i\) rotates by \(\text{pos} \cdot 10000^{-2i/d_k}\). The first pair rotates fast (1 radian per position), later pairs ever more slowly. Rotating both \(q\) and \(k\) and then taking their dot product leaves a result that depends only on the <em>difference</em> of their angles, so only on the distance between the two tokens.</p>
+<p>Checked numerically with \(q = [1, 0.5, -0.3, 0.8]\) and \(k = [0.6, -0.2, 0.9, 0.4]\): the query at position 5 and key at position 2 score −0.5408. Query at 13, key at 10: −0.5408. Query at 105, key at 102: −0.5408. Same distance, same score. At distance 1 the score is −0.109, at distance 5 it is 0.629. The fast-rotating pairs let a head distinguish nearby positions; the slow ones carry coarse long-range position. Extending context beyond the training length (as in "128k context" variants) is largely done by rescaling these frequencies so long distances look like distances the model was trained on, usually followed by some further training on long documents.</p>
+</section>
+<section id="step-7-the-block-and-the-residual-stream">
+  <h2>20 &mdash; Step 7: the block and the residual stream</h2>
+<p>Attention moves information <em>between</em> tokens. The block's second half, the <strong>MLP</strong>, transforms each token's vector <em>on its own</em>: expand to a wider hidden size (about 4\(d\), or 8/3 \(d\) with three matrices in the SwiGLU variant), apply a non-linearity, project back to \(d\). A useful picture: attention gathers the relevant context into a token's vector, and the MLP, which holds two thirds of the parameters, applies stored knowledge to it ("a late refund that was sent… likely continues with an account or bank problem").</p>
+<p>Each block wraps both halves in the pattern from <a href="../foundations/neural-networks.html">Neural networks</a>, Step 9:</p>
+\[ x \leftarrow x + \mathrm{Attention}(\mathrm{Norm}(x)), \qquad x \leftarrow x + \mathrm{MLP}(\mathrm{Norm}(x)) \]
+<p>The vector \(x\) for each token, carried from the embedding to the last layer, is the <strong>residual stream</strong>. Blocks never replace it; they read a normalised copy and add a correction. This gives gradients a direct path through 32 to 100+ layers, and it means a block that has nothing useful to add can learn to add almost nothing. Normalising before each sub-layer ("pre-norm", usually RMSNorm) is what made deep transformers train stably and far less sensitive to warmup than the original post-norm design (recipes still use a short warmup).</p>
+<p>The full model: embedding, \(L\) blocks, a final norm, and the output matrix producing one logit per vocabulary token (often the embedding table reused, called <em>weight tying</em>). Per block, the four attention matrices hold \(4d^2\) parameters and an MLP of width \(4d\) holds \(8d^2\), so roughly \(12d^2\) per block. The 7B configuration (\(d = 4{,}096\), 32 blocks) has about 6.5 billion parameters in its blocks, as counted in <a href="what-is-an-llm.html">What an LLM is</a>.</p>
+</section>
+<section id="step-8-what-attention-costs-as-context-grows">
+  <h2>21 &mdash; Step 8: what attention costs as context grows</h2>
+<p>Two costs, with different shapes. Every token passes through every weight matrix once: about \(2N\) floating-point operations per token, 13.5 billion for the 6.74B model, whatever the context length. Attention adds work that grows with context: for a token at position \(T\), computing its scores against \(T\) keys and blending \(T\) values costs about \(4 \cdot L \cdot T \cdot d\) operations across \(L\) layers.</p>
+<table>
+<thead><tr><th>Position \(T\)</th><th>Attention (GFLOP per token)</th><th>As a fraction of the \(2N\) = 13.5 GFLOP</th></tr></thead>
+<tbody>
+<tr><td>1,000</td><td>0.52</td><td>4%</td></tr>
+<tr><td>8,000</td><td>4.2</td><td>31%</td></tr>
+<tr><td>32,000</td><td>16.8</td><td>124%</td></tr>
+<tr><td>128,000</td><td>67.1</td><td>498%</td></tr>
+</tbody>
+</table>
+<p>For this model, attention's arithmetic equals the rest of the model at about \(T = 25{,}700\). Below a few thousand tokens, attention is a small part of compute and the "quadratic" reputation is irrelevant; at long context it dominates. Over a whole sequence of length \(T\), total attention work grows as \(T^2\), which is the quadratic cost.</p>
+<p>Memory is the sharper problem. Naively, each head materialises the full \(T \times T\) score matrix. At \(T = 32{,}768\) in 16-bit that is 2.1 GB per head per sequence, 69 GB for one layer's 32 heads. Even when it fits, writing it to GPU memory and reading it back for the softmax and the value multiply is slow, because GPUs compute far faster than they move data.</p>
+</section>
+<section id="step-9-flashattention-computes-the-same-thing-without-the-ma">
+  <h2>22 &mdash; Step 9: FlashAttention computes the same thing without the matrix</h2>
+<p>FlashAttention is not an approximation; it returns exactly the attention output. It changes the order of work. Queries, keys and values are split into tiles small enough to fit in the GPU's fast on-chip memory (SRAM). For a tile of queries, it streams through the key and value tiles, computing scores, folding them into the output, and discarding them, never writing the \(T \times T\) matrix to main memory.</p>
+<p>The obstacle is softmax, which needs the sum over <em>all</em> keys before any weight is known. The trick is an <strong>online softmax</strong>: keep, for each query, the running maximum score and running sum of exponentials seen so far; when a new tile brings a larger maximum, rescale what has been accumulated by \(e^{\text{old max} - \text{new max}}\) and continue. After the last tile the result is identical to softmax over everything.</p>
+<p>Effects: memory for attention grows linearly with \(T\) instead of quadratically (the activation saving shown in <a href="../foundations/pytorch.html">PyTorch in practice</a>, Step 7), and wall-clock time drops substantially because main-memory traffic, the real bottleneck, falls. The forward FLOP count is unchanged (the backward pass even recomputes the scores rather than storing them); the gain is entirely from moving less data. In PyTorch, <code>F.scaled_dot_product_attention</code> uses a FlashAttention-style kernel automatically where the hardware supports it. Approaches that change the maths to beat \(T^2\) (sliding-window attention, sparse attention, linear-attention and state-space models) do exist and trade some quality or generality for it.</p>
+</section>
+<section id="reading-a-model-config-like-an-engineer">
+  <h2>23 &mdash; Reading a model config like an engineer</h2>
+<p>Given a config with hidden size \(d\), layers \(L\), query heads \(h\), KV heads \(h_{kv}\), head size \(d_k\), MLP width \(f\) and vocabulary \(V\), you can derive most of what matters for deployment in a minute:</p>
+<table>
+<thead><tr><th>Quantity</th><th>Formula</th><th>7B example (\(d\)=4096, \(L\)=32, \(h = h_{kv}\)=32, \(d_k\)=128, \(f\)=11008, \(V\)=32000)</th></tr></thead>
+<tbody>
+<tr><td>Parameters</td><td>\(L(4d^2 + 3df) + 2Vd\) (SwiGLU, untied)</td><td>6.74B</td></tr>
+<tr><td>Weights in bf16</td><td>\(2N\) bytes</td><td>13.5 GB</td></tr>
+<tr><td>KV cache per token</td><td>\(2 \cdot L \cdot h_{kv} \cdot d_k \cdot 2\) bytes</td><td>0.52 MB (17 GB at 32k tokens)</td></tr>
+<tr><td>Compute per token</td><td>\(2N + 4LTd\)</td><td>13.5 GFLOP + attention</td></tr>
+<tr><td>Where attention dominates</td><td>\(T \approx 2N / 4Ld\)</td><td>about 25,700 tokens</td></tr>
+</tbody>
+</table>
+<p>This model uses full multi-head attention, so its KV cache is large for its size. A GQA variant with 8 KV heads would need 0.13 MB per token. That one config line decides how many concurrent long conversations a GPU can serve, which is why it matters more for serving cost than a small difference in parameter count (<a href="../inference/serving.html">Serving</a>).</p>
+</section>
+<section id="in-code-attention-by-hand-then-a-real-block">
+  <h2>24 &mdash; In code: attention by hand, then a real block</h2>
+<pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+
+tokens = [<span class="st">"</span><span class="st">The</span><span class="st">"</span>, <span class="st">"</span><span class="st">refund</span><span class="st">"</span>, <span class="st">"</span><span class="st">was</span><span class="st">"</span>, <span class="st">"</span><span class="st">late</span><span class="st">"</span>, <span class="st">"</span><span class="st">because</span><span class="st">"</span>, <span class="st">"</span><span class="st">it</span><span class="st">"</span>]
+K = np.array([[<span class="nr">0</span>, <span class="nr">0</span>, <span class="nr">0</span>, <span class="nr">1</span>], [<span class="nr">2</span>, <span class="nr">0</span>, <span class="nr">0</span>, <span class="nr">.5</span>], [<span class="nr">0</span>, <span class="nr">1</span>, <span class="nr">0</span>, <span class="nr">0</span>],
+              [<span class="nr">0</span>, <span class="nr">.5</span>, <span class="nr">1.5</span>, <span class="nr">0</span>], [<span class="nr">0</span>, <span class="nr">0</span>, <span class="nr">0</span>, <span class="nr">1</span>], [<span class="nr">.5</span>, <span class="nr">0</span>, <span class="nr">0</span>, <span class="nr">0</span>]])
+V = np.array([[<span class="nr">0</span>, <span class="nr">0</span>, <span class="nr">0</span>, <span class="nr">1</span>], [<span class="nr">1</span>, <span class="nr">0</span>, <span class="nr">0</span>, <span class="nr">0</span>], [<span class="nr">0</span>, <span class="nr">1</span>, <span class="nr">0</span>, <span class="nr">0</span>],
+              [<span class="nr">0</span>, <span class="nr">0</span>, <span class="nr">1</span>, <span class="nr">0</span>], [<span class="nr">0</span>, <span class="nr">0</span>, <span class="nr">0</span>, <span class="nr">1</span>], [<span class="nr">.5</span>, <span class="nr">0</span>, <span class="nr">0</span>, <span class="nr">.5</span>]])
+Q = np.zeros((<span class="nr">6</span>, <span class="nr">4</span>)); Q[<span class="nr">5</span>] = [<span class="nr">2</span>, <span class="nr">0</span>, <span class="nr">.5</span>, <span class="nr">0</span>]          <span class="cm"># we only follow the query of "it"</span>
+
+scores = Q @ K.T / np.sqrt(<span class="nr">4</span>)                          <span class="cm"># (6, 6): every query against every key</span>
+mask = np.triu(np.ones((<span class="nr">6</span>, <span class="nr">6</span>)), k=<span class="nr">1</span>).astype(<span class="tp">bool</span>)      <span class="cm"># True above the diagonal = future</span>
+scores[mask] = -np.inf                                 <span class="cm"># causal mask</span>
+w = np.exp(scores - scores.max(axis=<span class="nr">1</span>, keepdims=<span class="nr">True</span>))
+w /= w.sum(axis=<span class="nr">1</span>, keepdims=<span class="nr">True</span>)                      <span class="cm"># softmax per row</span>
+out = w @ V
+
+<span class="tp">print</span>(<span class="st">"</span><span class="st">weights for </span><span class="st">'</span><span class="st">it</span><span class="st">'</span><span class="st">:</span><span class="st">"</span>, <span class="tp">dict</span>(<span class="tp">zip</span>(tokens, w[<span class="nr">5</span>].round(<span class="nr">3</span>))))
+<span class="tp">print</span>(<span class="st">"</span><span class="st">output for </span><span class="st">'</span><span class="st">it</span><span class="st">'</span><span class="st">: </span><span class="st">"</span>, out[<span class="nr">5</span>].round(<span class="nr">3</span>))
+<span class="tp">print</span>(<span class="st">"</span><span class="st">'</span><span class="st">refund</span><span class="st">'</span><span class="st"> may attend to:</span><span class="st">"</span>, [t <span class="kw">for</span> t, ok in <span class="tp">zip</span>(tokens, ~mask[<span class="nr">1</span>]) <span class="kw">if</span> ok])
+</pre>
+<pre><span class="kw">import</span> torch
+<span class="kw">import</span> torch.nn <span class="kw">as</span> nn
+<span class="kw">import</span> torch.nn.functional <span class="kw">as</span> F
+
+<span class="kw">class</span> <span class="tp">Block</span>(nn.Module):
+    <span class="st">"""Pre-norm transformer block: x + attn(norm(x)), then x + mlp(norm(x))."""</span>
+<span class="kw">def</span> <span class="fn">__init__</span>(<span class="tp">self</span>, d, n_heads):
+        <span class="tp">super</span>().<span class="fn">__init__</span>()
+        <span class="tp">self</span>.h = n_heads
+        <span class="tp">self</span>.norm1, <span class="tp">self</span>.norm2 = nn.LayerNorm(d), nn.LayerNorm(d)
+        <span class="tp">self</span>.qkv = nn.Linear(d, <span class="nr">3</span> * d, bias=<span class="nr">False</span>)       <span class="cm"># Q, K, V projections in one matrix</span>
+<span class="tp">self</span>.proj = nn.Linear(d, d, bias=<span class="nr">False</span>)          <span class="cm"># output projection</span>
+<span class="tp">self</span>.mlp = nn.Sequential(nn.Linear(d, <span class="nr">4</span> * d, bias=<span class="nr">False</span>), nn.GELU(), nn.Linear(<span class="nr">4</span> * d, d, bias=<span class="nr">False</span>))
+
+    <span class="kw">def</span> <span class="fn">forward</span>(<span class="tp">self</span>, x):                                <span class="cm"># x: (batch, T, d)</span>
+        B, T, d = x.shape
+        q, k, v = <span class="tp">self</span>.qkv(<span class="tp">self</span>.norm1(x)).split(d, dim=-<span class="nr">1</span>)
+        q, k, v = (t.view(B, T, <span class="tp">self</span>.h, d // <span class="tp">self</span>.h).transpose(<span class="nr">1</span>, <span class="nr">2</span>) <span class="kw">for</span> t in (q, k, v))  <span class="cm"># (B, h, T, d_k)</span>
+        a = F.scaled_dot_product_attention(q, k, v, is_causal=<span class="nr">True</span>)   <span class="cm"># mask + scaling + softmax</span>
+        x = x + <span class="tp">self</span>.proj(a.transpose(<span class="nr">1</span>, <span class="nr">2</span>).reshape(B, T, d))         <span class="cm"># residual add</span>
+<span class="kw">return</span> x + <span class="tp">self</span>.mlp(<span class="tp">self</span>.norm2(x))                            <span class="cm"># residual add</span>
+
+d = <span class="nr">512</span>
+block = Block(d, n_heads=<span class="nr">8</span>)
+x = torch.randn(<span class="nr">2</span>, <span class="nr">6</span>, d)
+<span class="tp">print</span>(<span class="st">"</span><span class="st">output shape:</span><span class="st">"</span>, <span class="tp">tuple</span>(block(x).shape))                         <span class="cm"># (2, 6, 512)</span>
+n = <span class="tp">sum</span>(p.numel() <span class="kw">for</span> p in block.parameters())
+<span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">parameters: </span><span class="st">{</span>n<span class="st">:</span><span class="st">,</span><span class="st">}</span><span class="st">  vs 12*d^2 = </span><span class="st">{</span><span class="nr">12</span> * d * d<span class="st">:</span><span class="st">,</span><span class="st">}</span><span class="st">"</span>)               <span class="cm"># norms add 4*d</span>
+</pre>
+<p>The first block prints weights of 0.548 on "refund" and the output [0.609, 0.074, 0.108, 0.209] from Step 2, and shows "refund" may attend only to "The" and itself. The second prints an output shape of (2, 6, 512) and 3,147,776 parameters against \(12d^2 = 3{,}145{,}728\): the difference is the four normalisation vectors.</p>
+</section>
 <section id="transformer-internals-attention-for-real">
-  <h2>13 &mdash; Transformer internals — attention, for real</h2>
+  <h2>25 &mdash; Transformer internals — attention, for real</h2>
 <p><a href="index.html">LLM fundamentals</a> gives the intuition ("attention lets tokens look at each other"). This topic is the actual mechanism — the one interviews and serving math (<a href="../inference/index.html">Inference &amp; serving</a>) depend on.</p>
 </section>
 <section id="tokenization-bpe-in-one-paragraph">
-  <h2>14 &mdash; Tokenization: BPE in one paragraph</h2>
+  <h2>26 &mdash; Tokenization: BPE in one paragraph</h2>
 <p><b>Byte-pair encoding</b>: start from characters/bytes, repeatedly merge the most frequent adjacent pair into a new token, stop at vocab size (~50–200K). Result: common words = 1 token, rare words = several sub-pieces. Consequences you'll feel: token counts ≠ word counts, non-English text costs more tokens, exact spelling/arithmetic are hard (the model sees pieces, not characters).</p>
 <p>The algorithm is small enough to hold in your head — and worth implementing once, because every tokenizer surprise you'll ever debug (why "hello" and " hello" are different tokens, why numbers shatter into odd pieces) falls out of these few lines:</p>
 <div class="code-block"><div class="code-file"><span>bpe_mini.py — the whole BPE training loop, minus production plumbing</span><span class="code-lang">python</span></div><pre><span class="kw">from</span> collections <span class="kw">import</span> Counter
@@ -171,7 +359,7 @@ merges = []
 <span class="cm"># IS the tokenizer; GPT-2's shipped as exactly this, 50K merges long.</span></pre></div>
 </section>
 <section id="self-attention-the-actual-computation">
-  <h2>15 &mdash; Self-attention: the actual computation</h2>
+  <h2>27 &mdash; Self-attention: the actual computation</h2>
 <pre class="ascii-diagram">From hidden states X, three learned projections:
     Q = X·W_Q      "what am I looking for?"        (queries)
     K = X·W_K      "what do I offer?"              (keys)
@@ -227,7 +415,7 @@ out = CausalSelfAttention()(x)
 <p>Two things to notice in the code. First, the <b>causal mask is why the KV cache works</b>: token t's output depends only on tokens ≤ t, so during generation the K and V of past tokens never change — cache them and each new token costs one row of attention instead of recomputing the whole T×T matrix. Second, the <code>att</code> tensor is <code>[B, heads, T, T]</code> — at T=32K and 32 heads that's 32×32K×32K floats <i>per sequence</i> if you materialize it, which is why FlashAttention (computing the same softmax in tiles, never storing the full matrix) matters so much in practice (<a href="../inference/index.html">Inference &amp; serving</a>).</p>
 </section>
 <section id="the-block-and-the-shapes">
-  <h2>16 &mdash; The block, and the shapes</h2>
+  <h2>28 &mdash; The block, and the shapes</h2>
 <pre class="ascii-diagram">decoder block:  x → norm → causal self-attention → +x (residual)
                   → norm → feed-forward (per-token MLP) → +x (residual)
 stack N blocks, then a final projection to vocabulary logits.
@@ -247,7 +435,7 @@ shapes:  token ids   [batch, seq]
 </table>
 </section>
 <section id="two-numbers-you-should-be-able-to-estimate">
-  <h2>17 &mdash; Two numbers you should be able to estimate</h2>
+  <h2>29 &mdash; Two numbers you should be able to estimate</h2>
 <pre class="ascii-diagram">params ≈ 12 × N_layers × d_model²           (attention + FFN, rough decoder-only rule)
 KV cache per sequence ≈ 2 × layers × tokens × kv_heads × head_dim × bytes
                         └ keys and values; this — not weights — often caps concurrency (Inference &amp; serving)</pre>
@@ -255,7 +443,7 @@ KV cache per sequence ≈ 2 × layers × tokens × kv_heads × head_dim × bytes
 <p>Now the KV cache, same model, one 2,048-token sequence at fp16: <code>2 (K and V) × 12 layers × 2,048 tokens × 768 (12 kv_heads × 64 head_dim) × 2 bytes = 75.5 MB</code>. Harmless. Scale to a Llama-2-7B-shaped model (32 layers, 32 KV heads × 128 dims = 4,096) at a 4,096-token context: <code>2 × 32 × 4,096 × 4,096 × 2 = 2.1 GB per sequence</code>. Forty concurrent users at that context want ~86 GB of cache — more than the 14 GB the weights themselves take at fp16. This is why grouped-query attention (fewer KV heads than query heads) exists: cut kv_heads from 32 to 8 and the cache drops 4× with minor quality loss. When <a href="../inference/index.html">Inference &amp; serving</a> talks about batching, paged KV cache, and GQA, this multiplication is the entire motivation.</p>
 </section>
 <section id="mini-scenario-the-count-the-letters-bug-report">
-  <h2>18 &mdash; Mini-scenario: the &quot;count the letters&quot; bug report</h2>
+  <h2>30 &mdash; Mini-scenario: the &quot;count the letters&quot; bug report</h2>
 <p>A PM files a bug: "the model can't count the r's in strawberry, and it garbles our SKU codes like <code>XR-2049-BLK</code>." Both are tokenization, not intelligence. "strawberry" may be 1–3 tokens depending on the tokenizer — the model has literally never seen its letters, only piece IDs; asking it to count characters is asking someone to count letters in a word they've only heard spoken. The SKU shatters into ~6 arbitrary pieces (<code>XR</code>, <code>-", "20</code>, <code>49</code>, …) whose boundaries shift if a space precedes it, so the model's "memory" of the code is a fragile piece-sequence. Fixes are engineering, not prompting heroics: for counting/spelling, have the model call a tool (<a href="../agents/index.html">Tools &amp; agents</a>); for IDs, keep them intact in structured fields the code handles, not free text the model must reproduce. You cannot prompt your way out of the tokenizer.</p>
 <div class="callout warn"><p><strong>Internals gotchas that surface as product bugs</strong></p><ul>
 <li><b>Token counts differ per tokenizer.</b> Budgeting context with one model's tokenizer while calling another can overflow by 20–30% — non-English and code by more. Count with the target model's tokenizer.</li>
@@ -281,13 +469,13 @@ KV cache per sequence ≈ 2 × layers × tokens × kv_heads × head_dim × bytes
 </ol></div>
 </section>
 <section id="embeddings">
-  <h2>19 &mdash; Embeddings</h2>
+  <h2>31 &mdash; Embeddings</h2>
 <p>An embedding table is a V × d matrix; token id i looks up row i. These vectors are learned so that tokens used in similar contexts end up nearby (the distributional hypothesis: "you shall know a word by the company it keeps").</p>
 <p>word2vec showed directions carry meaning: vec(king) − vec(man) + vec(woman) ≈ vec(queen). In a transformer the embedding is only the starting point; each layer refines it with context, so "bank" ends up different in "river bank" and "bank loan".</p>
 <p>The final layer (LM head) projects d back to V logits; many models <strong>tie</strong> it to the embedding matrix to save parameters.</p>
 </section>
 <section id="scaled-dot-product-attention">
-  <h2>20 &mdash; Scaled dot-product attention</h2>
+  <h2>32 &mdash; Scaled dot-product attention</h2>
 <p>Each token emits three vectors from learned projections: a <strong>query</strong> (what I'm looking for), a <strong>key</strong> (what I offer to be found by), a <strong>value</strong> (what I pass along). Each token's output is a weighted average of all values, with weights from query–key similarity.</p>
 <pre class="formula">Q = X W_q,  K = X W_k,  V = X W_v           X: (T, d)
 A = softmax( Q Kᵀ / √d_k + M )               (T, T) attention weights
@@ -301,7 +489,7 @@ M = 0 on/below diagonal, −∞ above            # causal mask</pre>
 <p>Mental model: a soft, differentiable dictionary lookup. Keys are addresses, values are contents, the query does fuzzy matching.</p>
 </section>
 <section id="multi-head-attention-mqa-and-gqa">
-  <h2>21 &mdash; Multi-head attention, MQA and GQA</h2>
+  <h2>33 &mdash; Multi-head attention, MQA and GQA</h2>
 <p>Split d into h heads of size d/h; each head runs attention in its own subspace, then outputs are concatenated and mixed by W_o. Different heads learn different relations (previous token, syntax, coreference, induction/copying patterns). Same total FLOPs as one wide head.</p>
 <pre class="formula">MHA: h query heads, h KV heads
 MQA: h query heads, 1 KV head          → KV cache ÷ h
@@ -309,7 +497,7 @@ GQA: h query heads, g KV heads (g | h) → KV cache ÷ (h/g)   e.g. Llama-3-8B: 
 <p>GQA keeps nearly MHA quality while cutting KV cache memory and bandwidth, which is what limits serving throughput.</p>
 </section>
 <section id="positional-encoding-and-rope">
-  <h2>22 &mdash; Positional encoding and RoPE</h2>
+  <h2>34 &mdash; Positional encoding and RoPE</h2>
 <p>Attention treats inputs as a set: permute tokens and the outputs permute identically. Order must be injected.</p>
 <ul>
 <li><strong>Sinusoidal</strong> (original transformer): add fixed sin/cos waves of many frequencies.</li>
@@ -320,7 +508,7 @@ GQA: h query heads, g KV heads (g | h) → KV cache ÷ (h/g)   e.g. Llama-3-8B: 
 <p>Long-context extension (8k → 128k) works by rescaling RoPE frequencies (position interpolation, NTK-aware scaling, YaRN) and briefly training on long sequences.</p>
 </section>
 <section id="the-transformer-block">
-  <h2>23 &mdash; The transformer block</h2>
+  <h2>35 &mdash; The transformer block</h2>
 <pre class="formula">x = x + Attention( RMSNorm(x) )
 x = x + FFN( RMSNorm(x) )                 # pre-norm residual block, × L layers
 FFN (classic):  W₂ · GELU(W₁ x)           d → 4d → d
@@ -328,7 +516,7 @@ FFN (SwiGLU):   W₂ · ( SiLU(W₁x) ⊙ W₃x )  d → ~8d/3 → d  (3 matrice
 <p>Division of labor: attention moves information <em>between</em> tokens; the FFN transforms each token independently and stores much of the model's factual knowledge (it acts like a key–value memory). Pre-norm (normalize before each sublayer) trains more stably than the original post-norm.</p>
 </section>
 <section id="a-complete-mini-gpt-in-pytorch">
-  <h2>24 &mdash; A complete mini-GPT in PyTorch</h2>
+  <h2>36 &mdash; A complete mini-GPT in PyTorch</h2>
 <pre><span class="kw">class</span> <span class="tp">Block</span>(nn.Module):
     <span class="kw">def</span> <span class="fn">__init__</span>(s, d, h):
         <span class="tp">super</span>().<span class="fn">__init__</span>()
@@ -360,7 +548,7 @@ FFN (SwiGLU):   W₂ · ( SiLU(W₁x) ⊙ W₃x )  d → ~8d/3 → d  (3 matrice
 <p>Train it on Tiny Shakespeare with the <a href="../foundations/pytorch.html">PyTorch in practice</a> loop. If you can write this from memory and explain every line, you understand transformers.</p>
 </section>
 <section id="counting-parameters-and-flops">
-  <h2>25 &mdash; Counting parameters and FLOPs</h2>
+  <h2>37 &mdash; Counting parameters and FLOPs</h2>
 <pre class="formula">per layer:  attention 4d² (Q, K, V, O)  +  FFN 8d² (d→4d→d)  = 12d²
 total     ≈ 12 · L · d²  +  V · d  (embeddings)
 GPT-2 small (L=12, d=768, V=50257): 85M + 39M ≈ 124M ✓
@@ -369,29 +557,45 @@ inference FLOPs ≈ 2 · N per generated token</pre>
 <p>Worked: a 7B model trained on 2T tokens ≈ 6 · 7e9 · 2e12 = 8.4e22 FLOPs. At 40% utilization of an H100 (~400 TFLOP/s effective) that's ~2.1e8 GPU-seconds ≈ 58,000 GPU-hours.</p>
 </section>
 <section id="flashattention">
-  <h2>26 &mdash; FlashAttention</h2>
+  <h2>38 &mdash; FlashAttention</h2>
 <p>Naive attention writes the T × T score matrix to slow HBM, reads it back for softmax, writes again, reads again for × V. At long T that memory traffic dominates.</p>
 <p>FlashAttention tiles Q, K, V into blocks that fit in on-chip SRAM, computes scores block by block, and uses an <strong>online softmax</strong> (keep a running max and running sum, rescale partial outputs when the max changes) so the full matrix never exists. Result is <em>exact</em> attention with O(T) memory and 2–4× speed. In PyTorch: <code>F.scaled_dot_product_attention</code> picks a flash kernel automatically.</p>
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>27 &mdash; Production &amp; Ops</h2>
+  <h2>39 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Serving uses fused kernels (FlashAttention-2, cuDNN)</li><li>Tensor parallel splits heads/layers across GPUs</li><li>Monitor KV cache memory per request in <a href="../inference/serving.html">Serving &amp; scaling</a></li><li>Quantization (INT4) shrinks weight memory, not attention FLOPs</li></ul></div>
 </section>
 <section id="related-topics">
-  <h2>28 &mdash; Related topics</h2>
+  <h2>40 &mdash; Related topics</h2>
 <div class="card"><ul><li><a href="what-is-an-llm.html">What an LLM is</a> — decoder-only stack overview</li><li><a href="../inference/inference-internals.html">Inference internals</a> — KV cache inference memory</li><li><a href="tokens-context-cost.html">Tokens, context &amp; cost</a> — tokens fed into embeddings</li><li><a href="how-llms-are-trained.html">How LLMs are trained</a> — training these weights</li><li><a href="../inference/serving.html">Serving &amp; scaling</a> — PagedAttention serving</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — attention over retrieved context</li><li><a href="../fundamentals/../../hld/web-search-engine.html">Web Search Engine</a> — ranking + LLM synthesis</li></ul></div>
 </section>
 <section id="where-people-get-lost">
-  <h2>29 &mdash; Where people get lost</h2>
+  <h2>41 &mdash; Where people get lost</h2>
 <div class="card"><ul><li>Confusing encoder-only BERT with generative decoder-only</li><li>Ignoring causal mask in hand-rolled attention bugs</li><li>Assuming O(n) attention without sparse methods or cache</li><li>Forgetting FFN dominates parameter count</li><li>Mixing absolute vs RoPE when extrapolating context</li></ul></div>
+<ul>
+<li><strong>"Attention weights explain the model's reasoning."</strong> They show where one head read from in one layer. Information also flows through the residual stream and the MLPs; weights are a weak, partial explanation.</li>
+<li><strong>"Attention is always the bottleneck."</strong> Below a few thousand tokens, the MLPs and projections dominate compute. Attention dominates only at long context (about 26k tokens for the 7B example).</li>
+<li><strong>"FlashAttention approximates attention."</strong> It is exact. It reorders computation to avoid storing the score matrix; the arithmetic is the same (slightly more in the backward pass, which recomputes scores), the memory traffic far lower.</li>
+<li><strong>"More heads means more parameters."</strong> Heads split the same \(d\) dimensions; the parameter count of the projections does not depend on \(h\). KV heads do change the cache size.</li>
+<li><strong>Forgetting the \(\sqrt{d_k}\).</strong> Without it, softmax saturates to one-hot at realistic head sizes and gradients for other tokens vanish.</li>
+<li><strong>"Position is in the embeddings."</strong> In RoPE models, position enters only through the rotation of queries and keys inside attention; the token embeddings carry no position.</li>
+<li><strong>"The KV cache is small."</strong> For long contexts it can exceed the weights: 17 GB for one 32k-token sequence in the 7B MHA example, versus 13.5 GB of weights.</li>
+</ul>
 </section>
 <section id="how-this-connects">
-  <h2>30 &mdash; How this connects</h2>
-<h3>Builds on</h3><ul><li><a href="../foundations/math.html">The math you need</a> &mdash; Vectors, matrices, derivatives, the chain rule, probability, cross-entropy and softmax, each with worked numbers.</li><li><a href="../foundations/pytorch.html">PyTorch in practice</a> &mdash; Tensors, autograd, a trustworthy training loop, mixed precision, GPU memory and debugging a run.</li><li><a href="what-is-an-llm.html">What an LLM is</a> &mdash; A next-token predictor, the language-modeling objective, model families and scaling laws.</li></ul><h3>Where this shows up later</h3><ul><li><a href="../inference/inference-internals.html">Inference internals</a> &mdash; Prefill vs decode, the KV cache, PagedAttention, continuous batching and speculative decoding.</li><li><a href="../projects/portfolio-projects.html">Portfolio projects</a> &mdash; Five projects from micrograd to a shipped service, and a weekend build that makes interview answers real.</li></ul>
+  <h2>42 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../foundations/math.html">The math you need</a> &mdash; Vectors, matrices, derivatives, the chain rule, probability, cross-entropy and softmax, each with worked numbers.</li><li><a href="../foundations/neural-networks.html">Neural networks</a> &mdash; Layers, activations, backprop, initialization, optimizers, schedules, normalization and residuals.</li><li><a href="../foundations/pytorch.html">PyTorch in practice</a> &mdash; Tensors, autograd, a trustworthy training loop, mixed precision, GPU memory and debugging a run.</li><li><a href="what-is-an-llm.html">What an LLM is</a> &mdash; A next-token predictor, the language-modeling objective, model families and scaling laws.</li></ul><h3>Where this shows up later</h3><ul><li><a href="tokens-context-cost.html">Tokens, context &amp; cost</a> &mdash; BPE tokenization, the context window, and what every token costs.</li><li><a href="how-llms-are-trained.html">How LLMs are trained</a> &mdash; Pretraining, instruction tuning, chat templates, reasoning models, evaluating LLMs, and prompting vs RAG vs fine-tuning.</li><li><a href="../rag/embeddings.html">Embeddings</a> &mdash; Turning meaning into numbers: dense vectors, cosine similarity, sentence embeddings and contrastive training.</li><li><a href="../rag/reranking.html">Reranking</a> &mdash; Cross-encoder rerankers: retrieve wide, rescore, keep the best few.</li><li><a href="../agents/reasoning.html">Reasoning patterns</a> &mdash; ReAct, plan-and-execute, reflection and the other ways agents think.</li><li><a href="../inference/inference-internals.html">Inference internals</a> &mdash; Prefill vs decode, the KV cache, PagedAttention, continuous batching and speculative decoding.</li><li><a href="../inference/moe.html">Mixture of experts</a> &mdash; Sparse experts and routers: more parameters for the same compute, and what it costs at serving time.</li><li><a href="../stretch/multimodal.html">Multimodal LLMs</a> &mdash; Vision and audio encoders, how images become tokens, and what multimodal models are good for.</li></ul>
 </section>
 <section id="check-yourself">
-  <h2>31 &mdash; Check yourself</h2>
+  <h2>43 &mdash; Check yourself</h2>
+<details><summary>In the running example, what happens to the weight on "refund" if the query for "it" doubles to [4, 0, 1, 0]?</summary><div class="answer">All scores double, so the scaled scores become 0, 4, 0, 0.75, 0, 1 and softmax sharpens: "refund" gets \(e^4 / (e^4 + 3 + e^{0.75} + e^{1}) \approx 54.6 / 62.4 \approx 0.875\). Larger query norms make attention more selective, which models can learn to use.</div></details>
+<details><summary>Why does the causal mask let the model be trained on all positions of a sequence in one pass?</summary><div class="answer">Each position's output depends only on itself and earlier positions, so every position's prediction is valid (it cannot see its own answer). All of them are computed in one parallel forward pass and each contributes a loss term.</div></details>
+<details><summary>A model has 48 layers, 8 KV heads, head size 128, bf16. How much KV cache does one 100,000-token context need?</summary><div class="answer">Per token: \(2 \times 48 \times 8 \times 128 \times 2 = 196{,}608\) bytes, about 0.2 MB. Times 100,000 tokens: about 19.7 GB.</div></details>
+<details><summary>Show that RoPE makes the score depend only on relative position, using the numbers in Step 6.</summary><div class="answer">Rotating \(q\) by angle \(m\theta\) and \(k\) by \(n\theta\) and taking their dot product gives the dot product of \(q\) rotated by \((m-n)\theta\) with the unrotated \(k\). Positions (5, 2), (13, 10) and (105, 102) all have offset 3 and all score −0.5408.</div></details>
+<details><summary>For the 7B example, at what context position does attention's arithmetic equal the rest of the model's, and what does that imply for a RAG app with 3,000-token prompts?</summary><div class="answer">\(T = 2N / (4Ld) = 13.48 \times 10^9 / (4 \times 32 \times 4096) \approx 25{,}700\). At 3,000 tokens attention is about 12% of compute, so optimising the MLP and weight reads (quantization, batching) matters more than attention tricks; the KV cache size still matters for concurrency.</div></details>
+<details><summary>What problem does the online softmax solve in FlashAttention?</summary><div class="answer">Softmax needs the maximum and the sum over all keys, but FlashAttention sees keys one tile at a time. Keeping a running maximum and sum, and rescaling the partial output whenever the maximum increases, gives exactly the full softmax result without ever holding all scores.</div></details>
+<details><summary>You must serve 50 concurrent users with 16k-token contexts on a 70B model. Which architectural choice in the model you pick matters most for memory, and why?</summary><div class="answer">The number of KV heads. With 64 (MHA) the cache is 2.6 MB per token, about 2.1 TB for 50 × 16k tokens; with 8 (GQA) it is 0.33 MB per token, about 270 GB. The weights (about 140 GB in bf16) are a fixed cost; the cache scales with users times context.</div></details>
 <details><summary>Explain self-attention in one minute.</summary><div class="answer">Each token builds Q,K,V vectors. Scores = Q·K scaled by √d<sub>k</sub>; softmax yields weights; output = weighted sum of V. Causal mask zeroes future keys so token t only sees ≤t. Parallel over sequence during prefill.</div></details>
 <details><summary>Why multi-head instead of one big attention?</summary><div class="answer">Multiple subspaces let the model attend to different relation types simultaneously (syntax, coreference, position). Single head would need much larger d to capture same diversity.</div></details>
 <details><summary>What is the causal mask and why?</summary><div class="answer">Upper-triangular mask sets attention to future tokens to −∞. Without it, token t could peek at t+1 and break autoregressive training/generation.</div></details>
@@ -412,7 +616,7 @@ inference FLOPs ≈ 2 · N per generated token</pre>
 <details><summary>Parameters of a model with L=32, d=4096, V=32000?</summary><div class="answer">12·32·4096² ≈ 6.4B + 32000·4096 ≈ 0.13B (×2 if untied) → ~6.6–6.7B, i.e. Llama-2-7B.</div></details>
 </section>
 <section id="build-it">
-  <h2>32 &mdash; Build it</h2>
+  <h2>44 &mdash; Build it</h2>
 <div class="callout success">Follow Karpathy's "Let's build GPT", then nanoGPT. Add a KV cache to generation and measure tokens/sec with and without it.</div>
 </section>
 

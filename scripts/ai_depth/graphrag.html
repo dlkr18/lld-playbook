@@ -1,0 +1,229 @@
+<!-- Deep lesson: Agentic RAG & GraphRAG. Merged into rag/graphrag by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Multi-hop question</td><td>A question whose answer needs two or more facts from different places, where finding the second depends on the first.</td></tr>
+<tr><td>Global question</td><td>A question about the whole corpus ("what are the recurring causes?") whose answer is an aggregate, not any single passage.</td></tr>
+<tr><td>Agentic RAG</td><td>Retrieval exposed as a tool that a model calls in a loop: search, read, decide what is missing, search again, then answer.</td></tr>
+<tr><td>Knowledge graph</td><td>Data stored as nodes (entities such as services, people, incidents) joined by typed edges (relations such as <em>depends_on</em>).</td></tr>
+<tr><td>Triple</td><td>One edge written as (subject, relation, object), for example (Checkout API, depends_on, payments-db).</td></tr>
+<tr><td>Entity resolution</td><td>Deciding that different strings ("Payments DB", "pay_db") name the same thing, and merging them into one node.</td></tr>
+<tr><td>Fan-out</td><td>How many nodes a traversal reaches: roughly the average degree raised to the number of hops.</td></tr>
+<tr><td>Community</td><td>A group of nodes more densely connected to each other than to the rest of the graph, found by an algorithm such as Louvain or Leiden.</td></tr>
+<tr><td>Community report</td><td>An LLM-written summary of one community's entities and relations, generated at indexing time and retrieved later.</td></tr>
+<tr><td>Local search</td><td>Graph retrieval that starts from entities named in the question and walks their neighbourhood.</td></tr>
+<tr><td>Global search</td><td>Graph retrieval that answers from community reports with a map-reduce over many of them.</td></tr>
+<tr><td>Provenance</td><td>The record of which source chunk produced each node and edge, so answers can cite it and deletes can remove it.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>Standard RAG makes one assumption: the answer lives in a few passages that look like the question. Embed the question, take the five most similar chunks, generate. That works for lookups ("what is the on-call escalation policy?") and fails on two other shapes of question. A <strong>multi-hop</strong> question needs a chain of facts where the later links do not resemble the question at all. A <strong>global</strong> question asks about patterns across hundreds of documents, and no five chunks contain a pattern. Agentic RAG attacks the first by letting a model retrieve repeatedly; GraphRAG attacks both by building a structured index of entities and relations before any question arrives.</p>
+<p>The interview questions:</p>
+<ol>
+<li>Why does top-k vector retrieval fail on multi-hop and global questions?</li>
+<li>How does an agentic retrieval loop work, and what does it cost?</li>
+<li>How does GraphRAG build its index, and how do local and global search use it?</li>
+<li>When is all of this worth it compared with plain RAG?</li>
+</ol>
+<p>The running example: an engineering organisation's knowledge base of 5,000 documents, split into 40,000 chunks: service descriptions, team pages, runbooks and 300 incident postmortems from the past year. Two questions from the engineering director:</p>
+<ul>
+<li><strong>Q1 (multi-hop):</strong> "Which teams owned services affected by incident INC-0312?"</li>
+<li><strong>Q2 (global):</strong> "What are the recurring root causes across last year's incidents?"</li>
+</ul>
+</section>
+
+<section data-label="Step 1: why one similarity search is not enough">
+<p>Trace Q1 through the evidence a human would use. The postmortem for INC-0312 says the cause was the payments database. Three service pages say Checkout API, Refund Worker and Invoice Service depend on that database. Two team pages say who owns those services. The answer needs evidence from all six pages.</p>
+<p>Embed the question and search. The postmortem chunk scores well, because it mentions INC-0312. The service pages do not mention the incident; they mention "payments-db", a word absent from the question. The team pages mention neither. Similarity search ranks chunks by resemblance to the question, and the hop-two and hop-three evidence does not resemble it. No choice of embedding model fixes this, because the needed chunks are only relevant <em>given the first answer</em>, which the search does not know.</p>
+<p>Q2 fails for a different reason. Its answer is a count over 300 postmortems. With \(k = 5\), retrieval shows the model \(5/300 \approx 1.7\%\) of them, picked by similarity to the phrase "recurring root causes", which favours postmortems that happen to use those words. The model will confidently summarise those five as if they were the whole year. Raising \(k\) to 300 would overflow the context and cost a fortune per question.</p>
+<p>So there are two distinct fixes to learn: retrieve <em>more than once</em>, using what you learned (agentic RAG), and <em>pre-compute structure</em> so that relations and aggregates are already there at query time (GraphRAG).</p>
+</section>
+
+<section data-label="Step 2: agentic RAG, retrieval as a tool in a loop">
+<p>Give the model a <code>search(query)</code> tool and the loop from <a href="@@agents/agent-loop@@">the agent loop</a>. For Q1 it runs like this:</p>
+<ol>
+<li>Search "INC-0312 root cause". Read: caused by payments-db.</li>
+<li>Search "services that depend on payments-db". Read: Checkout API, Refund Worker, Invoice Service.</li>
+<li>Search "owner of Checkout API, Refund Worker, Invoice Service". Read: Team Orion, Team Lyra.</li>
+<li>Decide the evidence is sufficient; answer with citations to all six pages.</li>
+</ol>
+<p>Each step's query is written using the previous step's result. That is the whole trick: the model performs the reformulation that a single search cannot.</p>
+<p>It has two costs. <strong>Latency and money</strong>: each hop is one LLM call (to read and decide) plus one search. At an illustrative 1.2 seconds per call and 0.1 seconds per search, three hops plus the final answer take about 5 seconds before streaming starts, against about 1 second for plain RAG. <strong>Compounding error</strong>: if each hop finds the right evidence with probability 0.9, three hops in sequence succeed with \(0.9^3 = 0.73\). A wrong first hop ("caused by the search index") sends every later hop in the wrong direction, and the answer will be confidently wrong with plausible citations.</p>
+<p>Variants differ in how the model decides what to do next. Some grade each retrieved batch ("relevant / irrelevant / ambiguous") and re-search or fall back to web search when the grade is poor; others let the model emit a special "retrieve" decision mid-generation. They share the same engineering needs:</p>
+<ul>
+<li>A <strong>step budget</strong> (for example 5 searches) and a time budget, after which the agent answers with what it has or says what it could not find.</li>
+<li>A <strong>router</strong> in front, so single-hop questions, which are most of them, go straight to plain RAG and never pay for the loop.</li>
+<li>Tool results trimmed before re-entering context, or the context fills with every chunk from every hop.</li>
+</ul>
+<p>Agentic RAG needs no new index, so it is the first thing to try for multi-hop questions. It does nothing for Q2: no sequence of five-chunk searches reads 300 postmortems.</p>
+</section>
+
+<section data-label="Step 3: turning text into a graph">
+<p>GraphRAG moves the work to indexing time. For every chunk, an LLM is asked to list the entities it mentions and the relations between them, as structured output (see <a href="@@prompting/structured-output@@">structured output</a>):</p>
+<pre data-lang="json">{"entities": [
+   {"name": "Checkout API", "type": "service", "description": "Public API that places orders"},
+   {"name": "payments-db", "type": "database", "description": "Primary Postgres for payments"}],
+ "relations": [
+   {"source": "Checkout API", "relation": "depends_on", "target": "payments-db",
+    "description": "Writes every order's payment row synchronously"}]}
+</pre>
+<p>Each relation is a triple plus a short description, and each is stored with its source chunk id (provenance). The union over all chunks is the knowledge graph: for our corpus, a few thousand entities and tens of thousands of edges.</p>
+<p>Two choices shape the result. A <strong>fixed schema</strong> (entity types: service, team, incident, database; relations: depends_on, owned_by, caused_by) makes extraction consistent and traversal predictable; open extraction ("any entity, any relation") captures more but produces a long tail of one-off relation names like "is sometimes slowed by" that no query will ever follow. For a domain you know, define the schema. And extraction is an LLM call per chunk, so it is the dominant indexing cost (Step 8 has the numbers).</p>
+<p>Extraction also makes mistakes: missed relations, invented ones, an entity typed wrongly. Every downstream answer inherits them. Audit a random sample of a few hundred triples against their source chunks before trusting the graph; that sample gives you precision and recall for extraction, the graph's equivalent of the retrieval metrics in <a href="@@rag/rag-in-production@@">making RAG good</a>.</p>
+</section>
+
+<section data-label="Step 4: entity resolution, or the graph falls apart">
+<p>Our corpus writes the payments database as "payments-db", "Payments DB" and "pay_db". Naive extraction creates three nodes. Suppose the true node has 30 edges, split 15, 10 and 5 among the three spellings. A traversal that starts from "Payments DB" sees 15 of 30 edges: half the dependent services vanish from Q1's answer, silently. Splits concentrate on the most important entities, because important things are mentioned most often and in the most ways.</p>
+<p>Resolution happens in layers, cheapest first:</p>
+<ol>
+<li><strong>Normalise</strong> strings: lower-case, collapse hyphens, underscores and spaces. "payments-db" and "Payments DB" become "payments db".</li>
+<li><strong>Alias tables</strong> from systems of record: a service catalogue, the HR directory, a CMDB. "pay db" maps to "payments db" because the catalogue says so. This is the most reliable layer and the one most teams skip.</li>
+<li><strong>Similarity matching</strong>: embed entity names plus descriptions and propose merges above a threshold, with an LLM or a human confirming ambiguous ones. Watch the opposite error: "Apple" the vendor and "apple" the internal codename must not merge, which is why the entity type and description are part of the comparison.</li>
+</ol>
+<p>Give each resolved entity a stable id, and link chunks to entity ids in their metadata. That link is useful even without the rest of GraphRAG: it lets ordinary vector search filter by entity.</p>
+</section>
+
+<section data-label="Step 5: local search, walking the neighbourhood">
+<p><strong>Local search</strong> answers questions about named things. It runs in four moves:</p>
+<ol>
+<li><strong>Link</strong> entities in the question to graph nodes: "INC-0312" matches node <code>inc 0312</code> (by name, or by embedding the question against entity descriptions).</li>
+<li><strong>Expand</strong> along edges to collect a subgraph.</li>
+<li><strong>Gather</strong> the text: entity descriptions, relation descriptions, and the source chunks attached by provenance.</li>
+<li><strong>Rank and pack</strong> that text into the prompt within a token budget, then generate with citations.</li>
+</ol>
+<p>The danger is in step 2. If the average node has 12 neighbours, expanding 1 hop reaches about 12 nodes, 2 hops about \(12^2 = 144\), 3 hops about \(12^3 = 1{,}728\). Hub nodes make it worse: everything depends on the shared database and the logging service, so a naive 3-hop walk returns half the company. Expansion must be constrained:</p>
+<ul>
+<li><strong>Follow typed paths.</strong> Q1 needs exactly <em>caused_by</em> → (reverse) <em>depends_on</em> → <em>owned_by</em>. A planner, which can be the LLM itself, turns the question into a path over the schema; the walk follows only those edge types. On our example graph this returns Team Lyra and Team Orion and the seven chunks that justify them, and nothing else.</li>
+<li><strong>Cap by relevance.</strong> When the path is not known, score neighbours by similarity of their description to the question and keep the top few per hop.</li>
+<li><strong>Cap hubs.</strong> Do not expand through nodes above a degree limit unless the question names them.</li>
+</ul>
+<p>Compare the agentic loop from Step 2. Both answer Q1. The agent rediscovered the path with three LLM calls and three searches at query time; the graph had the relations pre-extracted, so the walk costs milliseconds and one generation call. The graph pays for that at indexing time, and it can only follow relations the extractor found.</p>
+</section>
+
+<section data-label="Step 6: communities, the structure behind global questions">
+<p>For Q2 we need groups. The postmortems, services, databases and causes form clusters: incidents involving the payments database and its dependants are heavily linked to each other and lightly linked to incidents about the search index. <strong>Community detection</strong> finds such clusters automatically.</p>
+<p>Louvain and its refinement Leiden optimise <strong>modularity</strong>: the fraction of edges that fall inside communities minus the fraction you would expect if edges were placed at random with the same node degrees. A partition with high modularity has many more internal edges than chance. The algorithms start with every node alone, repeatedly move nodes to the neighbouring community that raises modularity most, then merge each community into a single node and repeat. Repeating gives a <strong>hierarchy</strong>: at the top, a handful of large communities ("payments platform", "search", "identity"); lower down, finer ones ("payments-db connection exhaustion incidents").</p>
+<p>Then the expensive, distinctive step: for every community at every level, an LLM writes a <strong>community report</strong> from its entities, relations and a sample of source text: a title, a summary, the key findings, and an importance rating. For our corpus there might be about 40 communities at the top level and a few hundred in total. These reports are a new kind of retrievable unit: pre-computed summaries of parts of the corpus, written before anyone asked.</p>
+<p>A practical warning: community detection is sensitive to graph quality. Unresolved duplicates and hub nodes distort it, so Steps 3 and 4 decide whether the communities mean anything.</p>
+</section>
+
+<section data-label="Step 7: global search, map-reduce over reports">
+<p>Global search answers Q2 from the reports, not from chunks:</p>
+<ol>
+<li><strong>Choose a level.</strong> Top-level reports for "across the whole year" questions; finer levels for narrower ones.</li>
+<li><strong>Map.</strong> Split the reports into batches that fit a context window. For each batch, in parallel, ask the model: "From these reports, list points relevant to the question, each with an importance score from 0 to 100." With 40 reports of about 1,500 tokens, five batches of 8 reports is five parallel calls.</li>
+<li><strong>Reduce.</strong> Gather all points, drop low scores, sort, and ask the model to write the final answer from the top points, citing the reports (which cite their sources).</li>
+</ol>
+<p>Every postmortem contributed to some community, and every top-level community was read during the map, so the answer is built from the whole corpus rather than five similar chunks. That is what makes a corpus-wide answer possible.</p>
+<p>It is not cheap per query. Map input is about \(40 \times 1{,}500 + 5 \times 1{,}000 = 65{,}000\) tokens (reports plus instructions). Each map call writes about 400 tokens of scored points, and the reduce reads those 2,000 plus instructions (about 3,000 tokens in) and writes about 1,000. That is about 68,000 tokens in and 3,000 out. At illustrative prices of $2.50 per million input tokens and $10 per million output tokens, one global question costs about \(0.17 + 0.03 = \$0.20\), against about $0.0125 for a plain RAG answer with 4,000 tokens in and 250 out: roughly 16 times more. Latency is one parallel map round plus a reduce, several seconds. Global search suits analysts asking a few questions a day, not a chatbot answering thousands.</p>
+<p>Simpler alternatives exist for some global questions. If postmortems already carry a structured "root cause category" field, Q2 is a SQL <code>GROUP BY</code>, exact and free; route it there (see <a href="@@production/hybrid-patterns@@">hybrid LLM patterns</a>). GraphRAG's global search earns its cost when the categories are not known in advance and must be discovered from text.</p>
+</section>
+
+<section data-label="Step 8: what the index costs, and keeping it fresh">
+<p>Indexing cost for our 40,000 chunks, with an extraction prompt of about 600 tokens of instructions plus a 500-token chunk, and about 300 tokens of output:</p>
+<table>
+<thead><tr><th>Index step</th><th>Tokens</th><th>Illustrative cost</th></tr></thead>
+<tbody>
+<tr><td>Embedding all chunks (plain RAG)</td><td>20M in</td><td>about $0.40</td></tr>
+<tr><td>Extraction with a small model</td><td>44M in, 12M out</td><td>about $14</td></tr>
+<tr><td>Extraction with a large model</td><td>44M in, 12M out</td><td>about $230</td></tr>
+<tr><td>Community reports (~400 × 8,000 in, 800 out)</td><td>3.2M in, 0.3M out</td><td>about $11 (large model)</td></tr>
+</tbody>
+</table>
+<p>The prices are illustrative (per million tokens: embedding $0.02; small model $0.15 in and $0.60 out; large model $2.50 in and $10 out); the ratios are the point. Graph indexing costs one to three orders of magnitude more than embedding, because it runs a generative model over every chunk, and output tokens are the expensive kind. Teams usually extract with a small model and spot-check quality, and run several extraction passes ("gleaning") only where recall matters.</p>
+<p><strong>Freshness</strong> is harder than in plain RAG. A new postmortem means: extract its triples, resolve its entities against existing ones, add edges, and then the communities it touches may have changed, so their reports are stale. Practical systems re-extract changed chunks immediately, mark affected communities dirty, and regenerate their reports in a nightly batch, with a full re-clustering occasionally. <strong>Deletes</strong> rely on provenance: remove every edge whose only source chunk was deleted, then nodes with no edges, then mark their communities dirty. Without provenance you cannot delete correctly, and a removed document lives on inside a summary.</p>
+</section>
+
+<section data-label="Choosing an approach">
+<table>
+<thead><tr><th>Question shape</th><th>First choice</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Lookup in one place</td><td>Plain RAG with hybrid search and reranking</td><td>Cheapest and fastest; most questions are this</td></tr>
+<tr><td>Occasional multi-hop</td><td>Agentic RAG behind a router</td><td>No new index; pays only on the questions that need it</td></tr>
+<tr><td>Frequent multi-hop over a stable domain with clear entities</td><td>Graph local search (or entity ids on chunks plus filters)</td><td>Relations pre-extracted; fast, consistent traversals</td></tr>
+<tr><td>Themes across a large corpus, categories unknown</td><td>Graph global search</td><td>Only approach that reads the whole corpus per question</td></tr>
+<tr><td>Aggregates over fields that already exist</td><td>SQL or an API tool</td><td>Exact, cheap, and auditable</td></tr>
+<tr><td>Fast-changing content (news, chats)</td><td>Not GraphRAG</td><td>Re-extraction and report regeneration cannot keep up</td></tr>
+</tbody>
+</table>
+<p>Whatever you choose, build a small golden set per shape first: 30 multi-hop questions with their evidence chains and 15 global questions with reference answers written by someone who knows the corpus. Measure plain RAG on it. The gap is the case for the extra machinery. Global answers have no single right answer, so judge them pairwise: show a judge two answers and ask which is more complete, more diverse in the causes it covers, and better supported. Then sample the claims and check they trace to real postmortems.</p>
+</section>
+
+<section data-label="In code: a graph from triples, a typed walk, and communities">
+<pre data-lang="python">import re
+import networkx as nx
+
+# (subject, relation, object, source_chunk) as an extractor would return them
+triples = [
+    ("INC-0312", "caused_by", "Payments DB", "pm-0312#2"),
+    ("payments-db", "runs_on", "pg-cluster-7", "svc-pay#1"),
+    ("Checkout API", "depends_on", "payments-db", "svc-checkout#3"),
+    ("Refund Worker", "depends_on", "Payments DB", "svc-refund#1"),
+    ("Invoice Service", "depends_on", "pay_db", "svc-invoice#2"),
+    ("Checkout API", "owned_by", "Team Orion", "team-orion#1"),
+    ("Refund Worker", "owned_by", "Team Lyra", "team-lyra#4"),
+    ("Invoice Service", "owned_by", "Team Lyra", "team-lyra#5"),
+    ("Search API", "depends_on", "search-index", "svc-search#1"),
+    ("Search API", "owned_by", "Team Vega", "team-vega#2"),
+    ("INC-0405", "caused_by", "search-index", "pm-0405#1"),
+]
+
+def build(aliases):
+    def canon(name):
+        key = re.sub(r"[-_\s]+", " ", name.strip().lower())   # layer 1: normalise
+        return aliases.get(key, key)                           # layer 2: alias table
+    G = nx.MultiDiGraph()
+    for s, r, o, src in triples:
+        G.add_edge(canon(s), canon(o), rel=r, source=src)      # keep provenance
+    return G
+
+def walk(G, start, path):
+    """Follow only the typed edges the question needs; collect source chunks."""
+    frontier, evidence = {start}, set()
+    for rel, direction in path:
+        nxt = set()
+        for n in frontier:
+            edges = G.in_edges(n, data=True) if direction == "in" else G.out_edges(n, data=True)
+            for u, v, d in edges:
+                if d["rel"] == rel:
+                    nxt.add(u if direction == "in" else v)
+                    evidence.add(d["source"])
+        frontier = nxt
+    return sorted(frontier), sorted(evidence)
+
+q1_path = [("caused_by", "out"), ("depends_on", "in"), ("owned_by", "out")]
+for aliases in ({}, {"pay db": "payments db"}):
+    G = build(aliases)
+    teams, chunks = walk(G, "inc 0312", q1_path)
+    print(f"aliases={bool(aliases)}: nodes={G.number_of_nodes()} teams={teams} evidence={len(chunks)} chunks")
+
+comms = nx.community.louvain_communities(G.to_undirected(), seed=7)
+for c in sorted(comms, key=len, reverse=True):
+    print("community:", sorted(c))
+</pre>
+<p>Without the alias table, "pay_db" stays a separate node and Invoice Service drops out of the walk (evidence falls from seven chunks to five); Team Lyra survives only because it also owns Refund Worker, which is exactly how such bugs hide. With the alias, the walk returns Team Lyra and Team Orion with seven evidence chunks, and Louvain separates the payments cluster from the search cluster. In a real system the triples come from an LLM extraction pass, the path from a planner prompt, and each community would get an LLM-written report; Microsoft's open-source <code>graphrag</code> package and graph databases such as Neo4j implement those parts at scale.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"GraphRAG is better RAG."</strong> It is a different index for two question shapes. For lookups it costs far more to build and is no more accurate than plain RAG with hybrid search and reranking.</li>
+<li><strong>"Agentic RAG and GraphRAG are alternatives."</strong> One is a query-time strategy, the other an index. They combine: graph search can be one of the agent's tools.</li>
+<li><strong>Skipping entity resolution.</strong> Duplicate nodes silently drop edges from traversals and distort communities. Use alias tables from systems of record before similarity matching.</li>
+<li><strong>Unbounded expansion.</strong> At degree 12, three hops reach about 1,700 nodes. Follow typed paths, cap by relevance, and do not expand through hubs.</li>
+<li><strong>Trusting extracted edges.</strong> Extraction invents and misses relations. Audit a sample and measure precision and recall before relying on multi-hop answers.</li>
+<li><strong>Using global search in a chatbot.</strong> One global question reads every top-level report; at thousands of queries a day that cost and latency are prohibitive.</li>
+<li><strong>Forgetting deletes.</strong> Without provenance on edges, a removed document survives inside community reports.</li>
+<li><strong>No baseline.</strong> Measure plain RAG on a multi-hop and global golden set first; adopt the graph only for the gap it closes.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>Why can no embedding model fix plain RAG on Q1?</summary><div class="answer">The hop-two and hop-three chunks (service dependencies, team ownership) do not resemble the question; they are relevant only given the first answer (payments-db). A single similarity search does not know that answer. Retrieval must happen again with the new information, or the relations must be pre-extracted.</div></details>
+<details><summary>An agent answers multi-hop questions in 4 hops, each finding the right evidence 92% of the time. What fraction of answers have a fully correct chain, and what would you change first?</summary><div class="answer">\(0.92^4 \approx 0.72\). Improve per-hop retrieval (hybrid search, reranking), since it compounds, and add a verification step that checks the final chain against the cited chunks; also shorten chains by giving the agent tools that return relations directly.</div></details>
+<details><summary>The average degree in your graph is 15. How many nodes does a 3-hop unconstrained expansion reach, and what do you do about it?</summary><div class="answer">About \(15^3 = 3{,}375\), more with hubs. Follow only the edge types the question needs, keep the top few neighbours per hop by relevance, and do not expand through high-degree hubs.</div></details>
+<details><summary>Global search reads 60 reports of 1,500 tokens in batches of 10, with 1,000 tokens of instructions per batch. Roughly how many input tokens does the map step use?</summary><div class="answer">\(60 \times 1{,}500 + 6 \times 1{,}000 = 96{,}000\) tokens, before the reduce step. At thousands of questions a day, that rules it out for a chatbot.</div></details>
+<details><summary>The director asks "how many incidents last year were caused by config changes?" and postmortems have a structured root-cause field. GraphRAG global search or something else?</summary><div class="answer">Something else: a SQL query over the structured field, exact and nearly free. Global search is for themes that must be discovered from text, not counts over fields that already exist.</div></details>
+<details><summary>A postmortem is deleted for legal reasons. What must happen in a GraphRAG index?</summary><div class="answer">Delete its chunks and vectors; remove every edge whose only provenance was those chunks, then orphaned nodes; mark the affected communities dirty and regenerate their reports; invalidate cached answers that cited them. Without provenance this cannot be done correctly.</div></details>
+<details><summary>Why does entity resolution matter more for important entities?</summary><div class="answer">Important entities are mentioned most often, by the most authors, in the most spellings, so they split into the most duplicate nodes. They are also the hubs most traversals pass through, so a split there removes the most edges from answers.</div></details>
+</section>

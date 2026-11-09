@@ -1,0 +1,241 @@
+<!-- Deep lesson: Choosing an agent framework. Merged into tech/frameworks by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Agent framework</td><td>A library that runs the model-and-tools loop for you and adds features around it: state, tracing, approvals, multi-agent routing.</td></tr>
+<tr><td>Harness</td><td>Whatever code runs the loop: calls the model, executes tools, enforces budgets, records what happened. A framework is one kind of harness.</td></tr>
+<tr><td>Thin harness</td><td>A small in-house loop (tens to a few hundred lines) built on the provider SDK, owning exactly the features you need.</td></tr>
+<tr><td>Control flow</td><td>Who decides the next step: your code, the model, or a conversation between models.</td></tr>
+<tr><td>Hidden scaffolding</td><td>Prompt text a framework adds that you did not write: format instructions, persona preambles, manager prompts.</td></tr>
+<tr><td>Escape hatch</td><td>How easily you can drop below the framework to plain code for one step without fighting it.</td></tr>
+<tr><td>Lock-in</td><td>The work you would have to redo to leave: state formats, orchestration definitions, framework-specific tool wrappers.</td></tr>
+<tr><td>Durable execution</td><td>Saving a run's progress so it can survive a crash or a long pause and continue where it stopped.</td></tr>
+<tr><td>Span</td><td>One timed, recorded operation in a trace, such as one model call or one tool call, with inputs, outputs and cost.</td></tr>
+<tr><td>Spike</td><td>A short, throwaway build that tests the riskiest requirement before you commit to a design.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>There are many agent frameworks (LangGraph, the OpenAI Agents SDK, CrewAI, AutoGen, Pydantic AI, LlamaIndex, and more each year), and they all promise to make agents easy. Underneath, every one of them runs the same loop: call the model, run the tool it asks for, give it the result, repeat. What differs is which concerns around that loop they handle, how much they decide for you, and how hard they are to leave. Choosing well is a design decision with a cost in tokens, latency, debugging time and migration work, and interviewers treat it that way.</p>
+<p>The questions:</p>
+<ol>
+<li>What does a framework actually do that a loop you write yourself does not?</li>
+<li>How do you compare frameworks on things that matter in month six, not on feature lists?</li>
+<li>When should you use a framework, a thin harness of your own, or the raw SDK?</li>
+<li>How do you keep the choice reversible?</li>
+</ol>
+<p>Running example: the electronics shop's <strong>support agent v2</strong>. It answers policy questions from the help centre (RAG), looks up orders, and issues refunds, with refunds over $100 waiting for a human reviewer. It must handle about 30,000 conversations a day with a 95th-percentile response time under 6 seconds per turn, and it is built and run by three engineers. We will decide how to build its harness. The topic pages for individual tools (<a href="@@tech/langchain@@">LangChain</a>, <a href="@@tech/langgraph@@">LangGraph</a>, <a href="@@tech/crewai@@">CrewAI</a>) cover each one's internals; this lesson is about the choice.</p>
+</section>
+
+<section data-label="Step 1: the loop every framework runs">
+<p>Strip any framework down and this is what remains (see <a href="@@agents/agent-loop@@">The agent loop</a> for the full treatment):</p>
+<pre class="ascii-diagram">messages = [system, user]
+repeat up to N times:
+    reply = model(messages, tool_schemas)          # one API call
+    if reply has no tool call: return reply.text
+    result = run_tool(reply.tool, reply.args)      # your code
+    messages += [reply, result]</pre>
+<p>Five lines of logic. For the refund request, the loop makes three model calls: one that asks for <code>lookup_order</code>, one that asks for <code>issue_refund</code>, and one that writes the reply. With a 1,500-token system prompt and tool definitions and about 300 tokens added per round, those calls send 1,500, 1,800 and 2,100 input tokens: 5,400 in total.</p>
+<p>So a framework is not needed to make an agent work. It is a bet that the <em>concerns around the loop</em> are worth buying rather than building. The rest of the choice is working out which concerns you have.</p>
+</section>
+
+<section data-label="Step 2: the concerns around the loop">
+<p>A production agent needs most of the following. Each is a place where a framework either helps or decides something for you:</p>
+<table>
+<thead><tr><th>Concern</th><th>What it involves</th><th>Support agent v2 needs it?</th></tr></thead>
+<tbody>
+<tr><td>Tool schemas and validation</td><td>Turn functions into JSON schemas; validate the model's arguments before running anything</td><td>Yes</td></tr>
+<tr><td>Budgets</td><td>Cap steps, tokens, wall time and cost per run</td><td>Yes (6 s p95)</td></tr>
+<tr><td>Error handling</td><td>Retry provider errors; return tool errors to the model instead of crashing</td><td>Yes</td></tr>
+<tr><td>Streaming</td><td>Show tokens and progress while the run is going</td><td>Yes (chat widget)</td></tr>
+<tr><td>Tracing</td><td>Record every model and tool call as spans with tokens, cost and latency</td><td>Yes</td></tr>
+<tr><td>Durable state</td><td>Persist the run so it survives crashes and long pauses</td><td>Yes (approvals take hours)</td></tr>
+<tr><td>Human approval</td><td>Pause before a risky action; resume with the decision</td><td>Yes (refunds over $100)</td></tr>
+<tr><td>Structured output</td><td>Force and validate typed results</td><td>Some (refund decisions)</td></tr>
+<tr><td>Multi-agent routing</td><td>Hand work between specialised agents</td><td>No</td></tr>
+<tr><td>Provider portability</td><td>Swap model vendors without rewriting</td><td>Nice to have</td></tr>
+</tbody>
+</table>
+<p>Writing this table for your own system is the most useful step in the whole decision. Frameworks differ mainly in which rows they cover well. The support agent's hardest rows are durable state and human approval, so those should dominate the choice; multi-agent routing, which several frameworks are built around, is irrelevant here.</p>
+</section>
+
+<section data-label="Step 3: who owns control flow">
+<p>The deepest difference between frameworks is who decides what happens next:</p>
+<ul>
+<li><strong>Your code decides</strong> (a pipeline, or a graph with explicit edges). The model fills in steps; routing is <code>if</code> statements. Examples: plain code, LCEL chains, LangGraph, CrewAI Flows.</li>
+<li><strong>The model decides</strong> (a single tool loop). The model picks tools and when to stop; code enforces budgets and permissions. Examples: a raw loop, the OpenAI Agents SDK, Pydantic AI agents, LangGraph's prebuilt agent.</li>
+<li><strong>A conversation decides</strong> (several agents talking, with a manager or a speaker-selection rule). Examples: CrewAI's hierarchical process, AutoGen group chats.</li>
+</ul>
+<p>Moving down the list buys flexibility for open-ended tasks and costs predictability: more model calls, more variance in latency, harder replay. A rule that must always hold ("never refund over $100 without approval") belongs where code decides, because a prompt instruction can be ignored and an edge cannot. For the support agent, the loop itself can be model-driven, but the refund approval must be a code-level gate. Any framework we choose has to let us put that gate in code.</p>
+</section>
+
+<section data-label="Step 4: what abstraction costs, in tokens and milliseconds">
+<p>Frameworks add prompt text you did not write: persona preambles, tool-use format instructions, manager prompts, delegation tool descriptions. That <strong>hidden scaffolding</strong> is sent on every call. Its cost is easy to estimate once you have read it in a trace.</p>
+<p>Suppose a framework adds 500 tokens of scaffolding per call and the support agent averages 4 calls per conversation at 30,000 conversations a day:</p>
+\[ 500 \times 4 \times 30{,}000 = 60\ \text{million tokens a day} \]
+<p>At an illustrative $3 per million input tokens that is about $180 a day, roughly $66,000 a year, for text that may not improve answers. The bigger cost is often latency: an architecture that adds a manager or router call per turn adds a full model round trip (say 1 to 2 seconds) and can single-handedly break the 6-second p95 target.</p>
+<p>The third cost is <strong>debug distance</strong>: how many layers sit between a wrong answer and the line that caused it. If the prompt that went to the model was assembled from your instructions plus framework templates, you need a trace that shows the final prompt, or you are guessing. Rank frameworks partly on how easily you can see the exact request sent to the provider.</p>
+</section>
+
+<section data-label="Step 5: lock-in and what transfers">
+<p>Leaving a framework is common: teams outgrow it, the project changes direction, or a release breaks something. Separate the parts of an agent by how portable they are:</p>
+<table>
+<thead><tr><th>Part</th><th>Portable?</th><th>How to keep it portable</th></tr></thead>
+<tbody>
+<tr><td>Tool functions</td><td>Yes</td><td>Write them as plain typed functions; register them with the framework through a thin adapter</td></tr>
+<tr><td>Prompts</td><td>Yes, if you own them</td><td>Keep them in your repo, not in framework personas or templates</td></tr>
+<tr><td>Evaluation sets and graders</td><td>Yes</td><td>Run evals against your harness's input and output, not framework internals (<a href="@@production/evals@@">Evaluating LLM features</a>)</td></tr>
+<tr><td>Traces</td><td>Partly</td><td>Prefer OpenTelemetry-compatible tracing over a framework-only format</td></tr>
+<tr><td>Orchestration definitions</td><td>No</td><td>Graphs, crews and flows are framework-specific; keep business logic out of them</td></tr>
+<tr><td>Persisted state and checkpoints</td><td>No</td><td>Plan a migration (finish in-flight runs on the old system) rather than converting</td></tr>
+</tbody>
+</table>
+<p>Standard protocols shrink lock-in further. Exposing tools through <a href="@@agents/mcp@@">MCP</a> lets any MCP-capable harness use them; OpenTelemetry spans let any tracing backend read your runs. The design rule: the framework should own the loop and the orchestration, and nothing else.</p>
+</section>
+
+<section data-label="Step 6: three ways to build it">
+<p>For any agent there are three realistic shapes:</p>
+<ul>
+<li><strong>Raw SDK.</strong> Call the provider's API directly; write the loop inline. Right for a single call or a very simple loop on a hot path where every token and millisecond is visible.</li>
+<li><strong>Thin harness.</strong> Your own small loop with the concerns you need: schema generation, budgets, error handling, tracing hooks, an approval gate, perhaps persistence to your existing database. Right when your requirements are specific and your team wants to own every line.</li>
+<li><strong>Framework.</strong> Buy the loop and the concerns. Right when a framework covers your hardest rows from Step 2 well and its control model fits yours.</li>
+</ul>
+<p>The honest cost of the thin harness is the hard rows: a loop with budgets and tracing is an afternoon's work, but durable state with resume-after-crash, interrupts that survive deploys, and replay are real engineering. The honest cost of a framework is the four costs above: scaffolding, latency, debug distance and lock-in, plus keeping up with its releases.</p>
+</section>
+
+<section data-label="Step 7: when the heavier frameworks earn their place">
+<p>The support agent does not need multi-agent machinery, but other systems do, and it is worth knowing the mechanism that makes each family worth its overhead:</p>
+<ul>
+<li><strong>Conversation-driven frameworks</strong> (AutoGen-style group chats) pay off when the work is genuinely iterative between distinct capabilities: a coding agent writes code, an executor agent runs it in a sandbox and reports the error, the coder fixes it. The conversation <em>is</em> the algorithm, and the framework supplies turn-taking, code execution and termination rules. The cost is a full model call per turn and runs that are hard to replay exactly.</li>
+<li><strong>Role-based crews</strong> pay off for occasional, offline work with clear specialist stages (research, analysis, writing), where cost per run is small and speed of building matters more than per-call efficiency.</li>
+<li><strong>Data-first frameworks</strong> (LlamaIndex) pay off when most of the complexity is in ingestion and indexing: many document types, hierarchical indexes, query routing across sources.</li>
+<li><strong>Typed agent libraries</strong> (Pydantic AI) pay off when outputs feed other software: every result is validated against a schema, and a validation failure is sent back to the model as a retry with the precise error.</li>
+</ul>
+<p>The common thread: a framework is worth its overhead when its central abstraction matches the shape of your problem. A group-chat framework applied to a single-agent support bot pays for turn-taking it never uses.</p>
+</section>
+
+<section data-label="Step 8: evaluating a candidate with a spike">
+<p>Feature lists do not tell you how a framework behaves at your hardest requirement. A one- to two-day spike does. For the support agent:</p>
+<ol>
+<li><strong>Build the hardest requirement first</strong>: a refund that pauses for approval, the process is killed, a new process resumes it, and the refund happens exactly once (with an idempotency key).</li>
+<li><strong>Read every request sent to the provider</strong> during the spike. Count scaffolding tokens per call and multiply as in Step 4.</li>
+<li><strong>Break a tool</strong>: make <code>lookup_order</code> raise. Does the error reach the model as a tool result, crash the run, or vanish?</li>
+<li><strong>Stream</strong> a reply into a test client and measure time to first token against a raw SDK call.</li>
+<li><strong>Escape</strong>: replace one step with plain code and see how much the framework resists.</li>
+<li><strong>Upgrade</strong>: bump the framework one minor version and run your tests.</li>
+</ol>
+<p>Score each candidate on these results rather than on documentation. A framework that makes step 1 easy and steps 2 to 6 acceptable is a good fit; one that makes step 1 hard is the wrong tool, however good its demos.</p>
+</section>
+
+<section data-label="Step 9: the decision for support agent v2">
+<p>Apply the steps. The hardest rows are durable state and human approval (Step 2). Control flow should be model-driven within a turn but code-gated for refunds (Step 3). The latency target rules out an extra manager call per turn (Step 4). There is no multi-agent requirement.</p>
+<table>
+<thead><tr><th>Option</th><th>Fit</th><th>Main risk</th></tr></thead>
+<tbody>
+<tr><td>Raw SDK, inline loop</td><td>Poor: durable approval would be rebuilt from scratch, inline</td><td>Missing features accumulate as ad-hoc code</td></tr>
+<tr><td>Thin harness + Postgres</td><td>Good if the team wants ownership; approval and resume are the main build</td><td>Building and testing durable resume correctly</td></tr>
+<tr><td>LangGraph</td><td>Good: checkpoints, interrupts, explicit routing, low scaffolding</td><td>Framework-specific state and graph code; release churn</td></tr>
+<tr><td>Role-based crew</td><td>Poor: multi-agent features unused, extra calls threaten the 6 s target</td><td>Cost and latency per turn</td></tr>
+<tr><td>Lightweight agent SDK (single-agent focus)</td><td>Medium: good loop and tracing; approval durability depends on what it offers or what you add</td><td>Building persistence around it</td></tr>
+</tbody>
+</table>
+<p>A defensible answer: LangGraph with a Postgres checkpointer, with tools as plain functions, prompts in the repo, evals on the harness boundary and OpenTelemetry tracing, so the graph is the only framework-specific code. An equally defensible answer for a team with strong backend skills: a thin harness on the provider SDK, persisting runs in the existing Postgres. In an interview, the reasoning (hardest rows, control ownership, measured overhead, portability) matters more than which of the two you pick.</p>
+</section>
+
+<section data-label="In code: a thin harness that covers the core concerns">
+<p>About 50 lines covering schema generation, step and token budgets, tool errors returned to the model, a code-level approval gate and a trace. A scripted function stands in for the model so it runs offline. Durable state, the hard part, is deliberately missing: that is what you would add, or buy.</p>
+<pre data-lang="python">import inspect, json
+
+TYPES = {str: "string", int: "integer", float: "number", bool: "boolean"}
+
+def schema(fn):
+    """JSON schema from a plain function: the part every framework automates."""
+    sig = inspect.signature(fn)
+    props = {n: {"type": TYPES[p.annotation]} for n, p in sig.parameters.items()}
+    required = [n for n, p in sig.parameters.items() if p.default is p.empty]
+    return {"name": fn.__name__, "description": fn.__doc__,
+            "parameters": {"type": "object", "properties": props, "required": required}}
+
+# --- tools are plain functions: they move between frameworks unchanged ---
+def lookup_order(order_id: str) -&gt; dict:
+    """Return an order's amount and delivery date."""
+    return {"order_id": order_id, "amount": 149, "delivered_days_ago": 6}
+
+def issue_refund(order_id: str, amount: int) -&gt; dict:
+    """Refund an order. Amounts over 100 need human approval."""
+    return {"refund_id": "R-77", "order_id": order_id, "amount": amount}
+
+def run(model, tools, user_msg, approve, max_steps=8, max_tokens=20_000):
+    registry = {t.__name__: t for t in tools}
+    messages, trace, used = [{"role": "user", "content": user_msg}], [], 0
+    for step in range(max_steps):                                  # budget 1: steps
+        reply, tokens = model(messages, [schema(t) for t in tools])
+        used += tokens
+        trace.append({"step": step, "type": "model", "tokens": tokens})
+        if used &gt; max_tokens:                                         # budget 2: tokens
+            return "stopped: token budget", trace
+        if "tool" not in reply:
+            return reply["content"], trace
+        name, args = reply["tool"], reply["args"]
+        if name == "issue_refund" and args["amount"] &gt; 100 and not approve(args):
+            result = {"error": "refund not approved by a human"}     # policy lives in code
+        else:
+            try:
+                result = registry[name](**args)
+            except Exception as e:                                    # errors go back to the model
+                result = {"error": str(e)}
+        trace.append({"step": step, "type": "tool", "name": name, "ok": "error" not in result})
+        messages += [{"role": "assistant", "tool_call": reply},
+                     {"role": "tool", "content": json.dumps(result)}]
+    return "stopped: step budget", trace
+
+def scripted_model(messages, tool_schemas):
+    """Stands in for a provider call; returns (reply, input tokens used)."""
+    tokens = 1500 + 300 * (len(messages) // 2)
+    n_tool_results = sum(m["role"] == "tool" for m in messages)
+    if n_tool_results == 0:
+        return {"tool": "lookup_order", "args": {"order_id": "A1042"}}, tokens
+    if n_tool_results == 1:
+        return {"tool": "issue_refund", "args": {"order_id": "A1042", "amount": 149}}, tokens
+    return {"content": "Your refund R-77 for $149 is on its way."}, tokens
+
+answer, trace = run(scripted_model, [lookup_order, issue_refund],
+                    "Refund A1042, the headphones arrived broken.", approve=lambda a: True)
+print(answer)
+print(sum(t.get("tokens", 0) for t in trace), "input tokens over",
+      sum(t["type"] == "model" for t in trace), "model calls")
+print(json.dumps(schema(issue_refund)["parameters"]))
+</pre>
+<p>It prints the reply, <code>5400 input tokens over 3 model calls</code> (the numbers from Step 1), and the generated parameter schema for <code>issue_refund</code>. The approval here is a synchronous callback; making it survive hours and restarts means saving <code>messages</code> and the pending tool call to a database and resuming from them, which is exactly what a checkpointing framework provides.</p>
+<p>Registering the same functions in a framework is a one-line adapter, which is the point of keeping them plain:</p>
+<pre data-lang="python"># Written against each library's documented API; needs those packages installed.
+from langchain_core.tools import tool as lc_tool          # LangChain / LangGraph
+lc_tools = [lc_tool(lookup_order), lc_tool(issue_refund)]
+
+from agents import function_tool                         # OpenAI Agents SDK
+oa_tools = [function_tool(lookup_order), function_tool(issue_refund)]
+</pre>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"We need a framework to build an agent."</strong> The loop is five lines. You need a framework, or a harness, for the concerns around it; list them first.</li>
+<li><strong>Choosing from feature tables.</strong> Every framework claims every feature. Spike your hardest requirement and read the actual requests sent to the provider.</li>
+<li><strong>Ignoring hidden scaffolding.</strong> 500 extra tokens per call is invisible in a demo and tens of thousands of dollars a year at volume. Measure it in traces.</li>
+<li><strong>Putting business rules in prompts or personas.</strong> Rules that must hold belong in code: an edge, a gate, a validator.</li>
+<li><strong>Picking multi-agent for a single-agent problem.</strong> Manager and delegation calls add latency and cost with no benefit when one agent with good tools would do.</li>
+<li><strong>Letting the framework own everything.</strong> Keep tools, prompts and evals framework-free so leaving costs a rewrite of orchestration only.</li>
+<li><strong>Underestimating the thin harness's hard parts.</strong> The loop is easy; durable resume, interrupts across deploys and replay are not. Count them honestly.</li>
+<li><strong>Treating today's comparison as permanent.</strong> These libraries change quickly. Re-run your spike criteria before a major upgrade or a new project.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>What does an agent framework provide that a five-line loop does not?</summary><div class="answer">The concerns around the loop: tool schema generation and argument validation, budgets, error handling and retries, streaming, tracing, durable state, human-approval pauses, structured output, multi-agent routing and provider portability. Which of those you need decides whether a framework is worth it.</div></details>
+<details><summary>A framework adds 400 tokens of scaffolding per call. Your agent makes 5 calls per conversation, 20,000 conversations a day, at an illustrative $3 per million input tokens. What does the scaffolding cost per year?</summary><div class="answer">\(400 \times 5 \times 20{,}000 = 40\) million tokens a day, about $120 a day, or roughly $43,800 a year.</div></details>
+<details><summary>Why should the "approval over $100" rule live in code, and what does that require of a framework?</summary><div class="answer">A prompt instruction can be ignored or argued around; a code gate cannot. The framework must let you put arbitrary code at that point (an edge, a hook or a tool wrapper) and must support pausing the run there durably.</div></details>
+<details><summary>Your p95 target is 6 s per turn and model calls take about 1.5 s. A design adds a router call before every turn. What happens, and what would you do?</summary><div class="answer">Every turn gains a full round trip, about 1.5 s; a turn that already needs three calls now needs four (about 6 s of model time alone), so p95 is blown. Route with code or a small fast classifier, or let the main agent choose tools directly.</div></details>
+<details><summary>List the parts of an agent that transfer if you leave a framework, and those that do not.</summary><div class="answer">Transfer: plain tool functions, prompts kept in your repo, evaluation sets and graders, OpenTelemetry traces. Do not transfer: orchestration definitions (graphs, crews, flows) and persisted state or checkpoints, which need a planned migration.</div></details>
+<details><summary>Describe a two-day spike to choose between LangGraph and a thin harness for an agent with approvals.</summary><div class="answer">Implement the hardest path in both: pause for approval, kill the process, resume elsewhere, refund exactly once with an idempotency key. Then read every provider request and count scaffolding tokens, break a tool and see where the error goes, measure time to first token while streaming, replace a step with plain code, and run an upgrade. Choose on those results.</div></details>
+<details><summary>When is the raw SDK the right answer?</summary><div class="answer">A single model call or a very simple loop on a hot path, where you want every token and millisecond visible and none of the framework concerns (durable state, approvals, multi-agent) apply.</div></details>
+</section>

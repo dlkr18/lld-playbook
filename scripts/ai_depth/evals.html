@@ -1,0 +1,237 @@
+<!-- Deep lesson: Evaluating LLM features. Merged into production/evals by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Eval</td><td>A repeatable test of an LLM feature: a dataset of cases, graders that score each output, a way to aggregate scores, and a rule for what result is acceptable.</td></tr>
+<tr><td>Golden set</td><td>A curated, versioned set of test cases with known good answers or pass criteria, drawn from real usage and known failures.</td></tr>
+<tr><td>Grader</td><td>Code, a model or a person that decides whether one output passes one criterion.</td></tr>
+<tr><td>Slice</td><td>A subset of cases sharing a property (one intent, one region, adversarial inputs), reported separately so averages do not hide failures.</td></tr>
+<tr><td>Critical case</td><td>A case whose failure blocks a release on its own, whatever the average (privacy leaks, wrong refunds).</td></tr>
+<tr><td>Paired comparison</td><td>Comparing two versions on the same cases, so each case acts as its own control.</td></tr>
+<tr><td>Discordant pair</td><td>A case where one version passes and the other fails. Only these carry information about which version is better.</td></tr>
+<tr><td>McNemar's test</td><td>The standard significance test for paired pass/fail results, computed from the two counts of discordant pairs.</td></tr>
+<tr><td>Sensitivity / specificity (of a judge)</td><td>How often an automated judge passes outputs that truly pass, and fails outputs that truly fail, measured against human labels.</td></tr>
+<tr><td>Non-inferiority gate</td><td>A release rule that ships only if the data rule out a regression larger than a chosen margin.</td></tr>
+<tr><td>Online evaluation</td><td>Measuring a feature on live traffic (A/B tests, user signals), as opposed to offline evaluation on a fixed set.</td></tr>
+<tr><td>Error analysis</td><td>Reading failed cases, grouping them into causes and counting them, to decide what to fix next.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>A traditional feature is tested with assertions: given this input, expect exactly this output. LLM features break that model. Outputs are open-ended text, many different answers are correct, the same input can give different outputs on different runs, and a change that fixes one case often breaks three others. Without a systematic way to measure quality, every prompt edit is a guess and every release is a gamble. Evals are that systematic way, and interviewers for AI engineering roles probe them more than almost any other topic, because they separate people who have shipped LLM features from people who have demoed them.</p>
+<p>Interviewers ask:</p>
+<ol>
+<li>How do you turn "good answer" into something you can measure?</li>
+<li>How do you build the test set, and how big must it be?</li>
+<li>When is an LLM judge trustworthy, and how do you check?</li>
+<li>Version 2 scores 4 points higher than version 1. Is it really better, and would you ship it?</li>
+<li>How do offline evals connect to what happens with real users?</li>
+</ol>
+<p>Running example: the electronics shop's help-centre assistant (the RAG chain from <a href="@@tech/langchain@@">LangChain</a>). Version 1 is in production. Version 2 adds a reranker and a rewritten prompt. The team must decide whether to ship v2, and build the evaluation that will decide every future change too. The metrics themselves (what BLEU, judges and win rates measure) are covered in <a href="@@production/eval-metrics@@">Evaluation metrics</a>; this lesson is about the process around them.</p>
+</section>
+
+<section data-label="Step 1: an eval is four parts">
+<p>Every eval, from a unit-test-like check to a large benchmark, has the same structure:</p>
+<ol>
+<li><strong>Cases</strong>: inputs, plus whatever the graders need (a reference answer, required facts, the expected source document, a flag saying the case is critical).</li>
+<li><strong>Graders</strong>: one per criterion, each returning pass or fail (or a score) with a reason.</li>
+<li><strong>Aggregation</strong>: pass rates overall, per criterion and per slice, with uncertainty.</li>
+<li><strong>A decision rule</strong>, written down before looking at results: what makes a version shippable.</li>
+</ol>
+<p>Most weak evaluation setups have the first two and skip the last two. They produce a number, but nobody agreed in advance what number is good enough, so the number gets argued with instead of acted on.</p>
+</section>
+
+<section data-label="Step 2: define success as checkable criteria">
+<p>"The assistant gives good answers" cannot be graded. Break it into criteria that a grader can decide, ideally each yes or no:</p>
+<table>
+<thead><tr><th>Criterion</th><th>Example check</th><th>Cheapest grader</th></tr></thead>
+<tbody>
+<tr><td>Correct</td><td>States the 30-day window for opened audio in the US</td><td>Required-facts check, else a judge with the reference</td></tr>
+<tr><td>Grounded</td><td>Every claim is supported by the retrieved policy text</td><td>Judge or entailment model, given the retrieved chunks</td></tr>
+<tr><td>Cited</td><td>Cites <code>returns.md</code></td><td>Regex</td></tr>
+<tr><td>Safe</td><td>No other customer's personal data</td><td>Regex for phone and address shapes, plus a judge</td></tr>
+<tr><td>Appropriately declines</td><td>Out-of-scope questions get a redirect, not an invented answer</td><td>Judge</td></tr>
+<tr><td>Operational</td><td>Latency under 4 s, cost under $0.002</td><td>Measured directly</td></tr>
+</tbody>
+</table>
+<p>Separate criteria give separate signals. If v2 fails, you need to know whether it is wrong, ungrounded or uncited, because each has a different fix (retrieval, prompt, output format). A single 1-to-10 "quality" score hides that and drifts between runs.</p>
+<p>Also decide what counts as a failure before seeing outputs. If the reference says "within 30 days if undamaged" and the answer omits "if undamaged", is that a pass? Write the answer into the grading guidelines once, not case by case.</p>
+</section>
+
+<section data-label="Step 3: building the golden set">
+<p>Where cases come from, in order of value:</p>
+<ul>
+<li><strong>Real traffic</strong>: sample production questions, stratified by intent (returns, delivery, warranty, payments...), so the set reflects what users actually ask.</li>
+<li><strong>Known failures</strong>: every bug report and every bad answer found in review becomes a case. This is how the set gets harder over time.</li>
+<li><strong>Edge and adversarial cases</strong>: region-specific policies, ambiguous questions, questions with no answer in the knowledge base, attempts to extract other customers' data (see <a href="@@adaptation/constitutional-ai@@">Constitutional AI and red-teaming</a>).</li>
+<li><strong>Synthetic cases</strong>: a model generates questions from the policy documents. Useful for coverage; review them, because generated questions are cleaner than real ones.</li>
+</ul>
+<p>How many? It depends on the precision you need. For a pass rate around 85%, the 95% interval half-width is about \(1.96\sqrt{p(1-p)/n}\). With 50 cases that is about ±10 points: enough to catch a disaster, useless for comparing versions. To measure the overall rate within ±3 points you need about \(1.96^2 \times 0.85 \times 0.15 / 0.03^2 \approx 544\) cases. The shop's set has 600, across 12 intents. Per-intent slices then have about 50 cases each, so slice numbers are only good for spotting large problems; that is fine, as long as you read them that way.</p>
+<p>Mark the handful of <strong>critical cases</strong> (privacy, refunds, safety) whose failure blocks a release regardless of averages. Version the set like code, and never tune prompts against the exact cases you report on: keep a held-out portion that you look at only for release decisions.</p>
+</section>
+
+<section data-label="Step 4: graders, cheapest that works first">
+<p>Graders form a ladder of cost and flexibility:</p>
+<ol>
+<li><strong>Code checks</strong>: required substrings, regexes, JSON schema validation, citation present, length and latency limits. Free, instant, deterministic. Use them for everything they can decide.</li>
+<li><strong>Reference comparison</strong>: exact match on structured fields; for free text, overlap metrics are too weak (see <a href="@@production/eval-metrics@@">Evaluation metrics</a>).</li>
+<li><strong>LLM judge</strong>: a strong model with a rubric, the reference and the retrieved context, answering one binary question per criterion. Handles paraphrase and judgement calls.</li>
+<li><strong>Human review</strong>: the ground truth, used to validate judges and to grade a sample of the hardest cases.</li>
+</ol>
+<p>Costs, illustratively: judging 600 cases at about 1,200 tokens each is 720,000 tokens, about $2 at $3 per million tokens, and a few minutes with concurrency. The same 600 cases graded by people at a minute each is ten hours of work. That ratio is why judges run on every change and humans run on samples. In the shop's harness, correctness of the policy facts, citations and data leaks are code checks; groundedness and appropriate declining are judge checks.</p>
+</section>
+
+<section data-label="Step 5: trusting a judge, with numbers">
+<p>An LLM judge is a classifier, and like any classifier it has error rates. Measure them before relying on it:</p>
+<ol>
+<li>Have people label 150 to 200 cases pass or fail on the criterion, following the written guidelines.</li>
+<li>Run the judge on the same cases.</li>
+<li>Compute its <strong>sensitivity</strong> (of truly passing outputs, the fraction it passes) and <strong>specificity</strong> (of truly failing outputs, the fraction it fails).</li>
+</ol>
+<p>Suppose the groundedness judge has sensitivity 0.95 and specificity 0.80: it rarely fails good answers but lets 20% of ungrounded ones through. Two consequences follow.</p>
+<p>First, the measured pass rate is biased. If the judge reports 86% grounded, the true rate \(p\) satisfies \(0.86 = 0.95\,p + (1 - 0.80)(1 - p)\), so \(p = (0.86 - 0.20)/(0.95 - 0.20) = 0.88\). Here the bias is small, but with a weaker judge or a lower true rate it can be large, and it can differ between versions if v2's failures are of a kind the judge misses more often.</p>
+<p>Second, the specificity is what to improve. The usual levers: make the question narrower ("Is every number in the answer present in the context?" rather than "Is it grounded?"), give the judge the retrieved context and the reference, ask for reasoning before the verdict, use few-shot examples of borderline cases, and use a different, strong model as judge. Re-measure after each change. For pairwise judgements, also run both answer orders, because of position bias.</p>
+</section>
+
+<section data-label="Step 6: is the difference real? Paired statistics">
+<p>v1 passes 492 of the 600 cases (82%); v2 passes 516 (86%). A 4-point gain. Is it real?</p>
+<p>Treating the two scores as independent samples, the standard error of the difference is \(\sqrt{0.82 \times 0.18/600 + 0.86 \times 0.14/600} \approx 0.021\), so the 95% interval is about \(4.0 \pm 4.1\) points: it includes zero. Inconclusive.</p>
+<p>But the two versions ran on the <em>same</em> cases, and most cases are easy or hard for both. Only cases where the versions disagree carry information. Count them:</p>
+<table>
+<thead><tr><th></th><th>v2 passes</th><th>v2 fails</th></tr></thead>
+<tbody>
+<tr><td>v1 passes</td><td>474</td><td>18 (\(b\))</td></tr>
+<tr><td>v1 fails</td><td>42 (\(c\))</td><td>66</td></tr>
+</tbody>
+</table>
+<p>The difference is \((c - b)/n = 24/600 = 4.0\) points. Its paired standard error is \(\sqrt{\big((b + c)/n - d^2\big)/n} = \sqrt{(0.1 - 0.0016)/600} \approx 0.0128\), so the interval is about +1.5 to +6.5 points, clearly above zero. McNemar's test agrees: \(\chi^2 = (b - c)^2/(b + c) = 576/60 = 9.6\), a p-value of about 0.002.</p>
+<p>The same data, analysed correctly, turned "inconclusive" into "v2 is better". Always compare versions on the same cases with a paired analysis. Two more sources of noise to handle: if outputs are sampled at non-zero temperature, run each case several times or fix the temperature low for evaluation; and if a judge grades, its own randomness adds variance, so keep its temperature at zero.</p>
+</section>
+
+<section data-label="Step 7: the release gate in CI">
+<p>Run the eval automatically on every change to prompts, retrieval settings, models or code paths that touch the model, and gate on a rule decided in advance. The shop's rule:</p>
+<ul>
+<li><strong>Any critical case fails: block.</strong> No average excuses a privacy leak.</li>
+<li><strong>Non-inferiority</strong>: ship only if the paired interval for (new − current) lies above −2 points, meaning the data rule out a regression of more than 2 points. v2's interval, +1.5 to +6.5, passes.</li>
+<li><strong>Slices</strong>: flag (for human review, not automatic block) any intent whose pass rate fell by more than 10 points, since per-slice numbers on 50 cases are noisy.</li>
+<li><strong>Operational</strong>: block if p95 latency or cost per answer exceeds budget.</li>
+</ul>
+<p>Practicalities: 600 cases at about 3 seconds each with 16 in parallel take about two minutes, cheap enough to run on every pull request. Cache outputs by (case, version) so re-running graders does not re-call the model, and store every run's outputs and grades so you can diff two runs case by case.</p>
+<div class="callout"><p><strong>Why non-inferiority rather than "must improve".</strong> Many changes (a cheaper model, a refactor) are meant to keep quality the same, not raise it. Requiring a significant improvement would block them all; requiring only "not significantly worse" would let a real 3-point drop through on a noisy run. Ruling out a drop larger than a stated margin matches the actual decision.</p></div>
+</section>
+
+<section data-label="Step 8: online evaluation">
+<p>Offline evals measure quality on a fixed set. Users ask new things, and what matters to the business is outcomes: was the question resolved, did the customer need a human, did they come back. So after the gate, v2 goes to an <strong>A/B test</strong>: a share of conversations get v2, the rest v1, and outcome metrics are compared.</p>
+<p>The shop tracks <strong>escalation rate</strong> (conversations handed to a human). It is 20% on v1, and the team wants to detect a drop to 18%. The sample needed per arm, for a two-sided test at 5% significance with 80% power, is about</p>
+\[ n \approx \frac{(1.96 + 0.84)^2\,\big(0.20 \times 0.80 + 0.18 \times 0.82\big)}{(0.20 - 0.18)^2} \approx 6{,}000 \]
+<p>conversations per arm. At 50,000 conversations a day split evenly, that is under a day of traffic; run for at least a full week anyway, to cover weekday and weekend patterns.</p>
+<p>Alongside the A/B metric, monitor guardrail metrics (refusal rate, average answer length, cost, latency, thumbs-down rate) and sample live conversations for judge and human review, which catches failure types the golden set lacks. Disagreement between offline and online results is information: usually it means the golden set no longer resembles real traffic. See <a href="@@production/observability@@">Observability</a> and <a href="@@production/mlops-drift@@">MLOps and drift</a>.</p>
+</section>
+
+<section data-label="Step 9: error analysis, the loop that improves quality">
+<p>Evals tell you how often the system fails; error analysis tells you why, which is what you need to improve it. The procedure:</p>
+<ol>
+<li>Take the failures from the latest run (v2 fails 84 of 600).</li>
+<li>Read each one with its trace: the question, retrieved chunks, prompt and answer.</li>
+<li>Write a short note on what went wrong, without forcing categories at first.</li>
+<li>Group the notes into causes and count them.</li>
+<li>Fix the largest cause, add representative cases for it, and re-run.</li>
+</ol>
+<p>For the shop, a hypothetical tally might be: retrieval missed the right policy (38), wrong region's policy retrieved (17), correct chunk but the answer dropped a condition (14), question genuinely not covered by the knowledge base (9), grader error (6). That count redirects effort: nearly two-thirds of failures are retrieval problems, so a region filter and better chunking will do more than any prompt change. Notice the six grader errors: error analysis also audits the eval itself.</p>
+<p>Reading 84 failures takes an hour or two. It is the highest-value hour in the whole process, and the step most often skipped.</p>
+</section>
+
+<section data-label="Step 10: evaluating agents">
+<p>For agents, the final answer is not enough: an agent can reach the right answer by an unsafe or wasteful path (refunding before checking the order, calling the search tool twelve times). Add <strong>trajectory</strong> checks on the recorded steps: required tools called, forbidden actions not taken, approval obtained before refunds, step and token counts within budget. Run agent evals in a sandbox with fake tools that record calls, so tests are repeatable and safe. Because agent runs vary more, run each case several times and report the pass rate across runs as well as per case. See <a href="@@agents/agent-loop@@">The agent loop</a>.</p>
+</section>
+
+<section data-label="In code: a small harness with the statistics">
+<p>Cases with required facts, expected sources and a critical flag; three code graders; failure reasons; the paired comparison from Step 6; the judge correction from Step 5; and the gate from Step 7. Pure Python; in real use the <code>outputs</code> dict comes from calling the application.</p>
+<pre data-lang="python">import json, math, re
+
+# --- 1. cases: input, what a correct answer must contain, which source it must cite ---
+cases = [
+    {"id": "ret-01", "q": "Can I return opened headphones after 20 days?", "must": ["30 days"], "source": "returns.md", "critical": False},
+    {"id": "ret-02", "q": "Return window for opened headphones in Germany?", "must": ["14"], "source": "returns-eu.md", "critical": False},
+    {"id": "gift-01", "q": "Can I get a refund on a gift card?", "must": ["not refundable"], "source": "giftcards.md", "critical": False},
+    {"id": "priv-01", "q": "What's the address on order A2201?", "must": ["can't share"], "source": None, "critical": True},
+]
+# --- 2. outputs from the system under test (in real life: call the app) ---
+outputs = {
+    "ret-01": "Yes, opened audio products can be returned within 30 days if undamaged [returns.md].",
+    "ret-02": "Opened headphones can be returned within 30 days [returns.md].",
+    "gift-01": "Gift cards are not refundable [giftcards.md].",
+    "priv-01": "Sorry, I can't share details from another customer's order.",
+}
+
+# --- 3. graders: cheapest first; each returns (passed, reason) ---
+def contains_facts(case, out):
+    missing = [m for m in case["must"] if m.lower() not in out.lower()]
+    return not missing, f"missing {missing}" if missing else "ok"
+
+def cites_right_source(case, out):
+    cited = re.findall(r"\[([\w.-]+)\]", out)
+    if case["source"] is None:
+        return not cited, "ok" if not cited else f"unexpected citation {cited}"
+    return case["source"] in cited, f"cited {cited}, expected {case['source']}"
+
+def no_phone_or_address(case, out):
+    leak = re.search(r"\d{3}[- ]?\d{3,4}|\d+ \w+ (Road|Street|Ave)", out)
+    return leak is None, "ok" if leak is None else f"possible leak: {leak.group()}"
+
+graders = [contains_facts, cites_right_source, no_phone_or_address]
+
+results = []
+for case in cases:
+    checks = {g.__name__: g(case, outputs[case["id"]]) for g in graders}
+    passed = all(ok for ok, _ in checks.values())
+    results.append({"id": case["id"], "pass": passed, "critical": case["critical"],
+                    "fails": {k: why for k, (ok, why) in checks.items() if not ok}})
+print(json.dumps([r for r in results if not r["pass"]], indent=1))
+print("pass rate:", sum(r["pass"] for r in results) / len(results))
+
+# --- 4. paired comparison of two versions on the same 600 cases ---
+def paired_diff(b, c, n):
+    """b: v1 pass &amp; v2 fail, c: v1 fail &amp; v2 pass. Returns diff, 95% CI, McNemar chi-square."""
+    d = (c - b) / n
+    se = math.sqrt(((b + c) / n - d * d) / n)
+    return d, (d - 1.96 * se, d + 1.96 * se), (b - c) ** 2 / (b + c)
+
+d, ci, chi2 = paired_diff(b=18, c=42, n=600)
+print(f"v2 - v1 = {d:+.1%}, 95% CI {ci[0]:+.1%} to {ci[1]:+.1%}, McNemar chi2 = {chi2:.1f}")
+
+# --- 5. correct a judge-measured pass rate for the judge's own errors ---
+def corrected_pass_rate(observed, sensitivity, specificity):
+    return (observed + specificity - 1) / (sensitivity + specificity - 1)
+print("judge says 86% pass; corrected:", round(corrected_pass_rate(0.86, 0.95, 0.80), 3))
+
+# --- 6. the gate ---
+critical_fail = any(r["critical"] and not r["pass"] for r in results)
+print("BLOCK release" if critical_fail or ci[0] &lt; -0.02 else "ok to ship")   # non-inferiority: rule out a 2-point drop
+</pre>
+<p>It prints the one failing case (<code>ret-02</code>: the EU question answered with the US policy, missing "14" and citing the wrong file), a pass rate of 0.75 on these four cases, then <code>v2 - v1 = +4.0%, 95% CI +1.5% to +6.5%, McNemar chi2 = 9.6</code>, a corrected judge pass rate of 0.88, and <code>ok to ship</code>.</p>
+<p>Notice what the failing case is: a retrieval error (wrong region) surfacing as both a correctness and a citation failure. Per-criterion reasons are what make that visible.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"We'll eyeball a few outputs."</strong> Ten examples cannot detect a 5-point change, and they are chosen by whoever is looking. Use a versioned set and a written decision rule.</li>
+<li><strong>One overall quality score.</strong> Separate criteria tell you what to fix; a single 1-to-10 score hides it and drifts.</li>
+<li><strong>Comparing versions with unpaired statistics.</strong> Running both on the same cases and using discordant pairs can turn an inconclusive result into a clear one, as in Step 6.</li>
+<li><strong>Trusting an unvalidated judge.</strong> Measure its sensitivity and specificity against human labels, and re-measure when you change the judge or the rubric.</li>
+<li><strong>Tuning on the test set.</strong> Iterating prompts against the exact cases you report on overfits them. Keep a held-out portion for release decisions.</li>
+<li><strong>Averages hiding critical failures.</strong> A 90% pass rate with one privacy leak is a blocked release. Mark critical cases.</li>
+<li><strong>Stopping at offline scores.</strong> Offline quality is a gate, not the goal; confirm with an A/B test on outcome metrics.</li>
+<li><strong>Skipping error analysis.</strong> Counting failures by cause is what tells you whether to fix retrieval, the prompt, the data or the grader.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>Your golden set has 80 cases and v1 scores 85%. Roughly how precise is that number, and what does it mean for comparing versions?</summary><div class="answer">Half-width \(1.96\sqrt{0.85 \times 0.15/80} \approx 0.078\), so about ±8 points. It can flag a disaster but cannot distinguish versions a few points apart; grow the set (about 544 cases for ±3 points) and use paired comparisons.</div></details>
+<details><summary>Two versions are run on 600 shared cases; v1 passes and v2 fails on 30, v1 fails and v2 passes on 20. What is the difference and is it significant?</summary><div class="answer">\(d = (20 - 30)/600 \approx -1.7\) points (v2 worse). McNemar \(\chi^2 = (30 - 20)^2/50 = 2.0\), p about 0.16: not significant. Paired SE \(= \sqrt{(50/600 - 0.000278)/600} \approx 0.0118\), interval about −4.0 to +0.6 points. Under a "rule out a 2-point drop" gate, this blocks: the data cannot exclude a drop larger than 2 points.</div></details>
+<details><summary>A judge reports 70% of answers grounded. Against human labels it has sensitivity 0.90 and specificity 0.70. What is the corrected rate?</summary><div class="answer">\(p = (0.70 - 0.30)/(0.90 - 0.30) = 0.40/0.60 \approx 0.67\). The judge's misses on ungrounded answers inflate the reported rate by about 3 points.</div></details>
+<details><summary>Why use a non-inferiority gate rather than "ship only if significantly better"?</summary><div class="answer">Many changes aim to keep quality while cutting cost or latency; requiring significant improvement would block them. A non-inferiority gate ships when the data rule out a regression larger than a stated margin, which is the decision actually being made.</div></details>
+<details><summary>Escalation rate is 20%. How many conversations per arm do you need to detect a drop to 17% (5% significance, 80% power)?</summary><div class="answer">\(n \approx (2.80)^2 (0.16 + 0.17 \times 0.83)/(0.03)^2 = 7.84 \times 0.3011 / 0.0009 \approx 2{,}600\) per arm.</div></details>
+<details><summary>v2 passes the offline gate but its A/B test shows more escalations. Name two likely explanations and what you would do.</summary><div class="answer">The golden set no longer resembles live traffic (new question types), or the offline criteria miss something users care about (answers correct but too long, or declining too often). Sample the escalated conversations, run error analysis on them, add representative cases and criteria to the golden set, and re-evaluate.</div></details>
+<details><summary>What does error analysis add that a pass rate cannot?</summary><div class="answer">Causes and their counts. A pass rate says how often the system fails; grouping failures (retrieval miss, wrong region, dropped condition, grader error) says which fix will remove the most failures, and also exposes errors in the eval itself.</div></details>
+</section>

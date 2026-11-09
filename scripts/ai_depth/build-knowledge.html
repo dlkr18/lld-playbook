@@ -1,0 +1,232 @@
+<!-- Deep lesson: Complete build: the knowledge layer. Merged into projects/build-knowledge by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Chunk</td><td>A passage cut from a document, small enough to embed and to paste into a prompt. The unit retrieval returns.</td></tr>
+<tr><td>Heading trail</td><td>The chain of headings above a chunk, such as "Billing › Invoices › Codes", stored with it and prepended when embedding.</td></tr>
+<tr><td>Content hash</td><td>A fingerprint (SHA-256) of a chunk's text. Unchanged hash means unchanged chunk, so re-indexing can skip it.</td></tr>
+<tr><td>Dense retrieval</td><td>Finding chunks whose embedding vectors point in a similar direction to the query's (cosine similarity). Good at meaning, weak at exact strings.</td></tr>
+<tr><td>Lexical retrieval (BM25, full-text)</td><td>Finding chunks that contain the query's words, weighting rare words more. Good at codes and names, blind to paraphrase.</td></tr>
+<tr><td>IDF</td><td>Inverse document frequency: a word's weight grows as fewer chunks contain it.</td></tr>
+<tr><td>HNSW</td><td>The graph index most vector stores use for approximate nearest-neighbour search: fast, slightly lossy.</td></tr>
+<tr><td>Reciprocal rank fusion (RRF)</td><td>Merging ranked lists by summing \(1/(c + \text{rank})\) for each item across lists. Uses ranks only, so incompatible scores do not matter.</td></tr>
+<tr><td>Cross-encoder reranker</td><td>A model that reads the query and one chunk together and outputs a relevance score. Slower than vector search, much more precise.</td></tr>
+<tr><td>Recall@k</td><td>The fraction of the chunks needed to answer that appear in the top \(k\) results.</td></tr>
+<tr><td>MRR</td><td>Mean reciprocal rank: the average of \(1/\text{rank}\) of the first correct chunk. Rewards putting it near the top.</td></tr>
+<tr><td>ACL filter</td><td>Restricting retrieval to chunks the requesting user is allowed to read, applied inside the search query.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>The support assistant must answer policy questions from about 1,200 internal documents, cite where each fact came from, never show a tier-1 agent a tier-2 contract, and say "I don't know" rather than invent a policy. The language model can do none of that by itself. Everything it knows about this company arrives through the few thousand tokens of evidence the knowledge layer puts in its prompt. If the right passage is not in those tokens, no prompt and no model can produce a grounded answer. That is why this build measures retrieval before it writes a single generation prompt.</p>
+<p>The interview questions about this layer:</p>
+<ol>
+<li>How do you chunk the documents, and how would you know the chunking is good?</li>
+<li>Why hybrid search, and how exactly are two rankings combined?</li>
+<li>Where do permissions get enforced, and what goes wrong if you filter after searching?</li>
+<li>How do you measure retrieval separately from generation, and how much should you trust the numbers?</li>
+</ol>
+<p>The running example is one real-shaped question from the build's evaluation set: <em>"What does invoice code INV-ADJ-CR mean?"</em> The answer lives in one chunk, <code>billing-invoices#codes~2</code>. We follow it from the document to the prompt, with the build's spec numbers (3,500-token answer prompt, p95 6 s, about $0.015 per answer) as constraints. The code and tables on this page (below this lesson) show the full ingestion module and the measured ablation; this lesson explains why each piece is shaped the way it is.</p>
+</section>
+
+<section data-label="Step 1: the prompt budget decides the chunk size">
+<p>Chunk size is usually presented as folklore ("use 512 tokens"). In a real system it falls out of the budget. The answer prompt in <a href="@@projects/build-spec@@">the spec</a> is about 3,500 tokens: roughly 1,200 for the fixed instructions and output format, 300 for the question and conversation, leaving about <strong>2,000 tokens of evidence</strong>. The build passes the top 5 chunks, so each chunk can average about 400 tokens including its heading trail.</p>
+<p>Why five and not twenty smaller ones? Two forces pull against each other:</p>
+<ul>
+<li><strong>Smaller chunks</strong> embed more precisely (one topic per vector) but lose context: a 100-token fragment saying "this does not apply to annual plans" without the heading that says which policy "this" is will be retrieved and then misread.</li>
+<li><strong>Larger chunks</strong> carry context but blur the embedding (one vector averaging three topics sits near none of them) and spend the evidence budget on irrelevant sentences.</li>
+</ul>
+<p>The corpus is about 12 million tokens (1,200 documents averaging 10,000 tokens). The chunker on this page keeps a section whole when it is under 700 tokens and splits longer ones at paragraph boundaries with an 80-token overlap; because most sections are short, chunks average about 300 tokens of new text, or about 350 tokens once the overlap and heading trail are counted. \(12{,}000{,}000 / 300\) gives about <strong>40,000 chunks</strong>, the number the spec sized storage on, and five average chunks use about 1,750 of the 2,000 evidence tokens. The occasional 700-token chunk is why the prompt assembler trims to the budget instead of trusting the average. The right size for your corpus is not argued; it is the row in the ablation table with the best Recall@5 that still fits the budget. The general trade-offs are in <a href="@@rag/chunking@@">chunking</a>.</p>
+</section>
+
+<section data-label="Step 2: cut along the document's structure">
+<p>Fixed-size windows cut wherever the token count says, often mid-table or mid-list. The build instead walks the Markdown structure: a new section starts at every heading, long sections split at paragraph boundaries, and every chunk carries its <strong>heading trail</strong>. The chunk for our example is embedded as:</p>
+<pre class="ascii-diagram">Billing › Invoices › Codes
+INV-ADJ-CR: credit adjustment raised when a refund is issued against a
+paid invoice. Appears as a negative line on the next statement. ...</pre>
+<p>The trail costs about 6 tokens and does two jobs. It gives the embedding the topic the paragraph never states ("Codes" under "Invoices"), and it tells the answer model where the passage sits when it is pasted into the prompt. In the page's ablation, moving from fixed 300-token windows to structure-aware chunks with trails raised Recall@5 from 0.64 to 0.74, more than any later change. Cheap changes to the data usually beat expensive changes to the model.</p>
+<p>Each chunk also carries what the rest of the system needs: a stable anchor for citations, the document's access-control groups, a SHA-256 content hash, and the name of the embedding model that produced its vector. Document parsing for PDFs and HTML is covered in <a href="@@rag/document-ingestion@@">document ingestion</a>.</p>
+</section>
+
+<section data-label="Step 3: indexing is a cheap, idempotent batch job">
+<p>Embedding the whole corpus is about 40,000 chunks × 350 tokens = 14 million tokens. At an illustrative $0.02 to $0.13 per million tokens for hosted embedding models, a full re-index costs between about $0.28 and $1.82. Money is not the constraint; correctness is. Two rules make re-indexing safe to run every night:</p>
+<ol>
+<li><strong>Upsert by content hash.</strong> A chunk whose hash already exists is skipped. If about 2% of documents change a day, about 800 chunks are re-embedded, a minute of work. Running the job twice changes nothing, which is what "idempotent" means and why a crashed run can simply be restarted.</li>
+<li><strong>Pin the embedding model on every row.</strong> Vectors from two different embedding models live in unrelated spaces; a cosine similarity between them is a meaningless number that still looks like a similarity. If a model upgrade re-embeds only part of the index, recall drops silently. Storing <code>embed_model</code> and filtering on it turns that silent failure into a visible re-index task.</li>
+</ol>
+<p>Deletions are the third rule people forget: a policy document that was withdrawn but whose chunks remain will be cited confidently. Ingestion must delete chunks for documents that no longer exist.</p>
+</section>
+
+<section data-label="Step 4: why dense search misses the invoice code">
+<p>Dense retrieval embeds the query and returns the chunks whose vectors have the highest cosine similarity. It is excellent for paraphrase: "the customer wants their money back because it never arrived" finds the refund policy for lost shipments without sharing its words. (How embedding models produce these vectors is in <a href="@@rag/embeddings@@">embeddings</a>; how HNSW finds neighbours quickly is in <a href="@@rag/vector-search@@">vector search</a>.)</p>
+<p>Now look at our query through the tokenizer. "INV-ADJ-CR" becomes six fragments: <code>INV</code>, <code>-</code>, <code>AD</code>, <code>J</code>, <code>-C</code>, <code>R</code>. The embedding model sees a vague invoice-related question with some letter noise. Its vector lands near every chunk about invoices and adjustments. In the build's run (illustrative, like all ranks on this page), the gold chunk comes back at <strong>rank 14</strong> in the dense list: outside the top 5 the prompt receives, so Recall@5 for this query is 0.</p>
+<p>The model did nothing wrong. An embedding represents meaning, and an invoice code's meaning is its identity: a string that must match exactly. Product names, error codes, SKUs and clause numbers all behave this way, and support corpora are full of them.</p>
+</section>
+
+<section data-label="Step 5: lexical search weights the rare token">
+<p>Lexical search (BM25, or Postgres full-text ranking, which follows the same idea) scores chunks by the query words they contain, weighting each word by how rare it is. The BM25 inverse document frequency for a word that appears in \(n\) of \(N\) chunks is</p>
+\[ \text{idf} = \ln\!\left(\frac{N - n + 0.5}{n + 0.5} + 1\right) \]
+<p>With \(N = 40{,}000\): "refund" appears in perhaps 4,000 chunks, idf ≈ 2.3; "INV-ADJ-CR" appears in 3, idf ≈ 9.3. One occurrence of the code outweighs four occurrences of "refund". The gold chunk comes back at <strong>rank 1</strong>.</p>
+<p>Lexical search has the mirror-image weakness: the lost-shipment paraphrase shares almost no words with the policy it needs. Neither method dominates, which is the whole argument for running both. The page's ablation shows the effect by slice: hybrid search lifted the exact-term slice from 0.4 to 0.9 while leaving the paraphrase slice where dense search had it. More on combining them in <a href="@@rag/hybrid-search@@">hybrid search</a>.</p>
+</section>
+
+<section data-label="Step 6: fusing two rankings with RRF">
+<p>The two searches return scores on incompatible scales: cosine similarity between −1 and 1, and a full-text rank with no fixed range. Adding or averaging them needs normalisation that drifts as the corpus changes. Reciprocal rank fusion sidesteps the problem by using only ranks:</p>
+\[ \text{RRF}(d) = \sum_{\text{lists}} \frac{1}{c + \text{rank}(d)} \]
+<p>where \(c\) is a damping constant, conventionally 60. A large \(c\) flattens the difference between rank 1 and rank 10, so one list cannot dominate on the strength of a single top hit. For our query, retrieving 30 from each list:</p>
+<table>
+<thead><tr><th>Chunk</th><th>Dense rank</th><th>Lexical rank</th><th>RRF score</th></tr></thead>
+<tbody>
+<tr><td>invoices overview</td><td>1</td><td>9</td><td>\(1/61 + 1/69 = 0.03089\)</td></tr>
+<tr><td><strong>codes~2 (gold)</strong></td><td>14</td><td>1</td><td>\(1/74 + 1/61 = 0.02991\)</td></tr>
+<tr><td>credit notes</td><td>2</td><td>20</td><td>\(1/62 + 1/80 = 0.02863\)</td></tr>
+<tr><td>changelog</td><td>absent</td><td>2</td><td>\(1/62 = 0.01613\)</td></tr>
+</tbody>
+</table>
+<p>The gold chunk moves from rank 14 (dense) to rank 2 (fused): Recall@5 goes from 0 to 1 for this query. It is not first; the overview chunk, decent in both lists, edges it out. That is RRF's character: it rewards agreement between retrievers. Putting the single best chunk first is the next stage's job.</p>
+</section>
+
+<section data-label="Step 7: reranking the pool, and its hard ceiling">
+<p>Vector and lexical search score the query and each chunk independently: the chunk's vector was computed months ago without knowing the question. A <strong>cross-encoder</strong> reads the query and a candidate chunk together in one forward pass, so it can notice that the overview chunk mentions invoice codes in general while codes~2 defines this exact one. It scores each of the 30 fused candidates and keeps the best 5. On our query, the gold chunk goes to rank 1.</p>
+<p>The cost is bounded and worth computing: 30 pairs of about 370 tokens (a 350-token chunk plus the question) is about 11,000 tokens through a small model per query, around 200 ms in the latency budget from the spec. Reranking 300 candidates instead would cost ten times as much for little gain, because of a ceiling worth saying out loud in interviews:</p>
+<div class="callout"><p><strong>A reranker can only reorder what it is given.</strong> Final Recall@5 can never exceed the recall of the candidate pool (Recall@30 of the fused list). If the gold chunk is not in the 30, no reranker recovers it. Measure pool recall separately; when it is low, fix retrieval (chunking, hybrid, query rewriting), not the reranker.</p></div>
+<p>This is exactly the diagnosis in the page's multi-hop walkthrough: the downgrade chunk never entered the pool, so the fix was splitting the query into two searches. Details of reranker models in <a href="@@rag/reranking@@">reranking</a>.</p>
+</section>
+
+<section data-label="Step 8: permissions belong inside the search">
+<p>Every chunk carries the access groups of its source document. The user's groups come from their login token, set by the gateway, never from anything the client or the model says. The question is where to apply the filter.</p>
+<p>The tempting way is to search the whole index for the top 30, then drop chunks the user may not read. Simulate it: 40,000 random unit vectors, a user who may read 10% of them, 200 random queries, exact search. Searching first and filtering afterwards leaves on average <strong>3.0 results instead of 5</strong>, and only <strong>60%</strong> of the user's true top 5 among them. The other 40% were ranked below position 30 in the global list because nine-tenths of the index belonged to other people. The same trap exists inside an approximate index even when you write the filter in SQL: an HNSW scan collects a fixed number of candidates (<code>hnsw.ef_search</code>, 40 by default in pgvector) and the filter is applied to those, so a selective filter can return fewer rows than the <code>LIMIT</code> asks for.</p>
+<p>The correct approaches, in order of preference for this build:</p>
+<ul>
+<li><strong>Filter inside the query</strong> (<code>WHERE acl_groups &amp;&amp; :user_groups</code>) and let the store keep searching until it has enough matching rows. Recent pgvector versions support iterative index scans for exactly this; check your version. See <a href="@@tech/pgvector@@">pgvector</a>.</li>
+<li><strong>Partition by access group</strong> when groups are few and large (here: tier-1 and tier-2), so each search runs over an index containing only readable chunks.</li>
+</ul>
+<p>Never filter in the prompt ("only use sources the user may see"). A model cannot leak a chunk it never received, and it can leak anything it did. <a href="@@production/security@@">Security</a> covers this boundary in general.</p>
+</section>
+
+<section data-label="Step 9: measuring retrieval, and how far to trust it">
+<p>The eval set is 75 questions, each labelled with the anchor of the chunk (or chunks) that answers it, in five slices: common, exact-term, paraphrase, multi-hop, unanswerable. Two metrics per question:</p>
+<ul>
+<li><strong>Recall@5</strong>: fraction of gold chunks in the top 5. For our query: dense 0.0, lexical 1.0, fused 1.0.</li>
+<li><strong>MRR</strong>: \(1/\text{rank}\) of the first gold chunk. Dense \(1/14 = 0.071\), lexical 1.0, fused 0.5, reranked 1.0. MRR separates "found it at rank 5" from "found it at rank 1", which matters because models use evidence at the top of a long context more reliably than evidence buried in the middle.</li>
+</ul>
+<p>Report every metric per slice, not only in aggregate. An aggregate of 0.90 hid a multi-hop slice at 0.40 in this build. Then be honest about resolution: the multi-hop slice has 5 questions, so one question moves it by 20 points; the exact-term slice has 10, so one question is 10 points. Slice numbers tell you where to look; they are too coarse to prove a 3-point improvement. Grow the slices that matter from production failures (the weekly triage on <a href="@@projects/build-ship@@">the ship page</a> feeds them).</p>
+<p>The unanswerable slice is graded differently: the correct outcome is that generation abstains. A retrieval layer always returns <em>something</em>, so abstention is decided downstream by the answer prompt ("INSUFFICIENT_EVIDENCE") and checked by the deterministic citation verifier. Track both failure directions: answering the unanswerable, and abstaining on answerable questions after a prompt is tightened.</p>
+</section>
+
+<section data-label="Choosing settings">
+<table>
+<thead><tr><th>Knob</th><th>Build's value</th><th>How it was chosen</th><th>Revisit when</th></tr></thead>
+<tbody>
+<tr><td>Chunk size</td><td>~300 tokens average (700 cap), structure-aware, plus trail</td><td>evidence budget ÷ 5, then ablation</td><td>prompt budget or document style changes</td></tr>
+<tr><td>Candidates per retriever</td><td>30</td><td>pool Recall@30 near its plateau</td><td>pool recall drops on a slice</td></tr>
+<tr><td>RRF constant \(c\)</td><td>60</td><td>convention; insensitive in practice</td><td>rarely</td></tr>
+<tr><td>Rerank to</td><td>top 5</td><td>evidence budget</td><td>prompt budget changes</td></tr>
+<tr><td>Query rewrite</td><td>only multi-part questions (heuristic gate)</td><td>fixed multi-hop slice without touching common slice</td><td>a new slice fails on pool recall</td></tr>
+<tr><td>ACL enforcement</td><td>in SQL, from the token</td><td>never negotiable</td><td>never</td></tr>
+</tbody>
+</table>
+</section>
+
+<section data-label="In code: the metrics, RRF and the filter trap">
+<p>The first block runs as is (numpy only) and reproduces every number in this lesson. The second is the production query shape for Postgres with pgvector, written against its documented operators.</p>
+<pre data-lang="python">import numpy as np
+
+def recall_at_k(retrieved, gold, k):
+    return len(set(retrieved[:k]) &amp; set(gold)) / len(gold)
+
+def mrr(retrieved, gold):
+    for i, c in enumerate(retrieved, 1):
+        if c in gold:
+            return 1 / i
+    return 0.0
+
+def rrf(*rankings, c=60):
+    score = {}
+    for ranking in rankings:
+        for r, doc in enumerate(ranking, 1):
+            score[doc] = score.get(doc, 0) + 1 / (c + r)
+    return sorted(score, key=score.get, reverse=True), score
+
+# the running query: "What does invoice code INV-ADJ-CR mean?"
+dense = ["overview", "credit-notes", "refund-adjust", "tax-lines", "late-fees",
+         "dunning", "currency", "proration", "disputes", "receipts",
+         "po-numbers", "vat", "statements", "codes~2"]          # gold at 14
+lexical = ["codes~2", "changelog", "codes~1", "exports", "api-errors",
+           "audit", "ledger", "reports", "overview"]             # gold at 1, overview at 9
+lexical += ["lex%d" % i for i in range(10, 20)] + ["credit-notes"]  # credit-notes at 20
+fused, s = rrf(dense, lexical)
+gold = ["codes~2"]
+print("dense   R@5 %.1f  MRR %.3f" % (recall_at_k(dense, gold, 5), mrr(dense, gold)))
+print("lexical R@5 %.1f  MRR %.3f" % (recall_at_k(lexical, gold, 5), mrr(lexical, gold)))
+print("fused   R@5 %.1f  MRR %.3f" % (recall_at_k(fused, gold, 5), mrr(fused, gold)))
+print("fused top 4:", [(d, round(s[d], 5)) for d in fused[:4]])
+
+# ACL filtering: post-filter vs filter-aware search, exact search on random vectors
+rng = np.random.default_rng(0)
+N, D = 40_000, 64
+X = rng.standard_normal((N, D)).astype(np.float32)
+X /= np.linalg.norm(X, axis=1, keepdims=True)
+visible = rng.random(N) &lt; 0.10                  # this user may read 10% of chunks
+post, filled = [], []
+for _ in range(200):
+    q = rng.standard_normal(D).astype(np.float32); q /= np.linalg.norm(q)
+    sim = X @ q
+    true5 = set(np.argsort(-np.where(visible, sim, -9))[:5])   # filter inside the search
+    top30 = np.argsort(-sim)[:30]                                # search, then filter
+    kept = [i for i in top30 if visible[i]][:5]
+    post.append(len(true5 &amp; set(kept)) / 5)
+    filled.append(len(kept))
+print("post-filter: avg results %.1f of 5, recall@5 vs filtered truth %.2f"
+      % (np.mean(filled), np.mean(post)))
+</pre>
+<p>Output: dense R@5 0.0 and MRR 0.071; lexical 1.0 and 1.000; fused 1.0 and 0.500; fused top four overview 0.03089, codes~2 0.02991, credit-notes 0.02863, changelog 0.01613; post-filter 3.0 results and recall 0.60.</p>
+<pre data-lang="sql">-- Hybrid retrieval with the ACL filter inside both searches (Postgres + pgvector).
+-- $1 = query embedding, $2 = query text, $3 = user's groups (from the auth token).
+WITH dense AS (
+  SELECT chunk_id, row_number() OVER (ORDER BY dist) AS r
+  FROM (SELECT chunk_id, embedding &lt;=&gt; $1 AS dist
+        FROM chunks
+        WHERE acl_groups &amp;&amp; $3 AND embed_model = 'embed-v3'
+        ORDER BY embedding &lt;=&gt; $1
+        LIMIT 30) d
+),
+lex AS (
+  SELECT chunk_id, row_number() OVER (ORDER BY rank DESC) AS r
+  FROM (SELECT chunk_id, ts_rank_cd(tsv, q) AS rank
+        FROM chunks, websearch_to_tsquery('english', $2) AS q
+        WHERE tsv @@ q AND acl_groups &amp;&amp; $3
+        ORDER BY rank DESC
+        LIMIT 30) l
+)
+SELECT chunk_id, sum(1.0 / (60 + r)) AS rrf
+FROM (SELECT * FROM dense UNION ALL SELECT * FROM lex) u
+GROUP BY chunk_id
+ORDER BY rrf DESC
+LIMIT 30;          -- these 30 go to the cross-encoder, which keeps 5
+</pre>
+<p>The ordering inside each subquery is what lets Postgres use the HNSW and GIN indexes; the window function numbers the rows only after the limit. With a selective <code>acl_groups</code> filter, confirm with <code>EXPLAIN</code> that the vector search still returns 30 rows, which is the trap from Step 8.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"Pick the chunk size from a blog post."</strong> It follows from the evidence budget and is confirmed by the ablation table; the right number is corpus-specific.</li>
+<li><strong>"Dense embeddings understand everything, so hybrid is legacy."</strong> Exact identifiers fragment into meaningless tokens; lexical search is how codes, SKUs and names get found.</li>
+<li><strong>"Average the two scores."</strong> Cosine similarity and full-text rank live on different, shifting scales. Fuse ranks (RRF) unless you have calibrated scores.</li>
+<li><strong>"The reranker will fix bad retrieval."</strong> It cannot surface a chunk that is not in the candidate pool. Measure pool recall separately.</li>
+<li><strong>"Filter the results by permission afterwards."</strong> It returns too few results and drops chunks the user is entitled to (60% recall in the simulation). Filter inside the search.</li>
+<li><strong>"One aggregate Recall@5 tells you how retrieval is doing."</strong> It hides failing slices, and small slices move in big jumps. Report per slice with the slice size.</li>
+<li><strong>"Re-embedding part of the index after a model upgrade is fine."</strong> Vectors from two models are not comparable. Pin the model per row and re-embed everything.</li>
+<li><strong>"Retrieval decides when to abstain."</strong> Retrieval always returns something; abstention is a generation behaviour that you measure on the unanswerable slice.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>The answer prompt grows to 5,000 tokens, of which 1,200 are fixed instructions and 300 conversation. You keep top-5. What average chunk size can you afford?</summary><div class="answer">Evidence budget is \(5{,}000 - 1{,}200 - 300 = 3{,}500\) tokens, so about 700 tokens per chunk including its trail. Whether to use larger chunks or pass more of them is then an ablation question.</div></details>
+<details><summary>A chunk is rank 3 in dense and rank 40 in lexical (each list holds 50). Another is rank 25 in dense and rank 2 in lexical. Which wins under RRF with \(c = 60\)?</summary><div class="answer">First: \(1/63 + 1/100 = 0.02587\). Second: \(1/85 + 1/62 = 0.02789\). The second wins: strong in one list and present in the other beats strong in one and weak in the other.</div></details>
+<details><summary>Final Recall@5 is 0.70 and Recall@30 of the fused pool is 0.72. Should you upgrade the reranker?</summary><div class="answer">No. The reranker is already recovering nearly everything the pool contains; the ceiling is the pool. Work on retrieval: chunking, query rewriting, or more candidates if Recall@50 is much higher than Recall@30.</div></details>
+<details><summary>Why does a rare code get a high BM25 weight, and what does that mean for invoice-code questions?</summary><div class="answer">IDF grows as fewer chunks contain the term: with 40,000 chunks a term in 3 chunks has idf ≈ 9.3 versus ≈ 2.3 for a term in 4,000. One exact match on the code dominates the score, so lexical search ranks the defining chunk first even when dense search does not.</div></details>
+<details><summary>Users in a small team can read 2% of the corpus. What happens to "top-30 then filter", and what do you do?</summary><div class="answer">On average about 0.6 of the 30 global results are readable, so most queries return zero or one chunk. Put the ACL filter inside the vector query with an index scan that continues until enough matching rows are found, or give small groups their own partition or index.</div></details>
+<details><summary>The multi-hop slice went from 2/5 to 4/5 after a change. How much do you trust that?</summary><div class="answer">Little on its own: each question is 20 points, and two questions flipping can be noise. Read the traces to confirm the change fixed the cause (both facts now in the pool), check the other slices did not regress, and add more multi-hop questions from production.</div></details>
+<details><summary>An embedding-model upgrade finished on 70% of chunks before a deploy froze. What breaks, and what prevents it?</summary><div class="answer">Queries embedded with the new model are compared against 30% of vectors from the old model, whose similarities are meaningless, so those chunks effectively vanish or appear at random. Storing <code>embed_model</code> per row and filtering on the current model makes the gap visible; finish the re-embed before switching query embedding.</div></details>
+</section>

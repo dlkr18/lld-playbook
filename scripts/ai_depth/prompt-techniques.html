@@ -1,0 +1,239 @@
+<!-- Deep lesson: Prompting techniques. Merged into prompting/prompt-techniques by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Zero-shot</td><td>Asking for the task with instructions only, no worked examples.</td></tr>
+<tr><td>Few-shot</td><td>Including a handful of worked input-output examples in the prompt so the model infers the task from the pattern.</td></tr>
+<tr><td>In-context learning</td><td>The model adapting its behaviour to examples in the prompt, with no change to its weights.</td></tr>
+<tr><td>Chain of thought (CoT)</td><td>Having the model write intermediate reasoning before the final answer.</td></tr>
+<tr><td>Reasoning model</td><td>A model trained (usually with reinforcement learning) to produce long chains of thought by itself before answering.</td></tr>
+<tr><td>Self-consistency</td><td>Sampling several reasoning paths at non-zero temperature and taking the most common final answer.</td></tr>
+<tr><td>Plurality vote</td><td>Choosing the answer that appears most often, even if it has less than half the votes.</td></tr>
+<tr><td>Decomposition (prompt chaining)</td><td>Splitting a task into steps handled by separate calls or by code, each with its own prompt and checks.</td></tr>
+<tr><td>Self-critique (reflection)</td><td>Asking the model to review and revise its own output.</td></tr>
+<tr><td>Prefill</td><td>Writing the first tokens of the assistant's reply yourself, so the model continues from them.</td></tr>
+<tr><td>Correlated errors</td><td>Mistakes that recur across samples because they come from the same misunderstanding, not from random noise.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>A well-structured prompt (see <a href="@@prompting/prompt-anatomy@@">Anatomy of a prompt</a>) tells the model what to do. Prompting <em>techniques</em> change how the model gets there: showing it examples, giving it room to reason, asking it several times, splitting the job up. Each one works for a specific mechanical reason, costs a specific amount, and fails in a specific way. Knowing the mechanism is what lets you pick the right one instead of stacking all of them.</p>
+<p>The interview questions:</p>
+<ol>
+<li>Why does chain of thought improve accuracy? When does it not help, and what does it cost?</li>
+<li>What does a model actually learn from few-shot examples?</li>
+<li>When does self-consistency (voting) help, and when can it make things worse?</li>
+<li>When would you split a task into several calls, or move part of it to code?</li>
+</ol>
+<p><strong>The running example.</strong> Ledgerly's support assistant must answer refund questions. One customer writes:</p>
+<div class="callout"><p><em>"I'm on the annual Team plan ($288/year, started 1 March). I'm cancelling today, 10 July. Your policy says unused full months are refunded minus a 10% processing fee. How much will I get back?"</em></p></div>
+<p>The correct reasoning: March to July is 5 months, and July has started, so it counts as used. That leaves 7 unused months: \(288 \times 7/12 = \$168\). The fee is 10% of the refund, so the customer gets \(168 \times 0.9 = \$151.20\). There are at least two tempting wrong paths: forgetting that July is used (8 months, giving $172.80) and taking the fee from the whole year's price (\(168 - 28.80 = \$139.20\)). A question with one right answer and plausible wrong ones is exactly where techniques differ.</p>
+</section>
+
+<section data-label="Step 1: zero-shot, and what it relies on">
+<p>Zero-shot means asking the question with instructions only. It works because instruction tuning has already taught the model the general skill "read a request, produce a helpful answer". For Ledgerly's classification or summarisation tasks, a clear zero-shot prompt is often enough, and it is the baseline every other technique must beat.</p>
+<p>For the refund question, a zero-shot prompt with an instruction to answer briefly can produce something like <em>"You'll receive $172.80."</em> straight away. The model has to do the whole calculation inside the computation for a few output tokens. The answer is in the right format and sounds sure; it may be right or wrong, and nothing in the output tells you which.</p>
+<p>Start every task zero-shot, measure it on an evaluation set, and add techniques only to fix the failures you observe. Each one below adds tokens, latency or calls.</p>
+</section>
+
+<section data-label="Step 2: few-shot, and what examples really teach">
+<p>Few-shot prompting puts worked examples before the real question:</p>
+<pre class="ascii-diagram">Q: Monthly plan, $30/month, cancels mid-month. Refund?
+A: Monthly plans are not prorated. Refund: $0.00
+
+Q: Annual plan $120, started 1 Jan, cancels 3 Feb. Unused full months refunded minus 10% fee.
+A: Jan and Feb are used (Feb has started). 10 unused months: 120 x 10/12 = 100.00.
+   Fee 10% of 100.00 = 10.00. Refund: $90.00
+
+Q: [the customer's question]
+A:</pre>
+<p>The model's weights do not change. It conditions on the pattern and continues it: this is <strong>in-context learning</strong>. What does the pattern actually transmit? Experiments with deliberately wrong labels in the examples found that much of the benefit survived: the examples taught the <em>format</em>, the <em>space of possible answers</em> and the <em>kind of input</em> more than the input-to-label mapping itself (<a href="https://arxiv.org/abs/2202.12837">Min et al., 2022</a>). That finding is a guide to what examples are good for:</p>
+<ul>
+<li><strong>Format and conventions.</strong> The examples above fix "Refund: &lt;amount&gt;" as the last line, which a parser can rely on.</li>
+<li><strong>Policy interpretation at the boundary.</strong> The second example demonstrates the two rules the model tends to get wrong: a started month counts as used, and the fee comes off the refund. One example that shows the rule in action is often clearer than a paragraph that states it.</li>
+<li><strong>Not new knowledge.</strong> Examples cannot teach a fact the model needs for <em>this</em> question unless that fact is in the examples.</li>
+</ul>
+<p>Examples also bring biases. Models lean toward answers that are common among the examples (majority-label bias) and toward the most recent example's answer (recency bias); the order of the same examples can change results (<a href="https://arxiv.org/abs/2102.09690">Zhao et al., 2021</a>). Vary example order and surface form, balance labels, and when you have many candidate examples, retrieve the few most similar to each input instead of fixing a set. The cost is linear: these two examples add about 117 tokens to every call.</p>
+</section>
+
+<section data-label="Step 3: chain of thought, and why writing helps thinking">
+<p>Ask the model to work through the problem before answering, either with an instruction ("Work through the calculation step by step, then give the final line as ANSWER: &lt;amount&gt;") or with few-shot examples that show the steps, as above. A typical output:</p>
+<pre class="ascii-diagram">Plan started 1 March; cancelled 10 July. Months used: March, April, May, June, July
+(July has started, so it is used) = 5. Unused months: 12 - 5 = 7.
+Unused value: 288 x 7/12 = 168.00. Fee: 10% of 168.00 = 16.80.
+ANSWER: $151.20</pre>
+<p>Why does this help? The mechanism is about compute per token. A transformer produces each token with a fixed amount of computation: one pass through its layers. The number of sequential steps it can do before emitting the first token of the answer is bounded by its depth. A multi-step calculation squeezed into the answer token has to fit in that one pass. When the model writes intermediate results instead, each written token is a fresh pass that can read everything written so far. Chain of thought turns the output into working memory and lets the total computation grow with the length of the reasoning.</p>
+<p>Three consequences, each one an interview point:</p>
+<ul>
+<li><strong>It helps on multi-step problems</strong> (arithmetic, logic, multi-hop questions, applying several rules) and does little for single-step tasks like sentiment classification or lookup, where there is nothing to decompose.</li>
+<li><strong>It needed scale.</strong> In the original experiments the gains appeared in large models; small models produced fluent but wrong reasoning that did not help or hurt (<a href="https://arxiv.org/abs/2201.11903">Wei et al., 2022</a>).</li>
+<li><strong>Reasoning goes before the answer, never after.</strong> "Give the answer, then explain" lets the model commit first and rationalise afterwards. The same applies to structured output: put a <code>reasoning</code> field before the <code>answer</code> field in the schema.</li>
+</ul>
+<p><strong>What it costs.</strong> The short answer is about 10 output tokens; the reasoning above is 89. At an illustrative 60 tokens per second, generation goes from about 0.17 seconds to 1.5 seconds. At 100,000 refund questions a day and an illustrative $15 per million output tokens, output cost goes from $15 a day to about $134. Worth it for refunds; not for a tagging job that does not need it.</p>
+<div class="callout"><p><strong>Is the written reasoning the real reasoning?</strong> Not necessarily. Studies have found cases where models reach answers for reasons their chain of thought does not mention. Treat the reasoning as a useful intermediate for the model, and as weak evidence for you, not as a faithful explanation.</p></div>
+</section>
+
+<section data-label="Step 4: reasoning models change the advice">
+<p>Reasoning models are trained, typically with reinforcement learning on problems with checkable answers, to produce long chains of thought on their own before the visible answer. (How they are trained is in <a href="@@fundamentals/how-llms-are-trained@@">How LLMs are trained</a>.) For these models, several classic techniques change:</p>
+<ul>
+<li><strong>Do not ask them to "think step by step".</strong> They already do; extra instructions about how to reason can interfere with the trained behaviour. Describe the problem and the rules clearly instead.</li>
+<li><strong>Control effort with the API, not the prompt.</strong> Providers expose a reasoning-effort setting or a thinking-token budget. More effort means more hidden tokens, more latency, more cost.</li>
+<li><strong>Reasoning tokens are billed even when hidden.</strong> A one-line answer can cost thousands of output tokens. Log them separately.</li>
+<li><strong>Few-shot examples matter less for reasoning and still matter for format.</strong> Keep examples of the output shape; drop examples written to demonstrate reasoning steps.</li>
+</ul>
+<p>The engineering choice becomes routing: a standard model with a short prompt for easy questions, a reasoning model (or higher effort) for the hard ones. Agent reasoning patterns built on top of this (ReAct, plan-and-execute) are in <a href="@@agents/reasoning@@">Reasoning patterns</a>.</p>
+</section>
+
+<section data-label="Step 5: self-consistency, and the arithmetic of voting">
+<p>A single sample at temperature 0 follows one reasoning path. If that path takes a wrong turn, you get a wrong answer with no warning. <strong>Self-consistency</strong> samples several paths at a moderate temperature (around 0.7), extracts only each path's final answer, and takes the most common one (<a href="https://arxiv.org/abs/2203.11171">Wang et al., 2022</a>).</p>
+<p>Suppose that for the refund question each independent sample reaches $151.20 with probability 0.60, $172.80 (July not counted) with 0.25, $139.20 (fee on the full year) with 0.10, and something else with 0.05. The probability that the plurality vote picks the right answer, computed exactly over all ways the samples can fall:</p>
+<table>
+<thead><tr><th>Samples \(n\)</th><th>1</th><th>3</th><th>5</th><th>9</th><th>15</th></tr></thead>
+<tbody>
+<tr><td>Right answers split as 0.60 / 0.25 / 0.10 / 0.05</td><td>0.600</td><td>0.699</td><td>0.781</td><td>0.873</td><td>0.935</td></tr>
+<tr><td>Systematic misreading: 0.40 right, 0.50 one wrong answer, 0.10 other</td><td>0.400</td><td>0.392</td><td>0.389</td><td>0.370</td><td>0.340</td></tr>
+</tbody>
+</table>
+<p>The first row is why self-consistency works: errors that are scattered across different wrong answers rarely agree, while the right answer keeps getting the same votes. Going from 1 to 9 samples moves accuracy from 0.60 to 0.87.</p>
+<p>The second row is the warning. If the model's most likely path is a <em>specific</em> mistake (it reads the policy as "fee on the full year" more often than correctly), voting makes that mistake more reliable, and accuracy falls as you add samples. Voting removes random noise; it amplifies systematic bias. Fix systematic errors with clearer instructions, an example of the boundary case, or code (Step 6), not with more samples.</p>
+<p>Two practical bonuses. The <strong>agreement rate</strong> (say 7 of 9 votes) is a useful confidence signal for abstaining or escalating, as in <a href="@@fundamentals/limits@@">Limits &amp; hallucination</a>. And voting needs a final answer you can compare exactly, so ask for a fixed final line ("ANSWER: &lt;amount&gt;") and normalise it before counting. The cost is \(n\) times the chain-of-thought call: nine samples at about 90 tokens each is about 810 output tokens per question, with latency unchanged if the samples run in parallel.</p>
+</section>
+
+<section data-label="Step 6: decomposition, and moving steps out of the model">
+<p>The refund question bundles three jobs: understand the customer's situation, apply the policy arithmetic, and write a friendly reply. Decomposition gives each job its own step:</p>
+<ol>
+<li><strong>Extract</strong> (LLM, structured output): <code>{"annual_price": 288, "start_month": 3, "cancel_month": 7, "fee_rate": 0.10}</code>.</li>
+<li><strong>Compute</strong> (code): used months \(= 7 - 3 + 1 = 5\); refund \(= 288 \times 7/12 \times 0.9 = 151.20\).</li>
+<li><strong>Write</strong> (LLM): a reply stating the amount and the reason, given the computed figure as fact.</li>
+</ol>
+<p>Why it helps: each step is simpler, so the model is more reliable at it; each step's output can be checked (the extraction against a schema, the computation with unit tests); and when something goes wrong you know which step failed. The arithmetic and the policy rule, the two places the model went wrong in Steps 1 to 5, are now code, which is right every time once tested.</p>
+<p>There is a compounding cost to watch. If you chain \(k\) LLM steps with accuracies \(a_1, \dots, a_k\), and an error at any step spoils the result, end-to-end accuracy is roughly \(a_1 a_2 \cdots a_k\). Three LLM steps at 95% each give \(0.95^3 \approx 0.857\), worse than a single 90% step. Decomposition pays when the steps are much easier than the whole, or when some become code. Here, supposing extraction is right 97% of the time and the reply step 99%, with the computation exact, the pipeline is right about \(0.97 \times 1.0 \times 0.99 \approx 0.96\) of the time, compared with the 0.60 single-shot rate assumed in Step 5.</p>
+<p>The general principle, worth stating in an interview: <strong>use the model for what needs language understanding, and code for everything that can be specified exactly.</strong> This is developed in <a href="@@production/hybrid-patterns@@">Hybrid LLM patterns</a>.</p>
+</section>
+
+<section data-label="Step 7: self-critique works when checking is easier than doing">
+<p>Self-critique asks the model to review its answer ("Check the calculation against the policy. If anything is wrong, give a corrected answer.") and revise. It sounds like free accuracy and often is not.</p>
+<p>The deciding question is whether the review step has information or a check the first step lacked. Without one, the reviewer is the same model with the same blind spots, looking at its own plausible output; research on reasoning tasks found that intrinsic self-correction often fails to improve accuracy and sometimes turns right answers into wrong ones (<a href="https://arxiv.org/abs/2310.01798">Huang et al., 2023</a>). Critique works when:</p>
+<ul>
+<li><strong>There is an external signal</strong>: a failing unit test, a schema validation error, a citation that does not match its source, a computed refund that differs from the stated one. "Your answer says $172.80 but the calculator returns $151.20; explain the difference" is a strong prompt.</li>
+<li><strong>Checking is genuinely easier than generating</strong>: verifying that a reply mentions the amount and the fee, or that a summary contains no claims absent from the source.</li>
+<li><strong>The critic gets a different view</strong>: a different prompt focused on one failure mode, a rubric, or a stronger model.</li>
+</ul>
+<p>Each critique round is at least one more call, so a generate-critique-revise loop roughly triples cost and latency. Cap it at one or two rounds.</p>
+</section>
+
+<section data-label="Step 8: small techniques with large effects">
+<ul>
+<li><strong>Prefill.</strong> Where the API allows it, write the start of the assistant turn yourself: <code>{</code> to force JSON, or "Months used:" to start the reasoning where you want it. It removes preambles and steers the first step.</li>
+<li><strong>Quote first, then answer.</strong> For questions over long documents, ask the model to extract the relevant policy sentences into a tag, then answer from those quotes. It reduces answers drawn from the wrong section and gives you something to verify.</li>
+<li><strong>Ask for the unknowns.</strong> "If the start date or plan type is missing, ask for it instead of assuming." A clarifying question is better than a confident calculation on a guessed date.</li>
+<li><strong>Give the model a way out.</strong> "If the policy does not cover this case, say so and offer to escalate." Without it the model fills the gap with a plausible rule.</li>
+</ul>
+</section>
+
+<section data-label="Putting numbers on the choices">
+<p>The techniques side by side for the refund question, using this lesson's assumed per-sample accuracies and illustrative token counts:</p>
+<table>
+<thead><tr><th>Technique</th><th>Calls</th><th>Output tokens per question</th><th>Accuracy (assumed)</th><th>Main risk</th></tr></thead>
+<tbody>
+<tr><td>Zero-shot, short answer</td><td>1</td><td>~10</td><td>low and unknown</td><td>Silent arithmetic and policy errors</td></tr>
+<tr><td>Few-shot plus chain of thought</td><td>1</td><td>~90</td><td>0.60</td><td>Systematic misreading of the rule</td></tr>
+<tr><td>Self-consistency, 9 samples</td><td>9 (parallel)</td><td>~810</td><td>0.87</td><td>Amplifies systematic errors</td></tr>
+<tr><td>Extract, compute in code, write</td><td>2 plus code</td><td>~40 + ~80</td><td>~0.96</td><td>Extraction errors; more moving parts</td></tr>
+<tr><td>Reasoning model, medium effort</td><td>1</td><td>hundreds to thousands (hidden)</td><td>measure it</td><td>Cost and latency variance</td></tr>
+</tbody>
+</table>
+<p>The decomposed pipeline is both the most accurate and among the cheapest, because the hard part left the model entirely. That is the usual outcome when a task contains exact rules; techniques like voting are for tasks where no such shortcut exists.</p>
+</section>
+
+<section data-label="A decision guide">
+<ol>
+<li><strong>Start zero-shot with a well-structured prompt.</strong> Build an evaluation set and measure.</li>
+<li><strong>Wrong format or wrong boundary cases?</strong> Add two to five examples chosen from the failures, or retrieve them per input.</li>
+<li><strong>Wrong on multi-step problems?</strong> Add chain of thought with a fixed final-answer line, or route those inputs to a reasoning model.</li>
+<li><strong>Part of the task is exact (arithmetic, dates, rules, lookups)?</strong> Decompose and move it to code. Do this before reaching for voting.</li>
+<li><strong>Still scattered errors on hard inputs, and latency budget to spare?</strong> Self-consistency with 5 to 10 samples; use agreement as a confidence score.</li>
+<li><strong>Have an external check (tests, validators, sources)?</strong> Add one critique round driven by that check.</li>
+<li><strong>Re-measure after every change</strong>, and keep the change only if it beats the previous version on the evaluation set.</li>
+</ol>
+</section>
+
+<section data-label="In code: voting, its arithmetic, and decomposition">
+<pre data-lang="python">import json, random, re
+from collections import Counter
+from math import factorial
+
+# 1. Self-consistency: sample several reasoning paths, vote on the final answer only.
+def final_answer(text):
+    m = re.search(r"ANSWER:\s*\$?([\d.,]+)", text)
+    return m.group(1).replace(",", "") if m else None
+
+def self_consistency(sample, n=5):
+    answers = [a for a in (final_answer(sample()) for _ in range(n)) if a]
+    top, votes = Counter(answers).most_common(1)[0]
+    return top, votes / n                      # the answer and its agreement rate
+
+rng = random.Random(1)
+def fake_sample():                             # stands in for one call at temperature ~0.7
+    return rng.choices(["... 7 unused months ... ANSWER: $151.20",
+                        "... 8 unused months ... ANSWER: $172.80",
+                        "... fee on the full year ... ANSWER: $139.20"],
+                       weights=[0.60, 0.25, 0.15])[0]
+print(self_consistency(fake_sample, n=9))
+
+# 2. Exact accuracy of a plurality vote, given each answer's per-sample probability.
+def vote_accuracy(probs, n):
+    def splits(n, k):
+        if k == 1:
+            yield (n,); return
+        for i in range(n + 1):
+            for rest in splits(n - i, k - 1):
+                yield (i,) + rest
+    total = 0.0
+    for counts in splits(n, len(probs)):
+        p = factorial(n)
+        for c, q in zip(counts, probs):
+            p = p / factorial(c) * q ** c
+        if counts[0] == max(counts):           # answer 0 is the right one
+            total += p / counts.count(max(counts))   # random tie-break
+    return total
+
+for n in (1, 5, 15):
+    print(n, round(vote_accuracy([0.60, 0.25, 0.10, 0.05], n), 3),
+             round(vote_accuracy([0.40, 0.50, 0.10], n), 3))
+
+# 3. Decomposition: the model extracts, code computes, the model writes the reply.
+extracted = json.loads('{"annual_price": 288, "start_month": 3, "cancel_month": 7, "fee_rate": 0.10}')
+
+def refund(annual_price, start_month, cancel_month, fee_rate):
+    used = cancel_month - start_month + 1      # the cancellation month counts as used
+    unused_value = annual_price * (12 - used) / 12
+    return round(unused_value * (1 - fee_rate), 2)
+
+assert refund(**extracted) == 151.20
+print(refund(**extracted))</pre>
+<p>The first line prints the voted answer, 151.20, with an agreement rate of 0.56 (5 of 9 fake samples): right, but a weak enough majority that a production system might escalate it. The next three lines reproduce the table in Step 5 for 1, 5 and 15 samples (0.600, 0.781, 0.935 when errors scatter; 0.400, 0.389, 0.340 when one wrong reading dominates). The last shows the decomposed pipeline's exact $151.20, guarded by an assertion that would fail if the month-counting rule were changed.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"Chain of thought always helps."</strong> It helps multi-step problems on capable models. On simple tasks it adds cost and latency for nothing, and on reasoning models it is redundant.</li>
+<li><strong>Answer first, explanation after.</strong> The model commits to the answer before reasoning. Reasoning must come first, in prompts and in schemas.</li>
+<li><strong>"More samples, more accuracy."</strong> Only when errors are scattered. When the model systematically misreads the task, voting entrenches the misreading.</li>
+<li><strong>Treating examples as rules.</strong> The model copies their format, length, labels and order effects, not just their logic. Vary surface features; balance labels.</li>
+<li><strong>Asking the model to check itself with nothing new to check against.</strong> Without an external signal, self-critique often fails to fix errors and can introduce new ones.</li>
+<li><strong>Chaining many LLM steps.</strong> Accuracies multiply. Decompose to make steps easier or to replace them with code, not for its own sake.</li>
+<li><strong>Prompting a reasoning model like a standard one.</strong> Drop "think step by step"; set effort via the API; budget for hidden reasoning tokens.</li>
+<li><strong>Trusting the written reasoning as an explanation.</strong> It helps the model; it is not a faithful account of why it answered.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>Explain in one or two sentences why chain of thought can help a transformer solve a multi-step calculation.</summary><div class="answer">Each output token gets a fixed amount of computation (one pass through the layers). Writing intermediate results lets later tokens build on them, so the total computation and working memory grow with the reasoning length instead of being capped at one pass.</div></details>
+<details><summary>Each sample is right with probability 0.7 and the only wrong answer has probability 0.3. What is the accuracy of a majority vote over 3 samples?</summary><div class="answer">The vote is right if at least 2 of 3 are right: \(3 \times 0.7^2 \times 0.3 + 0.7^3 = 0.441 + 0.343 = 0.784\).</div></details>
+<details><summary>Self-consistency with 9 samples made your refund answers less accurate than a single sample. What does that tell you, and what do you do?</summary><div class="answer">The errors are systematic: one wrong reading of the policy is more likely than the right one, so voting amplifies it. Fix the cause: clarify the rule, add an example of the boundary case, or move the calculation to code.</div></details>
+<details><summary>A pipeline has three LLM steps at 96%, 93% and 98% accuracy. What is its approximate end-to-end accuracy, and what would you change first?</summary><div class="answer">\(0.96 \times 0.93 \times 0.98 \approx 0.875\). Improve or replace the 93% step first (better prompt, examples, or code if it is an exact operation), since it contributes the most error.</div></details>
+<details><summary>A customer cancels a $360 annual plan that started 1 September, on 2 November. Using Ledgerly's policy, what is the refund?</summary><div class="answer">September, October and November are used (November has started): 3 months, so 9 unused. \(360 \times 9/12 = 270\); fee 10% is 27; refund $243.00.</div></details>
+<details><summary>When does self-critique reliably add value? Give one concrete example for the refund assistant.</summary><div class="answer">When the critic has an external signal or an easier check. Example: compute the refund in code, compare with the amount in the drafted reply, and if they differ, ask the model to rewrite the reply using the computed amount and explain the policy correctly.</div></details>
+<details><summary>Why can few-shot examples with some wrong labels still improve results, and what does that imply about choosing examples?</summary><div class="answer">Much of what examples transmit is the format, the set of possible answers and the kind of input, not just the input-to-label mapping. So choose examples for coverage of the output format and the boundary cases, keep labels balanced and correct, and do not expect examples to teach facts the model lacks.</div></details>
+</section>

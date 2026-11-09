@@ -1,0 +1,233 @@
+<!-- Deep lesson: Tokens, context & cost. Merged into fundamentals/tokens-context-cost by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Token</td><td>One entry in a model's vocabulary: a whole word, part of a word, a run of spaces, a digit group or a byte. Models read, write and bill in tokens.</td></tr>
+<tr><td>Tokenizer</td><td>The fixed program that turns text into token IDs and back. Each model family has its own.</td></tr>
+<tr><td>BPE (byte-pair encoding)</td><td>The common way to build a vocabulary: start from single bytes and repeatedly merge the most frequent adjacent pair into a new token.</td></tr>
+<tr><td>Vocabulary size</td><td>How many distinct tokens the tokenizer has, for example about 100,000. Larger means fewer tokens per text but a bigger embedding table.</td></tr>
+<tr><td>Context window</td><td>The maximum number of tokens, input plus output, that one request can hold.</td></tr>
+<tr><td>Input / output tokens</td><td>Tokens you send (prompt, history, documents) versus tokens the model generates. Priced separately; output usually costs several times more.</td></tr>
+<tr><td>Prefill / decode</td><td>Processing all input tokens in one parallel pass, versus generating output tokens one at a time.</td></tr>
+<tr><td>TTFT</td><td>Time to first token: roughly queueing plus prefill. What a user feels as "it started answering".</td></tr>
+<tr><td>KV cache</td><td>The keys and values stored for every token in the context, so later tokens can attend to them. Grows linearly with context length.</td></tr>
+<tr><td>Prompt caching</td><td>Reusing the stored computation for an identical prompt prefix across requests, billed at a discount and faster.</td></tr>
+<tr><td>Token budget</td><td>A planned allocation of the context window across system prompt, tools, history, retrieved text and output.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>A model never sees characters or words. Text is cut into <strong>tokens</strong> by a fixed tokenizer, and from then on everything is counted in tokens: what fits in the context window, how long the model takes, how much memory the server needs, and what you pay. Tokens are the unit of an LLM application's capacity planning, in the way requests per second and bytes are for a web service.</p>
+<p>Interviewers ask:</p>
+<ol>
+<li>How does BPE tokenization work, and why do models struggle to count letters or do arithmetic on long numbers?</li>
+<li>What fills the context window in a real request, and what happens as a conversation grows?</li>
+<li>Estimate the cost and latency of this feature at this traffic. Which tokens dominate each?</li>
+<li>If the model supports a million tokens of context, why not put everything in it?</li>
+</ol>
+<p>The running example is one request to Acme Cloud's support assistant, a retrieval-augmented chat: a 600-token system prompt with the support rules, 400 tokens of tool definitions (billing lookup, refund, escalate), five retrieved help-centre chunks of 400 tokens each, the conversation so far, a 40-token user question, and a 250-token answer. We will tokenize pieces of it with a real tokenizer (OpenAI's <code>cl100k_base</code>, about 100,000 tokens), then budget, cost and time the whole request. Prices are illustrative: $3 per million input tokens, $15 per million output tokens, and $0.30 per million cached input tokens, typical of a mid-sized hosted model and not any specific provider's list price.</p>
+</section>
+
+<section data-label="Step 1: why tokens, not characters or words">
+<p>Models need a fixed vocabulary, because the output layer produces one score per vocabulary entry. The choice of unit is a trade-off:</p>
+<ul>
+<li><strong>Characters (or bytes)</strong>: a tiny vocabulary and nothing is ever unknown, but sequences are about 4 times longer, and attention and generation cost grow with sequence length. Each character also carries little meaning, so the model must spend layers assembling words.</li>
+<li><strong>Whole words</strong>: short sequences, but the vocabulary explodes (every name, typo, product code and inflection), and any word not in it becomes "unknown".</li>
+<li><strong>Subwords</strong>: frequent words are single tokens, rare words are spelled from a few pieces, and anything at all can fall back to bytes. Short sequences and nothing unknown. Every major LLM uses this.</li>
+</ul>
+<p>With <code>cl100k_base</code>, the sentence <em>"Refunds are available within 30 days of purchase."</em> is 49 characters and 11 tokens: <code>Ref</code>, <code>unds</code>, <code> are</code>, <code> available</code>, <code> within</code>, <code> </code>, <code>30</code>, <code> days</code>, <code> of</code>, <code> purchase</code>, <code>.</code>. That is 4.45 characters per token. Notice that tokens usually carry their leading space, that a capitalised word at the start of a sentence can split differently from the same word mid-sentence, and that "30" got its own token with a separate space before it.</p>
+</section>
+
+<section data-label="Step 2: how BPE builds the vocabulary">
+<p>Byte-pair encoding learns the vocabulary from a training corpus with one rule, applied thousands of times: <em>find the most frequent pair of adjacent symbols and merge it into a new symbol</em>. Start with every word spelled as characters plus an end-of-word marker <code>_</code>. On a toy corpus of support words (<em>refund ×3, refunds, refunded, refunding, fund, funds, funded, invoice, invoices</em>), 83 symbols to begin with:</p>
+<table>
+<thead><tr><th>Merge</th><th>Pair merged</th><th>Times it occurred</th><th>Total symbols after</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>f + u</td><td>9</td><td>74</td></tr>
+<tr><td>2</td><td>fu + n</td><td>9</td><td>65</td></tr>
+<tr><td>3</td><td>fun + d</td><td>9</td><td>56</td></tr>
+<tr><td>4</td><td>r + e</td><td>6</td><td>50</td></tr>
+<tr><td>5</td><td>re + fund</td><td>6</td><td>44</td></tr>
+<tr><td>6</td><td>refund + _</td><td>3</td><td>41</td></tr>
+<tr><td>7</td><td>s + _</td><td>3</td><td>38</td></tr>
+<tr><td>8</td><td>i + n</td><td>3</td><td>35</td></tr>
+</tbody>
+</table>
+<p>After eight merges, "refund" is one token, "refunds" is <code>refund s_</code>, "refunding" is <code>refund in g _</code>, and "invoice" is still mostly letters because it was rarer. A real tokenizer runs this on a huge multilingual corpus until the vocabulary reaches its target size (100,000 merges or so), starting from the 256 possible bytes so that any input, including emoji and binary junk, can be encoded. Encoding new text replays the learned merges in order. Before merging, text is split by a pattern into chunks (words, numbers, punctuation, whitespace) so merges never cross those boundaries; that is why "30" and the space before it are separate tokens above.</p>
+<p>Two consequences follow directly. Frequency decides everything: what was common in the tokenizer's training corpus becomes cheap, what was rare stays expensive. And the vocabulary is frozen once training starts: the model's embedding table has one row per token, so changing the tokenizer means retraining the model.</p>
+</section>
+
+<section data-label="Step 3: what different text costs">
+<p>The same tokenizer on different kinds of text, all counted with <code>cl100k_base</code>:</p>
+<table>
+<thead><tr><th>Text</th><th>Characters</th><th>Tokens</th><th>Characters per token</th></tr></thead>
+<tbody>
+<tr><td>English sentence (the refund policy)</td><td>49</td><td>11</td><td>4.45</td></tr>
+<tr><td>Python, two lines: <code>def refund(order):</code> then an indented <code>return order.amount * 0.9</code></td><td>48</td><td>13</td><td>3.69</td></tr>
+<tr><td>JSON order record</td><td>62</td><td>25</td><td>2.48</td></tr>
+<tr><td>"Order 1234567 was charged $1,049.99"</td><td>35</td><td>13</td><td>2.69</td></tr>
+<tr><td>A UUID</td><td>36</td><td>35</td><td>1.03</td></tr>
+<tr><td>The refund sentence in Japanese</td><td>17</td><td>16</td><td>1.06</td></tr>
+<tr><td>The refund sentence in Hindi</td><td>34</td><td>35</td><td>0.97</td></tr>
+</tbody>
+</table>
+<p>Meaning per token varies far more than characters per token suggests. The Hindi sentence says what the English one says in 35 tokens instead of 11, so it costs about 3.2 times as much, uses 3.2 times as much context and takes longer to generate. The Japanese version costs about 1.5 times as much. Scripts that were rare in the tokenizer's training data fall back to multi-byte pieces (many Devanagari characters take two tokens each, and vowel signs are separate tokens). Newer tokenizers with larger vocabularies narrow this gap, but for multilingual products you should measure token counts per language before quoting a price.</p>
+<p>Machine-ish strings are expensive too. A UUID is almost one token per character, so a prompt full of IDs, hashes or base64 burns budget fast; JSON spends tokens on quotes, braces and keys. When you control the format, use short keys, drop unneeded IDs, and prefer compact formats for data you put in prompts.</p>
+</section>
+
+<section data-label="Step 4: the strange failures tokenization explains">
+<p>The model sees token IDs, not letters, which explains a family of failures that look like stupidity:</p>
+<ul>
+<li><strong>Spelling and counting letters.</strong> "strawberry" is <code>str</code>, <code>aw</code>, <code>berry</code>; with a leading space it is the single token <code> strawberry</code>. To count its r's the model must have learned the spelling of each token, information that is never directly visible to it. It often has, imperfectly.</li>
+<li><strong>Arithmetic on long numbers.</strong> "12345 + 67890" becomes <code>123</code>, <code>45</code>, <code> +</code>, <code> </code>, <code>678</code>, <code>90</code>. The digits are grouped in threes from the left, so place value is not aligned between the two numbers. "9.11 &gt; 9.9" splits the decimals into <code>11</code> and <code>9</code>, which invites comparing 11 with 9. Give the model a calculator tool for anything that matters.</li>
+<li><strong>Case and spacing sensitivity.</strong> "refund", " refund", "Refund" and "REFUND" can be four different token sequences (<code>REFUND</code> is <code> REF</code>, <code>UND</code>). Text that looks the same to a person can look quite different to the model, which matters for exact-match instructions and for caching.</li>
+<li><strong>Prompt boundaries.</strong> If a prompt ends with a trailing space, the model must start its answer with a token that has no leading space, which is unusual for a word; output quality can dip. End prompts cleanly.</li>
+</ul>
+</section>
+
+<section data-label="Step 5: the context window is one shared budget">
+<p>The context window is a hard limit on input plus output tokens in one request. Everything competes for it. Acme's first turn:</p>
+<table>
+<thead><tr><th>Part</th><th>Tokens</th><th>Changes per request?</th></tr></thead>
+<tbody>
+<tr><td>System prompt (rules, tone, policy summary)</td><td>600</td><td>No</td></tr>
+<tr><td>Tool definitions (JSON schemas)</td><td>400</td><td>No</td></tr>
+<tr><td>Conversation history</td><td>0 on turn 1, +290 per turn</td><td>Grows</td></tr>
+<tr><td>Retrieved help-centre chunks (5 × 400)</td><td>2,000</td><td>Yes</td></tr>
+<tr><td>User question</td><td>40</td><td>Yes</td></tr>
+<tr><td><strong>Input total</strong></td><td><strong>3,040</strong></td><td></td></tr>
+<tr><td>Reserved for the answer</td><td>250 (cap set by <code>max_tokens</code>)</td><td></td></tr>
+</tbody>
+</table>
+<p>Two rules come out of this. First, reserve output space explicitly: if input fills the window, the model has no room to answer, and an answer cut off by the output limit (finish reason <code>length</code>) is truncated, not complete. Second, history grows without bound. Each turn re-sends all previous turns, because the model is stateless (<a href="@@fundamentals/what-is-an-llm@@">What an LLM is</a>): turn 1 sends 3,040 input tokens, turn 10 sends 5,650, turn 20 sends 8,550. Over 20 turns the conversation sends 115,900 input tokens in total, and the total grows with the square of the number of turns. Long-running assistants therefore summarise or drop old turns, keep only the last few verbatim, and re-retrieve facts rather than relying on history (<a href="@@agents/memory-context@@">Memory &amp; context</a>).</p>
+</section>
+
+<section data-label="Step 6: what a request costs">
+<p>Cost is input tokens times the input price plus output tokens times the output price. For Acme's first turn:</p>
+\[ 3{,}040 \times \frac{\$3}{10^6} + 250 \times \frac{\$15}{10^6} = \$0.00912 + \$0.00375 = \$0.01287 \]
+<p>Output is 7.6% of the tokens but 29% of the cost, because each output token is priced at five times an input token here. At 1 million first-turn requests a month, that is about $12,900. A full 20-turn conversation costs $0.42, against $0.26 for 20 independent single-turn requests: history adds 64%.</p>
+<p>Why are output tokens dearer? Prefill processes all input tokens in one parallel pass, which keeps the GPU's arithmetic units busy. Decode generates one token per forward pass, and each pass must read all the model's weights from memory for a single token per sequence, so the GPU spends most of its time waiting on memory (<a href="@@inference/inference-internals@@">Inference internals</a>). A second of GPU time yields far fewer output tokens than input tokens.</p>
+<p>The levers, in rough order of impact for a request shaped like this one:</p>
+<ol>
+<li><strong>Fewer retrieved tokens.</strong> Retrieval is two thirds of the input. Three better chunks (after reranking, <a href="@@rag/reranking@@">Reranking</a>) instead of five mediocre ones save 800 tokens, nearly 19% of the cost of a turn, and often improve answers.</li>
+<li><strong>Shorter outputs.</strong> Ask for concise answers and set <code>max_tokens</code>; every output token saved is worth five input tokens.</li>
+<li><strong>Prompt caching</strong> for the stable prefix (Step 8).</li>
+<li><strong>A smaller model</strong> for easy turns, routing only hard ones to the large model (<a href="@@production/cost-performance@@">Cost &amp; performance</a>).</li>
+</ol>
+</section>
+
+<section data-label="Step 7: what a request takes in time">
+<p>Latency has the same two phases. With illustrative throughput figures for a mid-sized hosted model (prefill around 5,000 tokens per second for one request, decode around 60 tokens per second; real numbers vary a lot by model, hardware and load):</p>
+<ul>
+<li><strong>Time to first token</strong> ≈ queueing + prefill: \(3{,}040 / 5{,}000 \approx 0.6\) s.</li>
+<li><strong>Generation</strong>: \(250 / 60 \approx 4.2\) s.</li>
+</ul>
+<p>The answer, not the prompt, dominates wall-clock time, so halving the answer length cuts total latency far more than halving the retrieved context does. Streaming hides most of it: the user sees text after 0.6 s and reads while the rest arrives. For non-streamed calls inside an agent loop, where the next step waits for the whole output, output length is the latency budget. Reasoning models, which generate thousands of hidden thinking tokens before answering, move both TTFT and cost sharply upward for the same visible answer.</p>
+</section>
+
+<section data-label="Step 8: memory per token, and why prompt caching works">
+<p>On the server, every token in the context occupies KV cache memory for as long as the request runs. From <a href="@@fundamentals/transformers@@">Transformers</a>, Step 5: about 0.52 MB per token for a 7B model with full multi-head attention, 0.33 MB for a 70B model with grouped-query attention. Acme's 3,290-token request therefore pins about 1.7 GB (7B) or 1.1 GB (70B) of GPU memory while it runs. Long contexts reduce how many requests a GPU can serve at once, which is one reason providers charge more beyond a length threshold and why a long-context request is slower even for a short answer.</p>
+<p><strong>Prompt caching</strong> exploits the fact that the KV cache for a prefix depends only on that prefix. If many requests start with the same tokens, the server can keep their keys and values and skip recomputing them, so cached input is billed at a fraction of the normal price (here 10%) and TTFT falls. Caching only matches an identical <em>prefix</em>, token for token. That dictates prompt order: put stable content first (system prompt, tool definitions), then content that only grows (history), and per-request content last (retrieved chunks, the question). With that order, the system prompt, tools and all but the newest exchange of history are cached from turn 2 on. (The newest question and answer are not: in the previous request the question sat after that turn's retrieved chunks, so those tokens are not part of any earlier prefix.) Only the retrieved chunks, the latest exchange and the new question are billed at the full rate, and the 20-turn conversation drops from $0.42 to $0.24, a 44% saving. Put a timestamp or the user's name at the top of the system prompt and the cache never hits.</p>
+</section>
+
+<section data-label="Step 9: a bigger window is not a better prompt">
+<p>Models now accept hundreds of thousands to millions of tokens. Filling them is rarely the right design, for four reasons:</p>
+<ul>
+<li><strong>Cost and latency scale with input.</strong> A 200,000-token prompt at $3 per million is $0.60 per request before any output, and prefill takes tens of seconds.</li>
+<li><strong>Attention is not uniform.</strong> Many models use information at the start and end of a long context more reliably than information buried in the middle ("lost in the middle"). Accuracy on a fact can depend on where it sits.</li>
+<li><strong>Distractors hurt.</strong> Irrelevant but similar passages (last year's refund policy next to this year's) increase wrong answers. More context is more chances to be misled.</li>
+<li><strong>Effective context is shorter than advertised.</strong> A model may accept 1M tokens but reason reliably over far less. Test on your task at the lengths you plan to use.</li>
+</ul>
+<p>So retrieval stays the default for large corpora: pick the few hundred or few thousand tokens that matter. Long context is excellent for single large artefacts that must be read whole (a contract, a codebase module, a long transcript) and as a fallback when retrieval is unsure.</p>
+</section>
+
+<section data-label="Budgeting and estimating: a recipe">
+<ol>
+<li><strong>Measure, do not guess.</strong> Count tokens with the target model's tokenizer (or the provider's token-counting endpoint) on real samples, per language and content type. "4 characters per token" holds only for English prose.</li>
+<li><strong>Write the budget</strong> like Step 5's table: fixed parts, growing parts, per-request parts, reserved output. Set a cap for each growing part.</li>
+<li><strong>Enforce it in code</strong> before every call: if over budget, drop the oldest history turns first (or summarise them), then the lowest-ranked retrieved chunks; never silently truncate the system prompt or the question.</li>
+<li><strong>Order for caching</strong>: stable, then growing, then per-request.</li>
+<li><strong>Estimate cost</strong> per request and per conversation, at expected and peak volumes, with output priced separately. Include retries, tool-call round trips (each one is another request with the whole context), and judge calls in evals.</li>
+<li><strong>Log actual usage</strong>: the API returns input, output and cached token counts per call. Alert on drift, because prompts grow over time as people add instructions.</li>
+</ol>
+</section>
+
+<section data-label="In code: count, budget and price a request">
+<pre data-lang="python">import tiktoken
+
+enc = tiktoken.get_encoding("cl100k_base")
+for text in ["Refunds are available within 30 days of purchase.",
+             "3f2b9c1e-7a4d-4e8b-9c2f-1a6d5e7b8c90",
+             "रिफंड 30 दिनों के भीतर उपलब्ध हैं।"]:
+    ids = enc.encode(text)
+    print(f"{len(text):3d} chars -&gt; {len(ids):3d} tokens  {text[:30]!r}")
+
+PRICE_IN, PRICE_OUT, PRICE_CACHED = 3 / 1e6, 15 / 1e6, 0.30 / 1e6   # illustrative $/token
+SYSTEM, TOOLS, RETRIEVED, QUESTION, ANSWER, PER_TURN = 600, 400, 2000, 40, 250, 290
+
+def turn_cost(turn, caching):
+    history = PER_TURN * (turn - 1)
+    total_in = SYSTEM + TOOLS + history + RETRIEVED + QUESTION
+    # cache hit = longest prefix identical to the previous request: system, tools and all
+    # history except the newest exchange (last turn's question sat after its retrieved chunks)
+    cached = (SYSTEM + TOOLS + PER_TURN * (turn - 2)) if (caching and turn &gt; 1) else 0
+    return total_in, cached * PRICE_CACHED + (total_in - cached) * PRICE_IN + ANSWER * PRICE_OUT
+
+tokens, cost = turn_cost(1, caching=False)
+print(f"turn 1: {tokens} input tokens, ${cost:.5f}; per 1M requests ${cost * 1e6:,.0f}")
+for caching in (False, True):
+    total = sum(turn_cost(t, caching)[1] for t in range(1, 21))
+    print(f"20-turn conversation, caching={caching}: ${total:.3f}")
+</pre>
+<p>It prints 49 characters → 11 tokens, 36 → 35 and 34 → 35 for the three strings, then 3,040 input tokens and $0.01287 for turn 1 ($12,870 per million requests), and $0.423 versus $0.238 for the 20-turn conversation without and with caching. And the BPE merge loop from Step 2, which runs anywhere:</p>
+<pre data-lang="python">from collections import Counter
+
+corpus = "refund refunds refunded refunding fund funds funded invoice invoices refund refund".split()
+words = Counter(tuple(w) + ("_",) for w in corpus)          # characters + end-of-word marker
+
+def merge(words, pair):
+    out = Counter()
+    for w, n in words.items():
+        new, i = [], 0
+        while i &lt; len(w):
+            if i + 1 &lt; len(w) and (w[i], w[i + 1]) == pair:
+                new.append(w[i] + w[i + 1]); i += 2
+            else:
+                new.append(w[i]); i += 1
+        out[tuple(new)] += n
+    return out
+
+for step in range(1, 9):
+    pairs = Counter()
+    for w, n in words.items():
+        for a, b in zip(w, w[1:]):
+            pairs[(a, b)] += n
+    best, count = pairs.most_common(1)[0]                    # most frequent adjacent pair
+    words = merge(words, best)
+    print(step, "+".join(best), count, sum(len(w) * n for w, n in words.items()))
+print([" ".join(w) for w in words])
+</pre>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"A token is a word" or "4 characters per token".</strong> True only for English prose. Code, JSON, numbers, IDs and many languages use far more tokens per character. Measure with the real tokenizer.</li>
+<li><strong>Counting tokens with the wrong tokenizer.</strong> Different model families tokenize differently; a budget computed with one can be noticeably off for another, most of all for code and non-English text.</li>
+<li><strong>Pricing only input tokens.</strong> Output tokens are fewer but several times dearer, and they dominate latency.</li>
+<li><strong>Forgetting history growth.</strong> Every turn re-sends the conversation; total tokens grow quadratically with turns unless history is trimmed or summarised.</li>
+<li><strong>Breaking the cache with a dynamic prefix.</strong> A timestamp or user ID at the top of the system prompt makes every prefix unique. Stable content first.</li>
+<li><strong>"Bigger context window, so skip retrieval."</strong> Cost, latency, distractors and weaker use of mid-context information all argue for retrieving the few tokens that matter.</li>
+<li><strong>Not reserving output space.</strong> A prompt that fills the window leaves no room to answer; check the finish reason for <code>length</code>.</li>
+<li><strong>Blaming the model for letter-counting and long arithmetic.</strong> It sees tokens, not characters or aligned digits. Use tools for exact string and number work.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>A feature sends 1,200 input tokens and receives 400 output tokens per call, 2 million calls a month, at $3 / $15 per million. What is the monthly cost, and which single change saves the most?</summary><div class="answer">Per call: \(1200 \times 3/10^6 + 400 \times 15/10^6 = \$0.0036 + \$0.006 = \$0.0096\). Monthly: $19,200. Output is 62% of the cost, so shortening answers saves most: halving them saves $6,000 a month, while halving the input saves $3,600.</div></details>
+<details><summary>Why does the Hindi version of the refund sentence cost about three times the English one?</summary><div class="answer">The tokenizer's merges were learned mostly from English-heavy text, so Devanagari sequences were rarely merged and fall back to small byte-level pieces: 35 tokens versus 11 for the same meaning. Cost, context use and generation time all scale with tokens.</div></details>
+<details><summary>Your prompt is: system prompt, then the current date and time, then tool definitions, history, retrieved chunks, question. Prompt caching shows a 0% hit rate. Why, and what is the fix?</summary><div class="answer">Caching matches an identical prefix. The timestamp near the top makes every prefix unique, so nothing after it can be reused. Move the date to the end (or round it to the day), keeping system prompt and tools as the stable prefix.</div></details>
+<details><summary>A model has a 128k window. Your system prompt and tools are 3k tokens, you allow 4k for the answer, and each retrieved chunk is 500 tokens. History is capped at 20k. How many chunks can you include at most, and should you?</summary><div class="answer">\(128{,}000 - 3{,}000 - 4{,}000 - 20{,}000 = 101{,}000\) tokens, about 202 chunks. You should not: cost, prefill latency and distractors grow with every chunk. Retrieve broadly, rerank, and send the best 5 to 10.</div></details>
+<details><summary>Estimate time to first token and total time for a 12,000-token prompt with an 800-token answer, at 5,000 tokens/s prefill and 50 tokens/s decode. Where would you optimise?</summary><div class="answer">TTFT ≈ 12,000 / 5,000 = 2.4 s (plus queueing); generation ≈ 800 / 50 = 16 s; total about 18.4 s. Decode dominates: cut the answer length, stream it, or use a faster (smaller) model for this step. Trimming the prompt helps TTFT only.</div></details>
+<details><summary>Why can "12345 + 67890" trip up a model that handles "12 + 67" perfectly?</summary><div class="answer">Long numbers are split into digit groups from the left (<code>123</code>, <code>45</code> and <code>678</code>, <code>90</code>), so the digits of equal place value are not aligned across the two numbers, and carries cross token boundaries. Small numbers are single tokens the model has seen in countless sums.</div></details>
+<details><summary>How much KV cache does one 100,000-token request pin on a 70B GQA model at 0.33 MB per token, and what does that imply for an 80 GB GPU that also holds part of the weights?</summary><div class="answer">About \(100{,}000 \times 0.33 \text{ MB} \approx 33\) GB. Only one or two such requests fit alongside weights on that GPU, so long-context traffic sharply reduces concurrency and raises cost per request.</div></details>
+</section>
