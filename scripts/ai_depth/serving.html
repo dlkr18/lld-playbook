@@ -31,11 +31,7 @@
 
 <section data-label="Step 1: the parts of a serving system">
 <p>A request passes through four layers, each with one job:</p>
-<pre class="ascii-diagram">client ──► gateway ──────► router ──────────► engine replica (GPU)
-           auth, quotas,   picks a replica:   scheduler: who runs this step
-           rate limits,    load, prefix,      KV manager: blocks per sequence
-           request logs    model / adapter    model runner: the forward pass
-                                              └─ streams tokens back (SSE)</pre>
+<div class="diagram"><img src="../img/serving-parts.png" alt="A request passes the gateway (about the caller), the router (which replica) and an engine replica, whose scheduler, KV manager and model runner repeat one forward pass per iteration and stream tokens back."></div><p class="diagram-caption">A request passes the gateway (about the caller), the router (which replica) and an engine replica, whose scheduler, KV manager and model runner repeat one forward pass per iteration and stream tokens back.</p>
 <ul>
 <li>The <strong>gateway</strong> handles everything that is about the caller: authentication, per-tenant token quotas, request size limits, logging.</li>
 <li>The <strong>router</strong> picks which replica serves the request. For LLMs this is not a plain round-robin balancer, for reasons in Step 6.</li>

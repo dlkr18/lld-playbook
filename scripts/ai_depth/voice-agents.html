@@ -44,9 +44,7 @@
 
 <section data-label="Step 2: the pipeline and its latency budget">
 <p>The cascaded pipeline, which most production voice agents use:</p>
-<pre class="ascii-diagram">caller audio -&gt; VAD -&gt; streaming STT -&gt; endpointing -&gt; LLM (+ tools) -&gt; streaming TTS -&gt; caller
-                  ^                                                                |
-                  +------------- barge-in: caller speaks while agent talks --------+</pre>
+<div class="diagram"><img src="../img/voice-agents-pipeline.png" alt="Caller audio flows through VAD, streaming STT and endpointing to the LLM, then streaming TTS back to the caller. If the caller speaks while the agent talks, barge-in stops the audio and cancels generation."></div><p class="diagram-caption">Caller audio flows through VAD, streaming STT and endpointing to the LLM, then streaming TTS back to the caller. If the caller speaks while the agent talks, barge-in stops the audio and cancels generation.</p>
 <p>Now put illustrative but realistic numbers on each stage of one turn, measured from the moment the caller stops speaking:</p>
 <table>
 <thead><tr><th>Stage</th><th>Time</th><th>What it is</th></tr></thead>
@@ -91,7 +89,7 @@
 <section data-label="Step 5: streaming speech-to-text, and errors that matter">
 <p>Streaming STT emits <strong>partial</strong> transcripts every few hundred milliseconds while the caller speaks ("move my cleaning on", "move my cleaning on Thursday to…") and a <strong>final</strong> transcript, with corrections, when a segment ends. Partials let the system start work early (the speculative LLM call in Step 2, or a semantic endpointing check); finals are what you act on. The "STT final" cost in the budget is only the time to finalise the last few words after the endpoint, because everything before was transcribed while the caller was still talking.</p>
 <p>Recognition quality is measured by <strong>word error rate</strong>: the minimum number of word substitutions, deletions and insertions needed to turn the transcript into what was actually said, divided by the number of words said. For the Brightsmile caller on a noisy phone line:</p>
-<pre class="ascii-diagram">said:  move my cleaning on thursday to next tuesday afternoon
+<pre>said:  move my cleaning on thursday to next tuesday afternoon
 heard: move my cleaning on thursday to next to stay afternoon
                                             ^^ ^^^^
        1 substitution (tuesday -&gt; to) + 1 insertion (stay) = 2 errors / 9 words = 22.2% WER</pre>
@@ -145,7 +143,7 @@ heard: move my cleaning on thursday to next to stay afternoon
 </section>
 
 <section data-label="The worked example: one turn, millisecond by millisecond">
-<pre class="ascii-diagram"> t (ms)  event
+<pre> t (ms)  event
    -4000 caller starts: "Hi, I'd like to move my cleaning on Thursday to next week, um,
          maybe Tuesday afternoon?"  Partials stream throughout.
    -1900 450 ms pause after "um": semantic endpointing sees an incomplete sentence, waits.

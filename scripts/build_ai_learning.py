@@ -1182,7 +1182,9 @@ def build(units, labs):
     unplaced = set(cards) - set(moved)
     assert not unplaced, f"cheat sheets not merged: {unplaced}"
     assert not set(EXTRA_DIAGRAMS) - {t[2] for t in order}, "EXTRA_DIAGRAMS names a topic not on the map"
-    unused = set(boards) - {u[3:] for u in used if u.startswith("wb:")}
+    in_lessons = {m for f in DEPTH.glob("*.html") for m in re.findall(r'src="\.\./img/([\w-]+)\.png"', f.read_text(encoding="utf-8"))}
+    assert not in_lessons - set(boards), f"lessons point at boards that do not exist: {in_lessons - set(boards)}"
+    unused = set(boards) - {u[3:] for u in used if u.startswith("wb:")} - in_lessons
     assert not unused, f"whiteboards drawn but unused: {unused}"
 
     current = {AI / f / f"{t[0]}.html" for f, _, _, tl in STAGES for t in tl}
