@@ -1174,6 +1174,10 @@ def build(units, labs):
                      scripts=scripts, math=math)
         html_ = html_.replace("</title>", f'</title>\n<meta name="ai-stage" content="{esc(c["stitle"])}" data-href="index.html">'
                               f'\n<meta name="ai-topic" content="{k}">', 1)
+        # phones get the narrow layout of each whiteboard (whiteboards.svg_mobile); the 2140-wide one is unreadable there
+        html_ = re.sub(r'<img\b[^>]*\bsrc="\.\./img/([\w-]+)\.png"[^>]*>',
+                       lambda m: (f'<picture><source media="(max-width: 640px)" srcset="../img/{m[1]}-m.png">{m[0]}</picture>'
+                                  if m[1] in boards else m[0]), html_)
         (AI / folder).mkdir(exist_ok=True)
         (AI / folder / f"{c['slug']}.html").write_text(html_, encoding="utf-8")
 
