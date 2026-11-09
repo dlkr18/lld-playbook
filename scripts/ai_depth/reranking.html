@@ -46,7 +46,7 @@
 
 <section data-label="Step 2: how a cross-encoder scores a pair">
 <p>A cross-encoder concatenates the query and one passage into a single input, typically</p>
-<pre class="ascii-diagram">[CLS] error E-4012 when exporting invoices [SEP] Error E-4012: the export failed because
+<pre>[CLS] error E-4012 when exporting invoices [SEP] Error E-4012: the export failed because
 the invoice has no tax ID. Add a tax ID and retry. [SEP]</pre>
 <p>and runs a <a href="@@fundamentals/transformers@@">transformer</a> over it. Because attention runs across the whole input, every query token can attend to every passage token in every layer: "E-4012" in the question attends directly to "E-4012" in the passage; "exporting" to "export failed"; the model can notice that d4's "E-4007" is a different code. The final vector of the first token goes through a small linear layer that outputs one number, the relevance logit. A sigmoid turns it into a score between 0 and 1.</p>
 <p>Training uses (query, passage, label) examples: relevant pairs labelled 1, and hard negatives (passages a first-stage retriever ranked highly that are not answers) labelled 0, with a binary cross-entropy loss; or one positive plus several negatives per query with a softmax over them. The hard negatives are what teach it the distinctions the first stage misses, such as the right topic but the wrong code.</p>

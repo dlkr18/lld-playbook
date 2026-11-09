@@ -59,7 +59,7 @@
 <div class="hero">
   <h1>LangGraph <span>// Tech &amp; tools</span></h1>
   <p>Agents as explicit state graphs: nodes, edges, checkpoints, interrupts.</p>
-  <div class="tags"><span class="tag">29 min read</span><span class="tag">3 diagrams</span></div>
+  <div class="tags"><span class="tag">29 min read</span><span class="tag">4 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -89,16 +89,7 @@
 <section id="step-1-an-agent-is-a-state-machine">
   <h2>04 &mdash; Step 1: an agent is a state machine</h2>
 <p>Write the refund agent as boxes and arrows before writing any code:</p>
-<pre class="ascii-diagram">           +-----------+   asks for a tool    +--------------+
- START --&gt; |   agent   | -------------------&gt; | lookup_order |
-           | (model)   | &lt;------------------- |   (tool)     |
-           +-----------+                      +--------------+
-              |     |  refund needed (&gt; $100: pause for approval first)
-              |     '--------------------------&gt; +--------------+
-              |     &lt;--------------------------- | issue_refund |
-              |  done                            +--------------+
-              v
-             END</pre>
+<div class="diagram"><img alt="The agent node routes to lookup_order or issue_refund or ends the run; after a tool the graph always returns to the agent, and a refund over $100 pauses for human approval first." src="../img/langgraph-refund-graph.png"/></div><p class="diagram-caption">The agent node routes to lookup_order or issue_refund or ends the run; after a tool the graph always returns to the agent, and a refund over $100 pauses for human approval first.</p>
 <p>Two kinds of thing appear. <strong>Nodes</strong> do work: the <code>agent</code> node calls the model, <code>lookup_order</code> and <code>issue_refund</code> run tools. <strong>Edges</strong> decide what runs next. Some edges are fixed (after a tool, always go back to the agent); one is conditional (after the agent, go to whichever tool it asked for, or end).</p>
 <p>This is a <strong>state machine</strong>, and drawing it shows where control lives. In a "let the model decide everything" agent, the model's output alone picks the next action. In a graph, the model proposes and your router function disposes: it can refuse to route to <code>issue_refund</code> unless the order lookup has happened, enforce the $100 rule in code rather than in a prompt, and end the run if a budget is exceeded. Rules that must hold belong in edges, not in prompts.</p>
 </section>

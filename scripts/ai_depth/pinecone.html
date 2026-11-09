@@ -30,7 +30,7 @@
 
 <section data-label="Step 1: the mental model, an API in front of someone else's index">
 <p>With Pinecone you own three things: the vectors (you compute them, or ask its hosted embedding models to), the metadata, and the ids. Pinecone owns everything else: index structure, sharding, replication, scaling and upgrades. The hierarchy is short:</p>
-<pre class="ascii-diagram">project
+<pre>project
   index  "contracts-v1"   dimension = 1024, metric = cosine | dotproduct | euclidean
     namespace "tenant-acme"     records: id, values[1024], sparse_values?, metadata{}
     namespace "tenant-globex"
@@ -41,14 +41,7 @@
 
 <section data-label="Step 2: inside serverless, storage separated from compute">
 <p>The serverless architecture explains most of Pinecone's behaviour, so it is worth holding a simplified picture (the internals are the vendor's and evolve; this is the shape that matters):</p>
-<pre class="ascii-diagram">upsert --> write log (durable, acknowledged)
-              |
-              +--> fresh layer: recent writes, searchable within seconds
-              |
-              +--> index builder --> immutable index files in object storage
-                                          |
-query  --> query nodes: cache index files from object storage,
-           search the files + the fresh layer, merge, filter, return top-k</pre>
+<div class="diagram"><img src="../img/pinecone-serverless.png" alt="Writes land in a durable log, show up in a fresh layer within seconds, and are built into immutable index files in object storage; query nodes cache those files and search them with the fresh layer."></div><p class="diagram-caption">Writes land in a durable log, show up in a fresh layer within seconds, and are built into immutable index files in object storage; query nodes cache those files and search them with the fresh layer.</p>
 <p>Three behaviours follow from it.</p>
 <p><strong>Writes are eventually consistent.</strong> An upsert returns once it is durably logged, not once it is searchable. There is a short window, typically seconds, when a query will not see it. Your product rarely notices (a contract uploaded now and queried a minute later is fine), but your tests will: "upsert then immediately query" is flaky. Tests should poll with <code>fetch</code> by id, or wait until the namespace's record count reflects the write, before asserting.</p>
 <p><strong>Storage is cheap, compute is paid per use.</strong> Vectors sit in object storage, which costs little per gigabyte; compute is spent when you query. That is why serverless suits workloads where most data is rarely queried, such as 2,000 tenants of whom a few hundred are active at any moment.</p>

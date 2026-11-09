@@ -35,13 +35,7 @@
 </section>
 
 <section data-label="Step 2: the mechanism">
-<pre class="ascii-diagram">question --&gt; build scope (tenant, permissions, locale, versions)
-         --&gt; tier 1: exact lookup on normalised text      ~1 ms      hit -&gt; answer
-         --&gt; embed question                               ~10-20 ms
-         --&gt; tier 2: nearest cached question in this scope ~5-10 ms
-               similarity &gt;= threshold ?  (optional verifier)
-                 yes -&gt; return stored answer (+ its citations)
-                 no  -&gt; full RAG pipeline -&gt; answer -&gt; admission check -&gt; store</pre>
+<div class="diagram"><img src="../img/semantic-cache-lookup.png" alt="A question is scoped first, then tried against an exact cache and a semantic cache; only a miss on both runs the full RAG pipeline, whose checked answer is stored for next time."></div><p class="diagram-caption">A question is scoped first, then tried against an exact cache and a semantic cache; only a miss on both runs the full RAG pipeline, whose checked answer is stored for next time.</p>
 <p>Each stored entry holds the original question, its embedding, the answer, the documents the answer cited, the scope it was produced under, and a timestamp. The nearest-neighbour search runs over stored <em>questions</em>, not documents, using any vector index (an in-memory index, Redis with vector search, or the same database as your RAG chunks in a separate collection).</p>
 <p>A hit costs the embedding call plus one small vector search, tens of milliseconds, against 2.8 seconds for the full path. The query embedding is needed for retrieval on a miss anyway, so a miss costs almost nothing extra.</p>
 </section>

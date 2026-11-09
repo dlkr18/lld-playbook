@@ -40,19 +40,7 @@
 </section>
 
 <section data-label="Step 2: two pipelines, one offline and one online">
-<pre class="ascii-diagram">INDEXING PATH (offline, on every document change)
-  source docs -&gt; parse + clean -&gt; dedupe -&gt; chunk (+ heading paths) -&gt; embed -&gt; index
-                                                                  (vectors + BM25 + metadata + ACLs)
-
-QUERY PATH (online, per question)                                  typical latency (order of magnitude)
-  1 question + conversation + account facts
-  2 rewrite to a standalone query, extract filters      (only on follow-ups)   0 to 400 ms
-  3 hybrid retrieve: BM25 top 50 || vectors top 50       (parallel)              20 to 40 ms
-  4 fuse (RRF) -&gt; rerank 50 -&gt; keep 6                                            30 to 80 ms
-  5 assemble context within the token budget                                    &lt; 5 ms
-  6 generate with citations                              (stream)  first token 300 to 800 ms,
-                                                                    full answer 2 to 4 s
-  7 verify citations; answer, regenerate, or abstain                            10 to 300 ms</pre>
+<div class="diagram"><img src="../img/rag-pipeline-paths.png" alt="The indexing path runs on every document change; the query path runs per question, and its latency budget shows that generation, not retrieval, dominates."></div><p class="diagram-caption">The indexing path runs on every document change; the query path runs per question, and its latency budget shows that generation, not retrieval, dominates.</p>
 <p>The indexing path was covered stage by stage in <a href="@@rag/document-ingestion@@">document ingestion</a>, <a href="@@rag/chunking@@">chunking</a>, <a href="@@rag/embeddings@@">embeddings</a> and <a href="@@rag/vector-search@@">vector search</a>. Its output is the contract the query path relies on: every chunk carries its text, heading path, source and anchor, update date, and access-control groups.</p>
 <p>The latency budget already shows where to optimise. Everything before generation adds up to roughly 100 ms on a first-turn question; generation takes seconds. Users feel time to first token, so streaming the answer matters more than shaving retrieval. A rewrite step with an LLM can double pre-generation latency, which is why it runs only when needed.</p>
 </section>
@@ -102,7 +90,7 @@ QUERY PATH (online, per question)                                  typical laten
 
 <section data-label="Step 6: the prompt that makes the model use the sources">
 <p>The system prompt turns "here is some text" into a contract. Each line exists to prevent a specific failure:</p>
-<pre class="ascii-diagram">You answer questions about our product using ONLY the sources provided.        -&gt; no answers from memory
+<pre>You answer questions about our product using ONLY the sources provided.        -&gt; no answers from memory
 - Cite every factual sentence with its source id, like [S1].                     -&gt; checkable claims
 - If the sources do not contain the answer, say you could not find it            -&gt; abstention instead of
   and offer a human agent.                                                          invention

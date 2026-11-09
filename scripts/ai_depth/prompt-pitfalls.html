@@ -47,9 +47,13 @@
 <section data-label="Step 2: comparing two prompts properly">
 <p>Version 2 of the prompt adds a definition to separate <code>bug</code> from <code>account</code>. On the 500-email set it scores 455 right versus version 1's 440: 91% versus 88%. Is that real?</p>
 <p>Look at the intervals first: 440/500 gives 84.9% to 90.6%; 455/500 gives 88.2% to 93.2%. They overlap, and a common mistake is to conclude "no significant difference". That conclusion ignores the most useful fact about this comparison: <strong>both versions were scored on the same 500 emails</strong>. Most emails are right under both prompts or wrong under both, and those tell you nothing about which prompt is better. Only the disagreements matter.</p>
-<pre class="ascii-diagram">                     v2 right   v2 wrong
-      v1 right          430         10    &lt;- v2 broke 10
-      v1 wrong           25         35    &lt;- v2 fixed 25</pre>
+<table>
+<thead><tr><th></th><th>v2 right</th><th>v2 wrong</th></tr></thead>
+<tbody>
+<tr><td>v1 right</td><td>430</td><td>10 (v2 broke these)</td></tr>
+<tr><td>v1 wrong</td><td>25 (v2 fixed these)</td><td>35</td></tr>
+</tbody>
+</table>
 <p>If the two prompts were equally good, each of the 35 disagreements would be equally likely to go either way, like a coin flip. <strong>McNemar's test</strong> asks how surprising a 25-to-10 split is under that assumption. The exact two-sided p-value is about 0.017: unlikely to be chance. The paired view also tells you something the accuracy alone hides: version 2 <em>broke</em> 10 emails that used to work. Read those 10 before shipping; a fix that breaks P1 outages to improve <code>how_to</code> questions is not a fix.</p>
 <p>Why pairing matters so much: if instead you compared two prompts on two separate random samples, detecting a true improvement from 88% to 91% with the usual 5% significance and 80% power would need about 1,640 examples <em>per prompt</em>. Pairing removes the noise from easy and impossible items, so 500 shared items can be enough.</p>
 <p><strong>The habit:</strong> every prompt change is evaluated on the same set as its predecessor, and the report shows accuracy, the fixed and broken counts, the paired p-value, and the list of broken items.</p>
@@ -102,7 +106,7 @@
 
 <section data-label="Step 7: the prompt you think you sent">
 <p>The worst week of the quarter: P1 tickets were being classified P3. The prompt had not changed. The rendered prompts had. A refactor of the email parser returned an empty body for HTML-only emails, so the model received:</p>
-<pre class="ascii-diagram">Customer plan: Team
+<pre>Customer plan: Team
 &lt;email&gt;
 &lt;/email&gt;</pre>
 <p>and, being helpful, triaged nothing as a low-urgency <code>other</code>. The template was fine; its inputs were not. Other versions of the same failure: a placeholder left unfilled (<code>{plan}</code> sent literally), a retrieved document truncated by a token budget so that its last, most relevant paragraph was cut, HTML entities (<code>&amp;amp;</code>) or encoding damage in the body, and a variable filled with the wrong field.</p>

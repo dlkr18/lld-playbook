@@ -71,7 +71,7 @@
 <div class="hero">
   <h1>What an agent is <span>// Tools &amp; agents</span></h1>
   <p>Agents vs agentic AI, what makes something an agent, workflows vs agents, and agent architectures.</p>
-  <div class="tags"><span class="tag">51 min read</span><span class="tag">3 diagrams</span></div>
+  <div class="tags"><span class="tag">50 min read</span><span class="tag">5 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -109,9 +109,7 @@
 <section id="step-2-workflows-where-code-owns-the-control-flow">
   <h2>05 &mdash; Step 2: workflows, where code owns the control flow</h2>
 <p>To actually resolve the duplicate charge, several steps must happen in order: fetch the order, fetch the charges, decide whether the second charge is a duplicate, refund it, tell the customer. A <strong>workflow</strong> writes that order down in code:</p>
-<pre class="ascii-diagram">message ──► get_order ──► get_charges ──► LLM: "duplicate?" ──yes──► refund ──► LLM: write reply
-                                               │
-                                               └──no──► escalate to a human</pre>
+<div class="diagram"><img alt="The duplicate-charge workflow: code fixes the order of steps and the branch; the model is used twice, once to classify and once to write the reply." src="../img/what-is-an-agent-workflow.png"/></div><p class="diagram-caption">The duplicate-charge workflow: code fixes the order of steps and the branch; the model is used twice, once to classify and once to write the reply.</p>
 <p>The model is used twice: once as a classifier and once as a writer. Code decides everything else: which function runs first, what the branch condition is, and when the process ends. If the model's answer to "duplicate?" is wrong, the damage is limited to the branches you drew.</p>
 <p>Workflows come in a few recurring shapes worth naming:</p>
 <table>
@@ -132,16 +130,7 @@
 <section id="step-3-the-defining-move-the-model-chooses-the-next-step">
   <h2>06 &mdash; Step 3: the defining move, the model chooses the next step</h2>
 <p>Now remove the diagram. Give the model the three tools and a goal, and let it decide what to do, one step at a time:</p>
-<pre class="ascii-diagram">            ┌───────────────────────────────────────────────┐
-goal ──────►│ model reads everything so far                 │
-            │   │                                           │
-            │   ├── chooses a tool + arguments ──► your code runs it
-            │   │                                     │     │
-            │   │◄──────── observation (result) ──────┘     │
-            │   │                                           │
-            │   └── chooses "answer and stop" ──────────────┼──► reply
-            └───────────────────────────────────────────────┘
-                 (your code stops it anyway after N steps)</pre>
+<div class="diagram"><img alt="The agent loop: the model reads everything so far and either chooses a tool call, which your code runs and returns as an observation, or chooses to answer and stop. Your code still stops it after N steps." src="../img/what-is-an-agent-loop.png"/></div><p class="diagram-caption">The agent loop: the model reads everything so far and either chooses a tool call, which your code runs and returns as an observation, or chooses to answer and stop. Your code still stops it after N steps.</p>
 <p>A run on our request looks like this:</p>
 <ol>
 <li>Model: call <code>get_order("ORD-482913")</code>. Observation: total $59.99, delivered.</li>

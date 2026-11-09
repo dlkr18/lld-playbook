@@ -52,12 +52,7 @@
 
 <section data-label="Step 3: the projector connects vision to language">
 <p>The encoder's vectors live in its own space (width 1,024 in our example); the language model expects vectors in its token-embedding space (say width 4,096). The <strong>projector</strong>, often a two-layer MLP, maps each of the 576 patch vectors into that space. The output is 576 visual tokens that are concatenated with the text tokens:</p>
-<pre class="ascii-diagram">[system text tokens] [576 visual tokens for the receipt] [user text: "Extract the receipt..."]
-        |                       ^                                   |
-        |          projector (MLP: 1024 -&gt; 4096)                    |
-        |                       ^                                   |
-        |          vision encoder (ViT, 576 patches)                |
-        +---------------- one sequence into the LLM ----------------+</pre>
+<div class="diagram"><img src="../img/multimodal-projector.png" alt="The vision encoder turns the receipt into 576 patch vectors, the projector maps them into the LLM's embedding space, and they join the text tokens in one sequence."></div><p class="diagram-caption">The vision encoder turns the receipt into 576 patch vectors, the projector maps them into the LLM's embedding space, and they join the text tokens in one sequence.</p>
 <p>From the language model's point of view, the image is just 576 more positions in its input. It attends to them the way it attends to words. This late-fusion design (pretrained encoder, pretrained LLM, small trainable bridge) is popular because it reuses two expensive models. It is typically trained in stages:</p>
 <ol>
 <li><strong>Alignment.</strong> Freeze the encoder and the LLM; train only the projector on image-caption pairs, so the LLM learns to "read" visual tokens.</li>

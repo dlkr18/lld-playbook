@@ -64,18 +64,7 @@
 
 <section data-label="Step 4: the write path">
 <p>In the single-node implementation, an <code>add</code> or <code>upsert</code> does roughly this:</p>
-<pre class="ascii-diagram">upsert(ids, embeddings, documents, metadatas)
-   |
-   |-- embed text if no vectors were given (embedding function)
-   |-- validate: dimensions match the collection, ids unique within the batch
-   v
-write log (SQLite)                       durable record of the operation
-   |
-   +--> metadata segment (SQLite)        ids, metadata, document text,
-   |                                     full-text index for where_document
-   +--> vector segment                   new vectors go to a small exact buffer,
-                                         merged into the HNSW graph in batches;
-                                         graph files saved to disk periodically</pre>
+<div class="diagram"><img src="../img/chroma-write-path.png" alt="An upsert is embedded if needed, validated and recorded in a durable SQLite write log, then applied to the metadata segment and to the vector segment, where new vectors wait in a small buffer before being merged into the HNSW graph."></div><p class="diagram-caption">An upsert is embedded if needed, validated and recorded in a durable SQLite write log, then applied to the metadata segment and to the vector segment, where new vectors wait in a small buffer before being merged into the HNSW graph.</p>
 <p>Three consequences are worth knowing.</p>
 <p><strong>Batch your writes.</strong> Each call pays fixed overhead (validation, a SQLite transaction, possibly an embedding call). Adding the 3,000 manual chunks one at a time is far slower than a few calls of a few hundred each. There is a maximum batch size per call, which the client can report; chunk large ingestions to stay under it.</p>
 <p><strong>Updates and deletes are not free in the graph.</strong> HNSW is a graph of links between vectors. Removing a node cleanly would mean repairing its neighbours' links, so deleted records are marked as deleted (tombstoned) and skipped during search. A collection with heavy churn (re-ingesting the forum every night) accumulates tombstones that still occupy memory and slow the walk, until the index is rebuilt. If most of a collection changes regularly, building a fresh collection and switching to it is often cleaner than upserting in place.</p>

@@ -76,16 +76,7 @@
 
 <section data-label="Step 4: the sequential process">
 <p>With <code>process=Process.sequential</code>, the crew runs tasks in the order listed. A task with a <code>context</code> list receives exactly those tasks' outputs; without one, earlier output is passed along automatically (exactly which outputs varies by version, so be explicit). For the returns report:</p>
-<pre class="ascii-diagram">kickoff(inputs={"week": "2026-W45"})
-  |
-  v
-[top_reasons]  agent: analyst     tools: query_returns_db    -&gt; table of top 5 products
-  |  context
-  v
-[review_themes] agent: researcher tools: search_reviews       -&gt; themes per product, with quotes
-  |  context (both earlier outputs)
-  v
-[write_report] agent: writer      tools: none                 -&gt; one-page markdown report</pre>
+<div class="diagram"><img src="../img/crewai-sequential-process.png" alt="kickoff runs the three tasks in the order listed; each task is an agent loop, and context hands top_reasons&#x27; output to both later tasks and review_themes&#x27; output to the writer."></div><p class="diagram-caption">kickoff runs the three tasks in the order listed; each task is an agent loop, and context hands top_reasons&#x27; output to both later tasks and review_themes&#x27; output to the writer.</p>
 <p>Put numbers on it with the formula from Step 2. Assume a fixed prompt of 600 tokens for agents with tools (persona, tool schemas, format rules) and 300 for the writer, a 150-token task description, 250 tokens added per loop iteration, and 500-token task outputs passed on as context. The writer has no tools, so its two calls are a first draft and one rewrite after the report guardrail (Step 10) rejects it; a draft that passes first time is one call:</p>
 <table>
 <thead><tr><th>Task</th><th>Iterations \(k\)</th><th>Context \(C\)</th><th>Input tokens</th></tr></thead>
