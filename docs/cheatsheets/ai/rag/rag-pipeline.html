@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The RAG pipeline -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Knowledge &amp; RAG" data-href="index.html">
+<meta name="ai-topic" content="rag/rag-pipeline">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -38,14 +40,15 @@
   <a href="#grounded-generation"><span class="num">20</span> Grounded generation</a>
   <a href="#production-ops"><span class="num">21</span> Production &amp; Ops</a>
   <a href="#related-topics"><span class="num">22</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">23</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">24</span> Check yourself</a>
+  <a href="#where-people-get-lost"><span class="num">23</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">24</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">25</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>The RAG pipeline <span>// Knowledge &amp; RAG</span></h1>
   <p>Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">25 min read</span><span class="tag">4 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -626,8 +629,8 @@ ONLINE   query → rewrite → retrieve (vector + keyword) → fuse → rerank
 </ul>
 </div>
 </section>
-<section id="common-pitfalls">
-  <h2>23 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>23 &mdash; Where people get lost</h2>
 <div class="card"><ul>
 <li><strong>Chunk too big/small</strong> without testing on golden set — fix before tuning the reranker</li>
 <li><strong>Dense-only retrieval</strong> — fails on SKUs, error codes, legal citations</li>
@@ -638,8 +641,12 @@ ONLINE   query → rewrite → retrieve (vector + keyword) → fuse → rerank
 <li><strong>Citation theater</strong> — LLM cites [1] but claim isn't in passage; need NLI verification</li>
 </ul></div>
 </section>
+<section id="how-this-connects">
+  <h2>24 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="embeddings.html">Embeddings</a> &mdash; Turning meaning into numbers: dense vectors, cosine similarity, sentence embeddings and contrastive training.</li><li><a href="vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li></ul><h3>Where this shows up later</h3><ul><li><a href="chunking.html">Chunking</a> &mdash; Fixed, recursive, semantic, document-aware and parent-child chunking, and how to tune it.</li><li><a href="hybrid-search.html">Hybrid search &amp; query understanding</a> &mdash; BM25 plus vectors fused with RRF, query rewriting, decomposition and HyDE.</li><li><a href="reranking.html">Reranking</a> &mdash; Cross-encoder rerankers: retrieve wide, rescore, keep the best few.</li><li><a href="rag-in-production.html">Making RAG good &amp; measuring it</a> &mdash; Advanced RAG, a production RAG chatbot design, retrieval and answer metrics, freshness, ACLs, latency, injection.</li><li><a href="graphrag.html">Agentic RAG &amp; GraphRAG</a> &mdash; Retrieval as a tool the agent drives, and knowledge graphs for multi-hop questions.</li><li><a href="../agents/mcp.html">MCP</a> &mdash; A standard plug for tools and data: servers, clients, resources and the ecosystem.</li><li><a href="../agents/what-is-an-agent.html">What an agent is</a> &mdash; Agents vs agentic AI, what makes something an agent, workflows vs agents, and agent architectures.</li><li><a href="../adaptation/fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a> &mdash; When to fine-tune, the LoRA math, a working QLoRA recipe, data, hyperparameters, evaluation and serving.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>24 &mdash; Check yourself</h2>
+  <h2>25 &mdash; Check yourself</h2>
 <details>
 <summary>Walk me through the full RAG pipeline end-to-end.</summary>
 <div class="answer">Offline: ingest docs from sources, parse/OCR, chunk (~512 tokens with overlap), embed with a bi-encoder, dual-write to vector index (HNSW) and sparse index (BM25). Online: embed the query, hybrid retrieve top-50 (parallel dense + sparse, merge via RRF), rerank with cross-encoder to top-5, assemble context with metadata, prompt LLM with numbered passages, generate answer with [1][2] citations. Total p99 target ~300–500ms with streaming.</div>

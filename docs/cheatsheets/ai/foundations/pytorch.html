@@ -5,11 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PyTorch in practice -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Math &amp; ML foundations" data-href="index.html">
+<meta name="ai-topic" content="foundations/pytorch">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
 <script src="../ai-labs.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -28,14 +30,15 @@
   <a href="#activation-gradient-checkpointing"><span class="num">09</span> Activation (gradient) checkpointing</a>
   <a href="#torch-compile-and-profiling"><span class="num">10</span> torch.compile and profiling</a>
   <a href="#debugging-a-training-run"><span class="num">11</span> Debugging a training run</a>
-  <a href="#check-yourself"><span class="num">12</span> Check yourself</a>
-  <a href="#build-it"><span class="num">13</span> Build it</a>
+  <a href="#how-this-connects"><span class="num">12</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">13</span> Check yourself</a>
+  <a href="#build-it"><span class="num">14</span> Build it</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>PyTorch in practice <span>// Math &amp; ML foundations</span></h1>
   <p>Tensors, autograd, a trustworthy training loop, mixed precision, GPU memory and debugging a run.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">5 min read</span><span class="tag">1 diagram</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -170,15 +173,19 @@ inference: bf16 weights 2 bytes/param (+ KV cache for LLMs)</pre>
 <li>Then scale up data and model.</li>
 </ol>
 </section>
+<section id="how-this-connects">
+  <h2>12 &mdash; How this connects</h2>
+<h3>Where this shows up later</h3><ul><li><a href="../fundamentals/transformers.html">Transformers &amp; attention</a> &mdash; Embeddings, attention, multi-head and GQA, RoPE, the block, a mini-GPT, FLOPs and FlashAttention.</li><li><a href="../inference/gpus-scale.html">GPUs &amp; distributed training</a> &mdash; GPU architecture, the roofline, data/tensor/pipeline parallelism, ZeRO and FSDP, fault tolerance.</li><li><a href="../projects/portfolio-projects.html">Portfolio projects</a> &mdash; Five projects from micrograd to a shipped service, and a weekend build that makes interview answers real.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>12 &mdash; Check yourself</h2>
+  <h2>13 &mdash; Check yourself</h2>
 <details><summary>Batch 8, accumulation 4, 2 GPUs: effective batch?</summary><div class="answer">64.</div></details>
 <details><summary>Why divide the loss by the accumulation steps?</summary><div class="answer">Gradients sum across backward calls; dividing makes the accumulated gradient equal the average over the effective batch, so LR means the same thing.</div></details>
 <details><summary>Memory to fully fine-tune a 7B model with AdamW?</summary><div class="answer">~16 B/param → ~112 GB plus activations: needs multiple 80 GB GPUs or sharding.</div></details>
 <details><summary>Your model can't overfit a single batch. What now?</summary><div class="answer">Bug hunt: labels misaligned, loss on wrong tensor, LR zero or huge, model frozen (requires_grad False), masking everything out.</div></details>
 </section>
 <section id="build-it">
-  <h2>13 &mdash; Build it</h2>
+  <h2>14 &mdash; Build it</h2>
 <div class="callout success">Turn the loop above into a reusable script: AMP, accumulation, clipping, cosine warmup, checkpoint + exact resume, and Weights &amp; Biases logging. You'll reuse it in <a href="../fundamentals/transformers.html">Transformers &amp; attention</a>, 6 and 9.</div>
 </section>
 

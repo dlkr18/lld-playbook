@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Weaviate -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Tech &amp; tools" data-href="index.html">
+<meta name="ai-topic" content="tech/weaviate">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,26 +19,28 @@
   <h2>Weaviate</h2>
   <a href="index.html">&larr; Tech &amp; tools</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-interface-surface"><span class="num">04</span> API / Interface Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#deep-dive-hybrid-search"><span class="num">07</span> Deep Dive: Hybrid Search</a>
-  <a href="#deep-dive-graphql-api"><span class="num">08</span> Deep Dive: GraphQL API</a>
-  <a href="#multi-tenancy"><span class="num">09</span> Multi-Tenancy</a>
-  <a href="#modules"><span class="num">10</span> Modules</a>
-  <a href="#weaviate-vs-pinecone-vs-pgvector-vs-chroma"><span class="num">11</span> Weaviate vs Pinecone vs pgvector vs Chroma</a>
-  <a href="#production-ops"><span class="num">12</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">13</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">14</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">15</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-interface-surface"><span class="num">05</span> API / Interface Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#deep-dive-hybrid-search"><span class="num">08</span> Deep Dive: Hybrid Search</a>
+  <a href="#deep-dive-graphql-api"><span class="num">09</span> Deep Dive: GraphQL API</a>
+  <a href="#multi-tenancy"><span class="num">10</span> Multi-Tenancy</a>
+  <a href="#modules"><span class="num">11</span> Modules</a>
+  <a href="#weaviate-vs-pinecone-vs-pgvector-vs-chroma"><span class="num">12</span> Weaviate vs Pinecone vs pgvector vs Chroma</a>
+  <a href="#production-ops"><span class="num">13</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">14</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">15</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">16</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">17</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Weaviate <span>// Tech &amp; tools</span></h1>
   <p>Open-source vector database with modules, hybrid search and multi-tenancy.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">8 min read</span><span class="tag">4 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -47,9 +51,13 @@
 </div><p class="diagram-caption">Weaviate: GraphQL/REST API → hybrid query (alpha blends BM25 + vector) → HNSW + inverted index → filtered objects with properties and <code>_additional</code> scores. Self-host cluster or managed cloud.</p>
 <div class="diagram"><img alt="A Weaviate schema: classes with properties, a vectorizer module, and cross-references between classes." src="../tech/img/weaviate-schema-zoom.png"/></div><p class="diagram-caption">A Weaviate schema: classes with properties, a vectorizer module, and cross-references between classes.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Reranking</strong></td><td>Cross-encoder reorders retrieved candidates; biggest RAG quality lever.</td></tr><tr><td><strong>Hybrid search</strong></td><td>Fuse vector similarity with keyword/BM25 search.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card">
 <p><strong>Weaviate</strong> is an open-source vector database written in Go. Its killer feature is <strong>hybrid retrieval in one API call</strong> — BM25 keyword scores fused with dense vector similarity via an <code>alpha</code> parameter. It also supports GraphQL for flexible queries, pluggable vectorizer modules, and first-class multi-tenancy.</p>
 <h3>Functional requirements</h3>
@@ -72,7 +80,7 @@
 </div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card"><table>
 <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
 <tr><td><strong>Class</strong></td><td>Schema collection (like a table) with properties + vectorizer.</td><td>Changing vectorizer requires re-index.</td></tr>
@@ -86,7 +94,7 @@
 </table></div>
 </section>
 <section id="api-interface-surface">
-  <h2>04 &mdash; API / Interface Surface</h2>
+  <h2>05 &mdash; API / Interface Surface</h2>
 <div class="card">
 <h3>Schema creation (REST)</h3>
 <pre>POST /v1/schema
@@ -135,7 +143,7 @@
 </div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card"><table>
 <tr><th>Scenario</th><th>Use Weaviate</th><th>Alternative</th></tr>
 <tr><td>Hybrid BM25+vector native</td><td>Yes — one API call</td><td>Dual ES + <a href="pgvector.html">pgvector</a> + RRF</td></tr>
@@ -147,7 +155,7 @@
 </table></div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card highlight">
 <div class="flow">
 <div class="step" data-num="1"><span class="label">Ingest</span><div class="detail">Batch import objects → module vectorizes text (or BYO vector) → HNSW + BM25 index built.</div></div>
@@ -164,7 +172,7 @@
 </div>
 </section>
 <section id="deep-dive-hybrid-search">
-  <h2>07 &mdash; Deep Dive: Hybrid Search</h2>
+  <h2>08 &mdash; Deep Dive: Hybrid Search</h2>
 <div class="card">
 <p><strong>Hybrid search</strong> is Weaviate’s standout feature. One query runs BM25 on text properties and vector similarity in parallel, then fuses scores with <code>alpha</code>:</p>
 <ul>
@@ -193,7 +201,7 @@
 <p class="diagram-caption">Hybrid alpha: 0 = BM25 only, 1 = vector only, 0.5 = default fusion. Grid-search alpha on your golden set — do not ship alpha=0.5 blindly.</p>
 </section>
 <section id="deep-dive-graphql-api">
-  <h2>08 &mdash; Deep Dive: GraphQL API</h2>
+  <h2>09 &mdash; Deep Dive: GraphQL API</h2>
 <div class="card">
 <p>Weaviate exposes a GraphQL API for flexible retrieval — pick exactly which properties to return, nest filters, and request <code>_additional</code> metadata in one round trip.</p>
 <h3>Query modes</h3>
@@ -221,7 +229,7 @@
 <p class="diagram-caption">GraphQL <code>Get</code> query: hybrid block + where filter on tenantId + <code>_additional { score distance }</code> for logging and reranker input.</p>
 </section>
 <section id="multi-tenancy">
-  <h2>09 &mdash; Multi-Tenancy</h2>
+  <h2>10 &mdash; Multi-Tenancy</h2>
 <div class="card">
 <p>Enable <code>multiTenancyConfig</code> on a class to isolate each tenant’s objects in separate shards. Queries must specify <code>tenant: "name"</code> — strong isolation for SaaS RAG.</p>
 <table>
@@ -239,7 +247,7 @@ Get { Document(tenant: "acme", hybrid: { ... }) { ... } }</pre>
 </div>
 </section>
 <section id="modules">
-  <h2>10 &mdash; Modules</h2>
+  <h2>11 &mdash; Modules</h2>
 <div class="card">
 <p>Weaviate modules extend functionality via config — no code forks required.</p>
 <table>
@@ -253,7 +261,7 @@ Get { Document(tenant: "acme", hybrid: { ... }) { ... } }</pre>
 </div>
 </section>
 <section id="weaviate-vs-pinecone-vs-pgvector-vs-chroma">
-  <h2>11 &mdash; Weaviate vs Pinecone vs pgvector vs Chroma</h2>
+  <h2>12 &mdash; Weaviate vs Pinecone vs pgvector vs Chroma</h2>
 <div class="card">
 <table>
 <tr><th></th><th>Weaviate</th><th><a href="pinecone.html">Pinecone</a></th><th><a href="pgvector.html">pgvector</a></th><th><a href="chroma.html">Chroma</a></th></tr>
@@ -267,7 +275,7 @@ Get { Document(tenant: "acme", hybrid: { ... }) { ... } }</pre>
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>12 &mdash; Production &amp; Ops</h2>
+  <h2>13 &mdash; Production &amp; Ops</h2>
 <div class="card"><table>
 <tr><th>Concern</th><th>Practice</th></tr>
 <tr><td><strong>HA</strong></td><td>3+ node cluster; replication factor ≥ 2</td></tr>
@@ -279,7 +287,7 @@ Get { Document(tenant: "acme", hybrid: { ... }) { ... } }</pre>
 </table></div>
 </section>
 <section id="related-topics">
-  <h2>13 &mdash; Related topics</h2>
+  <h2>14 &mdash; Related topics</h2>
 <div class="card"><ul>
 <li><a href="../rag/vector-search.html">Vector search &amp; databases</a> — ANN, hybrid, metadata concepts</li>
 <li><a href="pinecone.html">Pinecone</a> · <a href="pgvector.html">pgvector</a> · <a href="chroma.html">Chroma</a> — sibling engines</li>
@@ -289,8 +297,8 @@ Get { Document(tenant: "acme", hybrid: { ... }) { ... } }</pre>
 <li><a href="../rag/embedding-models.html">Choosing an embedding model</a> — module / BYO vector choice</li>
 </ul></div>
 </section>
-<section id="common-pitfalls">
-  <h2>14 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>15 &mdash; Where people get lost</h2>
 <div class="card"><ul>
 <li><strong>Self-host without K8s expertise:</strong> replication and upgrades bite — use Weaviate Cloud or <a href="pinecone.html">Pinecone</a>.</li>
 <li><strong>Wrong alpha for query type:</strong> SKU queries need low alpha; semantic-only needs high alpha.</li>
@@ -300,8 +308,12 @@ Get { Document(tenant: "acme", hybrid: { ... }) { ... } }</pre>
 <li><strong>GraphQL over-fetch:</strong> returning huge text properties on every query — latency and cost.</li>
 </ul></div>
 </section>
+<section id="how-this-connects">
+  <h2>16 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../rag/embedding-models.html">Choosing an embedding model</a> &mdash; Model families, dimensions, benchmarks, cost, and when to fine-tune or switch.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="../rag/hybrid-search.html">Hybrid search &amp; query understanding</a> &mdash; BM25 plus vectors fused with RRF, query rewriting, decomposition and HyDE.</li><li><a href="../rag/reranking.html">Reranking</a> &mdash; Cross-encoder rerankers: retrieve wide, rescore, keep the best few.</li><li><a href="pgvector.html">pgvector</a> &mdash; Vector search inside Postgres: HNSW/IVFFlat, hybrid with full-text, operations.</li></ul><h3>Where this shows up later</h3><ul><li><a href="chroma.html">Chroma</a> &mdash; Lightweight embedded vector store for prototypes and local RAG.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>15 &mdash; Check yourself</h2>
+  <h2>17 &mdash; Check yourself</h2>
 <details>
 <summary>What is Weaviate’s killer feature vs Pinecone?</summary>
 <div class="answer">Native <strong>hybrid search</strong> in one GraphQL call — BM25 + vector with alpha tuning. Avoids dual-system (Elasticsearch + vector DB) fusion code. <a href="pinecone.html">Pinecone</a> wins on pure managed simplicity and hyperscale zero-ops.</div>

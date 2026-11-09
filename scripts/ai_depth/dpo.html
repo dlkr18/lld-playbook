@@ -1,0 +1,199 @@
+<!-- Deep lesson: DPO & preference optimization. Merged into adaptation/dpo by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Preference pair</td><td>One prompt \(x\) with two responses: the chosen \(y_w\) ("winner") and the rejected \(y_l\) ("loser").</td></tr>
+<tr><td>Policy \(\pi_\theta\)</td><td>The model being trained. \(\pi_\theta(y \mid x)\) is the probability it assigns to response \(y\) given prompt \(x\).</td></tr>
+<tr><td>Reference model \(\pi_{\text{ref}}\)</td><td>A frozen copy of the starting (SFT) model. Training is measured against it so the policy cannot drift arbitrarily far.</td></tr>
+<tr><td>Bradley–Terry model</td><td>A way to turn two scores into a probability that one wins: \(P(a \succ b) = \sigma(s_a - s_b)\).</td></tr>
+<tr><td>Sigmoid \(\sigma\)</td><td>\(\sigma(u) = 1/(1 + e^{-u})\): squashes any number into (0, 1). \(\sigma(0) = 0.5\).</td></tr>
+<tr><td>KL divergence</td><td>A measure of how far one probability distribution is from another. Zero when they are identical.</td></tr>
+<tr><td>\(\beta\)</td><td>The strength of the leash to the reference model. Small \(\beta\): the policy may move far. Large \(\beta\): it stays close.</td></tr>
+<tr><td>Implicit reward</td><td>DPO's stand-in for a reward model: \(\hat r(x, y) = \beta \log \frac{\pi_\theta(y \mid x)}{\pi_{\text{ref}}(y \mid x)}\).</td></tr>
+<tr><td>Reward hacking</td><td>The policy finding responses that score well on the reward without being better (longer, more flattering, more confident).</td></tr>
+<tr><td>On-policy / off-policy data</td><td>Preference pairs sampled from the model being trained, versus pairs collected from other models or earlier.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>After supervised fine-tuning, a model can follow instructions but has no sense of which of two acceptable answers people prefer: the clearer one, the safer one, the one that admits uncertainty. Preference data captures that taste as pairs, "for this prompt, response A is better than response B".</p>
+<p>Classic RLHF uses those pairs in two stages: train a <strong>reward model</strong> to score responses, then run reinforcement learning (PPO) to push the policy toward high reward while a KL penalty keeps it close to the SFT model. It works, and it produced the first generation of chat assistants, but it is heavy:</p>
+<ul>
+<li>Four models in memory at once: the policy, the frozen reference, the reward model, and PPO's value model.</li>
+<li>Sampling from the policy inside the training loop, which is slow.</li>
+<li>Many sensitive hyperparameters, and training runs that diverge.</li>
+</ul>
+<p>Direct Preference Optimization (DPO, 2023) asks: is the reward model necessary at all? Its answer is no. The same objective RLHF optimises can be rewritten as a simple classification loss on the preference pairs, trained like ordinary fine-tuning. The rest of this lesson derives that loss step by step, because the derivation is what interviewers probe, and it explains every knob.</p>
+</section>
+
+<section data-label="Step 1: turning preferences into a probability">
+<p>Suppose some reward function \(r(x, y)\) scores how good response \(y\) is for prompt \(x\). The <strong>Bradley–Terry</strong> model says the probability a person prefers \(y_w\) over \(y_l\) depends only on the difference in reward:</p>
+\[ P(y_w \succ y_l \mid x) = \sigma\big(r(x, y_w) - r(x, y_l)\big) \]
+<p>Worked: if the chosen response scores 2.31 and the rejected one 0.47, the difference is 1.84 and \(\sigma(1.84) \approx 0.863\): an 86% chance a rater prefers the first. Equal rewards give exactly 50%.</p>
+<p>Training a reward model means choosing \(r\) to make the observed preferences likely, by minimising the negative log-likelihood over all pairs:</p>
+\[ \mathcal{L}_{\text{RM}} = -\mathbb{E}_{(x, y_w, y_l)}\Big[\log \sigma\big(r(x, y_w) - r(x, y_l)\big)\Big] \]
+<p>For our pair, \(-\log 0.863 \approx 0.147\). Keep this shape in mind: DPO's final loss looks exactly like it.</p>
+</section>
+
+<section data-label="Step 2: what RLHF actually optimises">
+<p>Given a reward, RLHF's stage two maximises expected reward minus a penalty for moving away from the reference model:</p>
+\[ \max_{\pi}\ \ \mathbb{E}_{x,\ y \sim \pi(\cdot \mid x)}\big[r(x, y)\big] \;-\; \beta\, \mathrm{KL}\big(\pi(\cdot \mid x)\ \|\ \pi_{\text{ref}}(\cdot \mid x)\big) \]
+<p>The KL term matters. Without it, the policy would find whatever strange outputs the imperfect reward model scores highest (reward hacking) and lose the fluency it learned in pretraining. \(\beta\) sets how much reward is worth giving up for staying close.</p>
+</section>
+
+<section data-label="Step 3: the best possible policy has a closed form">
+<p>This objective has an exact solution. For each prompt, the optimal policy reweights the reference model's distribution by the exponentiated reward:</p>
+\[ \pi^*(y \mid x) = \frac{1}{Z(x)}\, \pi_{\text{ref}}(y \mid x)\, \exp\!\Big(\tfrac{1}{\beta}\, r(x, y)\Big) \]
+<p>\(Z(x) = \sum_y \pi_{\text{ref}}(y \mid x)\exp\big(r(x,y)/\beta\big)\) is just the normaliser that makes the probabilities sum to 1. Read it intuitively: start from what the SFT model would say, multiply each possible response by how good it is (more strongly when \(\beta\) is small), renormalise.</p>
+<p>The catch is that \(Z(x)\) sums over every possible response, which is astronomically many, so nobody can compute \(\pi^*\) directly. That is why RLHF uses PPO to approximate it. DPO's trick is to never need \(Z\).</p>
+</section>
+
+<section data-label="Step 4: solve for the reward instead">
+<p>Take the logarithm of Step 3's equation and rearrange it to express the reward in terms of the policy:</p>
+\[ r(x, y) = \beta \log \frac{\pi^*(y \mid x)}{\pi_{\text{ref}}(y \mid x)} + \beta \log Z(x) \]
+<p>This says: whatever the reward is, it equals \(\beta\) times how much more likely the optimal policy makes a response than the reference does, plus a term that depends only on the prompt.</p>
+</section>
+
+<section data-label="Step 5: plug into Bradley–Terry and watch Z cancel">
+<p>Bradley–Terry only ever uses the <em>difference</em> of two rewards for the same prompt. Substitute Step 4 for both responses:</p>
+\[ r(x, y_w) - r(x, y_l) = \beta \log \frac{\pi^*(y_w \mid x)}{\pi_{\text{ref}}(y_w \mid x)} - \beta \log \frac{\pi^*(y_l \mid x)}{\pi_{\text{ref}}(y_l \mid x)} \]
+<p>The \(\beta \log Z(x)\) terms are identical for both responses and subtract to zero. The intractable normaliser disappears. Now replace the unknown optimal policy with the model we are training, \(\pi_\theta\), and fit it to the preference data with Step 1's log-likelihood. That is the DPO loss:</p>
+\[ \mathcal{L}_{\text{DPO}}(\theta) = -\mathbb{E}_{(x, y_w, y_l)}\Big[\log \sigma\Big(\beta \log \frac{\pi_\theta(y_w \mid x)}{\pi_{\text{ref}}(y_w \mid x)} - \beta \log \frac{\pi_\theta(y_l \mid x)}{\pi_{\text{ref}}(y_l \mid x)}\Big)\Big] \]
+<p>No reward model, no sampling, no value network. Each training example needs four numbers: the log-probability of the chosen and of the rejected response under the policy and under the frozen reference. The quantity \(\hat r(x, y) = \beta \log \frac{\pi_\theta(y \mid x)}{\pi_{\text{ref}}(y \mid x)}\) is the <strong>implicit reward</strong>: the policy is its own reward model.</p>
+</section>
+
+<section data-label="A worked example">
+<p>Take one preference pair and \(\beta = 0.1\). A response's log-probability is the sum of its tokens' log-probabilities, so it is a large negative number:</p>
+<table>
+<thead><tr><th></th><th>\(\log \pi_\theta\)</th><th>\(\log \pi_{\text{ref}}\)</th><th>log-ratio</th><th>implicit reward \(\hat r\)</th></tr></thead>
+<tbody>
+<tr><td>Chosen \(y_w\)</td><td>−12.0</td><td>−12.5</td><td>+0.5</td><td>+0.05</td></tr>
+<tr><td>Rejected \(y_l\)</td><td>−11.0</td><td>−10.8</td><td>−0.2</td><td>−0.02</td></tr>
+</tbody>
+</table>
+<p>The margin is \(0.05 - (-0.02) = 0.07\), so the loss is \(-\log \sigma(0.07) = \log(1 + e^{-0.07}) \approx 0.659\). At the very start of training the policy equals the reference, every log-ratio is 0, and the loss is exactly \(\log 2 \approx 0.693\) for every pair. That gives you a sanity check for the first step of any DPO run.</p>
+<p>Two details in this example trip people up:</p>
+<ul>
+<li>The rejected response has a <em>higher</em> raw log-probability (−11.0) than the chosen one (−12.0). That does not matter: DPO compares each response with the reference, not the two responses with each other. Shorter responses always have higher raw log-probabilities.</li>
+<li>\(\beta\) scales the margin. With the same log-ratios, \(\beta = 0.01\) gives a loss of 0.690 (almost no signal), and \(\beta = 0.5\) gives 0.533.</li>
+</ul>
+</section>
+
+<section data-label="Why it works: reading the gradient">
+<p>Differentiating the loss gives an update with a clear meaning:</p>
+\[ \nabla_\theta \mathcal{L}_{\text{DPO}} = -\beta\, \mathbb{E}\Big[\underbrace{\sigma\big(\hat r(x, y_l) - \hat r(x, y_w)\big)}_{\text{how wrong the model is}} \Big(\underbrace{\nabla_\theta \log \pi_\theta(y_w \mid x)}_{\text{raise the chosen}} - \underbrace{\nabla_\theta \log \pi_\theta(y_l \mid x)}_{\text{lower the rejected}}\Big)\Big] \]
+<ul>
+<li>Every step raises the chosen response's likelihood and lowers the rejected one's.</li>
+<li>The weight \(\sigma(\hat r_l - \hat r_w)\) is large when the model currently prefers the wrong response and near zero once it clearly prefers the right one. In the worked example it is \(\sigma(-0.07) \approx 0.48\): still a strong push. Pairs the model already gets right stop contributing, so training focuses on its mistakes.</li>
+<li>The reference model is inside \(\hat r\), so pushing a response far beyond the reference's probability earns less and less: the KL leash, enforced without ever computing a KL.</li>
+</ul>
+</section>
+
+<section data-label="What actually happens during training">
+<p>The quantities to log on every DPO run, and what healthy looks like:</p>
+<table>
+<thead><tr><th>Metric</th><th>Meaning</th><th>Healthy pattern</th></tr></thead>
+<tbody>
+<tr><td>Loss</td><td>Starts at \(\log 2 = 0.693\)</td><td>Falls steadily; a plunge toward 0 often means overfitting</td></tr>
+<tr><td>Reward accuracy</td><td>Fraction of pairs with \(\hat r_w &gt; \hat r_l\)</td><td>Rises from 0.5 toward 0.7 to 0.9 on held-out pairs</td></tr>
+<tr><td>Reward margin</td><td>Mean \(\hat r_w - \hat r_l\)</td><td>Grows, then plateaus</td></tr>
+<tr><td>Chosen and rejected log-probs</td><td>\(\log \pi_\theta\) of each</td><td>Rejected falls; chosen holds roughly steady</td></tr>
+<tr><td>KL to reference</td><td>How far the policy has moved</td><td>Small and stable; a runaway means \(\beta\) too low or learning rate too high</td></tr>
+</tbody>
+</table>
+<p>A well-known quirk: often <em>both</em> the chosen and rejected log-probabilities fall, with the rejected one falling faster. The margin grows, so the loss improves, but probability mass leaks to responses that appear in neither set, and output quality can degrade. Watching the chosen log-probability, and stopping early, are the defences. Several later variants add a term that explicitly keeps the chosen log-probability up.</p>
+</section>
+
+<section data-label="Getting the data right">
+<p>DPO is only as good as its pairs. Where they come from:</p>
+<ul>
+<li><strong>Human raters</strong> compare two responses. Best quality, slowest, most expensive; disagreement between raters is real and should be measured.</li>
+<li><strong>AI feedback</strong>: a strong model judges pairs against a rubric or written principles (as in constitutional AI). Cheap and scalable; inherits the judge's biases, notably for longer answers.</li>
+<li><strong>On-policy sampling</strong>: generate several responses from the current model, have a judge pick best and worst, train, repeat ("iterative" or "online" DPO). Pairs drawn from the model's own outputs teach it more than pairs from some other model, because they correct the mistakes it actually makes.</li>
+</ul>
+<p>Typical sizes run from about 10,000 to a few hundred thousand pairs. The largest quality risk is <strong>length bias</strong>: raters and judges tend to prefer longer answers, so the model learns that longer wins. Check the length distribution of chosen versus rejected responses before training, and balance it if they differ.</p>
+</section>
+
+<section data-label="The variants you should be able to name">
+<table>
+<thead><tr><th>Method</th><th>Changes</th><th>Use when</th></tr></thead>
+<tbody>
+<tr><td><strong>DPO</strong></td><td>Baseline: logistic loss on the implicit-reward margin, frozen reference</td><td>You have paired preferences and an SFT model</td></tr>
+<tr><td><strong>IPO</strong></td><td>Squared loss pulling the margin to a fixed target instead of pushing it ever larger</td><td>Preferences are near-deterministic and DPO overfits</td></tr>
+<tr><td><strong>KTO</strong></td><td>Learns from single responses labelled good or bad, no pairs needed</td><td>Your data is thumbs up / thumbs down from production</td></tr>
+<tr><td><strong>ORPO</strong></td><td>Adds an odds-ratio preference term to the SFT loss; no reference model, one stage</td><td>You want SFT and preference tuning in a single cheaper run</td></tr>
+<tr><td><strong>SimPO</strong></td><td>Uses length-normalised average log-probability as the reward, no reference model, plus a target margin</td><td>Length bias is a problem and you want to save the reference model's memory</td></tr>
+<tr><td><strong>PPO-based RLHF</strong></td><td>Explicit reward model plus online RL</td><td>You need online exploration, or rewards that are not pairwise preferences</td></tr>
+<tr><td><strong>RL with verifiable rewards</strong></td><td>Reward from a checker (tests pass, answer matches) rather than preferences</td><td>Maths, code and reasoning, where correctness can be checked automatically</td></tr>
+</tbody>
+</table>
+</section>
+
+<section data-label="Cost compared with RLHF">
+<p>For a 7B-parameter model trained with mixed precision and AdamW (about 16 bytes per trained parameter for weights, gradients and optimiser state):</p>
+<ul>
+<li><strong>PPO-based RLHF</strong> keeps the trained policy (about 112 GB of training state), a trained value model of similar size, plus a frozen reference and a frozen reward model (about 14 GB each in bf16). It also generates text inside the loop.</li>
+<li><strong>DPO</strong> keeps one trained policy and one frozen reference. The reference's log-probabilities never change, so they can even be computed once before training and stored, leaving a single model in memory. No generation, so a step costs about the same as an SFT step on two sequences.</li>
+</ul>
+<p>Combined with LoRA, DPO on a 7B model fits on a single 24 to 80 GB GPU. That accessibility is the main reason it displaced PPO for most open-model alignment.</p>
+</section>
+
+<section data-label="A training recipe">
+<ol>
+<li><strong>Start from an SFT model</strong>, never a base model. DPO adjusts preferences between responses the model can already produce.</li>
+<li><strong>Build or collect pairs</strong>, hold out 5 to 10% for evaluation, and check the length balance.</li>
+<li><strong>Hyperparameters</strong>: \(\beta = 0.1\) (try 0.05 to 0.5); a learning rate about ten times smaller than SFT (around \(5 \times 10^{-7}\) to \(5 \times 10^{-6}\) for full fine-tuning, higher for LoRA); 1 to 3 epochs; cosine schedule with warmup.</li>
+<li><strong>Watch</strong> the five metrics above on held-out pairs. Stop when held-out reward accuracy plateaus.</li>
+<li><strong>Evaluate beyond the loss</strong>: win rate against the SFT model judged on fresh prompts, a safety and refusal set, and a capability regression suite (knowledge, maths, code) to catch the "alignment tax".</li>
+</ol>
+</section>
+
+<section data-label="In code: the loss in a dozen lines">
+<pre data-lang="python">import torch
+import torch.nn.functional as F
+
+def sequence_logprob(model, input_ids, labels):
+    """Sum of log-probs of the response tokens (labels == -100 on prompt tokens)."""
+    logits = model(input_ids).logits[:, :-1]
+    labels = labels[:, 1:]
+    logps = torch.log_softmax(logits, dim=-1)
+    mask = labels != -100
+    tok = torch.gather(logps, 2, labels.clamp(min=0).unsqueeze(-1)).squeeze(-1)
+    return (tok * mask).sum(-1)
+
+def dpo_loss(pi_w, pi_l, ref_w, ref_l, beta=0.1):
+    """All inputs: summed log-probs per sequence, shape (batch,)."""
+    reward_w = beta * (pi_w - ref_w)          # implicit rewards
+    reward_l = beta * (pi_l - ref_l)
+    margin = reward_w - reward_l
+    loss = -F.logsigmoid(margin).mean()
+    accuracy = (margin > 0).float().mean()
+    return loss, accuracy, margin.mean()
+
+# the worked example: loss 0.659
+loss, acc, m = dpo_loss(torch.tensor([-12.0]), torch.tensor([-11.0]),
+                        torch.tensor([-12.5]), torch.tensor([-10.8]))
+print(round(loss.item(), 3), acc.item(), round(m.item(), 3))
+</pre>
+<p>In practice you would use a library such as Hugging Face TRL's <code>DPOTrainer</code>, which implements this loss, the reference-model handling and the metrics above; writing it yourself once is what makes those metrics readable.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"DPO has no reward."</strong> It has one: the implicit reward \(\beta \log(\pi_\theta/\pi_{\text{ref}})\). It just never trains a separate model to compute it.</li>
+<li><strong>Comparing raw log-probabilities of chosen and rejected.</strong> DPO compares each with the reference. A shorter rejected answer will always have a higher raw log-probability.</li>
+<li><strong>Skipping SFT.</strong> Preference tuning on a base model gives poor results; it needs a model that already responds in the target format.</li>
+<li><strong>Treating falling loss as success.</strong> If the chosen log-probability is falling too, quality can drop while the loss improves.</li>
+<li><strong>Length bias.</strong> If chosen answers are longer on average, the model learns verbosity, not quality.</li>
+<li><strong>Forgetting the reference must be the SFT model.</strong> A different reference changes what the leash pulls toward.</li>
+<li><strong>Evaluating only on preference win rate.</strong> Alignment can cost capability; always run a regression suite.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>Why does the normaliser \(Z(x)\) not appear in the DPO loss?</summary><div class="answer">Bradley–Terry uses only the difference of two rewards for the same prompt. Writing each reward as \(\beta \log(\pi^*/\pi_{\text{ref}}) + \beta \log Z(x)\), the \(\beta \log Z(x)\) terms are identical and cancel.</div></details>
+<details><summary>What is the DPO loss on the very first training step, and why?</summary><div class="answer">\(\log 2 \approx 0.693\). The policy starts equal to the reference, so every log-ratio and margin is 0, and \(-\log \sigma(0) = \log 2\).</div></details>
+<details><summary>What happens if \(\beta\) is set very small?</summary><div class="answer">The leash to the reference is weak: the policy can move far to fit the preferences, risking overfitting, reward hacking and lost fluency. Margins also become tiny for the same log-ratios, so it needs more steps to learn.</div></details>
+<details><summary>Your production data is thumbs up / thumbs down on single answers. Which method fits, and why?</summary><div class="answer">KTO. It learns from unpaired responses labelled desirable or undesirable, so you do not have to construct chosen/rejected pairs for the same prompt.</div></details>
+<details><summary>Name three things you would check before trusting a DPO run that shows falling loss.</summary><div class="answer">That the chosen log-probability is not collapsing; held-out reward accuracy and win rate against the SFT model; and a capability regression suite plus a length comparison to rule out verbosity hacking.</div></details>
+</section>

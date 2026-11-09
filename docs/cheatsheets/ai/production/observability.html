@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Observability -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Production &amp; evals" data-href="index.html">
+<meta name="ai-topic" content="production/observability">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,32 +19,34 @@
   <h2>Observability</h2>
   <a href="index.html">&larr; Production &amp; evals</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-interface-surface"><span class="num">04</span> API / Interface Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#tracing-langsmith-patterns"><span class="num">07</span> Tracing &amp; LangSmith Patterns</a>
-  <a href="#cost-tracking"><span class="num">08</span> Cost Tracking</a>
-  <a href="#eval-harness-integration"><span class="num">09</span> Eval Harness Integration</a>
-  <a href="#online-feedback-loop"><span class="num">10</span> Online Feedback Loop</a>
-  <a href="#tools-comparison"><span class="num">11</span> Tools Comparison</a>
-  <a href="#full-instrumentation-example"><span class="num">12</span> Full Instrumentation Example</a>
-  <a href="#observability-seeing-inside-a-12-step-agent"><span class="num">13</span> Observability: seeing inside a 12-step agent</a>
-  <a href="#the-tracing-decorator-otel-genai-conventions-60-lines"><span class="num">14</span> The tracing decorator: OTel GenAI conventions, ~60 lines</a>
-  <a href="#what-a-trace-looks-like"><span class="num">15</span> What a trace looks like</a>
-  <a href="#metrics-definitions-and-alert-thresholds"><span class="num">16</span> Metrics: definitions and alert thresholds</a>
-  <a href="#sampling-and-privacy-trace-everything-keep-less"><span class="num">17</span> Sampling and privacy: trace everything, keep less</a>
-  <a href="#production-ops"><span class="num">18</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">19</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">20</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">21</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-interface-surface"><span class="num">05</span> API / Interface Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#tracing-langsmith-patterns"><span class="num">08</span> Tracing &amp; LangSmith Patterns</a>
+  <a href="#cost-tracking"><span class="num">09</span> Cost Tracking</a>
+  <a href="#eval-harness-integration"><span class="num">10</span> Eval Harness Integration</a>
+  <a href="#online-feedback-loop"><span class="num">11</span> Online Feedback Loop</a>
+  <a href="#tools-comparison"><span class="num">12</span> Tools Comparison</a>
+  <a href="#full-instrumentation-example"><span class="num">13</span> Full Instrumentation Example</a>
+  <a href="#observability-seeing-inside-a-12-step-agent"><span class="num">14</span> Observability: seeing inside a 12-step agent</a>
+  <a href="#the-tracing-decorator-otel-genai-conventions-60-lines"><span class="num">15</span> The tracing decorator: OTel GenAI conventions, ~60 lines</a>
+  <a href="#what-a-trace-looks-like"><span class="num">16</span> What a trace looks like</a>
+  <a href="#metrics-definitions-and-alert-thresholds"><span class="num">17</span> Metrics: definitions and alert thresholds</a>
+  <a href="#sampling-and-privacy-trace-everything-keep-less"><span class="num">18</span> Sampling and privacy: trace everything, keep less</a>
+  <a href="#production-ops"><span class="num">19</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">20</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">21</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">22</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">23</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Observability <span>// Production &amp; evals</span></h1>
   <p>Seeing inside a twelve-step agent: traces, spans, metrics, tools, and what to alert on.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">15 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -50,9 +54,13 @@
 <p>Trace, evaluate, and debug LLM applications: LangSmith tracing patterns, Langfuse, OpenTelemetry GenAI spans, token and cost tracking, golden-set eval CI, online feedback loops, and production dashboards for RAG and agents.</p>
 <div class="diagram"><img alt="LLM Observability architecture" src="../tech/img/llm-observability-main.png"/></div><p class="diagram-caption">Observability stack: SDK wraps LLM / retriever / tool calls → trace spans (latency, tokens, I/O) → dashboard + alerts → <a href="evals.html">Evaluating LLM features</a> regression gate on every deploy.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Trajectory eval</strong></td><td>Checking the agent steps/tool-use were sane, not just the answer.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card"><p>LLM apps fail <strong>silently</strong>: wrong retrieval, prompt drift, tool loops, partial answers that look fine. Traditional APM misses prompt inputs, chunk IDs, and token costs. <strong>LLM observability</strong> = traces (what happened step-by-step), evals (is quality still good), metrics (cost/latency per tenant). Required before any prod <a href="../rag/rag-pipeline.html">The RAG pipeline</a> or <a href="../tech/langgraph.html">LangGraph</a> agent launch.</p>
 <h3>Functional requirements</h3>
 <ul>
@@ -71,7 +79,7 @@
 </ul></div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card"><table>
 <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
 <tr><td><strong>Trace</strong></td><td>Tree of spans for one end-user request</td><td>Must include retrieval + LLM + tools</td></tr>
@@ -84,7 +92,7 @@
 </table></div>
 </section>
 <section id="api-interface-surface">
-  <h2>04 &mdash; API / Interface Surface</h2>
+  <h2>05 &mdash; API / Interface Surface</h2>
 <div class="card"><pre># LangSmith — auto-trace LangChain / LangGraph
 import os
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
@@ -114,7 +122,7 @@ with tracer.start_as_current_span("rerank") as span:
     results = reranker.rank(query, docs)</pre></div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card"><table>
 <tr><th>Case</th><th>Obs stack?</th><th>Minimum</th></tr>
 <tr><td>Prod RAG or agent</td><td><strong>Required</strong></td><td>Langfuse or LangSmith + golden CI</td></tr>
@@ -124,7 +132,7 @@ with tracer.start_as_current_span("rerank") as span:
 </table></div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card"><pre>  App (FastAPI / LC / LangGraph)
            |
            v
@@ -150,7 +158,7 @@ with tracer.start_as_current_span("rerank") as span:
 +---------+</pre><div class="flow"><div class="step" data-num="1"><span class="label">Instrument</span><div class="detail">Wrap retrieve, rerank, LLM, tools in spans</div></div><div class="step" data-num="2"><span class="label">Export</span><div class="detail">Batch traces to LangSmith/Langfuse/OTel collector</div></div><div class="step" data-num="3"><span class="label">Dashboard</span><div class="detail">Cost, latency p99, error rate per tenant</div></div><div class="step" data-num="4"><span class="label">Alert</span><div class="detail">Eval drop &gt;5%, cost 2× daily, p99 spike</div></div><div class="step" data-num="5"><span class="label">Feedback</span><div class="detail">Thumbs down → human review → golden set</div></div></div></div>
 </section>
 <section id="tracing-langsmith-patterns">
-  <h2>07 &mdash; Tracing &amp; LangSmith Patterns</h2>
+  <h2>08 &mdash; Tracing &amp; LangSmith Patterns</h2>
 <div class="diagram"><img alt="Trace waterfall: root span RAG request 850 ms → embed 15 ms → vector DB 25 ms → rerank 65 ms → LLM generate 720 ms (prompt=2400, completion=180 tokens)." src="../tech/img/llm-observability-tracing-zoom.png"/></div><p class="diagram-caption">Trace waterfall: root span RAG request 850 ms → embed 15 ms → vector DB 25 ms → rerank 65 ms → LLM generate 720 ms (prompt=2400, completion=180 tokens).</p><div class="card"><h3>LangSmith patterns for RAG</h3>
 <ul>
 <li><strong>Project per env:</strong> <code>rag-dev</code>, <code>rag-staging</code>, <code>rag-prod</code></li>
@@ -174,7 +182,7 @@ evaluate(
 <blockquote>LangSmith is deepest integrated with LangChain/LangGraph. Langfuse offers OSS self-host for cost-sensitive scale. Both support OpenTelemetry export.</blockquote></div>
 </section>
 <section id="cost-tracking">
-  <h2>08 &mdash; Cost Tracking</h2>
+  <h2>09 &mdash; Cost Tracking</h2>
 <div class="diagram"><img alt="Dashboard panels: tokens in/out per model, daily cost USD, p99 latency trend, eval score over deploys (drop on bad deploy, recovery after rollback)." src="../tech/img/llm-observability-eval-zoom.png"/></div><p class="diagram-caption">Dashboard panels: tokens in/out per model, daily cost USD, p99 latency trend, eval score over deploys (drop on bad deploy, recovery after rollback).</p><div class="card"><pre># Per-span cost attribution
 prompt_tokens = usage.prompt_tokens
 completion_tokens = usage.completion_tokens
@@ -192,7 +200,7 @@ span.set_attribute("tenant_id", tenant)</pre>
 </table></div>
 </section>
 <section id="eval-harness-integration">
-  <h2>09 &mdash; Eval Harness Integration</h2>
+  <h2>10 &mdash; Eval Harness Integration</h2>
 <div class="card"><p>Connect live traces to offline eval. See <a href="evals.html">Evaluating LLM features</a> for full CI design.</p>
 <ul>
 <li><strong>Golden 50–100 questions</strong> with reference answers and gold doc IDs</li>
@@ -207,7 +215,7 @@ assert score["recall_at_5"] &gt;= BASELINE * 0.95
 assert score["correctness"] &gt;= BASELINE * 0.95</pre></div>
 </section>
 <section id="online-feedback-loop">
-  <h2>10 &mdash; Online Feedback Loop</h2>
+  <h2>11 &mdash; Online Feedback Loop</h2>
 <div class="card"><pre>User thumbs down + optional correction
         |
         v
@@ -224,7 +232,7 @@ update       (advanced)</pre>
 </ul></div>
 </section>
 <section id="tools-comparison">
-  <h2>11 &mdash; Tools Comparison</h2>
+  <h2>12 &mdash; Tools Comparison</h2>
 <div class="card"><table>
 <tr><th>Tool</th><th>Strength</th><th>Best for</th></tr>
 <tr><td><strong>LangSmith</strong></td><td>LangChain/LangGraph native, datasets, evaluators</td><td>LC/LG shops; hosted convenience</td></tr>
@@ -235,7 +243,7 @@ update       (advanced)</pre>
 </table></div>
 </section>
 <section id="full-instrumentation-example">
-  <h2>12 &mdash; Full Instrumentation Example</h2>
+  <h2>13 &mdash; Full Instrumentation Example</h2>
 <div class="card highlight"><p>Instrument a RAG pipeline with LangSmith patterns: nested spans, metadata tags, and eval-ready outputs.</p></div><div class="card"><pre>import os
 import uuid
 from langsmith import traceable
@@ -270,7 +278,7 @@ def rag_answer(query: str, tenant_id: str) -&gt; dict:
 </section>
 <p class="part-divider">The full explanation</p>
 <section id="observability-seeing-inside-a-12-step-agent">
-  <h2>13 &mdash; Observability: seeing inside a 12-step agent</h2>
+  <h2>14 &mdash; Observability: seeing inside a 12-step agent</h2>
 <p>You cannot debug a non-deterministic, multi-step, tool-calling system from print statements. Trace everything — with OpenTelemetry-shaped spans so the data outlives your current vendor — then aggregate the spans into metrics with alert thresholds you've actually chosen.</p>
 <h3>What to capture on every step</h3>
 <ul>
@@ -283,7 +291,7 @@ def rag_answer(query: str, tenant_id: str) -&gt; dict:
 </ul>
 </section>
 <section id="the-tracing-decorator-otel-genai-conventions-60-lines">
-  <h2>14 &mdash; The tracing decorator: OTel GenAI conventions, ~60 lines</h2>
+  <h2>15 &mdash; The tracing decorator: OTel GenAI conventions, ~60 lines</h2>
 <p>Two decorators — one for LLM calls, one for tools — plus a root span per request. Attribute names follow the OpenTelemetry GenAI semantic conventions (<code>gen_ai.*</code>), so LangSmith, Langfuse, Phoenix, or a bare OTLP collector all ingest it. This is the <code>trace</code> hook <a href="../tech/frameworks.html">Choosing an agent framework</a> left as <code>null_trace</code>, grown up.</p>
 <div class="code-block"><div class="code-file"><span>tracing.py — spans for LLM + tool calls, vendor-neutral</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> functools, json, time
 <span class="kw">from</span> opentelemetry <span class="kw">import</span> trace <span class="kw">as</span> ot
@@ -344,7 +352,7 @@ PRICES = {<span class="st">"</span><span class="st">claude-sonnet-4-5</span><spa
         <span class="kw">return</span> fn()   <span class="cm"># the harness loop runs here; nested spans attach themselves</span></pre></div>
 </section>
 <section id="what-a-trace-looks-like">
-  <h2>15 &mdash; What a trace looks like</h2>
+  <h2>16 &mdash; What a trace looks like</h2>
 <p>One production request, rendered as its span tree. This is the artifact you stare at when someone forwards a bad answer — the shape alone often gives the diagnosis before you read a single prompt:</p>
 <pre class="ascii-diagram">agent.request  trace=4f2a…  user=h_91ac  prompt=support_v14  sha=b3e91f   [4,213ms]
  ├─ guardrail.input   verdict=ok                                    [  61ms]
@@ -364,7 +372,7 @@ PRICES = {<span class="st">"</span><span class="st">claude-sonnet-4-5</span><spa
 <p>Read the diagnosis straight off the tree: iteration 1 called <code>refund</code> on a status question — a prompt bug (an over-eager instruction added in <code>support_v14</code>), caught because the span records <i>which prompt version</i> ran. The guardrailed tool correctly refused. This request now becomes a trajectory eval case (<a href="evals.html">Evaluating LLM features</a>): <code>forbidden_tools: ["refund"]</code> for status intents.</p>
 </section>
 <section id="metrics-definitions-and-alert-thresholds">
-  <h2>16 &mdash; Metrics: definitions and alert thresholds</h2>
+  <h2>17 &mdash; Metrics: definitions and alert thresholds</h2>
 <p>Traces answer "why did this request fail?"; metrics answer "is the system healthy?". Every metric below is an aggregation over span attributes — no separate instrumentation needed. Thresholds are starting points to tune against your own baselines (alert on <i>change</i>, not just absolutes).</p>
 <table>
 <tr><th>Metric</th><th>Definition (from spans)</th><th>Warn</th><th>Page</th></tr>
@@ -382,7 +390,7 @@ PRICES = {<span class="st">"</span><span class="st">claude-sonnet-4-5</span><spa
 <p>The two most underrated rows: <b>cost per hour</b> (the only alert that catches a retry storm, a context leak, and a prompt-cache miss regression with one signal) and <b>iterations p95</b> (agents degrade by flailing longer before they degrade by failing).</p>
 </section>
 <section id="sampling-and-privacy-trace-everything-keep-less">
-  <h2>17 &mdash; Sampling and privacy: trace everything, keep less</h2>
+  <h2>18 &mdash; Sampling and privacy: trace everything, keep less</h2>
 <p>Full prompt/response capture collides with two realities: volume (traces can cost more than storage of your actual DB) and privacy (prompts contain names, orders, health details). Policy: <b>metrics from 100% of spans; full payloads sampled and redacted; errors always kept in full (redacted)</b>.</p>
 <div class="code-block"><div class="code-file"><span>sampling_redaction.py — keep what you'll need, scrub what you mustn't keep</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> hashlib, hmac, random, re
 
@@ -429,7 +437,7 @@ PATTERNS = [
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>18 &mdash; Production &amp; Ops</h2>
+  <h2>19 &mdash; Production &amp; Ops</h2>
 <div class="card"><table>
 <tr><th>Concern</th><th>Practice</th></tr>
 <tr><td>PII</td><td>Regex scrub emails/SSN; hash user_id; never log API keys</td></tr>
@@ -440,7 +448,7 @@ PATTERNS = [
 </table></div>
 </section>
 <section id="related-topics">
-  <h2>19 &mdash; Related topics</h2>
+  <h2>20 &mdash; Related topics</h2>
 <div class="card"><ul>
 <li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> — trace every retrieve → rerank → generate stage</li>
 <li><a href="../rag/vector-search.html">Vector search &amp; databases</a> — log chunk IDs + ANN scores in retrieval span</li>
@@ -450,8 +458,8 @@ PATTERNS = [
 <li><a href="../agents/agent-loop.html">The agent loop</a> — tool loop detection, HITL audit trail</li>
 </ul></div>
 </section>
-<section id="common-pitfalls">
-  <h2>20 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>21 &mdash; Where people get lost</h2>
 <div class="card"><ul>
 <li><strong>Log full prompts with PII/secrets</strong> — scrub at SDK boundary</li>
 <li><strong>No eval CI</strong> — silent regressions on prompt/model deploy</li>
@@ -461,8 +469,12 @@ PATTERNS = [
 <li><strong>No trace_id in UI</strong> — support cannot replay failures</li>
 </ul></div>
 </section>
+<section id="how-this-connects">
+  <h2>22 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../fundamentals/api.html">Calling a model</a> &mdash; The API call end to end: messages, roles, streaming, tool calls, errors and retries, across providers.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="../agents/agent-loop.html">The agent loop</a> &mdash; The loop in depth and in code: budgets, errors, human approval, reliability, safety, and how to evaluate an agent.</li><li><a href="evals.html">Evaluating LLM features</a> &mdash; Golden sets, graders, LLM-as-judge done properly, statistics, an eval harness in CI, online evaluation and error analysis.</li></ul><h3>Where this shows up later</h3><ul><li><a href="mlops-drift.html">MLOps &amp; drift</a> &mdash; Version everything that changes behaviour, and notice when the world moves.</li><li><a href="../tech/frameworks.html">Choosing an agent framework</a> &mdash; The landscape, the same agent in five frameworks, and framework vs thin harness vs raw.</li><li><a href="../tech/langgraph.html">LangGraph</a> &mdash; Agents as explicit state graphs: nodes, edges, checkpoints, interrupts.</li><li><a href="../tech/langchain.html">LangChain</a> &mdash; Chains, runnables, retrievers and the integrations layer.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>21 &mdash; Check yourself</h2>
+  <h2>23 &mdash; Check yourself</h2>
 <details>
 <summary>What should you trace in a RAG pipeline?</summary>
 <div class="answer">Query text (redacted), embed model + latency, vector DB namespace, chunk IDs + ANN scores, rerank order + scores, prompt template version, LLM model + tokens + output, total latency per stage, user feedback linkage.</div>

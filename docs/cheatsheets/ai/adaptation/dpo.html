@@ -5,10 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DPO &amp; preference optimization -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Fine-tuning &amp; alignment" data-href="index.html">
+<meta name="ai-topic" content="adaptation/dpo">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,35 +23,221 @@
   <h2>DPO &amp; preference optimization</h2>
   <a href="index.html">&larr; Fine-tuning &amp; alignment</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#dpo-preference-optimization-without-the-rl"><span class="num">02</span> DPO — preference optimization without the RL</a>
-  <a href="#the-loss-read-it-slowly-once"><span class="num">03</span> The loss (read it slowly once)</a>
-  <a href="#the-complete-run-trl-qlora-compatible"><span class="num">04</span> The complete run (TRL, QLoRA-compatible)</a>
-  <a href="#choosing-and-how-to-sweep-it"><span class="num">05</span> Choosing β (and how to sweep it)</a>
-  <a href="#building-pairs-from-production-logs"><span class="num">06</span> Building pairs from production logs</a>
-  <a href="#evaluating-the-aligned-model-a-win-rate-harness"><span class="num">07</span> Evaluating the aligned model — a win-rate harness</a>
-  <a href="#the-family"><span class="num">08</span> The family</a>
-  <a href="#dpo-vs-rlhf-ppo-the-decision-expanded"><span class="num">09</span> DPO vs RLHF (PPO) — the decision, expanded</a>
-  <a href="#the-production-rl-flywheel-what-companies-usually-mean"><span class="num">10</span> The production &quot;RL flywheel&quot; (what companies usually mean)</a>
-  <a href="#dpo-and-friends"><span class="num">11</span> DPO and friends</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#the-question"><span class="num">03</span> The question</a>
+  <a href="#step-1-turning-preferences-into-a-probability"><span class="num">04</span> Step 1: turning preferences into a probability</a>
+  <a href="#step-2-what-rlhf-actually-optimises"><span class="num">05</span> Step 2: what RLHF actually optimises</a>
+  <a href="#step-3-the-best-possible-policy-has-a-closed-form"><span class="num">06</span> Step 3: the best possible policy has a closed form</a>
+  <a href="#step-4-solve-for-the-reward-instead"><span class="num">07</span> Step 4: solve for the reward instead</a>
+  <a href="#step-5-plug-into-bradley-terry-and-watch-z-cancel"><span class="num">08</span> Step 5: plug into Bradley–Terry and watch Z cancel</a>
+  <a href="#a-worked-example"><span class="num">09</span> A worked example</a>
+  <a href="#why-it-works-reading-the-gradient"><span class="num">10</span> Why it works: reading the gradient</a>
+  <a href="#what-actually-happens-during-training"><span class="num">11</span> What actually happens during training</a>
+  <a href="#getting-the-data-right"><span class="num">12</span> Getting the data right</a>
+  <a href="#the-variants-you-should-be-able-to-name"><span class="num">13</span> The variants you should be able to name</a>
+  <a href="#cost-compared-with-rlhf"><span class="num">14</span> Cost compared with RLHF</a>
+  <a href="#a-training-recipe"><span class="num">15</span> A training recipe</a>
+  <a href="#in-code-the-loss-in-a-dozen-lines"><span class="num">16</span> In code: the loss in a dozen lines</a>
+  <a href="#dpo-preference-optimization-without-the-rl"><span class="num">17</span> DPO — preference optimization without the RL</a>
+  <a href="#the-loss-read-it-slowly-once"><span class="num">18</span> The loss (read it slowly once)</a>
+  <a href="#the-complete-run-trl-qlora-compatible"><span class="num">19</span> The complete run (TRL, QLoRA-compatible)</a>
+  <a href="#choosing-and-how-to-sweep-it"><span class="num">20</span> Choosing β (and how to sweep it)</a>
+  <a href="#building-pairs-from-production-logs"><span class="num">21</span> Building pairs from production logs</a>
+  <a href="#evaluating-the-aligned-model-a-win-rate-harness"><span class="num">22</span> Evaluating the aligned model — a win-rate harness</a>
+  <a href="#the-family"><span class="num">23</span> The family</a>
+  <a href="#dpo-vs-rlhf-ppo-the-decision-expanded"><span class="num">24</span> DPO vs RLHF (PPO) — the decision, expanded</a>
+  <a href="#the-production-rl-flywheel-what-companies-usually-mean"><span class="num">25</span> The production &quot;RL flywheel&quot; (what companies usually mean)</a>
+  <a href="#dpo-and-friends"><span class="num">26</span> DPO and friends</a>
+  <a href="#where-people-get-lost"><span class="num">27</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">28</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">29</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>DPO &amp; preference optimization <span>// Fine-tuning &amp; alignment</span></h1>
   <p>The RLHF outcome with a supervised loss, and KTO, IPO and ORPO.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">23 min read</span><span class="tag">1 diagram</span></div>
 </div>
 
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
 <div class="diagram"><img src="../img/dpo.png" alt="Both start from an SFT model and preference pairs. RLHF trains a reward model and runs RL with a KL leash; DPO gets the same target with one supervised loss."></div><p class="diagram-caption">Both start from an SFT model and preference pairs. RLHF trains a reward model and runs RL with a KL leash; DPO gets the same target with one supervised loss.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Preference pair</strong></td><td>One prompt \(x\) with two responses: the chosen \(y_w\) ("winner") and the rejected \(y_l\) ("loser").</td></tr><tr><td><strong>Policy \(\pi_\theta\)</strong></td><td>The model being trained. \(\pi_\theta(y \mid x)\) is the probability it assigns to response \(y\) given prompt \(x\).</td></tr><tr><td><strong>Reference model \(\pi_{\text{ref}}\)</strong></td><td>A frozen copy of the starting (SFT) model. Training is measured against it so the policy cannot drift arbitrarily far.</td></tr><tr><td><strong>Bradley–Terry model</strong></td><td>A way to turn two scores into a probability that one wins: \(P(a \succ b) = \sigma(s_a - s_b)\).</td></tr><tr><td><strong>Sigmoid \(\sigma\)</strong></td><td>\(\sigma(u) = 1/(1 + e^{-u})\): squashes any number into (0, 1). \(\sigma(0) = 0.5\).</td></tr><tr><td><strong>KL divergence</strong></td><td>A measure of how far one probability distribution is from another. Zero when they are identical.</td></tr><tr><td><strong>\(\beta\)</strong></td><td>The strength of the leash to the reference model. Small \(\beta\): the policy may move far. Large \(\beta\): it stays close.</td></tr><tr><td><strong>Implicit reward</strong></td><td>DPO's stand-in for a reward model: \(\hat r(x, y) = \beta \log \frac{\pi_\theta(y \mid x)}{\pi_{\text{ref}}(y \mid x)}\).</td></tr><tr><td><strong>Reward hacking</strong></td><td>The policy finding responses that score well on the reward without being better (longer, more flattering, more confident).</td></tr><tr><td><strong>On-policy / off-policy data</strong></td><td>Preference pairs sampled from the model being trained, versus pairs collected from other models or earlier.</td></tr><tr><td><strong>RLHF / DPO</strong></td><td>Alignment from human preferences; makes models helpful/safe.</td></tr><tr><td><strong>Reward model</strong></td><td>Scores (prompt, answer) with a scalar; trained on preference pairs.</td></tr><tr><td><strong>DPO</strong></td><td>Direct preference optimization — RLHF outcome via a supervised loss, no RL.</td></tr><tr><td><strong>KTO / IPO / ORPO</strong></td><td>DPO variants: thumbs-only data / bounded loss / folded into SFT.</td></tr></tbody></table>
+</section>
+<p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>03 &mdash; The question</h2>
+<p>After supervised fine-tuning, a model can follow instructions but has no sense of which of two acceptable answers people prefer: the clearer one, the safer one, the one that admits uncertainty. Preference data captures that taste as pairs, "for this prompt, response A is better than response B".</p>
+<p>Classic RLHF uses those pairs in two stages: train a <strong>reward model</strong> to score responses, then run reinforcement learning (PPO) to push the policy toward high reward while a KL penalty keeps it close to the SFT model. It works, and it produced the first generation of chat assistants, but it is heavy:</p>
+<ul>
+<li>Four models in memory at once: the policy, the frozen reference, the reward model, and PPO's value model.</li>
+<li>Sampling from the policy inside the training loop, which is slow.</li>
+<li>Many sensitive hyperparameters, and training runs that diverge.</li>
+</ul>
+<p>Direct Preference Optimization (DPO, 2023) asks: is the reward model necessary at all? Its answer is no. The same objective RLHF optimises can be rewritten as a simple classification loss on the preference pairs, trained like ordinary fine-tuning. The rest of this lesson derives that loss step by step, because the derivation is what interviewers probe, and it explains every knob.</p>
+</section>
+<section id="step-1-turning-preferences-into-a-probability">
+  <h2>04 &mdash; Step 1: turning preferences into a probability</h2>
+<p>Suppose some reward function \(r(x, y)\) scores how good response \(y\) is for prompt \(x\). The <strong>Bradley–Terry</strong> model says the probability a person prefers \(y_w\) over \(y_l\) depends only on the difference in reward:</p>
+\[ P(y_w \succ y_l \mid x) = \sigma\big(r(x, y_w) - r(x, y_l)\big) \]
+<p>Worked: if the chosen response scores 2.31 and the rejected one 0.47, the difference is 1.84 and \(\sigma(1.84) \approx 0.863\): an 86% chance a rater prefers the first. Equal rewards give exactly 50%.</p>
+<p>Training a reward model means choosing \(r\) to make the observed preferences likely, by minimising the negative log-likelihood over all pairs:</p>
+\[ \mathcal{L}_{\text{RM}} = -\mathbb{E}_{(x, y_w, y_l)}\Big[\log \sigma\big(r(x, y_w) - r(x, y_l)\big)\Big] \]
+<p>For our pair, \(-\log 0.863 \approx 0.147\). Keep this shape in mind: DPO's final loss looks exactly like it.</p>
+</section>
+<section id="step-2-what-rlhf-actually-optimises">
+  <h2>05 &mdash; Step 2: what RLHF actually optimises</h2>
+<p>Given a reward, RLHF's stage two maximises expected reward minus a penalty for moving away from the reference model:</p>
+\[ \max_{\pi}\ \ \mathbb{E}_{x,\ y \sim \pi(\cdot \mid x)}\big[r(x, y)\big] \;-\; \beta\, \mathrm{KL}\big(\pi(\cdot \mid x)\ \|\ \pi_{\text{ref}}(\cdot \mid x)\big) \]
+<p>The KL term matters. Without it, the policy would find whatever strange outputs the imperfect reward model scores highest (reward hacking) and lose the fluency it learned in pretraining. \(\beta\) sets how much reward is worth giving up for staying close.</p>
+</section>
+<section id="step-3-the-best-possible-policy-has-a-closed-form">
+  <h2>06 &mdash; Step 3: the best possible policy has a closed form</h2>
+<p>This objective has an exact solution. For each prompt, the optimal policy reweights the reference model's distribution by the exponentiated reward:</p>
+\[ \pi^*(y \mid x) = \frac{1}{Z(x)}\, \pi_{\text{ref}}(y \mid x)\, \exp\!\Big(\tfrac{1}{\beta}\, r(x, y)\Big) \]
+<p>\(Z(x) = \sum_y \pi_{\text{ref}}(y \mid x)\exp\big(r(x,y)/\beta\big)\) is just the normaliser that makes the probabilities sum to 1. Read it intuitively: start from what the SFT model would say, multiply each possible response by how good it is (more strongly when \(\beta\) is small), renormalise.</p>
+<p>The catch is that \(Z(x)\) sums over every possible response, which is astronomically many, so nobody can compute \(\pi^*\) directly. That is why RLHF uses PPO to approximate it. DPO's trick is to never need \(Z\).</p>
+</section>
+<section id="step-4-solve-for-the-reward-instead">
+  <h2>07 &mdash; Step 4: solve for the reward instead</h2>
+<p>Take the logarithm of Step 3's equation and rearrange it to express the reward in terms of the policy:</p>
+\[ r(x, y) = \beta \log \frac{\pi^*(y \mid x)}{\pi_{\text{ref}}(y \mid x)} + \beta \log Z(x) \]
+<p>This says: whatever the reward is, it equals \(\beta\) times how much more likely the optimal policy makes a response than the reference does, plus a term that depends only on the prompt.</p>
+</section>
+<section id="step-5-plug-into-bradley-terry-and-watch-z-cancel">
+  <h2>08 &mdash; Step 5: plug into Bradley–Terry and watch Z cancel</h2>
+<p>Bradley–Terry only ever uses the <em>difference</em> of two rewards for the same prompt. Substitute Step 4 for both responses:</p>
+\[ r(x, y_w) - r(x, y_l) = \beta \log \frac{\pi^*(y_w \mid x)}{\pi_{\text{ref}}(y_w \mid x)} - \beta \log \frac{\pi^*(y_l \mid x)}{\pi_{\text{ref}}(y_l \mid x)} \]
+<p>The \(\beta \log Z(x)\) terms are identical for both responses and subtract to zero. The intractable normaliser disappears. Now replace the unknown optimal policy with the model we are training, \(\pi_\theta\), and fit it to the preference data with Step 1's log-likelihood. That is the DPO loss:</p>
+\[ \mathcal{L}_{\text{DPO}}(\theta) = -\mathbb{E}_{(x, y_w, y_l)}\Big[\log \sigma\Big(\beta \log \frac{\pi_\theta(y_w \mid x)}{\pi_{\text{ref}}(y_w \mid x)} - \beta \log \frac{\pi_\theta(y_l \mid x)}{\pi_{\text{ref}}(y_l \mid x)}\Big)\Big] \]
+<p>No reward model, no sampling, no value network. Each training example needs four numbers: the log-probability of the chosen and of the rejected response under the policy and under the frozen reference. The quantity \(\hat r(x, y) = \beta \log \frac{\pi_\theta(y \mid x)}{\pi_{\text{ref}}(y \mid x)}\) is the <strong>implicit reward</strong>: the policy is its own reward model.</p>
+</section>
+<section id="a-worked-example">
+  <h2>09 &mdash; A worked example</h2>
+<p>Take one preference pair and \(\beta = 0.1\). A response's log-probability is the sum of its tokens' log-probabilities, so it is a large negative number:</p>
+<table>
+<thead><tr><th></th><th>\(\log \pi_\theta\)</th><th>\(\log \pi_{\text{ref}}\)</th><th>log-ratio</th><th>implicit reward \(\hat r\)</th></tr></thead>
+<tbody>
+<tr><td>Chosen \(y_w\)</td><td>−12.0</td><td>−12.5</td><td>+0.5</td><td>+0.05</td></tr>
+<tr><td>Rejected \(y_l\)</td><td>−11.0</td><td>−10.8</td><td>−0.2</td><td>−0.02</td></tr>
+</tbody>
+</table>
+<p>The margin is \(0.05 - (-0.02) = 0.07\), so the loss is \(-\log \sigma(0.07) = \log(1 + e^{-0.07}) \approx 0.659\). At the very start of training the policy equals the reference, every log-ratio is 0, and the loss is exactly \(\log 2 \approx 0.693\) for every pair. That gives you a sanity check for the first step of any DPO run.</p>
+<p>Two details in this example trip people up:</p>
+<ul>
+<li>The rejected response has a <em>higher</em> raw log-probability (−11.0) than the chosen one (−12.0). That does not matter: DPO compares each response with the reference, not the two responses with each other. Shorter responses always have higher raw log-probabilities.</li>
+<li>\(\beta\) scales the margin. With the same log-ratios, \(\beta = 0.01\) gives a loss of 0.690 (almost no signal), and \(\beta = 0.5\) gives 0.533.</li>
+</ul>
+</section>
+<section id="why-it-works-reading-the-gradient">
+  <h2>10 &mdash; Why it works: reading the gradient</h2>
+<p>Differentiating the loss gives an update with a clear meaning:</p>
+\[ \nabla_\theta \mathcal{L}_{\text{DPO}} = -\beta\, \mathbb{E}\Big[\underbrace{\sigma\big(\hat r(x, y_l) - \hat r(x, y_w)\big)}_{\text{how wrong the model is}} \Big(\underbrace{\nabla_\theta \log \pi_\theta(y_w \mid x)}_{\text{raise the chosen}} - \underbrace{\nabla_\theta \log \pi_\theta(y_l \mid x)}_{\text{lower the rejected}}\Big)\Big] \]
+<ul>
+<li>Every step raises the chosen response's likelihood and lowers the rejected one's.</li>
+<li>The weight \(\sigma(\hat r_l - \hat r_w)\) is large when the model currently prefers the wrong response and near zero once it clearly prefers the right one. In the worked example it is \(\sigma(-0.07) \approx 0.48\): still a strong push. Pairs the model already gets right stop contributing, so training focuses on its mistakes.</li>
+<li>The reference model is inside \(\hat r\), so pushing a response far beyond the reference's probability earns less and less: the KL leash, enforced without ever computing a KL.</li>
+</ul>
+</section>
+<section id="what-actually-happens-during-training">
+  <h2>11 &mdash; What actually happens during training</h2>
+<p>The quantities to log on every DPO run, and what healthy looks like:</p>
+<table>
+<thead><tr><th>Metric</th><th>Meaning</th><th>Healthy pattern</th></tr></thead>
+<tbody>
+<tr><td>Loss</td><td>Starts at \(\log 2 = 0.693\)</td><td>Falls steadily; a plunge toward 0 often means overfitting</td></tr>
+<tr><td>Reward accuracy</td><td>Fraction of pairs with \(\hat r_w &gt; \hat r_l\)</td><td>Rises from 0.5 toward 0.7 to 0.9 on held-out pairs</td></tr>
+<tr><td>Reward margin</td><td>Mean \(\hat r_w - \hat r_l\)</td><td>Grows, then plateaus</td></tr>
+<tr><td>Chosen and rejected log-probs</td><td>\(\log \pi_\theta\) of each</td><td>Rejected falls; chosen holds roughly steady</td></tr>
+<tr><td>KL to reference</td><td>How far the policy has moved</td><td>Small and stable; a runaway means \(\beta\) too low or learning rate too high</td></tr>
+</tbody>
+</table>
+<p>A well-known quirk: often <em>both</em> the chosen and rejected log-probabilities fall, with the rejected one falling faster. The margin grows, so the loss improves, but probability mass leaks to responses that appear in neither set, and output quality can degrade. Watching the chosen log-probability, and stopping early, are the defences. Several later variants add a term that explicitly keeps the chosen log-probability up.</p>
+</section>
+<section id="getting-the-data-right">
+  <h2>12 &mdash; Getting the data right</h2>
+<p>DPO is only as good as its pairs. Where they come from:</p>
+<ul>
+<li><strong>Human raters</strong> compare two responses. Best quality, slowest, most expensive; disagreement between raters is real and should be measured.</li>
+<li><strong>AI feedback</strong>: a strong model judges pairs against a rubric or written principles (as in constitutional AI). Cheap and scalable; inherits the judge's biases, notably for longer answers.</li>
+<li><strong>On-policy sampling</strong>: generate several responses from the current model, have a judge pick best and worst, train, repeat ("iterative" or "online" DPO). Pairs drawn from the model's own outputs teach it more than pairs from some other model, because they correct the mistakes it actually makes.</li>
+</ul>
+<p>Typical sizes run from about 10,000 to a few hundred thousand pairs. The largest quality risk is <strong>length bias</strong>: raters and judges tend to prefer longer answers, so the model learns that longer wins. Check the length distribution of chosen versus rejected responses before training, and balance it if they differ.</p>
+</section>
+<section id="the-variants-you-should-be-able-to-name">
+  <h2>13 &mdash; The variants you should be able to name</h2>
+<table>
+<thead><tr><th>Method</th><th>Changes</th><th>Use when</th></tr></thead>
+<tbody>
+<tr><td><strong>DPO</strong></td><td>Baseline: logistic loss on the implicit-reward margin, frozen reference</td><td>You have paired preferences and an SFT model</td></tr>
+<tr><td><strong>IPO</strong></td><td>Squared loss pulling the margin to a fixed target instead of pushing it ever larger</td><td>Preferences are near-deterministic and DPO overfits</td></tr>
+<tr><td><strong>KTO</strong></td><td>Learns from single responses labelled good or bad, no pairs needed</td><td>Your data is thumbs up / thumbs down from production</td></tr>
+<tr><td><strong>ORPO</strong></td><td>Adds an odds-ratio preference term to the SFT loss; no reference model, one stage</td><td>You want SFT and preference tuning in a single cheaper run</td></tr>
+<tr><td><strong>SimPO</strong></td><td>Uses length-normalised average log-probability as the reward, no reference model, plus a target margin</td><td>Length bias is a problem and you want to save the reference model's memory</td></tr>
+<tr><td><strong>PPO-based RLHF</strong></td><td>Explicit reward model plus online RL</td><td>You need online exploration, or rewards that are not pairwise preferences</td></tr>
+<tr><td><strong>RL with verifiable rewards</strong></td><td>Reward from a checker (tests pass, answer matches) rather than preferences</td><td>Maths, code and reasoning, where correctness can be checked automatically</td></tr>
+</tbody>
+</table>
+</section>
+<section id="cost-compared-with-rlhf">
+  <h2>14 &mdash; Cost compared with RLHF</h2>
+<p>For a 7B-parameter model trained with mixed precision and AdamW (about 16 bytes per trained parameter for weights, gradients and optimiser state):</p>
+<ul>
+<li><strong>PPO-based RLHF</strong> keeps the trained policy (about 112 GB of training state), a trained value model of similar size, plus a frozen reference and a frozen reward model (about 14 GB each in bf16). It also generates text inside the loop.</li>
+<li><strong>DPO</strong> keeps one trained policy and one frozen reference. The reference's log-probabilities never change, so they can even be computed once before training and stored, leaving a single model in memory. No generation, so a step costs about the same as an SFT step on two sequences.</li>
+</ul>
+<p>Combined with LoRA, DPO on a 7B model fits on a single 24 to 80 GB GPU. That accessibility is the main reason it displaced PPO for most open-model alignment.</p>
+</section>
+<section id="a-training-recipe">
+  <h2>15 &mdash; A training recipe</h2>
+<ol>
+<li><strong>Start from an SFT model</strong>, never a base model. DPO adjusts preferences between responses the model can already produce.</li>
+<li><strong>Build or collect pairs</strong>, hold out 5 to 10% for evaluation, and check the length balance.</li>
+<li><strong>Hyperparameters</strong>: \(\beta = 0.1\) (try 0.05 to 0.5); a learning rate about ten times smaller than SFT (around \(5 \times 10^{-7}\) to \(5 \times 10^{-6}\) for full fine-tuning, higher for LoRA); 1 to 3 epochs; cosine schedule with warmup.</li>
+<li><strong>Watch</strong> the five metrics above on held-out pairs. Stop when held-out reward accuracy plateaus.</li>
+<li><strong>Evaluate beyond the loss</strong>: win rate against the SFT model judged on fresh prompts, a safety and refusal set, and a capability regression suite (knowledge, maths, code) to catch the "alignment tax".</li>
+</ol>
+</section>
+<section id="in-code-the-loss-in-a-dozen-lines">
+  <h2>16 &mdash; In code: the loss in a dozen lines</h2>
+<pre><span class="kw">import</span> torch
+<span class="kw">import</span> torch.nn.functional <span class="kw">as</span> F
+
+<span class="kw">def</span> <span class="fn">sequence_logprob</span>(model, input_ids, labels):
+    <span class="st">"""Sum of log-probs of the response tokens (labels == -100 on prompt tokens)."""</span>
+    logits = model(input_ids).logits[:, :-<span class="nr">1</span>]
+    labels = labels[:, <span class="nr">1</span>:]
+    logps = torch.log_softmax(logits, dim=-<span class="nr">1</span>)
+    mask = labels != -<span class="nr">100</span>
+    tok = torch.gather(logps, <span class="nr">2</span>, labels.clamp(<span class="tp">min</span>=<span class="nr">0</span>).unsqueeze(-<span class="nr">1</span>)).squeeze(-<span class="nr">1</span>)
+    <span class="kw">return</span> (tok * mask).sum(-<span class="nr">1</span>)
+
+<span class="kw">def</span> <span class="fn">dpo_loss</span>(pi_w, pi_l, ref_w, ref_l, beta=<span class="nr">0.1</span>):
+    <span class="st">"""All inputs: summed log-probs per sequence, shape (batch,)."""</span>
+    reward_w = beta * (pi_w - ref_w)          <span class="cm"># implicit rewards</span>
+    reward_l = beta * (pi_l - ref_l)
+    margin = reward_w - reward_l
+    loss = -F.logsigmoid(margin).mean()
+    accuracy = (margin &gt; <span class="nr">0</span>).float().mean()
+    <span class="kw">return</span> loss, accuracy, margin.mean()
+
+<span class="cm"># the worked example: loss 0.659</span>
+loss, acc, m = dpo_loss(torch.tensor([-<span class="nr">12.0</span>]), torch.tensor([-<span class="nr">11.0</span>]),
+                        torch.tensor([-<span class="nr">12.5</span>]), torch.tensor([-<span class="nr">10.8</span>]))
+<span class="tp">print</span>(<span class="tp">round</span>(loss.item(), <span class="nr">3</span>), acc.item(), <span class="tp">round</span>(m.item(), <span class="nr">3</span>))
+</pre>
+<p>In practice you would use a library such as Hugging Face TRL's <code>DPOTrainer</code>, which implements this loss, the reference-model handling and the metrics above; writing it yourself once is what makes those metrics readable.</p>
+</section>
 <section id="dpo-preference-optimization-without-the-rl">
-  <h2>02 &mdash; DPO — preference optimization without the RL</h2>
+  <h2>17 &mdash; DPO — preference optimization without the RL</h2>
 <p>DPO's insight: under RLHF's own assumptions, the optimal policy can be written in closed form — so you can skip the reward model <i>and</i> the RL loop, and train directly on preference pairs with a supervised loss.</p>
 <p>Recall from in an earlier topic that RLHF's KL-constrained objective has a known optimum: π*(y|x) ∝ π_ref(y|x)·exp(r(x,y)/β). DPO simply inverts it — solve for the reward: r(x,y) = β·log(π(y|x)/π_ref(y|x)) + const. Substitute that into the Bradley–Terry preference likelihood and the reward model cancels out of the equation entirely. What's left is a loss on the policy itself, computable from four log-probabilities per pair. The model <i>is</i> secretly its own reward model; DPO trains it as one.</p>
 </section>
 <section id="the-loss-read-it-slowly-once">
-  <h2>03 &mdash; The loss (read it slowly once)</h2>
+  <h2>18 &mdash; The loss (read it slowly once)</h2>
 <pre class="ascii-diagram">for each pair (prompt x, winner y_w, loser y_l):
 
 L_DPO = −log σ( β · [ log π(y_w|x)/π_ref(y_w|x)  −  log π(y_l|x)/π_ref(y_l|x) ] )
@@ -56,7 +248,7 @@ reference model (the implicit KL leash), with β controlling how hard you push.<
 <p>One ordinary training run. Standard supervised infra. No reward model, no PPO, no four-models-in-memory — two models (policy + frozen ref), and with adapter tricks effectively one. That's why it won by default for open-model alignment.</p>
 </section>
 <section id="the-complete-run-trl-qlora-compatible">
-  <h2>04 &mdash; The complete run (TRL, QLoRA-compatible)</h2>
+  <h2>19 &mdash; The complete run (TRL, QLoRA-compatible)</h2>
 <div class="code-block"><div class="code-file"><span>dpo_full.py — SFT model → DPO-aligned model, one GPU</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> torch
 <span class="kw">from</span> datasets <span class="kw">import</span> load_dataset
 <span class="kw">from</span> transformers <span class="kw">import</span> AutoModelForCausalLM, AutoTokenizer
@@ -113,7 +305,7 @@ trainer.save_model(<span class="st">"</span><span class="st">triage-dpo/adapter<
 <span class="cm">#                      The gate is the win-rate harness below.</span></pre></div>
 </section>
 <section id="choosing-and-how-to-sweep-it">
-  <h2>05 &mdash; Choosing β (and how to sweep it)</h2>
+  <h2>20 &mdash; Choosing β (and how to sweep it)</h2>
 <p>β plays the same role as RLHF's KL coefficient, inverted in feel: it scales the log-ratio margin inside the sigmoid, so <b>small β lets the policy drift far</b> from the reference before the loss saturates, and large β keeps it pinned close. Sweep it — it's one config field — but sweep it like this: 3 short runs, same data, β ∈ {0.05, 0.1, 0.3}, judged by win-rate + regression probe (never by loss, which isn't comparable across β).</p>
 <table>
 <tr><th>β</th><th>Behavior</th><th>Reach for it when</th></tr>
@@ -124,7 +316,7 @@ trainer.save_model(<span class="st">"</span><span class="st">triage-dpo/adapter<
 <p>Illustrative sweep outcome for the triage assistant (2K pairs): β=0.05 → 71% win-rate vs SFT but the regression probe drops 6 points (over-styled, verbose); β=0.1 → 66% win, regression flat; β=0.3 → 58% win, regression flat. You ship β=0.1. That shape — an interior optimum once you score regressions too — is the typical result.</p>
 </section>
 <section id="building-pairs-from-production-logs">
-  <h2>06 &mdash; Building pairs from production logs</h2>
+  <h2>21 &mdash; Building pairs from production logs</h2>
 <p>The highest-leverage DPO trick: you're already generating preference data every day. Explicit thumbs, edits (user rewrote the model's draft = rejected/chosen in one event), retries, escalations, resolved-vs-reopened tickets — all of it converts to pairs.</p>
 <div class="code-block"><div class="code-file"><span>mine_pairs.py — production logs → DPO pairs, with hygiene</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> json, hashlib
 <span class="kw">from</span> collections <span class="kw">import</span> defaultdict
@@ -190,7 +382,7 @@ pairs = <span class="tp">list</span>(hygiene(make_pairs(iter_events(<span class=
 <span class="cm"># not quality) that no filter will.</span></pre></div>
 </section>
 <section id="evaluating-the-aligned-model-a-win-rate-harness">
-  <h2>07 &mdash; Evaluating the aligned model — a win-rate harness</h2>
+  <h2>22 &mdash; Evaluating the aligned model — a win-rate harness</h2>
 <p>The only meaningful DPO metric is: <i>does a judge (ideally humans, practically an LLM with position-bias control) prefer the new model's answers on held-out prompts?</i> Plus a regression suite. Here's the minimal honest harness:</p>
 <div class="code-block"><div class="code-file"><span>winrate.py — pairwise judge with position-swap, the honest way</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> json, random, asyncio
 <span class="kw">from</span> openai <span class="kw">import</span> AsyncOpenAI   <span class="cm"># judge via any OpenAI-compatible endpoint</span>
@@ -233,7 +425,7 @@ asyncio.run(main())</pre></div>
 <p>Two integrity rules. First, the judge must never be the model being evaluated (self-preference bias is strong), and if the judge shares a family with one side, note it. Second, run your <i>capability regression suite</i> (<a href="fine-tuning.html">Fine-tuning, LoRA & QLoRA</a>) on the DPO checkpoint — preference tuning quietly moves things you weren't looking at, and the win-rate prompt set won't catch it.</p>
 </section>
 <section id="the-family">
-  <h2>08 &mdash; The family</h2>
+  <h2>23 &mdash; The family</h2>
 <table>
 <tr><th>Method</th><th>Twist</th><th>Use when</th></tr>
 <tr><td><b>DPO</b></td><td>the closed-form original</td><td>default; you have clean pairs</td></tr>
@@ -245,7 +437,7 @@ asyncio.run(main())</pre></div>
 </table>
 </section>
 <section id="dpo-vs-rlhf-ppo-the-decision-expanded">
-  <h2>09 &mdash; DPO vs RLHF (PPO) — the decision, expanded</h2>
+  <h2>24 &mdash; DPO vs RLHF (PPO) — the decision, expanded</h2>
 <table>
 <tr><th>Dimension</th><th>DPO</th><th>PPO-style RLHF</th></tr>
 <tr><td>Infra</td><td>supervised trainer, 1–2 models in memory; QLoRA-friendly on one GPU</td><td>3–4 models + a generation engine inside the training loop; multi-GPU</td></tr>
@@ -260,7 +452,7 @@ asyncio.run(main())</pre></div>
 </table>
 </section>
 <section id="the-production-rl-flywheel-what-companies-usually-mean">
-  <h2>10 &mdash; The production &quot;RL flywheel&quot; (what companies usually mean)</h2>
+  <h2>25 &mdash; The production &quot;RL flywheel&quot; (what companies usually mean)</h2>
 <pre class="ascii-diagram">production interactions → capture outcomes (resolved? escalated? thumbs? edits?)
    → mine failures and wins → build preference pairs + eval cases
    → DPO/SFT on wins; prompt/tool/retrieval fixes for systematic failures
@@ -285,10 +477,35 @@ asyncio.run(main())</pre></div>
 </ol></div>
 </section>
 <section id="dpo-and-friends">
-  <h2>11 &mdash; DPO and friends</h2>
+  <h2>26 &mdash; DPO and friends</h2>
 <p>Direct Preference Optimization shows the RLHF objective has a closed-form optimal policy, so you can optimize preferences with a simple classification-style loss, no reward model, no RL:</p>
 <pre class="formula">L = −log σ( β [ log π(y_w|x)/π_ref(y_w|x) − log π(y_l|x)/π_ref(y_l|x) ] )</pre>
 <p>Increase the chosen answer's likelihood relative to the reference more than the rejected one's. β sets how far you may move from the reference. Variants: IPO, KTO (needs only thumbs up/down), ORPO, SimPO. In TRL: <code>DPOTrainer</code>.</p>
+</section>
+<p class="part-divider">In production</p>
+<section id="where-people-get-lost">
+  <h2>27 &mdash; Where people get lost</h2>
+<ul>
+<li><strong>"DPO has no reward."</strong> It has one: the implicit reward \(\beta \log(\pi_\theta/\pi_{\text{ref}})\). It just never trains a separate model to compute it.</li>
+<li><strong>Comparing raw log-probabilities of chosen and rejected.</strong> DPO compares each with the reference. A shorter rejected answer will always have a higher raw log-probability.</li>
+<li><strong>Skipping SFT.</strong> Preference tuning on a base model gives poor results; it needs a model that already responds in the target format.</li>
+<li><strong>Treating falling loss as success.</strong> If the chosen log-probability is falling too, quality can drop while the loss improves.</li>
+<li><strong>Length bias.</strong> If chosen answers are longer on average, the model learns verbosity, not quality.</li>
+<li><strong>Forgetting the reference must be the SFT model.</strong> A different reference changes what the leash pulls toward.</li>
+<li><strong>Evaluating only on preference win rate.</strong> Alignment can cost capability; always run a regression suite.</li>
+</ul>
+</section>
+<section id="how-this-connects">
+  <h2>28 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a> &mdash; When to fine-tune, the LoRA math, a working QLoRA recipe, data, hyperparameters, evaluation and serving.</li></ul>
+</section>
+<section id="check-yourself">
+  <h2>29 &mdash; Check yourself</h2>
+<details><summary>Why does the normaliser \(Z(x)\) not appear in the DPO loss?</summary><div class="answer">Bradley–Terry uses only the difference of two rewards for the same prompt. Writing each reward as \(\beta \log(\pi^*/\pi_{\text{ref}}) + \beta \log Z(x)\), the \(\beta \log Z(x)\) terms are identical and cancel.</div></details>
+<details><summary>What is the DPO loss on the very first training step, and why?</summary><div class="answer">\(\log 2 \approx 0.693\). The policy starts equal to the reference, so every log-ratio and margin is 0, and \(-\log \sigma(0) = \log 2\).</div></details>
+<details><summary>What happens if \(\beta\) is set very small?</summary><div class="answer">The leash to the reference is weak: the policy can move far to fit the preferences, risking overfitting, reward hacking and lost fluency. Margins also become tiny for the same log-ratios, so it needs more steps to learn.</div></details>
+<details><summary>Your production data is thumbs up / thumbs down on single answers. Which method fits, and why?</summary><div class="answer">KTO. It learns from unpaired responses labelled desirable or undesirable, so you do not have to construct chosen/rejected pairs for the same prompt.</div></details>
+<details><summary>Name three things you would check before trusting a DPO run that shows falling loss.</summary><div class="answer">That the chosen log-probability is not collapsing; held-out reward accuracy and win rate against the SFT model; and a capability regression suite plus a length comparison to rule out verbosity hacking.</div></details>
 </section>
 
 <div class="sheet-pager"><a class="prev" href="rlhf.html"><span>Previous</span>RLHF &amp; reward models</a><a class="next" href="constitutional-ai.html"><span>Next</span>Constitutional AI &amp; red-teaming</a></div>

@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fine-tuning, LoRA &amp; QLoRA -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Fine-tuning &amp; alignment" data-href="index.html">
+<meta name="ai-topic" content="adaptation/fine-tuning">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,44 +19,46 @@
   <h2>Fine-tuning, LoRA &amp; QLoRA</h2>
   <a href="index.html">&larr; Fine-tuning &amp; alignment</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-interface-surface"><span class="num">04</span> API / Interface Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#lora-qlora-deep-dive"><span class="num">07</span> LoRA &amp; QLoRA Deep Dive</a>
-  <a href="#peft-methods-compared"><span class="num">08</span> PEFT Methods Compared</a>
-  <a href="#dataset-requirements"><span class="num">09</span> Dataset Requirements</a>
-  <a href="#huggingface-axolotl-training-patterns"><span class="num">10</span> HuggingFace &amp; Axolotl Training Patterns</a>
-  <a href="#eval-before-deploy"><span class="num">11</span> Eval Before Deploy</a>
-  <a href="#fine-tuning-in-practice-sft-lora-qlora"><span class="num">12</span> Fine-tuning in practice: SFT, LoRA, QLoRA</a>
-  <a href="#the-decision-ladder-always-in-this-order"><span class="num">13</span> The decision ladder (always in this order)</a>
-  <a href="#the-methods"><span class="num">14</span> The methods</a>
-  <a href="#step-0-curate-the-data-this-is-where-fine-tunes-are-won"><span class="num">15</span> Step 0: curate the data (this is where fine-tunes are won)</a>
-  <a href="#the-complete-qlora-run-hugging-face-trl-peft-the-de-facto-op"><span class="num">16</span> The complete QLoRA run (Hugging Face TRL + PEFT — the de-facto open stack)</a>
-  <a href="#choosing-r-alpha-and-target-modules"><span class="num">17</span> Choosing r, alpha, and target modules</a>
-  <a href="#worked-example-gpu-memory-for-an-8b-qlora-run"><span class="num">18</span> Worked example — GPU memory for an 8B QLoRA run</a>
-  <a href="#what-actually-determines-success-not-the-trainer-flags"><span class="num">19</span> What actually determines success (not the trainer flags)</a>
-  <a href="#full-fine-tuning-vs-parameter-efficient"><span class="num">20</span> Full fine-tuning vs parameter-efficient</a>
-  <a href="#lora-the-math"><span class="num">21</span> LoRA, the math</a>
-  <a href="#qlora-the-details"><span class="num">22</span> QLoRA, the details</a>
-  <a href="#preparing-fine-tuning-data"><span class="num">23</span> Preparing fine-tuning data</a>
-  <a href="#a-working-qlora-recipe"><span class="num">24</span> A working QLoRA recipe</a>
-  <a href="#hyperparameters-that-matter"><span class="num">25</span> Hyperparameters that matter</a>
-  <a href="#evaluating-a-fine-tune-and-catastrophic-forgetting"><span class="num">26</span> Evaluating a fine-tune and catastrophic forgetting</a>
-  <a href="#from-adapter-to-production"><span class="num">27</span> From adapter to production</a>
-  <a href="#other-peft-methods"><span class="num">28</span> Other PEFT methods</a>
-  <a href="#production-ops"><span class="num">29</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">30</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">31</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">32</span> Check yourself</a>
-  <a href="#build-it"><span class="num">33</span> Build it</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-interface-surface"><span class="num">05</span> API / Interface Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#lora-qlora-deep-dive"><span class="num">08</span> LoRA &amp; QLoRA Deep Dive</a>
+  <a href="#peft-methods-compared"><span class="num">09</span> PEFT Methods Compared</a>
+  <a href="#dataset-requirements"><span class="num">10</span> Dataset Requirements</a>
+  <a href="#huggingface-axolotl-training-patterns"><span class="num">11</span> HuggingFace &amp; Axolotl Training Patterns</a>
+  <a href="#eval-before-deploy"><span class="num">12</span> Eval Before Deploy</a>
+  <a href="#fine-tuning-in-practice-sft-lora-qlora"><span class="num">13</span> Fine-tuning in practice: SFT, LoRA, QLoRA</a>
+  <a href="#the-decision-ladder-always-in-this-order"><span class="num">14</span> The decision ladder (always in this order)</a>
+  <a href="#the-methods"><span class="num">15</span> The methods</a>
+  <a href="#step-0-curate-the-data-this-is-where-fine-tunes-are-won"><span class="num">16</span> Step 0: curate the data (this is where fine-tunes are won)</a>
+  <a href="#the-complete-qlora-run-hugging-face-trl-peft-the-de-facto-op"><span class="num">17</span> The complete QLoRA run (Hugging Face TRL + PEFT — the de-facto open stack)</a>
+  <a href="#choosing-r-alpha-and-target-modules"><span class="num">18</span> Choosing r, alpha, and target modules</a>
+  <a href="#worked-example-gpu-memory-for-an-8b-qlora-run"><span class="num">19</span> Worked example — GPU memory for an 8B QLoRA run</a>
+  <a href="#what-actually-determines-success-not-the-trainer-flags"><span class="num">20</span> What actually determines success (not the trainer flags)</a>
+  <a href="#full-fine-tuning-vs-parameter-efficient"><span class="num">21</span> Full fine-tuning vs parameter-efficient</a>
+  <a href="#lora-the-math"><span class="num">22</span> LoRA, the math</a>
+  <a href="#qlora-the-details"><span class="num">23</span> QLoRA, the details</a>
+  <a href="#preparing-fine-tuning-data"><span class="num">24</span> Preparing fine-tuning data</a>
+  <a href="#a-working-qlora-recipe"><span class="num">25</span> A working QLoRA recipe</a>
+  <a href="#hyperparameters-that-matter"><span class="num">26</span> Hyperparameters that matter</a>
+  <a href="#evaluating-a-fine-tune-and-catastrophic-forgetting"><span class="num">27</span> Evaluating a fine-tune and catastrophic forgetting</a>
+  <a href="#from-adapter-to-production"><span class="num">28</span> From adapter to production</a>
+  <a href="#other-peft-methods"><span class="num">29</span> Other PEFT methods</a>
+  <a href="#production-ops"><span class="num">30</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">31</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">32</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">33</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">34</span> Check yourself</a>
+  <a href="#build-it"><span class="num">35</span> Build it</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Fine-tuning, LoRA &amp; QLoRA <span>// Fine-tuning &amp; alignment</span></h1>
   <p>When to fine-tune, the LoRA math, a working QLoRA recipe, data, hyperparameters, evaluation and serving.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">32 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -64,9 +68,13 @@
 <img alt="Fine-tuning pipeline overview: data prep, LoRA training, eval, deploy" src="../systems/img/fine-tuning-lora-main.png"/>
 </div><p class="diagram-caption">End-to-end fine-tuning pipeline: raw data → JSONL prep → frozen base model + LoRA adapters → eval harness gate → merge or vLLM LoRA slots for production serving.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>RAG</strong></td><td>Retrieve real data → put in prompt → generate grounded answer.</td></tr><tr><td><strong>Fine-tuning / LoRA</strong></td><td>Extra training to change behavior/style; LoRA = cheap low-rank adapter.</td></tr><tr><td><strong>Data leakage</strong></td><td>Feature/eval contains info unavailable at prediction time → fake wins.</td></tr><tr><td><strong>QLoRA</strong></td><td>LoRA on a 4-bit-quantized base — fine-tune big models on one GPU.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card"><h3>Problem</h3>
 <p>Base LLMs are generalists. Production apps need <strong>consistent tone</strong>, <strong>domain vocabulary</strong>, <strong>structured output formats</strong>, or <strong>task-specific behavior</strong> that prompting alone cannot reliably achieve. Full fine-tuning updates all 7B+ parameters — expensive, slow, and risks catastrophic forgetting. <strong>LoRA/QLoRA</strong> trains tiny adapter matrices (~0.1–1% of params) while keeping the base frozen.</p>
 </div>
@@ -91,7 +99,7 @@
 <blockquote><strong>Position in the stack:</strong> Fine-tuning sits <em>after</em> <a class="link" href="../fundamentals/how-llms-are-trained.html">How LLMs are trained</a> and <em>alongside</em> <a class="link" href="../rag/rag-pipeline.html">The RAG pipeline</a>. Most production systems use RAG for knowledge + a small LoRA adapter for style/format. See <a class="link" href="../fundamentals/how-llms-are-trained.html">How LLMs are trained</a> for where SFT fits in the alignment stack.</blockquote>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card">
 <table>
 <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
@@ -109,7 +117,7 @@
 </div>
 </section>
 <section id="api-interface-surface">
-  <h2>04 &mdash; API / Interface Surface</h2>
+  <h2>05 &mdash; API / Interface Surface</h2>
 <div class="card">
 <h3>HuggingFace PEFT — load &amp; train</h3>
 <pre>from peft import LoraConfig, get_peft_model, PeftModel
@@ -190,7 +198,7 @@ llm = LLM(
 </div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="diagram">
 <img alt="Decision tree: fine-tune vs RAG vs long context" src="../systems/img/fine-tuning-lora-decision-zoom.png"/>
 </div>
@@ -208,7 +216,7 @@ llm = LLM(
 <blockquote><strong>Rule of thumb:</strong> Try prompt engineering first → RAG if knowledge gap → LoRA if format/style gap persists → long context only if single-doc reasoning and budget allows. Never fine-tune to inject facts that belong in a vector store.</blockquote>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card highlight">
 <pre>Raw Sources (docs, chat logs, golden Q&amp;A)
         |
@@ -252,7 +260,7 @@ llm = LLM(
 </div>
 </section>
 <section id="lora-qlora-deep-dive">
-  <h2>07 &mdash; LoRA &amp; QLoRA Deep Dive</h2>
+  <h2>08 &mdash; LoRA &amp; QLoRA Deep Dive</h2>
 <div class="diagram">
 <img alt="LoRA low-rank adapter mechanics: W + BA" src="../systems/img/fine-tuning-lora-lora-zoom.png"/>
 </div>
@@ -282,7 +290,7 @@ llm = LLM(
 </div>
 </section>
 <section id="peft-methods-compared">
-  <h2>08 &mdash; PEFT Methods Compared</h2>
+  <h2>09 &mdash; PEFT Methods Compared</h2>
 <div class="card">
 <table>
 <tr><th>Method</th><th>Trainable Params</th><th>How</th><th>Production Use</th></tr>
@@ -297,7 +305,7 @@ llm = LLM(
 </div>
 </section>
 <section id="dataset-requirements">
-  <h2>09 &mdash; Dataset Requirements</h2>
+  <h2>10 &mdash; Dataset Requirements</h2>
 <div class="card">
 <h3>Size guidelines</h3>
 <table>
@@ -328,7 +336,7 @@ llm = LLM(
 </div>
 </section>
 <section id="huggingface-axolotl-training-patterns">
-  <h2>10 &mdash; HuggingFace &amp; Axolotl Training Patterns</h2>
+  <h2>11 &mdash; HuggingFace &amp; Axolotl Training Patterns</h2>
 <div class="card">
 <h3>HF Trainer loop (minimal)</h3>
 <pre>from datasets import load_dataset
@@ -382,7 +390,7 @@ accelerate launch --num_processes 4 -m axolotl.cli.train axolotl_config.yaml
 </div>
 </section>
 <section id="eval-before-deploy">
-  <h2>11 &mdash; Eval Before Deploy</h2>
+  <h2>12 &mdash; Eval Before Deploy</h2>
 <div class="card highlight">
 <blockquote><strong>Never deploy a fine-tuned model without an eval gate.</strong> Fine-tuning can silently degrade general capabilities, introduce hallucination patterns, or leak training data.</blockquote>
 </div>
@@ -418,11 +426,11 @@ def run_golden_eval(model, tokenizer, golden_path: str, threshold: float = 0.90)
 </section>
 <p class="part-divider">The full explanation</p>
 <section id="fine-tuning-in-practice-sft-lora-qlora">
-  <h2>12 &mdash; Fine-tuning in practice: SFT, LoRA, QLoRA</h2>
+  <h2>13 &mdash; Fine-tuning in practice: SFT, LoRA, QLoRA</h2>
 <p>You've exhausted prompting and RAG, and you need consistent <i>behavior</i> — a format, a style, a narrow skill — baked in. Now, and only now, you fine-tune.</p>
 </section>
 <section id="the-decision-ladder-always-in-this-order">
-  <h2>13 &mdash; The decision ladder (always in this order)</h2>
+  <h2>14 &mdash; The decision ladder (always in this order)</h2>
 <pre class="ascii-diagram">1. PROMPTING     behavior change via input           — try first, always
 2. RAG / TOOLS   knowledge change                    — NEVER fine-tune to inject facts
 3. FINE-TUNING   consistent behavior/format/skill,   — when evals prove 1–2 insufficient,
@@ -431,7 +439,7 @@ def run_golden_eval(model, tokenizer, golden_path: str, threshold: float = 0.90)
 <div class="callout"><p><strong>A mini-scenario to keep in mind</strong></p>You're building a support-ticket triage system. The model must emit strict JSON: <code>{"queue": …, "severity": …, "summary": …}</code> with a fixed taxonomy of 40 queues. Prompting with few-shot examples gets you 91% valid-and-correct; the remaining 9% is format drift and taxonomy confusion, and your 3K-token prompt costs real money at 500K tickets/month. This is the textbook fine-tune: consistent behavior + format + prompt-shrink, no new facts needed. We'll use it throughout this topic.</div>
 </section>
 <section id="the-methods">
-  <h2>14 &mdash; The methods</h2>
+  <h2>15 &mdash; The methods</h2>
 <table>
 <tr><th>Method</th><th>What trains</th><th>When</th></tr>
 <tr><td><b>Full fine-tuning</b></td><td>all weights</td><td>rarely you — expensive, catastrophic forgetting, whole new model to serve</td></tr>
@@ -442,7 +450,7 @@ def run_golden_eval(model, tokenizer, golden_path: str, threshold: float = 0.90)
 <p>Why low-rank works: the <i>change</i> needed to specialize a model is far simpler than the model itself — a low-rank matrix (remember SVD from <a href="../foundations/index.html">Math &amp; ML foundations</a>) captures it. That's the whole trick. Concretely: a frozen weight matrix W of shape 4096×4096 has 16.8M parameters; a rank-16 LoRA on it adds B (4096×16) and A (16×4096) — 131K parameters, 0.8% of the original — and at inference you compute <code>Wx + (α/r)·B·A·x</code>. At serve time you can merge <code>W' = W + (α/r)·B·A</code> and the adapter costs literally zero latency.</p>
 </section>
 <section id="step-0-curate-the-data-this-is-where-fine-tunes-are-won">
-  <h2>15 &mdash; Step 0: curate the data (this is where fine-tunes are won)</h2>
+  <h2>16 &mdash; Step 0: curate the data (this is where fine-tunes are won)</h2>
 <p>Before any trainer runs, you dedupe, filter, and format. Three rules: (1) every example must look <i>exactly</i> like an inference-time conversation, chat template included; (2) near-duplicates teach nothing and inflate epochs — kill them; (3) a bad example hurts more than a good example helps, so filter aggressively. For the triage scenario, we mine 6 months of human-triaged tickets and keep only ones where the human's triage was never re-routed later (a free quality label).</p>
 <div class="code-block"><div class="code-file"><span>curate.py — dedupe + quality filter before any training</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> json, hashlib, re
 <span class="kw">from</span> datasets <span class="kw">import</span> Dataset
@@ -491,7 +499,7 @@ Dataset.from_list(balanced).train_test_split(test_size=<span class="nr">0.05</sp
 <p>For fuzzier dedup (paraphrased duplicates), embed each input and drop pairs with cosine similarity &gt; 0.95 — same idea as RAG dedup (<a href="../agents/multi-agent.html">Multi-agent systems</a>). 6,200 excellent examples is a <i>large</i> set for a narrow-format task; 1–3K often suffices. Data quality ≫ quantity is not a slogan, it's the observed scaling behavior of SFT: quality sets the ceiling, quantity just gets you to it faster.</p>
 </section>
 <section id="the-complete-qlora-run-hugging-face-trl-peft-the-de-facto-op">
-  <h2>16 &mdash; The complete QLoRA run (Hugging Face TRL + PEFT — the de-facto open stack)</h2>
+  <h2>17 &mdash; The complete QLoRA run (Hugging Face TRL + PEFT — the de-facto open stack)</h2>
 <p>The original snippet, now grown into the whole thing: 4-bit load, chat-template formatting, LoRA config, training args, eval before/after, and adapter save/merge.</p>
 <div class="code-block"><div class="code-file"><span>qlora_triage.py — end-to-end QLoRA fine-tune of an 8B model on one 24GB GPU</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> torch
 <span class="kw">from</span> datasets <span class="kw">import</span> load_from_disk
@@ -565,7 +573,7 @@ tok.save_pretrained(<span class="st">"</span><span class="st">triage-merged</spa
 <p><code>eval_loss</code> going down is necessary, not sufficient. The eval that matters is <b>task-level</b>: run your frozen test tickets through the tuned model, parse the JSON, and score queue accuracy and format validity — plus a <b>regression probe</b> of ~50 generic instructions ("summarize this", "write a python function…") judged against the base model, to catch capability damage. In the triage scenario a realistic (illustrative) outcome: valid-JSON rate 99.7% (was 96%), queue accuracy 96.4% (was 91%), regression probe within noise, and the 3K-token instruction prompt shrinks to a 1-line system message — at 500K tickets/month and ~3K saved input tokens each, that's ~1.5B input tokens/month you stop paying for.</p>
 </section>
 <section id="choosing-r-alpha-and-target-modules">
-  <h2>17 &mdash; Choosing r, alpha, and target modules</h2>
+  <h2>18 &mdash; Choosing r, alpha, and target modules</h2>
 <p>Intuition first: <b>r</b> is the capacity of the change you're learning; <b>alpha</b> scales how loudly the adapter speaks at inference (effective scale = α/r — the common convention is α = 2r, giving scale 2); <b>target modules</b> decide <i>where</i> the model can change. Format/style tasks need less capacity than skill/domain tasks.</p>
 <table>
 <tr><th>Task shape</th><th>r</th><th>alpha</th><th>target_modules</th><th>Why</th></tr>
@@ -577,7 +585,7 @@ tok.save_pretrained(<span class="st">"</span><span class="st">triage-merged</spa
 <p>Two practical notes. First, r has sharply diminishing returns — the QLoRA ablations showed target-module coverage beats rank; going 16→64 on <code>q,v</code> only is usually worse than staying at 16 and adding MLP targets. Second, if you double r, halve nothing else: keep α = 2r so the effective scale stays put, otherwise you've silently changed the learning dynamics too.</p>
 </section>
 <section id="worked-example-gpu-memory-for-an-8b-qlora-run">
-  <h2>18 &mdash; Worked example — GPU memory for an 8B QLoRA run</h2>
+  <h2>19 &mdash; Worked example — GPU memory for an 8B QLoRA run</h2>
 <pre class="ascii-diagram">Llama-3.1-8B, NF4 base, LoRA r=16 on all linear layers, seq 4096, micro-batch 2,
 gradient checkpointing ON, paged 8-bit Adam. All numbers approximate.
 
@@ -604,7 +612,7 @@ Sanity checks the formula gives you for free:
 <p>The takeaway shape: in QLoRA, the <i>frozen quantized base</i> is the big rock (4.4 GB), the trainable state is trivial (&lt;0.4 GB), and <b>activations are the knob you actually tune</b> — via micro-batch size, sequence length, and gradient checkpointing. When you OOM, cut micro-batch and raise <code>gradient_accumulation_steps</code>; the effective batch (and the math) is unchanged.</p>
 </section>
 <section id="what-actually-determines-success-not-the-trainer-flags">
-  <h2>19 &mdash; What actually determines success (not the trainer flags)</h2>
+  <h2>20 &mdash; What actually determines success (not the trainer flags)</h2>
 <ol>
 <li><b>Data quality ≫ quantity.</b> 1K excellent, diverse, deduplicated examples beat 50K scraped ones. Format them <i>exactly</i> like inference-time prompts — same system message, same chat template, same truncation policy.</li>
 <li><b>Eval before/after</b> on a held-out set — including <b>regression</b> checks on general ability, not just the target task.</li>
@@ -631,7 +639,7 @@ Sanity checks the formula gives you for free:
 </ol></div>
 </section>
 <section id="full-fine-tuning-vs-parameter-efficient">
-  <h2>20 &mdash; Full fine-tuning vs parameter-efficient</h2>
+  <h2>21 &mdash; Full fine-tuning vs parameter-efficient</h2>
 <p>The job post's key line: "you have fine-tuned a model yourself." Understand the math, run it on a free GPU, and report before/after numbers.</p>
 <table>
 <tr><th></th><th>Full fine-tune</th><th>LoRA</th><th>QLoRA</th></tr>
@@ -644,7 +652,7 @@ Sanity checks the formula gives you for free:
 <p>Pick full fine-tuning for large datasets, big domain/language shifts, or when LoRA plateaus and you have the GPUs. Pick LoRA/QLoRA for nearly everything else.</p>
 </section>
 <section id="lora-the-math">
-  <h2>21 &mdash; LoRA, the math</h2>
+  <h2>22 &mdash; LoRA, the math</h2>
 <p>Hypothesis (backed by experiments): the weight <em>update</em> needed to adapt a pretrained model has low intrinsic rank. So freeze W and learn a rank-r factorization of the update:</p>
 <pre class="formula">h = W x + (α / r) · B A x
 W: d×k frozen     A: r×k (random init)     B: d×r (zero init)     r ≪ min(d, k)
@@ -661,7 +669,7 @@ trainable per matrix = r (d + k)
 <p>Variants worth knowing by name: DoRA (decomposes magnitude and direction), LoRA+ (different LRs for A and B), PiSSA (init from principal components).</p>
 </section>
 <section id="qlora-the-details">
-  <h2>22 &mdash; QLoRA, the details</h2>
+  <h2>23 &mdash; QLoRA, the details</h2>
 <p>Plain LoRA still holds the frozen base in bf16 (2 B/param). QLoRA stores it in 4 bits:</p>
 <ul>
 <li><strong>NF4 (4-bit NormalFloat)</strong>: 16 levels placed at quantiles of a standard normal. Pretrained weights are ~normally distributed, so every level gets used equally: information-theoretically optimal for that distribution.</li>
@@ -673,7 +681,7 @@ trainable per matrix = r (d + k)
 <p>Net: 7–8B fine-tunes fit on one 16–24 GB GPU; 1–3B on a free Colab/Kaggle T4. Trade-off: ~20–40% slower training than 16-bit LoRA due to dequantization.</p>
 </section>
 <section id="preparing-fine-tuning-data">
-  <h2>23 &mdash; Preparing fine-tuning data</h2>
+  <h2>24 &mdash; Preparing fine-tuning data</h2>
 <ul>
 <li><strong>Format</strong>: a list of chat messages per example, rendered with the model's own chat template.</li>
 <li><strong>Loss masking</strong>: labels = −100 on system and user tokens, so loss covers only assistant tokens. TRL handles this with assistant-only loss / completion-only options.</li>
@@ -684,7 +692,7 @@ trainable per matrix = r (d + k)
 <div class="callout warn"><p><strong>Trap</strong></p> train/test overlap through near-duplicates makes fine-tunes look magical. Dedupe across splits before trusting any number.</div>
 </section>
 <section id="a-working-qlora-recipe">
-  <h2>24 &mdash; A working QLoRA recipe</h2>
+  <h2>25 &mdash; A working QLoRA recipe</h2>
 <pre><span class="kw">import</span> torch
 <span class="kw">from</span> datasets <span class="kw">import</span> load_dataset
 <span class="kw">from</span> transformers <span class="kw">import</span> AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
@@ -716,7 +724,7 @@ trainer.save_model(<span class="st">"</span><span class="st">adapter</span><span
 <p>Library argument names shift between TRL versions (e.g. max_seq_length → max_length); check the installed version's docs. On a T4 (no bf16), use fp16 compute dtype and fp16=True.</p>
 </section>
 <section id="hyperparameters-that-matter">
-  <h2>25 &mdash; Hyperparameters that matter</h2>
+  <h2>26 &mdash; Hyperparameters that matter</h2>
 <table>
 <tr><th>Knob</th><th>Start</th><th>If…</th></tr>
 <tr><td>Learning rate</td><td>2e-4 (LoRA), 1e-5–2e-5 (full)</td><td>Loss spikes → lower; flat → raise</td></tr>
@@ -728,7 +736,7 @@ trainer.save_model(<span class="st">"</span><span class="st">adapter</span><span
 <p>Watch the eval loss and, more importantly, your task metric at each checkpoint. Lowest eval loss is not always the best task score.</p>
 </section>
 <section id="evaluating-a-fine-tune-and-catastrophic-forgetting">
-  <h2>26 &mdash; Evaluating a fine-tune and catastrophic forgetting</h2>
+  <h2>27 &mdash; Evaluating a fine-tune and catastrophic forgetting</h2>
 <ol>
 <li>Freeze a held-out test set before training.</li>
 <li>Score the <strong>base model</strong> (with your best prompt) and the <strong>tuned model</strong> on it with an automatic metric. Report both; the delta is your result.</li>
@@ -737,7 +745,7 @@ trainer.save_model(<span class="st">"</span><span class="st">adapter</span><span
 <p>Forgetting fixes: lower LR, fewer epochs, smaller r, mix 5–20% general instruction data into training, or serve the adapter only for this task.</p>
 </section>
 <section id="from-adapter-to-production">
-  <h2>27 &mdash; From adapter to production</h2>
+  <h2>28 &mdash; From adapter to production</h2>
 <ul>
 <li><strong>Merge</strong> for a single-task deployment: <code>model = PeftModel.from_pretrained(base_bf16, "adapter").merge_and_unload()</code>. Merge into a <em>bf16</em> base, not the 4-bit one.</li>
 <li>Then optionally quantize the merged model (AWQ/GPTQ) for serving.</li>
@@ -746,12 +754,12 @@ trainer.save_model(<span class="st">"</span><span class="st">adapter</span><span
 </ul>
 </section>
 <section id="other-peft-methods">
-  <h2>28 &mdash; Other PEFT methods</h2>
+  <h2>29 &mdash; Other PEFT methods</h2>
 <p><strong>Prefix/prompt tuning</strong>: learn virtual tokens prepended to the input; tiny, weaker on small models. <strong>Adapters</strong> (Houlsby): small bottleneck MLPs inserted in each block; add latency. <strong>IA³</strong>: learn per-channel scaling vectors. LoRA dominates because it merges away at inference.</p>
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>29 &mdash; Production &amp; Ops</h2>
+  <h2>30 &mdash; Production &amp; Ops</h2>
 <div class="card">
 <table>
 <tr><th>Concern</th><th>Pattern</th><th>Tooling</th></tr>
@@ -776,7 +784,7 @@ trainer.save_model(<span class="st">"</span><span class="st">adapter</span><span
 </div>
 </section>
 <section id="related-topics">
-  <h2>30 &mdash; Related topics</h2>
+  <h2>31 &mdash; Related topics</h2>
 <div class="card">
 <table>
 <tr><th>Related Sheet</th><th>Connection</th></tr>
@@ -790,8 +798,8 @@ trainer.save_model(<span class="st">"</span><span class="st">adapter</span><span
 </table>
 </div>
 </section>
-<section id="common-pitfalls">
-  <h2>31 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>32 &mdash; Where people get lost</h2>
 <div class="card">
 <ul>
 <li><strong>Fine-tuning facts instead of behavior:</strong> if the answer changes weekly, use RAG. LoRA bakes knowledge into weights — stale after data drift.</li>
@@ -805,8 +813,12 @@ trainer.save_model(<span class="st">"</span><span class="st">adapter</span><span
 </ul>
 </div>
 </section>
+<section id="how-this-connects">
+  <h2>33 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../fundamentals/how-llms-are-trained.html">How LLMs are trained</a> &mdash; Pretraining, instruction tuning, chat templates, reasoning models, evaluating LLMs, and prompting vs RAG vs fine-tuning.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="../rag/rag-in-production.html">Making RAG good &amp; measuring it</a> &mdash; Advanced RAG, a production RAG chatbot design, retrieval and answer metrics, freshness, ACLs, latency, injection.</li><li><a href="../agents/multi-agent.html">Multi-agent systems</a> &mdash; When to go multi-agent, topologies, handoffs and state, orchestration, and the production debate.</li></ul><h3>Where this shows up later</h3><ul><li><a href="rlhf.html">RLHF &amp; reward models</a> &mdash; Teaching taste: preference data, reward models, PPO and the KL leash.</li><li><a href="dpo.html">DPO &amp; preference optimization</a> &mdash; The RLHF outcome with a supervised loss, and KTO, IPO and ORPO.</li><li><a href="constitutional-ai.html">Constitutional AI &amp; red-teaming</a> &mdash; Alignment from written principles, and attacking your own model before users do.</li><li><a href="../inference/serving.html">Serving &amp; scaling</a> &mdash; vLLM and Ollama, benchmarking honestly, a production serving setup and scaling it.</li><li><a href="../projects/portfolio-projects.html">Portfolio projects</a> &mdash; Five projects from micrograd to a shipped service, and a weekend build that makes interview answers real.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>32 &mdash; Check yourself</h2>
+  <h2>34 &mdash; Check yourself</h2>
 <details>
 <summary>When would you fine-tune vs RAG vs long context?</summary>
 <div class="answer">RAG when knowledge changes frequently and you need citations — it keeps facts external and updatable. Fine-tune (LoRA) when you need consistent output format, domain vocabulary, or structured extraction that prompting can't reliably achieve. Long context (128K+) when a full document fits in one pass and you need cross-section reasoning without retrieval infra — but at ~$0.30–0.50/query for 128K tokens, it's expensive at scale. Production default: RAG for knowledge + small LoRA for style/format. See the decision tree in section 02.</div>
@@ -862,7 +874,7 @@ trainer.save_model(<span class="st">"</span><span class="st">adapter</span><span
 <details><summary>The tuned model is great on your task but now refuses or rambles on general chat.</summary><div class="answer">Forgetting or template issues. Check end-of-turn tokens and template, then lower LR/epochs and mix general data.</div></details>
 </section>
 <section id="build-it">
-  <h2>33 &mdash; Build it</h2>
+  <h2>35 &mdash; Build it</h2>
 <div class="callout success">QLoRA-tune Qwen2.5-1.5B or Llama-3.2-1B on a narrow task (text-to-SQL, structured JSON extraction) on a free T4. Report base vs tuned on 200 held-out examples, push the adapter to the Hub.</div>
 </section>
 

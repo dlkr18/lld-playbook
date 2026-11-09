@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Security &amp; guardrails -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Production &amp; evals" data-href="index.html">
+<meta name="ai-topic" content="production/security">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,32 +19,34 @@
   <h2>Security &amp; guardrails</h2>
   <a href="index.html">&larr; Production &amp; evals</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-surface"><span class="num">04</span> API Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#deep-dive-input-guardrails"><span class="num">07</span> Deep Dive: Input Guardrails</a>
-  <a href="#deep-dive-output-guardrails"><span class="num">08</span> Deep Dive: Output Guardrails</a>
-  <a href="#deep-dive-pii-privacy"><span class="num">09</span> Deep Dive: PII &amp; Privacy</a>
-  <a href="#deep-dive-jailbreak-defense"><span class="num">10</span> Deep Dive: Jailbreak Defense</a>
-  <a href="#deep-dive-human-in-the-loop"><span class="num">11</span> Deep Dive: Human-in-the-Loop</a>
-  <a href="#security-agents-expand-the-attack-surface"><span class="num">12</span> Security: agents expand the attack surface</a>
-  <a href="#threat-modeling-one-real-system-end-to-end"><span class="num">13</span> Threat-modeling one real system, end to end</a>
-  <a href="#three-attacks-verbatim-and-what-stops-each"><span class="num">14</span> Three attacks, verbatim, and what stops each</a>
-  <a href="#least-privilege-in-code-scoped-short-lived-tool-credentials"><span class="num">15</span> Least privilege in code: scoped, short-lived tool credentials</a>
-  <a href="#output-sanitization-in-code"><span class="num">16</span> Output sanitization in code</a>
-  <a href="#red-teaming-your-own-agent"><span class="num">17</span> Red-teaming your own agent</a>
-  <a href="#production-ops"><span class="num">18</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">19</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">20</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">21</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-surface"><span class="num">05</span> API Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#deep-dive-input-guardrails"><span class="num">08</span> Deep Dive: Input Guardrails</a>
+  <a href="#deep-dive-output-guardrails"><span class="num">09</span> Deep Dive: Output Guardrails</a>
+  <a href="#deep-dive-pii-privacy"><span class="num">10</span> Deep Dive: PII &amp; Privacy</a>
+  <a href="#deep-dive-jailbreak-defense"><span class="num">11</span> Deep Dive: Jailbreak Defense</a>
+  <a href="#deep-dive-human-in-the-loop"><span class="num">12</span> Deep Dive: Human-in-the-Loop</a>
+  <a href="#security-agents-expand-the-attack-surface"><span class="num">13</span> Security: agents expand the attack surface</a>
+  <a href="#threat-modeling-one-real-system-end-to-end"><span class="num">14</span> Threat-modeling one real system, end to end</a>
+  <a href="#three-attacks-verbatim-and-what-stops-each"><span class="num">15</span> Three attacks, verbatim, and what stops each</a>
+  <a href="#least-privilege-in-code-scoped-short-lived-tool-credentials"><span class="num">16</span> Least privilege in code: scoped, short-lived tool credentials</a>
+  <a href="#output-sanitization-in-code"><span class="num">17</span> Output sanitization in code</a>
+  <a href="#red-teaming-your-own-agent"><span class="num">18</span> Red-teaming your own agent</a>
+  <a href="#production-ops"><span class="num">19</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">20</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">21</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">22</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">23</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Security &amp; guardrails <span>// Production &amp; evals</span></h1>
   <p>How agents expand the attack surface, input and output guardrails, and the defences that hold.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">18 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -50,17 +54,21 @@
 <p>Defense-in-depth for LLM apps: input filtering, system policies, output validation, PII handling, jailbreak detection, and human-in-the-loop for high-risk paths.</p>
 <div class="diagram"><img alt="AI Safety &amp; Guardrails overview" src="../fundamentals/img/ai-safety-guardrails-main.png"/></div><p class="diagram-caption">Layered safety: sanitize input, enforce system policy in the LLM, validate output, and route edge cases to human review before users see responses.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Excessive agency</strong></td><td>An over-empowered agent taking consequential actions when manipulated.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card"><p>Aligned base models reduce harm but <strong>app-level guardrails</strong> enforce your policy: block jailbreaks, redact PII, validate JSON, refuse out-of-scope topics. Fail closed on high-risk domains.</p><blockquote>Red-teaming: <a href="../adaptation/constitutional-ai.html">Constitutional AI &amp; red-teaming</a>.</blockquote></div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Guardrails</td><td>Programmatic safety layers around LLM</td><td>Not just system prompt</td></tr><tr><td>Jailbreak</td><td>Bypass safety via clever prompt</td><td>Evolving arms race</td></tr><tr><td>Llama Guard</td><td>Classifier for unsafe I/O</td><td>Latency add ~20ms</td></tr><tr><td>NeMo Guardrails</td><td>Colang policy DSL</td><td>NVIDIA ecosystem</td></tr><tr><td>Fail closed</td><td>Block on classifier error</td><td>Better than leak</td></tr></table></div>
 </section>
 <section id="api-surface">
-  <h2>04 &mdash; API Surface</h2>
+  <h2>05 &mdash; API Surface</h2>
 <div class="card"><pre># NeMo Guardrails colang snippet
 # define user ask chemistry
 # define bot refuse chemistry
@@ -69,34 +77,34 @@
 #   bot refuse chemistry</pre></div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card"><table><tr><th>Control</th><th>Use</th><th>Skip</th></tr><tr><td>Input classifier</td><td>Public-facing chat</td><td>Internal dev tools</td></tr><tr><td>Output schema</td><td>Structured API</td><td>Free-form creative</td></tr><tr><td>HITL</td><td>Finance/health</td><td>Low-risk FAQ</td></tr><tr><td>Topic blocklist</td><td>Regulated industries</td><td>General assistant</td></tr></table></div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card highlight"><pre>User -&gt; Input filter -&gt; LLM (+ system policy) -&gt; Output filter -&gt; User
               | jailbreak              | toxicity/PII/schema
               v                          v
          Block / sanitize            Regenerate / block</pre></div>
 </section>
 <section id="deep-dive-input-guardrails">
-  <h2>07 &mdash; Deep Dive: Input Guardrails</h2>
+  <h2>08 &mdash; Deep Dive: Input Guardrails</h2>
 <div class="diagram"><img alt="Jailbreak detection, PII redaction, and injection scanning on user and RAG content." src="../fundamentals/img/ai-safety-guardrails-input-zoom.png"/></div><p class="diagram-caption">Jailbreak detection, PII redaction, and injection scanning on user and RAG content.</p><div class="card"><p>Classify jailbreak attempts. Strip/mask PII before logging. Scan retrieved docs for injection ('ignore instructions'). Separate trusted system from untrusted user content.</p></div>
 </section>
 <section id="deep-dive-output-guardrails">
-  <h2>08 &mdash; Deep Dive: Output Guardrails</h2>
+  <h2>09 &mdash; Deep Dive: Output Guardrails</h2>
 <div class="diagram"><img alt="Toxicity scoring, schema validation, streaming cutoffs, and topic blocklists on model output." src="../fundamentals/img/ai-safety-guardrails-output-zoom.png"/></div><p class="diagram-caption">Toxicity scoring, schema validation, streaming cutoffs, and topic blocklists on model output.</p><div class="card"><p>JSON schema validation; toxicity threshold; block regex (API keys, SSN patterns); streaming token filter.</p></div>
 </section>
 <section id="deep-dive-pii-privacy">
-  <h2>09 &mdash; Deep Dive: PII &amp; Privacy</h2>
+  <h2>10 &mdash; Deep Dive: PII &amp; Privacy</h2>
 <div class="card"><p>Detect emails, phones, SSN with NER/regex. Redact before logs and third-party APIs. Regional compliance (GDPR delete, data residency).</p></div>
 </section>
 <section id="deep-dive-jailbreak-defense">
-  <h2>10 &mdash; Deep Dive: Jailbreak Defense</h2>
+  <h2>11 &mdash; Deep Dive: Jailbreak Defense</h2>
 <div class="card"><p>Layer: classifier, prompt hardening, retrieval isolation, output refusal patterns. Red-team regularly. Never trust 'ignore previous instructions' in user docs.</p></div>
 </section>
 <section id="deep-dive-human-in-the-loop">
-  <h2>11 &mdash; Deep Dive: Human-in-the-Loop</h2>
+  <h2>12 &mdash; Deep Dive: Human-in-the-Loop</h2>
 <div class="card"><p>Some outputs should never ship on the model's word alone. Route them to a reviewer queue when any trigger fires:</p>
 <ul><li><strong>Low confidence</strong>: a guardrail classifier or judge scores near its threshold, or retrieval found nothing solid.</li>
 <li><strong>High stakes</strong>: medical, legal or financial advice, refunds above a limit, anything sent to a customer.</li>
@@ -105,7 +113,7 @@
 </section>
 <p class="part-divider">The full explanation</p>
 <section id="security-agents-expand-the-attack-surface">
-  <h2>12 &mdash; Security: agents expand the attack surface</h2>
+  <h2>13 &mdash; Security: agents expand the attack surface</h2>
 <p>An agent + powerful tools + untrusted input is a new class of risk. Design assuming it <i>will</i> be attacked.</p>
 <p>Classic application security asks: can an attacker make <i>my code</i> do something I didn't intend? Agent security adds a second question: can an attacker make <i>my model</i> do something I didn't intend — using nothing but text? The second question is harder, because the model's "code" is a probability distribution over next tokens, and every piece of text it reads is a potential input to that distribution. There is no parser you can harden, no query you can parameterize. The defense has to live in the <b>architecture around the model</b>, not in the model itself.</p>
 <div class="callout"><p><strong>The one-sentence mental model</strong></p>Treat the LLM like a <b>brilliant, gullible intern</b>: give it only the keys it needs for the task at hand, watch what it does with them, require sign-off on anything irreversible, and never let a stranger whisper in its ear without supervision. Every control in this topic is one of those four things made concrete.</div>
@@ -118,7 +126,7 @@
 <span class="cm"># 4. Allow-list tools per context; sandbox code/computer-use; audit-log everything</span></pre></div>
 </section>
 <section id="threat-modeling-one-real-system-end-to-end">
-  <h2>13 &mdash; Threat-modeling one real system, end to end</h2>
+  <h2>14 &mdash; Threat-modeling one real system, end to end</h2>
 <p>Abstract advice doesn't stick; a walkthrough does. Take a concrete product: an <b>email assistant agent</b> that reads a user's inbox, summarizes threads, drafts replies, and can send email, search the web, and look up CRM records. This is a deliberately scary example because it combines all three ingredients of the <i>lethal trifecta</i>: access to <b>private data</b> (the inbox, the CRM), exposure to <b>untrusted content</b> (anyone on the internet can email your user), and an <b>exfiltration channel</b> (it can send email and fetch URLs). Any system with all three is one clever paragraph away from a breach.</p>
 <table>
 <tr><th>Asset (what we protect)</th><th>Attacker (who wants it)</th><th>Vector (how they get in)</th><th>Control (what stops it)</th></tr>
@@ -132,7 +140,7 @@
 <p>Two things to notice. First, <b>every row's control is architectural</b> — a scope, a gate, a filter, a cap — not a prompt. Second, the vectors compose: the scariest attack chains reading (untrusted email) → tool call (CRM lookup) → exfiltration (send or fetch). Break <i>any one link</i> of that chain and the attack dies. That's why partial controls are still worth shipping.</p>
 </section>
 <section id="three-attacks-verbatim-and-what-stops-each">
-  <h2>14 &mdash; Three attacks, verbatim, and what stops each</h2>
+  <h2>15 &mdash; Three attacks, verbatim, and what stops each</h2>
 <p>These transcripts are condensed but structurally faithful to attacks demonstrated in the wild since 2023. Read the attacker text the way the model does: it's just tokens, and it's often <i>more</i> confident and specific than your system prompt.</p>
 <h3>Attack 1 — direct injection in retrieved content</h3>
 <div class="code-block"><div class="code-file"><span>transcript — hijack via a web page the agent summarizes</span><span class="code-lang">text</span></div><pre>USER:  Summarize the reviews on this product page for me.
@@ -174,7 +182,7 @@ AGENT (defended): output sanitizer strips/proxies external image URLs
 <p><b>What stops it:</b> <b>output sanitization</b>. There was no dangerous tool call to gate — the leak rides on the response itself. Markdown images, auto-fetched link previews, and agent-constructed URLs are all egress channels. Sanitize model output before it reaches anything that renders or fetches: strip external images (or proxy them through your own domain with the query string dropped), and treat any model-constructed URL with data-bearing parameters as hostile. This class of bug has been found repeatedly in real products (ChatGPT plugins, Bard/Gemini extensions, Slack AI, Copilot — the pattern recurs because every new renderer reintroduces it).</p>
 </section>
 <section id="least-privilege-in-code-scoped-short-lived-tool-credentials">
-  <h2>15 &mdash; Least privilege in code: scoped, short-lived tool credentials</h2>
+  <h2>16 &mdash; Least privilege in code: scoped, short-lived tool credentials</h2>
 <p>The most common implementation mistake is a single service account whose API key sits in the agent process and can do everything the <i>product</i> can do, rather than what <i>this user's current task</i> needs. The fix is to mint a narrow, short-lived credential per session, derived from the authenticated user — the agent can never exceed the user's own rights, and usually holds far less.</p>
 <div class="code-block"><div class="code-file"><span>tool_credentials.py — per-session, scoped-down, expiring tokens</span><span class="code-lang">python</span></div><pre><span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass, field
 <span class="kw">from</span> datetime <span class="kw">import</span> datetime, timedelta, timezone
@@ -230,7 +238,7 @@ AGENT (defended): output sanitizer strips/proxies external image URLs
 <p>The properties that matter: grants are minted <b>before</b> the model runs, from code the model can't touch; they <b>expire</b> (a stolen/replayed session dies in minutes); they carry a <b>call budget</b> (an injected "loop over every account" runs out of gas); and the resource filter is applied <b>server-side by merging over model args</b>, so a hijacked model asking for <code>owner_id: "*"</code> gets its argument silently overwritten, not honored.</p>
 </section>
 <section id="output-sanitization-in-code">
-  <h2>16 &mdash; Output sanitization in code</h2>
+  <h2>17 &mdash; Output sanitization in code</h2>
 <p>Everything the model emits is untrusted twice over — it may contain secrets it read, and it may contain attacker-crafted markup it was tricked into producing. Scan on the way out, in one place, for every channel (UI, email, tool arguments).</p>
 <div class="code-block"><div class="code-file"><span>output_sanitizer.py — the last gate before anything leaves</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> re, math
 <span class="kw">from</span> urllib.parse <span class="kw">import</span> urlparse, parse_qs
@@ -282,7 +290,7 @@ ALLOWED_LINK_DOMAINS = {<span class="st">"</span><span class="st">docs.internal.
 </div>
 </section>
 <section id="red-teaming-your-own-agent">
-  <h2>17 &mdash; Red-teaming your own agent</h2>
+  <h2>18 &mdash; Red-teaming your own agent</h2>
 <p>You would not ship a payments API without penetration testing; don't ship an agent without adversarial evaluation. The good news: injection attacks are text, so your red-team suite is just another eval suite (<a href="index.html">Production &amp; evals</a>) with hostile inputs and pass/fail assertions on <i>behavior</i>, not on wording.</p>
 <div class="code-block"><div class="code-file"><span>redteam/suite.yaml — structure of an adversarial regression suite</span><span class="code-lang">yaml</span></div><pre><span class="tp">suite</span>: email-assistant-redteam-v7
 <span class="tp">run_on</span>: [every_pr_touching_prompts_or_tools, nightly, model_upgrade]
@@ -332,19 +340,23 @@ ALLOWED_LINK_DOMAINS = {<span class="st">"</span><span class="st">docs.internal.
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>18 &mdash; Production &amp; Ops</h2>
+  <h2>19 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Log all guardrail triggers (no raw PII)</li><li>Weekly red-team sprint</li><li>Version guardrail models with LLM</li><li>Incident runbook for bypass reports</li></ul></div>
 </section>
 <section id="related-topics">
-  <h2>19 &mdash; Related topics</h2>
+  <h2>20 &mdash; Related topics</h2>
 <div class="card"><ul><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a></li><li><a href="../fundamentals/limits.html">Limits &amp; hallucination</a></li><li><a href="../adaptation/constitutional-ai.html">Constitutional AI &amp; red-teaming</a></li><li><a href="../agents/agent-loop.html">The agent loop</a></li><li><a href="../fundamentals/how-llms-are-trained.html">How LLMs are trained</a></li></ul></div>
 </section>
-<section id="common-pitfalls">
-  <h2>20 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>21 &mdash; Where people get lost</h2>
 <div class="card"><ul><li>Relying only on model refusals</li><li>Logging full prompts with PII</li><li>No red-teaming after prompt changes</li><li>Guardrails only on output not input</li><li>False sense from single-turn tests</li></ul></div>
 </section>
+<section id="how-this-connects">
+  <h2>22 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../fundamentals/how-llms-are-trained.html">How LLMs are trained</a> &mdash; Pretraining, instruction tuning, chat templates, reasoning models, evaluating LLMs, and prompting vs RAG vs fine-tuning.</li><li><a href="../fundamentals/limits.html">Limits &amp; hallucination</a> &mdash; What LLMs get wrong by design, grounding and abstention, and how to design around it.</li><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a> &mdash; Zero- and few-shot, chain of thought, decomposition, self-critique, injection defence.</li><li><a href="../agents/agent-loop.html">The agent loop</a> &mdash; The loop in depth and in code: budgets, errors, human approval, reliability, safety, and how to evaluate an agent.</li><li><a href="../adaptation/constitutional-ai.html">Constitutional AI &amp; red-teaming</a> &mdash; Alignment from written principles, and attacking your own model before users do.</li><li><a href="eval-metrics.html">Evaluation metrics</a> &mdash; Perplexity, BLEU/ROUGE, benchmarks, LLM-as-judge and human evaluation: what each measures.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>21 &mdash; Check yourself</h2>
+  <h2>23 &mdash; Check yourself</h2>
 <details><summary>Guardrails vs alignment?</summary><div class="answer">Alignment (RLHF) shapes base model behavior. Guardrails are app-specific programmatic filters — you control both layers.</div></details>
 <details><summary>Defense in depth?</summary><div class="answer">Input classify + system prompt + output validate + HITL. No single layer catches all jailbreaks.</div></details>
 <details><summary>Prompt injection from RAG?</summary><div class="answer">Untrusted docs in prompt. Mitigate: delimiters, instruction hierarchy, scan docs, never execute doc instructions.</div></details>

@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tool calling -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Tools &amp; agents" data-href="index.html">
+<meta name="ai-topic" content="agents/tool-calling">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,41 +19,43 @@
   <h2>Tool calling</h2>
   <a href="index.html">&larr; Tools &amp; agents</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-surface"><span class="num">04</span> API Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#deep-dive-schema-design"><span class="num">07</span> Deep Dive: Schema Design</a>
-  <a href="#deep-dive-tool-registry"><span class="num">08</span> Deep Dive: Tool Registry</a>
-  <a href="#deep-dive-execution-sandbox"><span class="num">09</span> Deep Dive: Execution Sandbox</a>
-  <a href="#deep-dive-error-handling"><span class="num">10</span> Deep Dive: Error Handling</a>
-  <a href="#deep-dive-parallel-tools"><span class="num">11</span> Deep Dive: Parallel Tools</a>
-  <a href="#letting-the-model-act-tools"><span class="num">12</span> Letting the model act: tools</a>
-  <a href="#the-idea"><span class="num">13</span> The idea</a>
-  <a href="#what-tools-unlock-three-concrete-examples"><span class="num">14</span> What tools unlock — three concrete examples</a>
-  <a href="#the-full-cycle-request-execute-return"><span class="num">15</span> The full cycle: request → execute → return</a>
-  <a href="#what-the-loop-costs"><span class="num">16</span> What the loop costs</a>
-  <a href="#what-actually-goes-over-the-wire"><span class="num">17</span> What actually goes over the wire</a>
-  <a href="#the-two-message-shapes"><span class="num">18</span> The two message shapes</a>
-  <a href="#a-complete-transcript-parallel-calls-and-an-error"><span class="num">19</span> A complete transcript: parallel calls and an error</a>
-  <a href="#the-same-conversation-openai-format"><span class="num">20</span> The same conversation, OpenAI format</a>
-  <a href="#tool-schemas-are-your-real-api-surface"><span class="num">21</span> Tool schemas are your real API surface</a>
-  <a href="#why-the-schema-is-a-prompt"><span class="num">22</span> Why the schema is a prompt</a>
-  <a href="#description-writing-before-after"><span class="num">23</span> Description-writing: before → after</a>
-  <a href="#a-real-registry-dispatcher"><span class="num">24</span> A real registry + dispatcher</a>
-  <a href="#tool-choice-the-agency-dial-demonstrated"><span class="num">25</span> tool_choice — the agency dial, demonstrated</a>
-  <a href="#designing-tools-the-model-can-use-well"><span class="num">26</span> Designing tools the model can use well</a>
-  <a href="#production-ops"><span class="num">27</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">28</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">29</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">30</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-surface"><span class="num">05</span> API Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#deep-dive-schema-design"><span class="num">08</span> Deep Dive: Schema Design</a>
+  <a href="#deep-dive-tool-registry"><span class="num">09</span> Deep Dive: Tool Registry</a>
+  <a href="#deep-dive-execution-sandbox"><span class="num">10</span> Deep Dive: Execution Sandbox</a>
+  <a href="#deep-dive-error-handling"><span class="num">11</span> Deep Dive: Error Handling</a>
+  <a href="#deep-dive-parallel-tools"><span class="num">12</span> Deep Dive: Parallel Tools</a>
+  <a href="#letting-the-model-act-tools"><span class="num">13</span> Letting the model act: tools</a>
+  <a href="#the-idea"><span class="num">14</span> The idea</a>
+  <a href="#what-tools-unlock-three-concrete-examples"><span class="num">15</span> What tools unlock — three concrete examples</a>
+  <a href="#the-full-cycle-request-execute-return"><span class="num">16</span> The full cycle: request → execute → return</a>
+  <a href="#what-the-loop-costs"><span class="num">17</span> What the loop costs</a>
+  <a href="#what-actually-goes-over-the-wire"><span class="num">18</span> What actually goes over the wire</a>
+  <a href="#the-two-message-shapes"><span class="num">19</span> The two message shapes</a>
+  <a href="#a-complete-transcript-parallel-calls-and-an-error"><span class="num">20</span> A complete transcript: parallel calls and an error</a>
+  <a href="#the-same-conversation-openai-format"><span class="num">21</span> The same conversation, OpenAI format</a>
+  <a href="#tool-schemas-are-your-real-api-surface"><span class="num">22</span> Tool schemas are your real API surface</a>
+  <a href="#why-the-schema-is-a-prompt"><span class="num">23</span> Why the schema is a prompt</a>
+  <a href="#description-writing-before-after"><span class="num">24</span> Description-writing: before → after</a>
+  <a href="#a-real-registry-dispatcher"><span class="num">25</span> A real registry + dispatcher</a>
+  <a href="#tool-choice-the-agency-dial-demonstrated"><span class="num">26</span> tool_choice — the agency dial, demonstrated</a>
+  <a href="#designing-tools-the-model-can-use-well"><span class="num">27</span> Designing tools the model can use well</a>
+  <a href="#production-ops"><span class="num">28</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">29</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">30</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">31</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">32</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Tool calling <span>// Tools &amp; agents</span></h1>
   <p>Why tools, what goes over the wire, and designing schemas the model uses well.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">26 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -59,17 +63,21 @@
 <p>LLM function calling: JSON schema design, tool registry, execution sandbox, parallel calls, error recovery. The bridge between reasoning and the real world.</p>
 <div class="diagram"><img alt="Tool Calling &amp; Functions architecture" src="../systems/img/tool-calling-functions-main.png"/></div><p class="diagram-caption">Tool calling loop: LLM receives tool schemas, emits tool_calls JSON, executor runs in sandbox, results appended to messages, loop until final answer.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Tool / function calling</strong></td><td>The model requests a function; your code runs it.</td></tr><tr><td><strong>tool_use / tool_calls</strong></td><td>The block the model emits to request a call (name+input+id).</td></tr><tr><td><strong>tool_result</strong></td><td>Your reply with the function output, keyed by id; must be a string.</td></tr><tr><td><strong>tool_choice</strong></td><td>auto | any | {name} | none — controls whether/which tool is called.</td></tr><tr><td><strong>is_error</strong></td><td>Flag telling the model a tool call failed so it can recover.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card"><p>Tools let LLMs query databases, call APIs, run code. Schema is the contract; executor is the trust boundary.</p></div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Tool schema</td><td>JSON Schema describing params</td><td>Vague descriptions = bad args</td></tr><tr><td>tool_calls</td><td>LLM output requesting function execution</td><td>Validate before execute</td></tr><tr><td>tool_choice</td><td>auto | required | none</td><td>required forces tool even when unnecessary</td></tr></table></div>
 </section>
 <section id="api-surface">
-  <h2>04 &mdash; API Surface</h2>
+  <h2>05 &mdash; API Surface</h2>
 <div class="card"><pre>tools=[{"type":"function","function":{
   "name":"search_docs",
   "description":"Search internal KB",
@@ -80,40 +88,40 @@
 response = client.chat.completions.create(model="gpt-4o", messages=msgs, tools=tools)</pre></div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card"><table><tr><th>Approach</th><th>Use When</th><th>Skip When</th></tr><tr><td>Function calling</td><td>Structured API/DB access</td><td>Answer in context already</td></tr><tr><td>Code interpreter</td><td>Data analysis, plotting</td><td>Untrusted user input without sandbox</td></tr></table></div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card"><pre>LLM -&gt; tool_calls[] -&gt; Validator -&gt; Executor (sandbox) -&gt; tool results -&gt; LLM loop</pre></div>
 </section>
 <section id="deep-dive-schema-design">
-  <h2>07 &mdash; Deep Dive: Schema Design</h2>
+  <h2>08 &mdash; Deep Dive: Schema Design</h2>
 <div class="diagram"><img alt="JSON schema fields: name, description, parameters with types and enums" src="../systems/img/tool-calling-functions-schema-zoom.png"/></div><p class="diagram-caption">JSON schema fields: name, description, parameters with types and enums</p><div class="card"><p>Descriptions are prompts. Use enums for finite choices. Required fields only. Example values in description.</p></div>
 </section>
 <section id="deep-dive-tool-registry">
-  <h2>08 &mdash; Deep Dive: Tool Registry</h2>
+  <h2>09 &mdash; Deep Dive: Tool Registry</h2>
 <div class="card"><p>Central registry maps name → handler + schema + ACL. Dynamic registration per tenant. Max 20 tools per call — prune by relevance classifier.</p></div>
 </section>
 <section id="deep-dive-execution-sandbox">
-  <h2>09 &mdash; Deep Dive: Execution Sandbox</h2>
+  <h2>10 &mdash; Deep Dive: Execution Sandbox</h2>
 <div class="card"><p>Network egress allowlist. Read-only DB creds. Timeout 30s. No filesystem write except /tmp. Firecracker/gVisor for code execution.</p></div>
 </section>
 <section id="deep-dive-error-handling">
-  <h2>10 &mdash; Deep Dive: Error Handling</h2>
+  <h2>11 &mdash; Deep Dive: Error Handling</h2>
 <div class="card"><p>Return structured errors to LLM: {error, retry_hint}. Max 3 retries per tool. Circuit breaker on downstream failures.</p></div>
 </section>
 <section id="deep-dive-parallel-tools">
-  <h2>11 &mdash; Deep Dive: Parallel Tools</h2>
+  <h2>12 &mdash; Deep Dive: Parallel Tools</h2>
 <div class="diagram"><img alt="LLM emits parallel tool_calls; executor runs concurrently; results merged" src="../systems/img/tool-calling-functions-loop-zoom.png"/></div><p class="diagram-caption">LLM emits parallel tool_calls; executor runs concurrently; results merged</p><div class="card"><p>OpenAI parallel tool_calls. asyncio.gather for independent searches. Sequential when tool B needs tool A output.</p></div>
 </section>
 <p class="part-divider">The full explanation</p>
 <section id="letting-the-model-act-tools">
-  <h2>12 &mdash; Letting the model act: tools</h2>
+  <h2>13 &mdash; Letting the model act: tools</h2>
 <p>So far the model can only emit text. <b>Tools</b> (a.k.a. function calling) let it <i>do things</i> — query a DB, hit an API, run code, search the web. This is the leap from "chatbot" to "system that acts."</p>
 </section>
 <section id="the-idea">
-  <h2>13 &mdash; The idea</h2>
+  <h2>14 &mdash; The idea</h2>
 <p>You describe functions the model may use (name, purpose, parameters). When useful, the model doesn't run the function — it <b>asks you to</b>, by outputting a structured request like <code>get_weather(city="Paris")</code>. <b>Your code runs it</b> and feeds the result back. The model continues with that new information.</p>
 <pre class="ascii-diagram">LLM: "I should call get_weather(city='Paris')"  ──►  YOUR CODE runs it
                                                          │
@@ -122,7 +130,7 @@ LLM continues: "It's 18°C and sunny in Paris."  ◄──  result: {temp:18, sk
 <p>Why this design and not "let the model call APIs directly"? Because the boundary buys you everything you need for production: you can validate arguments before executing, enforce permissions per user, log every action, rate-limit, mock in tests, and refuse anything destructive. The model gets capability; you keep custody.</p>
 </section>
 <section id="what-tools-unlock-three-concrete-examples">
-  <h2>14 &mdash; What tools unlock — three concrete examples</h2>
+  <h2>15 &mdash; What tools unlock — three concrete examples</h2>
 <p>The mechanism is one thing; the reach is everything. Three tools from three different domains, all the same shape:</p>
 <div class="tile-grid">
 <div class="tile"><h4>Ops: order lookup</h4><p><code>get_order(order_id)</code> → hits your orders DB. Kills the #1 support-bot complaint: a bot that can discuss shipping policy but can't see whether <i>your</i> package shipped. Live data beats training data.</p></div>
@@ -156,7 +164,7 @@ LLM continues: "It's 18°C and sunny in Paris."  ◄──  result: {temp:18, sk
 <p>Notice the descriptions carry behavior ("confirm before calling", "use for ANY math") — that's not decoration, it's the API surface, and <a href="tool-calling.html">Tool calling</a> is entirely about writing it well.</p>
 </section>
 <section id="the-full-cycle-request-execute-return">
-  <h2>15 &mdash; The full cycle: request → execute → return</h2>
+  <h2>16 &mdash; The full cycle: request → execute → return</h2>
 <p>Here is the loop with nothing hidden — this is what every framework wraps. Mini-scenario: a customer asks your support assistant, "Where's my order X-92, and if it's late what's 15% off the $84 I paid?"</p>
 <div class="code-block"><div class="code-file"><span>tool_loop.py — the whole mechanism, no framework</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> json, anthropic
 
@@ -207,7 +215,7 @@ client = anthropic.Anthropic()
 <p>Trace what actually happens on that question. <b>Round 1:</b> the model emits a <code>tool_use</code> for <code>get_order(order_id="X-92")</code>; your code queries the DB and returns <code>{"status":"delayed","paid":84.00}</code>. <b>Round 2:</b> seeing "delayed", the model requests <code>calculate(expression="84 * 0.85")</code>; your code returns <code>71.4</code>. <b>Round 3:</b> <code>stop_reason</code> is <code>end_turn</code> and the text is the final answer: "X-92 is delayed… with 15% off you'd pay $71.40." Three API calls, two tool executions, one user-visible answer. That inner <code>for</code> pass over blocks matters: one assistant turn can carry several <code>tool_use</code> blocks at once (the model batching independent lookups), and each needs its own paired result — <a href="tool-calling.html">Tool calling</a> shows the exact wire format.</p>
 </section>
 <section id="what-the-loop-costs">
-  <h2>16 &mdash; What the loop costs</h2>
+  <h2>17 &mdash; What the loop costs</h2>
 <p>Worked numbers (illustrative): system + 3 tool definitions ≈ 600 tokens, resent on <i>every</i> round because each round is a fresh stateless API call. The three rounds above might run 800 → 1,000 → 1,100 input tokens as the transcript grows — ~2,900 input + ~300 output tokens ≈ $0.013 at $3/M in, $15/M out. Latency stacks the same way: three sequential model calls plus your DB and calculator, maybe 4–7s total. This is why tool definitions are prime prompt-caching material (static, always first — <a href="index.html">Tools &amp; agents</a>), why parallel tool calls matter, and why you cap rounds: an unbounded loop with a confused model is an unbounded bill.</p>
 <table>
 <tr><th>Capability gap</th><th>Without tools</th><th>With tools</th></tr>
@@ -234,11 +242,11 @@ client = anthropic.Anthropic()
 </ol></div>
 </section>
 <section id="what-actually-goes-over-the-wire">
-  <h2>17 &mdash; What actually goes over the wire</h2>
+  <h2>18 &mdash; What actually goes over the wire</h2>
 <p>This request/response choreography <i>is</i> the protocol. Every framework hides it; understand it once and you can read them all — and debug the 400 errors they produce.</p>
 </section>
 <section id="the-two-message-shapes">
-  <h2>18 &mdash; The two message shapes</h2>
+  <h2>19 &mdash; The two message shapes</h2>
 <p>Everything reduces to two shapes: the model <i>requesting</i> a call, and you <i>returning</i> a result. On the Anthropic API the request arrives as a <code>tool_use</code> content block in an assistant message, flagged by <code>stop_reason: "tool_use"</code>:</p>
 <div class="code-block"><div class="code-file"><span>the model asks for a tool (stop_reason: "tool_use")</span><span class="code-lang">json</span></div><pre>{ <span class="st">"role"</span>:<span class="st">"assistant"</span>, <span class="st">"content"</span>:[
   {<span class="st">"type"</span>:<span class="st">"text"</span>, <span class="st">"text"</span>:<span class="st">"Let me check that order."</span>},
@@ -252,7 +260,7 @@ client = anthropic.Anthropic()
 <p>Note the oddity that trips newcomers: the tool result travels in a <b>user</b>-role message. There is no "tool" role on this API — from the model's perspective, the environment answering is just the next inbound turn. The <code>tool_use_id</code> is what pairs a result to its request; the pairing, not the position, is load-bearing.</p>
 </section>
 <section id="a-complete-transcript-parallel-calls-and-an-error">
-  <h2>19 &mdash; A complete transcript: parallel calls and an error</h2>
+  <h2>20 &mdash; A complete transcript: parallel calls and an error</h2>
 <p>Mini-scenario: a travel assistant with two tools, <code>get_weather(city)</code> and <code>get_flight_price(origin, dest)</code>. User asks: <i>"I'm in Berlin — compare the weather in Lisbon and Athens, and get me a flight price to whichever sounds warmer."</i> Below is the <b>entire</b> <code>messages</code> array as it grows, exactly what crosses the wire. Five API calls' worth of state, one array.</p>
 <div class="code-block"><div class="code-file"><span>full transcript — Anthropic format (comments mark each API round)</span><span class="code-lang">json</span></div><pre>[
   <span class="cm">// ---- turn 1: the user ------------------------------------------------</span>
@@ -312,7 +320,7 @@ client = anthropic.Anthropic()
 <p>Read it once slowly — four things are worth noticing. (1) The two weather calls arrive as <b>two tool_use blocks in a single assistant turn</b>: parallel calls, which you may execute concurrently, but whose results must <i>all</i> come back in the single next user turn. (2) The timeout is returned as data (<code>is_error: true</code>), and the model's very next move is a sensible retry — no retry logic in your code. (3) Every API round resends the <i>entire</i> array; the API is stateless, the array is the state. (4) Token growth is the price: this conversation's final round carries ~7 messages of history — with tool definitions on top, each round's input grows by roughly the previous round's traffic, which is why prompt caching of the static prefix (<a href="index.html">Tools &amp; agents</a>) matters for agents.</p>
 </section>
 <section id="the-same-conversation-openai-format">
-  <h2>20 &mdash; The same conversation, OpenAI format</h2>
+  <h2>21 &mdash; The same conversation, OpenAI format</h2>
 <p>Same dance, different field names. The model's requests live in a <code>tool_calls</code> array on the assistant message (arguments as a <b>JSON string</b>, not an object), and each result is its own <code>role: "tool"</code> message keyed by <code>tool_call_id</code>:</p>
 <div class="code-block"><div class="code-file"><span>the parallel round + error round — OpenAI format</span><span class="code-lang">json</span></div><pre>[
   { <span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>: <span class="st">"I'm in Berlin — compare..."</span> },
@@ -368,11 +376,11 @@ client = anthropic.Anthropic()
 </ol></div>
 </section>
 <section id="tool-schemas-are-your-real-api-surface">
-  <h2>21 &mdash; Tool schemas are your real API surface</h2>
+  <h2>22 &mdash; Tool schemas are your real API surface</h2>
 <p>The model picks a tool and fills its arguments <b>entirely from the schema you write</b>. The schema is a prompt. Most "the agent is dumb" bugs are bad schemas or bad error messages.</p>
 </section>
 <section id="why-the-schema-is-a-prompt">
-  <h2>22 &mdash; Why the schema is a prompt</h2>
+  <h2>23 &mdash; Why the schema is a prompt</h2>
 <p>At call time the model sees, verbatim: your tool's name, its description, and its JSON schema (field names, types, enums, patterns, and any per-field <code>description</code>). That text — typically 100–300 tokens per tool — is the <i>only</i> information it has about when to use the tool and how to fill it. Nothing else exists. So every rule you wish the model followed must be written somewhere it can read: the description, a field name, an enum, or an error message it gets back. "The agent keeps guessing order IDs" is not a model problem; it's a description that never said not to.</p>
 <div class="code-block"><div class="code-file"><span>a well-designed tool</span><span class="code-lang">python</span></div><pre>GET_ORDER = {
   <span class="st">"name"</span>:<span class="st">"get_order"</span>,
@@ -383,7 +391,7 @@ client = anthropic.Anthropic()
     <span class="st">"required"</span>:[<span class="st">"order_id"</span>]}}</pre></div>
 </section>
 <section id="description-writing-before-after">
-  <h2>23 &mdash; Description-writing: before → after</h2>
+  <h2>24 &mdash; Description-writing: before → after</h2>
 <p>Mini-scenario: your agent has both <code>search_kb</code> (help articles) and <code>search_tickets</code> (past support tickets). With the "before" descriptions, it calls the wrong one about a third of the time — the descriptions give it nothing to choose with:</p>
 <div class="code-block"><div class="code-file"><span>descriptions: before → after</span><span class="code-lang">python</span></div><pre><span class="cm"># BEFORE — the model has no basis to choose between these</span>
 {<span class="st">"name"</span>: <span class="st">"search_kb"</span>,      <span class="st">"description"</span>: <span class="st">"Search the knowledge base."</span>}
@@ -408,7 +416,7 @@ client = anthropic.Anthropic()
 <p>The template hiding in the "after" version: <b>what it does → when to prefer it → when NOT to use it (name the alternative) → what it returns → one example</b>. The cross-references matter most: tool-choice errors are almost always <i>pairwise</i> confusions, and one "use X for that instead" sentence in each description resolves the pair. Cost: ~60 extra tokens per tool. On an internal routing eval you'd typically see wrong-tool rates drop from ~30% to under 5% with rewrites like this (illustrative, but the direction is extremely consistent).</p>
 </section>
 <section id="a-real-registry-dispatcher">
-  <h2>24 &mdash; A real registry + dispatcher</h2>
+  <h2>25 &mdash; A real registry + dispatcher</h2>
 <p>Once you have three tools, you have three copies of schema-drift risk: the JSON schema says one thing, the validation code another, the function signature a third. Kill the drift by generating everything from one source of truth — the pydantic model:</p>
 <div class="code-block"><div class="code-file"><span>tool_registry.py — pydantic models are the single source of truth</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> json
 <span class="kw">from</span> typing <span class="kw">import</span> Callable
@@ -482,7 +490,7 @@ client = anthropic.Anthropic()
 <p>On tool count: every tool costs its definition tokens on <i>every</i> call (20 tools × 150 tokens = 3,000 tokens/round before anyone says anything) and, worse, enlarges the choice space. Consolidate: <code>search_orders / search_customers / search_invoices</code> collapse into one <code>search(kind=…, query=…)</code> with an enum. Fewer, broader tools with sharp descriptions beat many narrow ones — the model's tool-selection accuracy degrades faster than yours would reading the same list.</p>
 </section>
 <section id="tool-choice-the-agency-dial-demonstrated">
-  <h2>25 &mdash; tool_choice — the agency dial, demonstrated</h2>
+  <h2>26 &mdash; tool_choice — the agency dial, demonstrated</h2>
 <div class="callout success"><p><strong>tool_choice = the agency dial</strong></p><code>auto</code> (model decides) · <code>any</code> (must use some tool) · <code>{name}</code> (force one — great for structured extraction) · <code>none</code> (text only).</div>
 <div class="code-block"><div class="code-file"><span>tool_choice_demo.py — same tools, four behaviors</span><span class="code-lang">python</span></div><pre>common = dict(model=<span class="st">"claude-sonnet-4-20250514"</span>, max_tokens=<span class="nr">500</span>,
               tools=tool_defs(),
@@ -530,7 +538,7 @@ r = client.messages.create(**common, tool_choice={<span class="st">"type"</span>
 </ol></div>
 </section>
 <section id="designing-tools-the-model-can-use-well">
-  <h2>26 &mdash; Designing tools the model can use well</h2>
+  <h2>27 &mdash; Designing tools the model can use well</h2>
 <ul>
 <li>Few, well-named tools with clear descriptions and examples beat many overlapping ones. Tool descriptions are prompts.</li>
 <li>Return concise, structured, model-readable results (not 50 KB of raw JSON); include ids for follow-up calls.</li>
@@ -541,19 +549,23 @@ r = client.messages.create(**common, tool_choice={<span class="st">"type"</span>
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>27 &mdash; Production &amp; Ops</h2>
+  <h2>28 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Log every tool call: name, args, latency, success</li><li>PII scrubbing on args before log</li><li>Rate limit per tool per user</li></ul></div>
 </section>
 <section id="related-topics">
-  <h2>28 &mdash; Related topics</h2>
+  <h2>29 &mdash; Related topics</h2>
 <div class="card"><ul><li><a href="what-is-an-agent.html">What an agent is</a></li><li><a href="agent-loop.html">The agent loop</a></li><li><a href="../tech/langgraph.html">LangGraph</a></li><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a></li></ul></div>
 </section>
-<section id="common-pitfalls">
-  <h2>29 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>30 &mdash; Where people get lost</h2>
 <div class="card"><ul><li>20+ tools confuses model — use retrieval over tools</li><li>Executing unvalidated args (SQL injection)</li><li>No timeout on tool execution</li><li>Returning huge raw JSON to context</li></ul></div>
 </section>
+<section id="how-this-connects">
+  <h2>31 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a> &mdash; Zero- and few-shot, chain of thought, decomposition, self-critique, injection defence.</li></ul><h3>Where this shows up later</h3><ul><li><a href="mcp.html">MCP</a> &mdash; A standard plug for tools and data: servers, clients, resources and the ecosystem.</li><li><a href="what-is-an-agent.html">What an agent is</a> &mdash; Agents vs agentic AI, what makes something an agent, workflows vs agents, and agent architectures.</li><li><a href="agent-loop.html">The agent loop</a> &mdash; The loop in depth and in code: budgets, errors, human approval, reliability, safety, and how to evaluate an agent.</li><li><a href="memory-context.html">Memory &amp; context engineering</a> &mdash; Short- and long-term memory, compaction, and context engineering, the real production skill.</li><li><a href="multi-agent.html">Multi-agent systems</a> &mdash; When to go multi-agent, topologies, handoffs and state, orchestration, and the production debate.</li><li><a href="../tech/langchain.html">LangChain</a> &mdash; Chains, runnables, retrievers and the integrations layer.</li><li><a href="../tech/crewai.html">CrewAI</a> &mdash; Role-based multi-agent crews: agents, tasks, processes.</li><li><a href="../stretch/voice-agents.html">Voice agents</a> &mdash; STT, TTS, VAD, barge-in and the latency budget of a real-time voice agent.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>30 &mdash; Check yourself</h2>
+  <h2>32 &mdash; Check yourself</h2>
 <details><summary>How design a good tool schema?</summary><div class="answer">Clear name, action-oriented description, typed params with descriptions, enums for choices, minimal required fields, example in description.</div></details>
 <details><summary>tool_choice auto vs required?</summary><div class="answer">auto: model decides. required: forces tool call every turn — use when always need retrieval. none: disable tools.</div></details>
 <details><summary>How prevent SQL injection from tool args?</summary><div class="answer">Parameterized queries only. Validate args against schema. Read-only DB user. Never string-concat SQL from LLM output.</div></details>

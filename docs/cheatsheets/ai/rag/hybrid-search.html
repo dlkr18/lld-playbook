@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hybrid search &amp; query understanding -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Knowledge &amp; RAG" data-href="index.html">
+<meta name="ai-topic" content="rag/hybrid-search">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -31,14 +33,15 @@
   <a href="#hybrid-search-and-reciprocal-rank-fusion"><span class="num">13</span> Hybrid search and reciprocal rank fusion</a>
   <a href="#production-ops"><span class="num">14</span> Production &amp; Ops</a>
   <a href="#related-topics"><span class="num">15</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">16</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">17</span> Check yourself</a>
+  <a href="#where-people-get-lost"><span class="num">16</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">17</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">18</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Hybrid search &amp; query understanding <span>// Knowledge &amp; RAG</span></h1>
   <p>BM25 plus vectors fused with RRF, query rewriting, decomposition and HyDE.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">4 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -133,12 +136,16 @@ GROUP BY id ORDER BY score DESC LIMIT 20;</pre>
   <h2>15 &mdash; Related topics</h2>
 <div class="card"><ul><li><a href="rag-pipeline.html">The RAG pipeline</a></li><li><a href="vector-search.html">Vector search &amp; databases</a></li><li><a href="embeddings.html">Embeddings</a></li><li><a href="../systems/../../hld/web-search-engine.html">Web Search Engine HLD</a></li></ul></div>
 </section>
-<section id="common-pitfalls">
-  <h2>16 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>16 &mdash; Where people get lost</h2>
 <div class="card"><ul><li>Dense-only missing 20–35% enterprise queries</li><li>Post-filter ACL after ANN</li><li>Not normalizing query length for BM25</li><li>Skipping rerank after hybrid merge</li></ul></div>
 </section>
+<section id="how-this-connects">
+  <h2>17 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="embeddings.html">Embeddings</a> &mdash; Turning meaning into numbers: dense vectors, cosine similarity, sentence embeddings and contrastive training.</li><li><a href="vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li></ul><h3>Where this shows up later</h3><ul><li><a href="reranking.html">Reranking</a> &mdash; Cross-encoder rerankers: retrieve wide, rescore, keep the best few.</li><li><a href="../tech/langchain.html">LangChain</a> &mdash; Chains, runnables, retrievers and the integrations layer.</li><li><a href="../tech/llamaindex.html">LlamaIndex</a> &mdash; Data-first RAG framework: loaders, indexes, query engines.</li><li><a href="../tech/pgvector.html">pgvector</a> &mdash; Vector search inside Postgres: HNSW/IVFFlat, hybrid with full-text, operations.</li><li><a href="../tech/pinecone.html">Pinecone</a> &mdash; Managed serverless vector database: namespaces, metadata filters, hybrid.</li><li><a href="../tech/weaviate.html">Weaviate</a> &mdash; Open-source vector database with modules, hybrid search and multi-tenancy.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>17 &mdash; Check yourself</h2>
+  <h2>18 &mdash; Check yourself</h2>
 <details><summary>Why hybrid instead of vector-only?</summary><div class="answer">Dense misses exact SKUs, error codes, legal citations. Hybrid improves Recall@5 by 20–35% in enterprise evals.</div></details>
 <details><summary>Explain RRF.</summary><div class="answer">Reciprocal Rank Fusion: score(d)=Σ 1/(k+rank_L(d)). Robust when dense and sparse scores aren't comparable. k=60 default.</div></details>
 <details><summary>Dense vs sparse latency?</summary><div class="answer">Run parallel. p99 merge = max of both (~40ms). Don't sequentialize.</div></details>

@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cost &amp; latency -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Production &amp; evals" data-href="index.html">
+<meta name="ai-topic" content="production/cost-performance">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,32 +19,34 @@
   <h2>Cost &amp; latency</h2>
   <a href="index.html">&larr; Production &amp; evals</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-surface"><span class="num">04</span> API Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#deep-dive-token-pricing"><span class="num">07</span> Deep Dive: Token Pricing</a>
-  <a href="#deep-dive-latency-breakdown"><span class="num">08</span> Deep Dive: Latency Breakdown</a>
-  <a href="#deep-dive-model-routing"><span class="num">09</span> Deep Dive: Model Routing</a>
-  <a href="#deep-dive-caching"><span class="num">10</span> Deep Dive: Caching</a>
-  <a href="#deep-dive-quantization-self-host"><span class="num">11</span> Deep Dive: Quantization &amp; Self-Host</a>
-  <a href="#cost-performance-engineering"><span class="num">12</span> Cost &amp; performance engineering</a>
-  <a href="#lever-1-prompt-caching-order-your-prompt-like-a-cache-line"><span class="num">13</span> Lever 1: prompt caching — order your prompt like a cache line</a>
-  <a href="#lever-2-response-caching-don-t-make-the-call-at-all"><span class="num">14</span> Lever 2: response caching — don&#x27;t make the call at all</a>
-  <a href="#lever-3-model-routing-with-a-verification-cascade"><span class="num">15</span> Lever 3: model routing with a verification cascade</a>
-  <a href="#levers-4-7-compaction-parallelism-streaming-caps"><span class="num">16</span> Levers 4–7: compaction, parallelism, streaming, caps</a>
-  <a href="#worked-case-study-cutting-a-support-agent-s-bill-71"><span class="num">17</span> Worked case study: cutting a support agent&#x27;s bill 71%</a>
-  <a href="#production-ops"><span class="num">18</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">19</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">20</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">21</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-surface"><span class="num">05</span> API Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#deep-dive-token-pricing"><span class="num">08</span> Deep Dive: Token Pricing</a>
+  <a href="#deep-dive-latency-breakdown"><span class="num">09</span> Deep Dive: Latency Breakdown</a>
+  <a href="#deep-dive-model-routing"><span class="num">10</span> Deep Dive: Model Routing</a>
+  <a href="#deep-dive-caching"><span class="num">11</span> Deep Dive: Caching</a>
+  <a href="#deep-dive-quantization-self-host"><span class="num">12</span> Deep Dive: Quantization &amp; Self-Host</a>
+  <a href="#cost-performance-engineering"><span class="num">13</span> Cost &amp; performance engineering</a>
+  <a href="#lever-1-prompt-caching-order-your-prompt-like-a-cache-line"><span class="num">14</span> Lever 1: prompt caching — order your prompt like a cache line</a>
+  <a href="#lever-2-response-caching-don-t-make-the-call-at-all"><span class="num">15</span> Lever 2: response caching — don&#x27;t make the call at all</a>
+  <a href="#lever-3-model-routing-with-a-verification-cascade"><span class="num">16</span> Lever 3: model routing with a verification cascade</a>
+  <a href="#levers-4-7-compaction-parallelism-streaming-caps"><span class="num">17</span> Levers 4–7: compaction, parallelism, streaming, caps</a>
+  <a href="#worked-case-study-cutting-a-support-agent-s-bill-71"><span class="num">18</span> Worked case study: cutting a support agent&#x27;s bill 71%</a>
+  <a href="#production-ops"><span class="num">19</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">20</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">21</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">22</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">23</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Cost &amp; latency <span>// Production &amp; evals</span></h1>
   <p>Where the money and the milliseconds go: pricing, prefill vs decode, routing, batching and prompt caching.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">13 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -50,17 +54,21 @@
 <p>Token economics, TTFT vs tokens/sec, model routing cascades, caching, quantization, and batch APIs — how to hit latency SLOs without bankrupting the feature.</p>
 <div class="diagram"><img alt="Cost &amp; Latency Tradeoffs overview" src="../fundamentals/img/cost-latency-tradeoffs-main.png"/></div><p class="diagram-caption">Quality, cost, and latency form a triangle: model routing, prompt compression, caching, and quantization move you along the edges.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Model routing / cascade</strong></td><td>Cheap model for easy steps, strong model for hard/verify.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card"><p>LLM features bill per token and wait per GPU second. <strong>TTFT</strong> (time-to-first-token) drives perceived speed; <strong>tokens/sec</strong> drives total wait. Cost scales with model tier, context length, and traffic.</p><blockquote>Semantic cache systems: <a href="semantic-cache.html">Semantic caching</a>.</blockquote></div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>TTFT</td><td>Time until first streamed token</td><td>Prefill-dominated</td></tr><tr><td>Tokens/sec</td><td>Decode throughput</td><td>Memory bandwidth bound</td></tr><tr><td>$/1M tokens</td><td>Input + output priced separately</td><td>Output often 2-4× input</td></tr><tr><td>Model cascade</td><td>Cheap model first, escalate if needed</td><td>Log escalation rate</td></tr><tr><td>Batch API</td><td>50% discount, 24h SLA</td><td>Offline jobs only</td></tr></table></div>
 </section>
 <section id="api-surface">
-  <h2>04 &mdash; API Surface</h2>
+  <h2>05 &mdash; API Surface</h2>
 <div class="card"><pre># Cost estimate
 prompt_toks = 2000
 completion_toks = 500
@@ -68,37 +76,37 @@ price_in, price_out = 0.15, 0.60  # gpt-4o-mini per 1M
 cost = (prompt_toks * price_in + completion_toks * price_out) / 1e6</pre></div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card"><table><tr><th>Tactic</th><th>Use</th><th>Skip</th></tr><tr><td>gpt-4o-mini router</td><td>High volume mixed queries</td><td>All queries need frontier</td></tr><tr><td>Prompt cache</td><td>Repeated system prompts</td><td>Unique prompts every call</td></tr><tr><td>INT4 quant</td><td>Self-host 70B</td><td>API-only small team</td></tr><tr><td>Batch API</td><td>Nightly summarization</td><td>Interactive chat</td></tr></table></div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card highlight"><pre>Request -&gt; Router (mini vs frontier) -&gt; [Cache hit?] -&gt; LLM
   -&gt; Stream SSE -&gt; usage{prompt,completion}_tokens -&gt; billing</pre></div>
 </section>
 <section id="deep-dive-token-pricing">
-  <h2>07 &mdash; Deep Dive: Token Pricing</h2>
+  <h2>08 &mdash; Deep Dive: Token Pricing</h2>
 <div class="card"><p>Example (order-of-magnitude): gpt-4o-mini $0.15/$0.60 per 1M in/out; gpt-4o ~$2.50/$10. Long system prompts + RAG chunks dominate input cost. Always set max_tokens.</p></div>
 </section>
 <section id="deep-dive-latency-breakdown">
-  <h2>08 &mdash; Deep Dive: Latency Breakdown</h2>
+  <h2>09 &mdash; Deep Dive: Latency Breakdown</h2>
 <div class="card"><p><strong>Prefill:</strong> parallel over prompt → TTFT. <strong>Decode:</strong> serial tokens → total time. See <a href="../inference/inference-internals.html">Inference internals</a> for memory effects. Streaming improves UX without reducing total time.</p></div>
 </section>
 <section id="deep-dive-model-routing">
-  <h2>09 &mdash; Deep Dive: Model Routing</h2>
+  <h2>10 &mdash; Deep Dive: Model Routing</h2>
 <div class="diagram"><img alt="Cascade: classify query complexity, route 80% to mini model, escalate hard queries to frontier." src="../fundamentals/img/cost-latency-tradeoffs-routing-zoom.png"/></div><p class="diagram-caption">Cascade: classify query complexity, route 80% to mini model, escalate hard queries to frontier.</p><div class="card"><p>Router: heuristic (token length, keywords) or small classifier LLM. Track quality regression on escalated vs non-escalated buckets.</p></div>
 </section>
 <section id="deep-dive-caching">
-  <h2>10 &mdash; Deep Dive: Caching</h2>
+  <h2>11 &mdash; Deep Dive: Caching</h2>
 <div class="diagram"><img alt="Exact prompt hash cache and semantic embedding cache for near-duplicate queries." src="../fundamentals/img/cost-latency-tradeoffs-cache-zoom.png"/></div><p class="diagram-caption">Exact prompt hash cache and semantic embedding cache for near-duplicate queries.</p><div class="card"><p>OpenAI automatic prompt caching on repeated prefixes. Semantic cache: embed query, return cached answer if similarity &gt;0.95 with TTL.</p></div>
 </section>
 <section id="deep-dive-quantization-self-host">
-  <h2>11 &mdash; Deep Dive: Quantization &amp; Self-Host</h2>
+  <h2>12 &mdash; Deep Dive: Quantization &amp; Self-Host</h2>
 <div class="card"><p>AWQ/GPTQ INT4 fits 70B on 2×80GB. Trade ~1-3% quality for 2× throughput. See <a href="../inference/serving.html">Serving &amp; scaling</a> for serving economics break-even vs API.</p></div>
 </section>
 <p class="part-divider">The full explanation</p>
 <section id="cost-performance-engineering">
-  <h2>12 &mdash; Cost &amp; performance engineering</h2>
+  <h2>13 &mdash; Cost &amp; performance engineering</h2>
 <p>Agents make many model calls; costs and latency add up fast. The levers, roughly by impact:</p>
 <table>
 <tr><th>Lever</th><th>How</th><th>Win</th></tr>
@@ -114,7 +122,7 @@ cost = (prompt_toks * price_in + completion_toks * price_out) / 1e6</pre></div>
 <p>Why input tokens dominate: an agent turn re-sends the system prompt, the tool schemas, and the whole conversation so far, then generates a comparatively tiny tool call or answer. A 10-step agent run with a 6k-token prefix and ~400 tokens of output per step reads on the order of <b>80–100k input tokens</b> and writes maybe <b>4k output tokens</b>. Even with output priced ~5× input, input is still ~80% of the bill. That asymmetry is why the first three levers — all input-side — sit at the top of the table, and why the sections below give you working code for each of them.</p>
 </section>
 <section id="lever-1-prompt-caching-order-your-prompt-like-a-cache-line">
-  <h2>13 &mdash; Lever 1: prompt caching — order your prompt like a cache line</h2>
+  <h2>14 &mdash; Lever 1: prompt caching — order your prompt like a cache line</h2>
 <p>Providers cache the <i>prefix</i> of your prompt: everything before the first change. So structure requests as <b>stable → semi-stable → volatile</b>: system prompt and tool schemas first, session context next, this turn's message last. One reordered field, one timestamp, one shuffled tool list = cache miss from that point on.</p>
 <div class="code-block"><div class="code-file"><span>prompt_cache.py — cache-friendly request layout (Anthropic-style)</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> anthropic
 client = anthropic.Anthropic()
@@ -154,7 +162,7 @@ TOOLS = load_tool_schemas_sorted()             <span class="cm"># sort keys — 
 <p>Worked numbers (illustrative rates: $3/M input, $15/M output, cache reads at 10% of input, cache writes at 125%): a 10-step run over an 8k prefix costs <b>uncached</b> ≈ 10 × 8k × $3/M = $0.24 input. <b>Cached</b>: one write (8k × $3.75/M = $0.03) + 9 reads (9 × 8k × $0.30/M = $0.0216) ≈ $0.052 — a <b>78% cut</b> on that prefix, from reordering fields and adding one attribute. Always confirm with the usage fields; a "cache-enabled" integration with a volatile first line silently pays full price.</p>
 </section>
 <section id="lever-2-response-caching-don-t-make-the-call-at-all">
-  <h2>14 &mdash; Lever 2: response caching — don&#x27;t make the call at all</h2>
+  <h2>15 &mdash; Lever 2: response caching — don&#x27;t make the call at all</h2>
 <p>Prompt caching discounts a call; response caching <b>deletes</b> it. It applies to deterministic, repeated calls: classification, routing, extraction over recurring inputs, FAQ-shaped questions. It does <i>not</i> apply where freshness or per-user context changes the right answer — cache keys must include everything that legitimately changes the output.</p>
 <div class="code-block"><div class="code-file"><span>response_cache.py — exact-match cache with stampede protection</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> hashlib, json, asyncio, redis.asyncio <span class="kw">as</span> aioredis
 
@@ -207,7 +215,7 @@ TOOLS = load_tool_schemas_sorted()             <span class="cm"># sort keys — 
 <p>Coalescing matters more than it looks: when a popular page or a retried webhook fans out the same classification 50× in one second, a plain cache misses 50 times (all arrive before the first write). The in-flight map turns that into one provider call. Ten lines, and it also smooths your rate-limit consumption.</p>
 </section>
 <section id="lever-3-model-routing-with-a-verification-cascade">
-  <h2>15 &mdash; Lever 3: model routing with a verification cascade</h2>
+  <h2>16 &mdash; Lever 3: model routing with a verification cascade</h2>
 <p>Most traffic is easy; you pay flagship prices for it anyway. A router sends easy calls to a small model and escalates the rest. Two workable designs: <b>classify-then-route</b> (a tiny classifier predicts difficulty) and <b>draft-then-verify</b> (cheap model answers, checks decide whether to escalate). Draft-then-verify is simpler to get right because the escalation decision sees the actual answer, not a prediction about it.</p>
 <div class="code-block"><div class="code-file"><span>router.py — cascade with self-consistency check and fallback</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> asyncio
 
@@ -247,7 +255,7 @@ CHEAP, STRONG = <span class="st">"</span><span class="st">claude-haiku-4-5</span
 <div class="callout warn"><p><strong>Router gotcha</strong></p>Grade the cascade end-to-end on your eval suite, not per-model. The failure mode is a cheap model that is confidently wrong in ways your checks don't catch — logprob confidence is a proxy, not a guarantee. And when you swap either model version, the thresholds you tuned are stale; re-tune as part of the deploy (<a href="index.html">Production &amp; evals</a>'s eval gates apply to router config too).</div>
 </section>
 <section id="levers-4-7-compaction-parallelism-streaming-caps">
-  <h2>16 &mdash; Levers 4–7: compaction, parallelism, streaming, caps</h2>
+  <h2>17 &mdash; Levers 4–7: compaction, parallelism, streaming, caps</h2>
 <div class="tile-grid">
 <div class="tile"><h4>Context compaction</h4><p>Past a threshold (say 40k tokens), summarize the oldest turns into a compact digest and keep recent turns verbatim. Costs one cheap-model call, saves on every subsequent turn — but it flushes the prompt cache for the rewritten region, so compact <i>rarely and in big steps</i>, not every turn. Retrieval-side: tighter top-k and reranking (<a href="../adaptation/index.html">Fine-tuning &amp; alignment</a>) is compaction you don't have to undo.</p></div>
 <div class="tile"><h4>Parallelism</h4><p><code>asyncio.gather</code> over independent calls (sub-questions, per-document extraction). Cuts wall-clock, not dollars — same tokens, less waiting. Pair with a semaphore sized to your rate limit or you convert latency wins into 429 storms.</p></div>
@@ -256,7 +264,7 @@ CHEAP, STRONG = <span class="st">"</span><span class="st">claude-haiku-4-5</span
 </div>
 </section>
 <section id="worked-case-study-cutting-a-support-agent-s-bill-71">
-  <h2>17 &mdash; Worked case study: cutting a support agent&#x27;s bill 71%</h2>
+  <h2>18 &mdash; Worked case study: cutting a support agent&#x27;s bill 71%</h2>
 <p>You run a customer-support agent: <b>50,000 conversations/month</b>, average 4 agent steps each, prefix (system + tools + RAG context) 9,000 tokens, per-step delta ~700 tokens, ~350 output tokens/step. Illustrative pricing throughout: strong model $3/M input, $15/M output; cheap model $0.30/M in, $1.50/M out; cache reads 10%, writes 125%.</p>
 <p><b>Baseline arithmetic.</b> Input per conversation ≈ steps × (prefix + accumulated deltas) = 4 × 9,000 + (0+700+1,400+2,100) ≈ 40,200 tok. Output ≈ 4 × 350 = 1,400 tok. Per conversation: 40.2k × $3/M = $0.1206 input + 1.4k × $15/M = $0.021 output ≈ <b>$0.1416</b>. Monthly: 50,000 × $0.1416 ≈ <b>$7,080</b>.</p>
 <table>
@@ -285,19 +293,23 @@ CHEAP, STRONG = <span class="st">"</span><span class="st">claude-haiku-4-5</span
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>18 &mdash; Production &amp; Ops</h2>
+  <h2>19 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Dashboard: cost/request, p50/p99 TTFT, tokens/request</li><li>Budget alerts per feature flag</li><li>A/B quality on routed tiers</li><li>Batch offline workloads</li></ul></div>
 </section>
 <section id="related-topics">
-  <h2>19 &mdash; Related topics</h2>
+  <h2>20 &mdash; Related topics</h2>
 <div class="card"><ul><li><a href="../fundamentals/what-is-an-llm.html">What an LLM is</a></li><li><a href="../inference/inference-internals.html">Inference internals</a></li><li><a href="../fundamentals/tokens-context-cost.html">Tokens, context &amp; cost</a></li><li><a href="reference-architectures.html">Reference architectures</a></li><li><a href="../inference/serving.html">Serving &amp; scaling</a></li><li><a href="semantic-cache.html">Semantic caching</a></li></ul></div>
 </section>
-<section id="common-pitfalls">
-  <h2>20 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>21 &mdash; Where people get lost</h2>
 <div class="card"><ul><li>No max_tokens cap</li><li>Frontier model for all traffic</li><li>Ignoring input token cost of RAG</li><li>Cache without invalidation on KB update</li><li>Optimizing tokens/sec but not TTFT</li></ul></div>
 </section>
+<section id="how-this-connects">
+  <h2>22 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../fundamentals/what-is-an-llm.html">What an LLM is</a> &mdash; A next-token predictor, the language-modeling objective, model families and scaling laws.</li><li><a href="../fundamentals/tokens-context-cost.html">Tokens, context &amp; cost</a> &mdash; BPE tokenization, the context window, and what every token costs.</li><li><a href="../inference/inference-internals.html">Inference internals</a> &mdash; Prefill vs decode, the KV cache, PagedAttention, continuous batching and speculative decoding.</li><li><a href="../inference/serving.html">Serving &amp; scaling</a> &mdash; vLLM and Ollama, benchmarking honestly, a production serving setup and scaling it.</li><li><a href="reference-architectures.html">Reference architectures</a> &mdash; AI system design patterns, a production agent end to end, and architectures by use case.</li></ul><h3>Where this shows up later</h3><ul><li><a href="../tech/crewai.html">CrewAI</a> &mdash; Role-based multi-agent crews: agents, tasks, processes.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>21 &mdash; Check yourself</h2>
+  <h2>23 &mdash; Check yourself</h2>
 <details><summary>Estimate cost for 1M requests/day?</summary><div class="answer">Count avg prompt P and completion C tokens. Cost ≈ R×(P×price_in+C×price_out)/1e6. Add 30% for retries and system overhead.</div></details>
 <details><summary>TTFT vs total latency?</summary><div class="answer">TTFT = prefill (prompt processing). Users feel TTFT &gt;500ms. Total = TTFT + (tokens/tok_per_sec). Long answers hurt total even if TTFT OK.</div></details>
 <details><summary>When self-host beats API?</summary><div class="answer">When monthly inference spend exceeds GPU+ML ops cost AND quantized model quality suffices. Often &gt;$50K/mo at 70B scale.</div></details>

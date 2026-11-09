@@ -1,0 +1,221 @@
+<!-- Deep lesson: GPUs & distributed training. Merged into inference/gpus-scale by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>FLOP</td><td>One floating-point operation (an add or a multiply). FLOP/s is how many per second a chip can do.</td></tr>
+<tr><td>SM (streaming multiprocessor)</td><td>One of the ~100+ independent processors on a GPU. Each has its own tensor cores and a small fast memory.</td></tr>
+<tr><td>Tensor core</td><td>Hardware inside each SM that multiplies small matrices in one step. Almost all of a GPU's FLOP/s live here.</td></tr>
+<tr><td>HBM</td><td>High-bandwidth memory: the GPU's main memory (80 GB on an H100), fast but far slower than on-chip memory.</td></tr>
+<tr><td>SRAM / shared memory</td><td>Small on-chip memory inside each SM (hundreds of KB). An order of magnitude faster than HBM.</td></tr>
+<tr><td>Arithmetic intensity</td><td>FLOPs performed per byte moved from memory. Decides whether an operation is limited by compute or by memory.</td></tr>
+<tr><td>Roofline</td><td>The chart showing achievable FLOP/s as a function of arithmetic intensity: a sloped memory roof, then a flat compute roof.</td></tr>
+<tr><td>MFU</td><td>Model FLOPs utilisation: the fraction of the hardware's peak FLOP/s that does useful model maths. 40% is good for large training.</td></tr>
+<tr><td>NVLink / InfiniBand</td><td>The fast links between GPUs inside one server, and the network between servers.</td></tr>
+<tr><td>All-reduce</td><td>A group operation where every GPU ends with the sum of everyone's values. Built from reduce-scatter + all-gather.</td></tr>
+<tr><td>Data parallelism (DDP)</td><td>Every GPU holds the whole model and processes different data; gradients are averaged with all-reduce.</td></tr>
+<tr><td>ZeRO / FSDP</td><td>Data parallelism that shards optimizer state, gradients and finally the weights themselves across GPUs.</td></tr>
+<tr><td>Tensor parallelism</td><td>Splitting each weight matrix across GPUs so they compute one layer together.</td></tr>
+<tr><td>Pipeline parallelism</td><td>Splitting the layers into stages on different GPUs, passing activations along.</td></tr>
+<tr><td>Bubble</td><td>Time pipeline stages sit idle waiting for work at the start and end of each step.</td></tr>
+<tr><td>Activation checkpointing</td><td>Storing only some layer inputs during the forward pass and recomputing the rest during backward, trading compute for memory.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>Training a large model hits three walls at once:</p>
+<ol>
+<li><strong>Compute</strong>: the total arithmetic is so large that one GPU would take decades.</li>
+<li><strong>Memory</strong>: the training state does not fit on one GPU.</li>
+<li><strong>Communication</strong>: once you split the work across GPUs, they spend time talking instead of computing.</li>
+</ol>
+<p>Every technique in this topic (the roofline, data, tensor and pipeline parallelism, ZeRO and FSDP, checkpointing) trades one wall against another. If you can put numbers on each wall for a given model, you can answer almost any interview question about training or serving at scale. We will do exactly that for a 7B model and a 70B model.</p>
+</section>
+
+<section data-label="Step 1: how much compute training takes">
+<p>A forward pass costs about 2 FLOPs per parameter per token (one multiply and one add per weight). The backward pass costs about twice the forward. So training costs approximately</p>
+\[ C \approx 6\, N\, D \]
+<p>FLOPs, for \(N\) parameters and \(D\) training tokens.</p>
+<p><strong>Worked, 7B on 2 trillion tokens:</strong> \(C = 6 \times 7\times10^{9} \times 2\times10^{12} = 8.4\times10^{22}\) FLOPs. An H100 peaks at about 989 TFLOP/s in BF16 for dense matmuls. At a realistic 40% MFU it delivers about \(3.96\times10^{14}\) FLOP/s, so:</p>
+\[ \frac{8.4\times10^{22}}{3.96\times10^{14}} \approx 2.1\times10^{8}\ \text{GPU-seconds} \approx 59{,}000\ \text{GPU-hours} \]
+<p>On 1,024 GPUs that is about 58 hours, or 2.4 days. The same arithmetic for a 70B model on 15 trillion tokens gives about 4.4 million GPU-hours, roughly 22 days on 8,192 GPUs. This one formula is how labs plan budgets, and how you should sanity-check any claim about training cost.</p>
+</section>
+
+<section data-label="Step 2: how much memory training takes">
+<p>Mixed-precision training with AdamW stores, per parameter:</p>
+<table>
+<thead><tr><th>What</th><th>Bytes</th></tr></thead>
+<tbody>
+<tr><td>BF16 weights (used in forward and backward)</td><td>2</td></tr>
+<tr><td>BF16 gradients</td><td>2</td></tr>
+<tr><td>FP32 master copy of the weights</td><td>4</td></tr>
+<tr><td>Adam first moment \(m\) (FP32)</td><td>4</td></tr>
+<tr><td>Adam second moment \(v\) (FP32)</td><td>4</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>16</strong></td></tr>
+</tbody>
+</table>
+<p>A 7B model needs \(16 \times 7\times10^{9} = 112\) GB before counting a single activation: already more than an 80 GB GPU. A 70B model needs 1,120 GB. On top of that, <strong>activations</strong> (the intermediate values saved for the backward pass) grow with batch size × sequence length × hidden size × layers, and for long sequences they can exceed the 16 bytes per parameter.</p>
+<p>So even a 7B model cannot be trained the naive way on one GPU. The rest of the topic is about splitting this state and this compute.</p>
+</section>
+
+<section data-label="Step 3: inside one GPU, and the roofline">
+<p>An H100 (SXM) has 132 SMs, each with tensor cores and about 228 KB of fast shared memory, 50 MB of L2 cache, and 80 GB of HBM delivering about 3.35 TB/s. Two numbers matter most: <strong>989 TFLOP/s</strong> of BF16 compute and <strong>3.35 TB/s</strong> of memory bandwidth.</p>
+<p>Whether an operation can use all that compute depends on its <strong>arithmetic intensity</strong>, FLOPs per byte read or written. The chip balances at</p>
+\[ \frac{989\times10^{12}\ \text{FLOP/s}}{3.35\times10^{12}\ \text{B/s}} \approx 295\ \text{FLOP per byte} \]
+<p>Below about 295 FLOP/byte the operation is <strong>memory-bound</strong> (the cores wait for data); above it, <strong>compute-bound</strong>. That threshold is the bend in the roofline.</p>
+<h3>Two operations, worked</h3>
+<ul>
+<li><strong>Decoding one token, batch of 1.</strong> Each weight (2 bytes in BF16) is read once and used for one multiply-add (2 FLOPs): about 1 FLOP per byte. Three hundred times below the ridge, so the GPU runs at under 1% of peak compute. This is why single-user decoding is memory-bound and why quantization (fewer bytes) speeds it up.</li>
+<li><strong>Decoding with batch \(B\).</strong> Each weight read now serves \(B\) sequences: intensity grows to about \(B\) FLOP/byte. Batching is how serving engines climb the roofline, until the KV cache (which is per-sequence and does not get reused) dominates.</li>
+<li><strong>A training matmul</strong>, \(4096 \times 4096\) weights against a batch of 4,096 tokens: about \(2 \times 4096^3 \approx 1.4\times10^{11}\) FLOPs over roughly \(3 \times 4096^2 \times 2 \approx 10^{8}\) bytes, about 1,365 FLOP/byte. Comfortably compute-bound.</li>
+</ul>
+<p>The gap between HBM and on-chip SRAM is why <strong>FlashAttention</strong> exists: standard attention writes the full \(n \times n\) score matrix to HBM and reads it back; FlashAttention processes it in tiles that stay in SRAM, turning a memory-bound operation into a compute-bound one.</p>
+</section>
+
+<section data-label="Step 4: data parallelism and the cost of all-reduce">
+<p>The simplest split: every GPU keeps a full copy of the model, takes a different slice of the batch, computes its own gradients, and then all GPUs <strong>average their gradients</strong> before stepping. That averaging is an all-reduce.</p>
+<p>The standard ring all-reduce has each of \(n\) GPUs send (and receive) about</p>
+\[ 2 \cdot \frac{n-1}{n} \cdot S \]
+<p>bytes, where \(S\) is the size of the gradients. Notice it barely depends on \(n\): adding GPUs does not make each one send much more.</p>
+<p><strong>Worked:</strong> 7B parameters of BF16 gradients is \(S = 14\) GB. With 8 GPUs, each sends \(2 \times \tfrac{7}{8} \times 14 = 24.5\) GB per step. Over NVLink at roughly 450 GB/s in each direction, that is about 55 ms. Frameworks hide most of it by starting the all-reduce for the last layers' gradients while the backward pass is still computing earlier layers ("overlap").</p>
+<p>Data parallelism scales compute nicely but does nothing for memory: every GPU still holds all 16 bytes per parameter. For 7B, that is 112 GB per GPU. It does not fit.</p>
+</section>
+
+<section data-label="Step 5: ZeRO and FSDP, sharding the training state">
+<p>The memory in data parallelism is duplicated \(n\) times for no reason. ZeRO removes the duplication in three stages, with \(n\) GPUs:</p>
+<table>
+<thead><tr><th>Stage</th><th>What is sharded</th><th>Bytes per parameter per GPU</th><th>7B on 8 GPUs</th><th>70B on 8 GPUs</th></tr></thead>
+<tbody>
+<tr><td>Plain DDP</td><td>Nothing</td><td>\(16\)</td><td>112 GB</td><td>1,120 GB</td></tr>
+<tr><td>ZeRO-1</td><td>Optimizer state (the 12 bytes)</td><td>\(4 + 12/n\)</td><td>38.5 GB</td><td>385 GB</td></tr>
+<tr><td>ZeRO-2</td><td>+ gradients</td><td>\(2 + 14/n\)</td><td>26.3 GB</td><td>262.5 GB</td></tr>
+<tr><td>ZeRO-3 / FSDP</td><td>+ the weights themselves</td><td>\(16/n\)</td><td>14 GB</td><td>140 GB</td></tr>
+</tbody>
+</table>
+<p>With ZeRO-3 (PyTorch's <strong>FSDP</strong> implements the same idea), each GPU stores only its 1/n slice of everything. When a layer runs, its full weights are briefly gathered from all GPUs (an all-gather), used, and freed. Gradients are summed and re-sharded (a reduce-scatter). The cost is communication: about 1.5 times the traffic of plain data parallelism, because the weights are gathered once for the forward pass and again for the backward.</p>
+<p>The table shows the limit, too: 70B still needs 140 GB per GPU on 8 GPUs. You must either shard across more GPUs (FSDP across 16 or 32), or split the model itself, which is what the next two steps do.</p>
+</section>
+
+<section data-label="Step 6: tensor parallelism, splitting each layer">
+<p>Tensor parallelism splits the matrices inside a layer. Take the MLP block \(Y = \mathrm{GELU}(XA)\,B\):</p>
+<ol>
+<li>Split \(A\) by <strong>columns</strong> across \(t\) GPUs. Each GPU computes its own slice of \(XA\) from the full input, and can apply GELU locally because GELU acts element by element.</li>
+<li>Split \(B\) by <strong>rows</strong> to match. Each GPU multiplies its slice and gets a partial sum of \(Y\).</li>
+<li>One all-reduce adds the partial sums.</li>
+</ol>
+<p>Attention splits the same way, by heads. The result is two all-reduces per transformer layer in the forward pass and two in the backward. That is far more frequent communication than data parallelism, and it sits directly on the critical path, so tensor parallelism needs the fastest links available: NVLink inside one server. In practice the tensor-parallel degree is at most 8 (one server's GPUs).</p>
+<p>It also helps inference: a 70B model split 4 ways serves from four GPUs at lower latency than from one.</p>
+</section>
+
+<section data-label="Step 7: pipeline parallelism, splitting by layers">
+<p>Pipeline parallelism gives each of \(p\) GPU groups a contiguous block of layers. Activations flow forward from stage to stage and gradients flow back. Communication is light (only activations at the boundaries), so stages can sit on different servers.</p>
+<p>The problem is idle time. With one batch, stage 2 waits while stage 1 works, and so on. The fix is to cut the batch into \(m\) <strong>micro-batches</strong> so stages work on different micro-batches at once. The idle fraction, the <strong>bubble</strong>, for the standard schedules (GPipe, 1F1B) is</p>
+\[ \text{bubble} = \frac{p - 1}{m + p - 1} \]
+<table>
+<thead><tr><th>Stages \(p\)</th><th>Micro-batches \(m\)</th><th>Time idle</th></tr></thead>
+<tbody>
+<tr><td>4</td><td>4</td><td>43%</td></tr>
+<tr><td>4</td><td>8</td><td>27%</td></tr>
+<tr><td>4</td><td>32</td><td>8.6%</td></tr>
+<tr><td>8</td><td>32</td><td>17.9%</td></tr>
+</tbody>
+</table>
+<p>More micro-batches shrink the bubble but need a large global batch. The <strong>1F1B</strong> schedule (alternate one forward and one backward) keeps fewer micro-batches' activations alive at once, saving memory; interleaved and "zero-bubble" schedules cut the bubble further by splitting the backward pass more cleverly.</p>
+</section>
+
+<section data-label="Step 8: the other axes, sequence, context and expert">
+<ul>
+<li><strong>Sequence parallelism</strong> splits the operations that tensor parallelism leaves duplicated (layer norm, dropout) along the sequence, saving activation memory.</li>
+<li><strong>Context parallelism</strong> splits a single very long sequence across GPUs; attention then needs keys and values from other GPUs, passed around a ring ("ring attention"). This is how 100K-plus-token contexts are trained.</li>
+<li><strong>Expert parallelism</strong> places different experts of a mixture-of-experts model on different GPUs. Every layer sends each token to the GPU holding its chosen expert and back again: an all-to-all exchange whose cost and load balance dominate MoE training and serving.</li>
+</ul>
+</section>
+
+<section data-label="Step 9: putting the axes together">
+<p>Large runs combine everything, placing each axis where its communication fits the network:</p>
+<ul>
+<li><strong>Tensor parallelism</strong> inside a server (8 GPUs on NVLink): most frequent communication, fastest links.</li>
+<li><strong>Pipeline parallelism</strong> across a few servers: light, point-to-point traffic.</li>
+<li><strong>Data parallelism with FSDP</strong> across everything else: traffic overlaps with compute.</li>
+<li><strong>Context and expert parallelism</strong> where the model needs them.</li>
+</ul>
+<p>A sketch for a 70B model on 512 GPUs: tensor parallel 8 × pipeline parallel 4 × data parallel 16. Each GPU holds 1/32 of the model's layers-and-columns, about 35 GB of training state, leaving room for activations. Meta's largest Llama 3 model (405B) was trained on up to 16,000 H100s combining tensor, pipeline, context and FSDP-style data parallelism in this way.</p>
+<p>Two more memory tools close the gap when activations are the problem:</p>
+<ul>
+<li><strong>Activation checkpointing</strong>: save only each layer's input, recompute the inside during backward. Costs roughly 30% more compute; cuts activation memory severalfold.</li>
+<li><strong>Gradient accumulation</strong>: run several small micro-batches and add their gradients before one optimizer step, reaching a large effective batch without its memory.</li>
+</ul>
+</section>
+
+<section data-label="Step 10: failures are normal at scale">
+<p>With thousands of GPUs, something breaks every few hours: a GPU, a link, a host. Meta reported hundreds of unexpected interruptions over the roughly two-month Llama 3 pre-training run. Large runs are designed around this:</p>
+<ul>
+<li>Checkpoint frequently (asynchronously, so training does not pause), sized so lost work is minutes, not hours.</li>
+<li>Detect hangs and slow nodes automatically; restart from the last checkpoint on spare hardware.</li>
+<li>Make data loading deterministic and resumable, so a restart does not repeat or skip data.</li>
+</ul>
+</section>
+
+<section data-label="A worked plan you can say out loud">
+<p><strong>"Fine-tune a 7B model fully on one server of 8 × 80 GB H100s, sequence length 4,096."</strong></p>
+<ol>
+<li>Memory: 112 GB of training state, so not plain DDP. FSDP across 8 GPUs gives 14 GB per GPU for state.</li>
+<li>Activations: with checkpointing and a per-GPU micro-batch of a few sequences, tens of GB at most. Fits in the remaining ~60 GB.</li>
+<li>Communication: all on NVLink, overlapped with compute. No tensor or pipeline parallelism needed.</li>
+<li>Throughput: at 40% MFU, 8 GPUs deliver about \(3.2\times10^{15}\) FLOP/s. One billion tokens costs \(6 \times 7\times10^9 \times 10^9 = 4.2\times10^{19}\) FLOPs, about 3.7 hours.</li>
+</ol>
+<p>For the same job on a single 24 GB GPU, you would switch to QLoRA (4-bit frozen base plus small trained adapters), because no amount of sharding helps with only one GPU.</p>
+</section>
+
+<section data-label="In code: FSDP in practice, and a calculator">
+<pre data-lang="python"># launch on 8 GPUs:  torchrun --nproc_per_node=8 train.py
+import torch, torch.distributed as dist
+from torch.distributed.fsdp import FullyShardedDataParallel as FSDP, MixedPrecision
+from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
+from functools import partial
+from transformers import AutoModelForCausalLM
+from transformers.models.llama.modeling_llama import LlamaDecoderLayer
+
+dist.init_process_group("nccl")
+torch.cuda.set_device(dist.get_rank() % torch.cuda.device_count())
+
+model = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.1-8B", torch_dtype=torch.bfloat16)
+model.gradient_checkpointing_enable()                      # activation checkpointing
+model = FSDP(
+    model,
+    auto_wrap_policy=partial(transformer_auto_wrap_policy, transformer_layer_cls={LlamaDecoderLayer}),
+    mixed_precision=MixedPrecision(param_dtype=torch.bfloat16, reduce_dtype=torch.bfloat16),
+    device_id=torch.cuda.current_device(),
+)                                                          # ZeRO-3: params, grads, optimizer sharded
+opt = torch.optim.AdamW(model.parameters(), lr=2e-5, weight_decay=0.1)
+</pre>
+<pre data-lang="python">def plan(params_b, tokens_b, gpus, mfu=0.40, peak_tflops=989, sharding="zero3"):
+    """Back-of-envelope: training days and per-GPU state memory."""
+    N, D = params_b * 1e9, tokens_b * 1e9
+    days = 6 * N * D / (gpus * peak_tflops * 1e12 * mfu) / 86400
+    per_param = {"ddp": 16, "zero1": 4 + 12 / gpus, "zero2": 2 + 14 / gpus, "zero3": 16 / gpus}[sharding]
+    return round(days, 1), round(N * per_param / 1e9, 1)
+
+print(plan(7, 2000, 1024))            # (2.4, 0.1): 2.4 days; state is tiny per GPU at 1,024-way sharding
+print(plan(7, 1, 8, sharding="ddp"))  # 112 GB per GPU: plain DDP does not fit on 80 GB
+</pre>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>Counting only the weights.</strong> Training needs about 16 bytes per parameter plus activations, not 2.</li>
+<li><strong>Assuming more GPUs means proportionally faster.</strong> Communication, bubbles and small per-GPU batches all eat into scaling; MFU usually falls as you add GPUs.</li>
+<li><strong>Using tensor parallelism across servers.</strong> It communicates every layer and needs NVLink-class bandwidth.</li>
+<li><strong>Ignoring the bubble.</strong> Four pipeline stages with four micro-batches leaves GPUs idle 43% of the time.</li>
+<li><strong>Thinking FSDP removes communication.</strong> It trades memory for about 1.5× the traffic of plain data parallelism.</li>
+<li><strong>Calling decode "compute-heavy".</strong> At small batch sizes it uses under 1% of the compute; it is limited by memory bandwidth.</li>
+<li><strong>Forgetting failures in the plan.</strong> At thousands of GPUs, checkpoint and restart time is part of the schedule.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>Estimate the training compute for a 13B model on 1 trillion tokens, and the days on 512 H100s at 40% MFU.</summary><div class="answer">\(6 \times 13\times10^9 \times 10^{12} = 7.8\times10^{22}\) FLOPs. Delivered rate: \(512 \times 989\times10^{12} \times 0.4 \approx 2.0\times10^{17}\) FLOP/s, so about \(3.9\times10^5\) s, roughly 4.5 days.</div></details>
+<details><summary>Why is single-user decoding memory-bound, in numbers?</summary><div class="answer">Each 2-byte BF16 weight is read once per token and used for about 2 FLOPs, about 1 FLOP per byte. An H100 needs about 295 FLOP per byte to be compute-bound, so the cores sit mostly idle waiting on memory.</div></details>
+<details><summary>How much training-state memory does each GPU need for a 7B model with ZeRO-2 on 8 GPUs?</summary><div class="answer">\(2 + 14/8 = 3.75\) bytes per parameter, so about 26 GB, plus activations.</div></details>
+<details><summary>Where do you place tensor, pipeline and data parallelism in a cluster, and why?</summary><div class="answer">Tensor parallelism inside a server, because it communicates every layer and needs NVLink. Pipeline parallelism across a few servers, because it only sends boundary activations. Data parallelism (with FSDP) across the rest, because its gradient traffic overlaps with computation.</div></details>
+<details><summary>A pipeline has 8 stages. How many micro-batches keep the bubble under 10%?</summary><div class="answer">Need \(7/(m + 7) &lt; 0.1\), so \(m + 7 &gt; 70\), \(m \ge 64\).</div></details>
+</section>

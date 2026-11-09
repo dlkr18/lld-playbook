@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Serving &amp; scaling -- AI Cheat Sheet</title>
 <meta name="ai-stage" content="Inference &amp; serving" data-href="index.html">
+<meta name="ai-topic" content="inference/serving">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
 <body>
@@ -17,42 +19,44 @@
   <h2>Serving &amp; scaling</h2>
   <a href="index.html">&larr; Inference &amp; serving</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-interface-surface"><span class="num">04</span> API / Interface Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#vllm-deep-dive"><span class="num">07</span> vLLM Deep Dive</a>
-  <a href="#ollama-deep-dive"><span class="num">08</span> Ollama Deep Dive</a>
-  <a href="#quantization"><span class="num">09</span> Quantization</a>
-  <a href="#gpu-sizing"><span class="num">10</span> GPU Sizing</a>
-  <a href="#vllm-vs-ollama"><span class="num">11</span> vLLM vs Ollama</a>
-  <a href="#full-client-example"><span class="num">12</span> Full Client Example</a>
-  <a href="#serving-open-models-benchmarking-honestly"><span class="num">13</span> Serving open models &amp; benchmarking honestly</a>
-  <a href="#your-options"><span class="num">14</span> Your options</a>
-  <a href="#a-real-vllm-deployment-flag-by-flag"><span class="num">15</span> A real vLLM deployment, flag by flag</a>
-  <a href="#the-metrics-say-them-precisely"><span class="num">16</span> The metrics (say them precisely)</a>
-  <a href="#measure-it-yourself-a-ttft-tpot-benchmark-client"><span class="num">17</span> Measure it yourself — a TTFT/TPOT benchmark client</a>
-  <a href="#reading-a-benchmark-sweep"><span class="num">18</span> Reading a benchmark sweep</a>
-  <a href="#hosted-vs-self-host-the-arithmetic-worked-twice"><span class="num">19</span> Hosted vs self-host: the arithmetic, worked twice</a>
-  <a href="#diagnosing-inference-is-slow"><span class="num">20</span> Diagnosing &quot;inference is slow&quot;</a>
-  <a href="#a-production-serving-setup"><span class="num">21</span> A production serving setup</a>
-  <a href="#recap"><span class="num">22</span> Recap</a>
-  <a href="#the-async-job-architecture-in-code"><span class="num">23</span> The async job architecture, in code</a>
-  <a href="#streaming-progress-to-the-client-sse"><span class="num">24</span> Streaming progress to the client: SSE</a>
-  <a href="#the-real-ceiling-provider-quota-and-a-token-bucket-for-it"><span class="num">25</span> The real ceiling: provider quota, and a token bucket for it</a>
-  <a href="#capacity-math-a-worked-example"><span class="num">26</span> Capacity math: a worked example</a>
-  <a href="#production-ops"><span class="num">27</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">28</span> Related topics</a>
-  <a href="#common-pitfalls"><span class="num">29</span> Common Pitfalls</a>
-  <a href="#check-yourself"><span class="num">30</span> Check yourself</a>
-  <a href="#build-it"><span class="num">31</span> Build it</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-interface-surface"><span class="num">05</span> API / Interface Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#vllm-deep-dive"><span class="num">08</span> vLLM Deep Dive</a>
+  <a href="#ollama-deep-dive"><span class="num">09</span> Ollama Deep Dive</a>
+  <a href="#quantization"><span class="num">10</span> Quantization</a>
+  <a href="#gpu-sizing"><span class="num">11</span> GPU Sizing</a>
+  <a href="#vllm-vs-ollama"><span class="num">12</span> vLLM vs Ollama</a>
+  <a href="#full-client-example"><span class="num">13</span> Full Client Example</a>
+  <a href="#serving-open-models-benchmarking-honestly"><span class="num">14</span> Serving open models &amp; benchmarking honestly</a>
+  <a href="#your-options"><span class="num">15</span> Your options</a>
+  <a href="#a-real-vllm-deployment-flag-by-flag"><span class="num">16</span> A real vLLM deployment, flag by flag</a>
+  <a href="#the-metrics-say-them-precisely"><span class="num">17</span> The metrics (say them precisely)</a>
+  <a href="#measure-it-yourself-a-ttft-tpot-benchmark-client"><span class="num">18</span> Measure it yourself — a TTFT/TPOT benchmark client</a>
+  <a href="#reading-a-benchmark-sweep"><span class="num">19</span> Reading a benchmark sweep</a>
+  <a href="#hosted-vs-self-host-the-arithmetic-worked-twice"><span class="num">20</span> Hosted vs self-host: the arithmetic, worked twice</a>
+  <a href="#diagnosing-inference-is-slow"><span class="num">21</span> Diagnosing &quot;inference is slow&quot;</a>
+  <a href="#a-production-serving-setup"><span class="num">22</span> A production serving setup</a>
+  <a href="#recap"><span class="num">23</span> Recap</a>
+  <a href="#the-async-job-architecture-in-code"><span class="num">24</span> The async job architecture, in code</a>
+  <a href="#streaming-progress-to-the-client-sse"><span class="num">25</span> Streaming progress to the client: SSE</a>
+  <a href="#the-real-ceiling-provider-quota-and-a-token-bucket-for-it"><span class="num">26</span> The real ceiling: provider quota, and a token bucket for it</a>
+  <a href="#capacity-math-a-worked-example"><span class="num">27</span> Capacity math: a worked example</a>
+  <a href="#production-ops"><span class="num">28</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">29</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">30</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">31</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">32</span> Check yourself</a>
+  <a href="#build-it"><span class="num">33</span> Build it</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Serving &amp; scaling <span>// Inference &amp; serving</span></h1>
   <p>vLLM and Ollama, benchmarking honestly, a production serving setup and scaling it.</p>
-  <div class="tags"></div>
+  <div class="tags"><span class="tag">28 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -60,9 +64,13 @@
 <p>Serve open-weight LLMs locally: vLLM for production GPU throughput (PagedAttention, continuous batching, OpenAI-compatible API), Ollama for laptop dev and quick pulls, quantization (AWQ/GPTQ), GPU sizing, and hybrid routing with cloud APIs.</p>
 <div class="diagram"><img alt="Model Serving (vLLM / Ollama) architecture" src="../tech/img/model-serving-vllm-main.png"/></div><p class="diagram-caption">vLLM serving: OpenAI-compatible <code>/v1/chat/completions</code> → scheduler → PagedAttention KV cache → GPU workers. 5–20× throughput vs naive HuggingFace <code>generate</code> on same hardware for <a href="../rag/rag-pipeline.html">The RAG pipeline</a> and agent workloads.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Durable execution</strong></td><td>Checkpointed long-running jobs that resume after crashes (Temporal/LangGraph).</td></tr><tr><td><strong>PagedAttention</strong></td><td>Virtual-memory-style KV allocation (vLLM) — no fragmentation, shared prefixes.</td></tr><tr><td><strong>Continuous batching</strong></td><td>Admit/evict requests mid-generation; the big throughput win.</td></tr><tr><td><strong>TTFT / TPOT</strong></td><td>Time to first token / time per output token.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card"><p>Self-host Llama, Mistral, Qwen when <strong>data residency</strong>, <strong>cost at scale</strong>, or <strong>predictable latency</strong> beat closed APIs. <strong>vLLM</strong> is the production inference engine; <strong>Ollama</strong> is the developer UX layer for local iteration. Both expose OpenAI-shaped APIs so LangChain/LangGraph code swaps with a <code>base_url</code> change.</p>
 <h3>Functional requirements</h3>
 <ul>
@@ -82,7 +90,7 @@
 <blockquote><strong>Not for embeddings:</strong> use TEI for <a href="../rag/embedding-models.html">Choosing an embedding model</a>. vLLM is LLM generation only.</blockquote></div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card"><table>
 <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
 <tr><td><strong>PagedAttention</strong></td><td>KV cache stored in non-contiguous fixed blocks</td><td>vLLM core; reduces fragmentation</td></tr>
@@ -95,7 +103,7 @@
 </table></div>
 </section>
 <section id="api-interface-surface">
-  <h2>04 &mdash; API / Interface Surface</h2>
+  <h2>05 &mdash; API / Interface Surface</h2>
 <div class="card"><pre># Start vLLM OpenAI server
 python -m vllm.entrypoints.openai.api_server \
   --model meta-llama/Llama-3.1-8B-Instruct \
@@ -126,7 +134,7 @@ stream = client.chat.completions.create(
 </table></div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card"><table>
 <tr><th>Case</th><th>Self-host?</th><th>Alternative</th></tr>
 <tr><td>Data cannot leave VPC</td><td><strong>vLLM</strong></td><td>Azure OpenAI private</td></tr>
@@ -137,7 +145,7 @@ stream = client.chat.completions.create(
 </table></div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card"><pre>          +------------------+
           |  API Gateway     |
           |  (auth, routing) |
@@ -158,7 +166,7 @@ stream = client.chat.completions.create(
           +------------------+</pre><div class="flow"><div class="step" data-num="1"><span class="label">Route</span><div class="detail">Gateway picks model + GPU pool; optional cloud fallback</div></div><div class="step" data-num="2"><span class="label">Schedule</span><div class="detail">vLLM continuous batching merges concurrent requests</div></div><div class="step" data-num="3"><span class="label">Generate</span><div class="detail">PagedAttention KV blocks; stream tokens to client</div></div><div class="step" data-num="4"><span class="label">Observe</span><div class="detail">Log tokens/sec, queue depth, TTFT in <a href="../production/observability.html">Observability</a></div></div></div></div>
 </section>
 <section id="vllm-deep-dive">
-  <h2>07 &mdash; vLLM Deep Dive</h2>
+  <h2>08 &mdash; vLLM Deep Dive</h2>
 <div class="diagram"><img alt="PagedAttention: KV cache split into fixed-size blocks with block table (like OS virtual memory); continuous batching scheduler adds new requests without waiting for batch completion." src="../tech/img/model-serving-vllm-vllm-zoom.png"/></div><p class="diagram-caption">PagedAttention: KV cache split into fixed-size blocks with block table (like OS virtual memory); continuous batching scheduler adds new requests without waiting for batch completion.</p><div class="card"><p>Key flags for production <a href="../rag/rag-pipeline.html">The RAG pipeline</a>:</p>
 <pre>--enable-prefix-caching     # shared system prompts
 --max-model-len 8192        # cap KV RAM; lower if OOM
@@ -172,7 +180,7 @@ stream = client.chat.completions.create(
 </ul></div>
 </section>
 <section id="ollama-deep-dive">
-  <h2>08 &mdash; Ollama Deep Dive</h2>
+  <h2>09 &mdash; Ollama Deep Dive</h2>
 <div class="diagram"><img alt="Ollama stack: ollama pull → Modelfile (SYSTEM, PARAMETER temperature) → ollama serve :11434 → REST /api/chat. Single-user GPU; not multi-tenant production." src="../tech/img/model-serving-vllm-ollama-zoom.png"/></div><p class="diagram-caption">Ollama stack: ollama pull → Modelfile (SYSTEM, PARAMETER temperature) → ollama serve :11434 → REST /api/chat. Single-user GPU; not multi-tenant production.</p><div class="card"><pre># Modelfile example
 FROM llama3.1
 SYSTEM You are a helpful support bot. Cite sources.
@@ -184,7 +192,7 @@ PARAMETER num_ctx 8192
 <p>Use Ollama for: local LangGraph dev, CI smoke tests, sales demos. Do <em>not</em> use for multi-tenant SaaS prod — no HA, queue, or autoscale story.</p></div>
 </section>
 <section id="quantization">
-  <h2>09 &mdash; Quantization</h2>
+  <h2>10 &mdash; Quantization</h2>
 <div class="card"><table>
 <tr><th>Method</th><th>Bits</th><th>VRAM (8B)</th><th>Quality</th></tr>
 <tr><td>FP16</td><td>16</td><td>~16 GB</td><td>Baseline</td></tr>
@@ -194,7 +202,7 @@ PARAMETER num_ctx 8192
 <p>Always benchmark on your eval harness before prod quant deploy. Perplexity alone is insufficient — run golden RAG/agent tasks.</p></div>
 </section>
 <section id="gpu-sizing">
-  <h2>10 &mdash; GPU Sizing</h2>
+  <h2>11 &mdash; GPU Sizing</h2>
 <div class="card"><table>
 <tr><th>Model</th><th>Precision</th><th>GPU</th><th>Notes</th></tr>
 <tr><td>Llama-3-8B</td><td>FP16</td><td>1× A10/L4 24GB</td><td>Headroom for KV cache</td></tr>
@@ -204,7 +212,7 @@ PARAMETER num_ctx 8192
 <p>KV cache RAM scales with <code>max_model_len × concurrent_requests</code>. OOM usually from context too long, not weights.</p></div>
 </section>
 <section id="vllm-vs-ollama">
-  <h2>11 &mdash; vLLM vs Ollama</h2>
+  <h2>12 &mdash; vLLM vs Ollama</h2>
 <div class="card"><table>
 <tr><th>Dimension</th><th>vLLM</th><th>Ollama</th></tr>
 <tr><td>Target</td><td>Production GPU cluster</td><td>Local dev / demo</td></tr>
@@ -216,7 +224,7 @@ PARAMETER num_ctx 8192
 </table></div>
 </section>
 <section id="full-client-example">
-  <h2>12 &mdash; Full Client Example</h2>
+  <h2>13 &mdash; Full Client Example</h2>
 <div class="card highlight"><p>Point LangChain / OpenAI SDK at vLLM for a RAG generation node. Embeddings still go to OpenAI or TEI per <a href="../rag/embedding-models.html">Choosing an embedding model</a>.</p></div><div class="card"><pre>from openai import OpenAI
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -252,11 +260,11 @@ llm = ChatOpenAI(
 </section>
 <p class="part-divider">The full explanation</p>
 <section id="serving-open-models-benchmarking-honestly">
-  <h2>13 &mdash; Serving open models &amp; benchmarking honestly</h2>
+  <h2>14 &mdash; Serving open models &amp; benchmarking honestly</h2>
 <p>Hosted API vs self-hosted is a real decision; and every serving claim is meaningless without its workload. Here's the vocabulary and the method.</p>
 </section>
 <section id="your-options">
-  <h2>14 &mdash; Your options</h2>
+  <h2>15 &mdash; Your options</h2>
 <table>
 <tr><th>Option</th><th>Reach for it when</th></tr>
 <tr><td><b>Hosted API</b> (Anthropic/OpenAI/…)</td><td>default: best models, zero ops; pay per token</td></tr>
@@ -267,7 +275,7 @@ llm = ChatOpenAI(
 <p>Self-hosting earns its keep in roughly four cases: data can't leave your boundary; you fine-tuned and the adapter <i>is</i> the product; token volume is huge and steady (the arithmetic below); or you need latency/behavior guarantees a shared API won't sign. Otherwise the hosted default stands — you are not going to out-ops a provider on their own model.</p>
 </section>
 <section id="a-real-vllm-deployment-flag-by-flag">
-  <h2>15 &mdash; A real vLLM deployment, flag by flag</h2>
+  <h2>16 &mdash; A real vLLM deployment, flag by flag</h2>
 <p>The one-liner from the quickstart hides every decision that matters. Here's a production-shaped launch with each flag annotated — these flags <i>are</i> <a href="index.html">Inference & serving</a> (<a href="inference-internals.html">Inference internals</a>) turned into switches:</p>
 <div class="code-block"><div class="code-file"><span>serve.sh — vLLM in production shape, every flag a decision</span><span class="code-lang">bash</span></div><pre>pip install vllm
 
@@ -304,7 +312,7 @@ vllm serve meta-llama/Llama-3.1-8B-Instruct <span class="st">\
 <p>Operationally, treat it like any stateful service: scrape <code>/metrics</code> (Prometheus format — queue depth, KV-cache usage %, preemption count, TTFT/TPOT histograms), one model per GPU pool, a plain HTTP load balancer in front of replicas, and drain-before-restart since in-flight generations are lost on kill. The metrics to alert on: KV utilization pinned at ~100% and preemptions &gt; 0 — that's the memory cliff from <a href="inference-internals.html">Inference internals</a>, and p99 will have noticed before your users tell you.</p>
 </section>
 <section id="the-metrics-say-them-precisely">
-  <h2>16 &mdash; The metrics (say them precisely)</h2>
+  <h2>17 &mdash; The metrics (say them precisely)</h2>
 <table>
 <tr><th>Metric</th><th>Meaning</th><th>Dominated by</th></tr>
 <tr><td><b>TTFT</b></td><td>time to first token</td><td>queueing + prefill (prompt length)</td></tr>
@@ -316,7 +324,7 @@ vllm serve meta-llama/Llama-3.1-8B-Instruct <span class="st">\
 <div class="callout warn"><p><strong>The benchmarking law</strong></p>Never report throughput without: concurrency, prompt/output length distribution, hardware, model, precision, and the latency constraint. "X tokens/sec" alone is marketing, not measurement. Change <b>one</b> factor per run (precision, max batch, prefix cache on/off) and explain the delta.</div>
 </section>
 <section id="measure-it-yourself-a-ttft-tpot-benchmark-client">
-  <h2>17 &mdash; Measure it yourself — a TTFT/TPOT benchmark client</h2>
+  <h2>18 &mdash; Measure it yourself — a TTFT/TPOT benchmark client</h2>
 <p>Any OpenAI-compatible endpoint (vLLM included) can be benchmarked with ~60 lines of asyncio. The essential trick: <b>stream</b>, and timestamp the first chunk (TTFT) separately from the rest (TPOT). This is the tool you rerun for every "one factor changed" experiment:</p>
 <div class="code-block"><div class="code-file"><span>bench.py — TTFT/TPOT under concurrency against any OpenAI-compatible server</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> asyncio, time, statistics, argparse, random
 <span class="kw">from</span> openai <span class="kw">import</span> AsyncOpenAI
@@ -376,7 +384,7 @@ MODEL = <span class="st">"</span><span class="st">meta-llama/Llama-3.1-8B-Instru
 <span class="cm"># and an empty prefix cache make run #1 lie to you.</span></pre></div>
 </section>
 <section id="reading-a-benchmark-sweep">
-  <h2>18 &mdash; Reading a benchmark sweep</h2>
+  <h2>19 &mdash; Reading a benchmark sweep</h2>
 <p>An illustrative sweep of the setup above (8B, one 80 GB GPU, mixed prompts, 256 output tokens — <b>numbers invented for teaching, shapes realistic</b>):</p>
 <table>
 <tr><th>Concurrency</th><th>TTFT p50</th><th>TTFT p99</th><th>TPOT p50</th><th>TPOT p99</th><th>Throughput (out-tok/s)</th></tr>
@@ -396,7 +404,7 @@ MODEL = <span class="st">"</span><span class="st">meta-llama/Llama-3.1-8B-Instru
 </ol>
 </section>
 <section id="hosted-vs-self-host-the-arithmetic-worked-twice">
-  <h2>19 &mdash; Hosted vs self-host: the arithmetic, worked twice</h2>
+  <h2>20 &mdash; Hosted vs self-host: the arithmetic, worked twice</h2>
 <p>Assume (all illustrative): hosted small-tier model at $0.25/M input + $1.25/M output tokens; an 80 GB GPU instance at $2.50/hr on-demand (~$1,825/month); the benchmarked ~4,800 out-tok/s at SLO from above; one engineer-day ≈ $1,000 loaded.</p>
 <pre class="ascii-diagram">SCENARIO A — internal tool: 5M input + 1M output tokens/day
   hosted:    5 × $0.25 + 1 × $1.25            = $2.50/day  ≈ $75/month
@@ -426,7 +434,7 @@ SCENARIO B — consumer feature: 2B input + 400M output tokens/day
 <p>The honest summary: self-hosting is a <b>volume × utilization × quality-parity</b> bet. Scenario B flips back to hosted if traffic is spiky (utilization drops), if you need the frontier model's quality (no parity), or if eng time is your scarcest resource. Run the arithmetic with your numbers quarterly; the answer changes as prices and open-model quality move.</p>
 </section>
 <section id="diagnosing-inference-is-slow">
-  <h2>20 &mdash; Diagnosing &quot;inference is slow&quot;</h2>
+  <h2>21 &mdash; Diagnosing &quot;inference is slow&quot;</h2>
 <ol>
 <li>Separate <b>queue time</b> vs <b>prefill</b> vs <b>decode</b> — three different diseases. High TTFT + normal TPOT = queue/prefill (add replicas, chunk prefill, cache prefixes). Normal TTFT + high TPOT = decode pressure (batch too big, KV-bound — quantize KV, shed load).</li>
 <li>Check prompt/output length distribution (one 30K-token prompt stalls a batch; enable chunked prefill).</li>
@@ -451,7 +459,7 @@ SCENARIO B — consumer feature: 2B input + 400M output tokens/day
 </ol></div>
 </section>
 <section id="a-production-serving-setup">
-  <h2>21 &mdash; A production serving setup</h2>
+  <h2>22 &mdash; A production serving setup</h2>
 <ul>
 <li>API layer (FastAPI) handles auth, rate limits, request validation, streaming tokens to clients via SSE.</li>
 <li>Inference server (vLLM) on GPU nodes behind a load balancer; prefix-aware routing to maximize cache hits.</li>
@@ -462,7 +470,7 @@ SCENARIO B — consumer feature: 2B input + 400M output tokens/day
 <p>This maps neatly onto your ad-serving instincts: tail latency, caching, admission control, and per-request cost.</p>
 </section>
 <section id="recap">
-  <h2>22 &mdash; Recap</h2>
+  <h2>23 &mdash; Recap</h2>
 <p>Chat is sync and short; agents can run for minutes. Your serving design must handle both.</p>
 <p>The mini-scenario that motivates everything here: your coding agent works beautifully in the demo — one user, one request, a websocket held open for four minutes. Then you launch. A deploy restarts the pods mid-run and thirty users' agents vanish silently. A burst of traffic hits the provider rate limit and every request — including the ones already 3 minutes into their run — starts failing on step 9 of 10. Nothing here is an LLM problem; it's a distributed-systems problem you inherited the moment a "request" stopped fitting inside an HTTP timeout.</p>
 <div class="tile-grid">
@@ -473,7 +481,7 @@ SCENARIO B — consumer feature: 2B input + 400M output tokens/day
 </div>
 </section>
 <section id="the-async-job-architecture-in-code">
-  <h2>23 &mdash; The async job architecture, in code</h2>
+  <h2>24 &mdash; The async job architecture, in code</h2>
 <p>The shape is always the same: an API that <b>accepts and returns immediately</b>, a <b>queue</b>, <b>workers</b> that run the agent loop and <b>checkpoint after every step</b>, and a <b>results channel</b> back to the client. Here it is with Redis as the queue and Postgres as the checkpoint store — swap in SQS/Celery/Temporal without changing the shape.</p>
 <div class="code-block"><div class="code-file"><span>jobs_api.py — accept fast, run elsewhere</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> json, uuid, redis.asyncio <span class="kw">as</span> aioredis
 <span class="kw">from</span> fastapi <span class="kw">import</span> FastAPI, HTTPException
@@ -555,7 +563,7 @@ MAX_STEPS, LEASE_S = <span class="nr">15</span>, <span class="nr">120</span> <sp
 <p>The two lines that earn their keep in production: the <b>lease</b> (a worker OOM-killed mid-run doesn't strand the job; a competing worker re-claims it after 120s) and the <b>append-only checkpoint table</b> (resume-on-crash <i>and</i> a free step-by-step audit log for debugging "what did the agent do?"). This is exactly what Temporal or a LangGraph checkpointer gives you packaged; build the 60-line version to understand it, adopt the engine when your workflows outgrow it.</p>
 </section>
 <section id="streaming-progress-to-the-client-sse">
-  <h2>24 &mdash; Streaming progress to the client: SSE</h2>
+  <h2>25 &mdash; Streaming progress to the client: SSE</h2>
 <p>Polling wastes requests and feels dead; websockets are overkill for one-way progress. Server-Sent Events are plain HTTP, survive proxies, and auto-reconnect in the browser with a <code>Last-Event-ID</code> header — which pairs perfectly with the checkpoint log you already have.</p>
 <div class="code-block"><div class="code-file"><span>sse.py — resumable event stream over the checkpoint log</span><span class="code-lang">python</span></div><pre><span class="kw">from</span> fastapi <span class="kw">import</span> Request
 <span class="kw">from</span> fastapi.responses <span class="kw">import</span> StreamingResponse
@@ -587,7 +595,7 @@ MAX_STEPS, LEASE_S = <span class="nr">15</span>, <span class="nr">120</span> <sp
 <span class="cm"># into one big flush at the end — the classic SSE gotcha.</span></pre></div>
 </section>
 <section id="the-real-ceiling-provider-quota-and-a-token-bucket-for-it">
-  <h2>25 &mdash; The real ceiling: provider quota, and a token bucket for it</h2>
+  <h2>26 &mdash; The real ceiling: provider quota, and a token bucket for it</h2>
 <p>Your provider limits you in requests/min <i>and</i> tokens/min. Uncoordinated workers discover the limit by getting 429s — and naive per-worker retries synchronize into stampedes. Put one shared limiter in front of every call, denominated in <b>tokens</b>, because that's the scarcer unit for agent workloads.</p>
 <div class="code-block"><div class="code-file"><span>token_bucket.py — shared, token-denominated rate limiter (Redis Lua = atomic)</span><span class="code-lang">python</span></div><pre>LUA = <span class="st">"""</span>
 <span class="st">local key, now = KEYS[1], tonumber(ARGV[1])</span>
@@ -631,7 +639,7 @@ MAX_STEPS, LEASE_S = <span class="nr">15</span>, <span class="nr">120</span> <sp
 <p><code>QuotaSaturated</code> is a feature, not a failure: it's the backpressure signal. Catch it in the worker, put the job back on the queue with a delay, and let queue depth grow — visible, bounded degradation instead of a 429-retry storm that burns quota on failures.</p>
 </section>
 <section id="capacity-math-a-worked-example">
-  <h2>26 &mdash; Capacity math: a worked example</h2>
+  <h2>27 &mdash; Capacity math: a worked example</h2>
 <p>Illustrative numbers, but do this arithmetic for your own system — it takes ten minutes and prevents a launch-day incident. Target: <b>1,200 agent jobs/hour at peak</b>; a job averages <b>8 LLM steps</b>, ~7,000 input + 400 output tokens per step, provider latency ~6s/step, tool time ~2s/step.</p>
 <ul>
 <li><b>Throughput per job:</b> 8 × (6s + 2s) = ~64s of wall-clock, nearly all of it awaiting I/O.</li>
@@ -659,7 +667,7 @@ MAX_STEPS, LEASE_S = <span class="nr">15</span>, <span class="nr">120</span> <sp
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>27 &mdash; Production &amp; Ops</h2>
+  <h2>28 &mdash; Production &amp; Ops</h2>
 <div class="card"><table>
 <tr><th>Concern</th><th>Practice</th></tr>
 <tr><td>Health</td><td><code>GET /v1/models</code>; readiness when model loaded</td></tr>
@@ -671,7 +679,7 @@ MAX_STEPS, LEASE_S = <span class="nr">15</span>, <span class="nr">120</span> <sp
 </table></div>
 </section>
 <section id="related-topics">
-  <h2>28 &mdash; Related topics</h2>
+  <h2>29 &mdash; Related topics</h2>
 <div class="card"><ul>
 <li><a href="../fundamentals/api.html">Calling a model</a> — same SDK with <code>base_url</code> swap</li>
 <li><a href="../rag/embedding-models.html">Choosing an embedding model</a> — TEI for embed; vLLM for generate</li>
@@ -680,8 +688,8 @@ MAX_STEPS, LEASE_S = <span class="nr">15</span>, <span class="nr">120</span> <sp
 <li><a href="../production/observability.html">Observability</a> — token/cost/latency per model replica</li>
 </ul></div>
 </section>
-<section id="common-pitfalls">
-  <h2>29 &mdash; Common Pitfalls</h2>
+<section id="where-people-get-lost">
+  <h2>30 &mdash; Where people get lost</h2>
 <div class="card"><ul>
 <li><strong>Ollama in prod multi-tenant</strong> — no SLO, queue, or HA story</li>
 <li><strong>OOM from max-model-len too high</strong> — lower len or reduce concurrent requests</li>
@@ -691,8 +699,12 @@ MAX_STEPS, LEASE_S = <span class="nr">15</span>, <span class="nr">120</span> <sp
 <li><strong>Cold start on scale-to-zero</strong> — first request 60s+ model load</li>
 </ul></div>
 </section>
+<section id="how-this-connects">
+  <h2>31 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../fundamentals/api.html">Calling a model</a> &mdash; The API call end to end: messages, roles, streaming, tool calls, errors and retries, across providers.</li><li><a href="../rag/embedding-models.html">Choosing an embedding model</a> &mdash; Model families, dimensions, benchmarks, cost, and when to fine-tune or switch.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="../adaptation/fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a> &mdash; When to fine-tune, the LoRA math, a working QLoRA recipe, data, hyperparameters, evaluation and serving.</li><li><a href="inference-internals.html">Inference internals</a> &mdash; Prefill vs decode, the KV cache, PagedAttention, continuous batching and speculative decoding.</li></ul><h3>Where this shows up later</h3><ul><li><a href="moe.html">Mixture of experts</a> &mdash; Sparse experts and routers: more parameters for the same compute, and what it costs at serving time.</li><li><a href="../production/cost-performance.html">Cost &amp; latency</a> &mdash; Where the money and the milliseconds go: pricing, prefill vs decode, routing, batching and prompt caching.</li><li><a href="../tech/crewai.html">CrewAI</a> &mdash; Role-based multi-agent crews: agents, tasks, processes.</li></ul>
+</section>
 <section id="check-yourself">
-  <h2>30 &mdash; Check yourself</h2>
+  <h2>32 &mdash; Check yourself</h2>
 <details>
 <summary>vLLM vs HuggingFace generate?</summary>
 <div class="answer">vLLM adds PagedAttention + continuous batching for 5–20× throughput on concurrent requests. HF generate is fine for single-request notebooks, not prod serving.</div>
@@ -749,7 +761,7 @@ MAX_STEPS, LEASE_S = <span class="nr">15</span>, <span class="nr">120</span> <sp
 <details><summary>TTFT is fine but tokens stream slowly under load.</summary><div class="answer">Decode is bandwidth/KV-bound: quantize weights and KV, enable chunked prefill, cap batch size for TPOT SLO, or add replicas/tensor parallelism.</div></details>
 </section>
 <section id="build-it">
-  <h2>31 &mdash; Build it</h2>
+  <h2>33 &mdash; Build it</h2>
 <div class="callout success">Serve your <a href="../adaptation/fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a> model with vLLM. Benchmark HF generate vs vLLM vs AWQ-quantized vLLM at 1, 8 and 32 concurrent requests (TTFT, TPOT, throughput) and check task accuracy for each.</div>
 </section>
 
