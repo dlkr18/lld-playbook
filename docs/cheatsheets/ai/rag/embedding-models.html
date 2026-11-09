@@ -58,7 +58,7 @@
 <div class="hero">
   <h1>Choosing an embedding model <span>// Knowledge &amp; RAG</span></h1>
   <p>Model families, dimensions, benchmarks, cost, and when to fine-tune or switch.</p>
-  <div class="tags"><span class="tag">29 min read</span><span class="tag">3 diagrams</span></div>
+  <div class="tags"><span class="tag">29 min read</span><span class="tag">5 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -212,6 +212,7 @@
 </tbody>
 </table>
 <p>Binary alone is a poor ranker: it cannot tell apart neighbours that are all close. But as a <strong>first pass</strong> it is excellent: the true top 10 are almost always inside its top 100, and rescoring 100 candidates with full vectors is cheap: microseconds of arithmetic, plus well under a millisecond to fetch them if they live on a local SSD rather than in RAM. This "compress for the shortlist, rescore with full precision" pattern is how large indexes get 10 to 30 times cheaper. Real embeddings behave differently from this synthetic set, and some models are trained to quantize well, so measure on your golden set; the shape of the result usually holds.</p>
+<div class="diagram"><img alt="In the synthetic test binary vectors alone reach recall@10 of only 0.390, but their top 100 holds the true top 10, so rescoring those 100 with float32 vectors gives 1.000 while RAM holds just 48 bytes per vector." src="../img/embedding-models-binary-rescore.png"/></div><p class="diagram-caption">In the synthetic test binary vectors alone reach recall@10 of only 0.390, but their top 100 holds the true top 10, so rescoring those 100 with float32 vectors gives 1.000 while RAM holds just 48 bytes per vector.</p>
 </section>
 <section id="step-9-when-fine-tuning-pays">
   <h2>12 &mdash; Step 9: when fine-tuning pays</h2>
@@ -236,6 +237,7 @@
 <li>Evaluate on the golden set, then shadow real traffic: run both, compare result overlap and downstream answer quality.</li>
 <li>Switch the query path and the index together, in one config change, and keep the old index until you are sure.</li>
 </ol>
+<div class="diagram"><img alt="Old and new vectors are incomparable, so the new model gets its own index: backfill it while the old one serves, dual-write changes to both, evaluate and shadow, then switch the query path and index in one change." src="../img/embedding-models-migration.png"/></div><p class="diagram-caption">Old and new vectors are incomparable, so the new model gets its own index: backfill it while the old one serves, dual-write changes to both, evaluate and shadow, then switch the query path and index in one change.</p>
 <p>Anything else derived from the old model must move too: a semantic cache keyed by query vectors, similarity thresholds tuned on its scores, clustering built on its space.</p>
 </section>
 <section id="a-worked-decision-for-the-support-assistant">

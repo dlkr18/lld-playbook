@@ -50,7 +50,7 @@
 <div class="hero">
   <h1>Reliability engineering <span>// Production &amp; evals</span></h1>
   <p>Surviving flaky models and APIs: retries, fallbacks, timeouts, idempotency.</p>
-  <div class="tags"><span class="tag">27 min read</span><span class="tag">1 diagram</span></div>
+  <div class="tags"><span class="tag">27 min read</span><span class="tag">2 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -159,6 +159,7 @@
 <li><strong>Open</strong>: after, say, 5 consecutive failures (or a failure rate above 50% over a window), calls fail immediately without being sent, so requests go straight to the fallback.</li>
 <li><strong>Half-open</strong>: after a cool-down (say 30 s), one trial call is let through. Success closes the breaker; failure reopens it.</li>
 </ul>
+<div class="diagram"><img alt="Five failures in a row open the breaker, so calls fail fast and go to the fallback; after a 30-second cool-down one trial call decides whether it closes again or reopens." src="../img/reliability-circuit-breaker.png"/></div><p class="diagram-caption">Five failures in a row open the breaker, so calls fail fast and go to the fallback; after a 30-second cool-down one trial call decides whether it closes again or reopens.</p>
 <p>The simulation in the code below runs 10 requests per second for 200 seconds against a provider with a 60-second outage. Without protection, three attempts per request send 1,800 calls into the outage. With a breaker and a retry budget, 6 calls reach the provider during the outage; the other requests fail fast (and in a real system go to the fallback), and service resumes within one cool-down of recovery. One detail: a 400 Bad Request should not count as a failure for the breaker, since it means your request is wrong, not that the provider is down.</p>
 </section>
 <section id="step-9-rate-limits-are-capacity-not-errors">

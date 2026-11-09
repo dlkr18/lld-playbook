@@ -53,7 +53,7 @@
 <div class="hero">
   <h1>GPUs &amp; distributed training <span>// Inference &amp; serving</span></h1>
   <p>GPU architecture, the roofline, data/tensor/pipeline parallelism, ZeRO and FSDP, fault tolerance.</p>
-  <div class="tags"><span class="tag">16 min read</span><span class="tag">1 diagram</span></div>
+  <div class="tags"><span class="tag">16 min read</span><span class="tag">2 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -147,6 +147,7 @@
 <li>Split \(B\) by <strong>rows</strong> to match. Each GPU multiplies its slice and gets a partial sum of \(Y\).</li>
 <li>One all-reduce adds the partial sums.</li>
 </ol>
+<div class="diagram"><img alt="Y = GELU(XA)B on two GPUs: A is split by columns so each GPU applies GELU to its own slice, B is split by rows so each GPU ends with a partial sum, and one all-reduce adds them." src="../img/gpus-scale-tensor-parallel-mlp.png"/></div><p class="diagram-caption">Y = GELU(XA)B on two GPUs: A is split by columns so each GPU applies GELU to its own slice, B is split by rows so each GPU ends with a partial sum, and one all-reduce adds them.</p>
 <p>Attention splits the same way, by heads. The result is two all-reduces per transformer layer in the forward pass and two in the backward. That is far more frequent communication than data parallelism, and it sits directly on the critical path, so tensor parallelism needs the fastest links available: NVLink inside one server. In practice the tensor-parallel degree is at most 8 (one server's GPUs).</p>
 <p>It also helps inference: a 70B model split 4 ways serves from four GPUs at lower latency than from one.</p>
 </section>

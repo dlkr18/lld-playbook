@@ -52,7 +52,7 @@
 <div class="hero">
   <h1>Complete build: spec &amp; architecture <span>// Build &amp; interview</span></h1>
   <p>The system we build end to end: requirements, architecture and decisions.</p>
-  <div class="tags"><span class="tag">32 min read</span><span class="tag">1 diagram</span></div>
+  <div class="tags"><span class="tag">32 min read</span><span class="tag">2 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -127,6 +127,7 @@
 <li><strong>Run the router and retrieval in parallel.</strong> Most questions are knowledge-base questions, so start embedding, searching and reranking the moment the request arrives, and throw the result away if the router says "order action". The cost is about 600 wasted retrievals a day (the 20% of traffic that is not a knowledge-base question) at about $0.0004 each, roughly $0.24 a day. The first-token path now contains the slower of router and retrieval instead of both: first token p95 falls to 2.11 s, end to end to 5.90 s.</li>
 <li><strong>Cache the static prompt prefix.</strong> About 1,200 of the 3,500 input tokens (system prompt, instructions, output format) are identical on every call. Provider prompt caching skips recomputing them; modelling that as a TTFT median of 650 ms instead of 800 ms brings first token p95 to 1.84 s and end to end to 5.69 s. Both targets met.</li>
 </ol>
+<div class="diagram"><img alt="Run serially, the knowledge-base path misses both latency targets; running retrieval in parallel with the router and caching the static prompt prefix bring first token to 1.84 s and the full answer to 5.69 s at p95." src="../img/build-spec-latency-path.png"/></div><p class="diagram-caption">Run serially, the knowledge-base path misses both latency targets; running retrieval in parallel with the router and caching the static prompt prefix bring first token to 1.84 s and the full answer to 5.69 s at p95.</p>
 <p>Decoding 250 tokens is two thirds of the total, so output length is the biggest latency lever you control: with 350-token answers the end-to-end p95 becomes about 7.4 s even with both fixes in place. The answer prompt asks for concision and <code>max_tokens</code> sits near 300, a product decision as much as a performance one. Why decoding is slow per token is explained in <a href="../inference/inference-internals.html">inference internals</a>.</p>
 <p>The order agent cannot live inside this budget: each step is a model call (about 1.2 s) plus a tool call (about 0.2 s), so six steps take about 8.4 s. The spec gives it a different budget explicitly: it streams progress, and refunds are asynchronous ("proposed, awaiting approval").</p>
 </section>

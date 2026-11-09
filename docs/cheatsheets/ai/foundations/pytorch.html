@@ -56,7 +56,7 @@
 <div class="hero">
   <h1>PyTorch in practice <span>// Math &amp; ML foundations</span></h1>
   <p>Tensors, autograd, a trustworthy training loop, mixed precision, GPU memory and debugging a run.</p>
-  <div class="tags"><span class="tag">22 min read</span><span class="tag">1 diagram</span></div>
+  <div class="tags"><span class="tag">22 min read</span><span class="tag">2 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -175,6 +175,7 @@
 </tbody>
 </table>
 <p>So the 1.3B model with naive attention needs about 113 GB and does not fit on an 80 GB GPU, though its weights are only 2.6 GB. The levers, in the order to try them: FlashAttention (PyTorch's <code>scaled_dot_product_attention</code> uses it automatically where supported), a smaller micro-batch with gradient accumulation to keep the effective batch, activation checkpointing, then sharding parameters, gradients and optimiser state across GPUs (FSDP or ZeRO, see <a href="../inference/gpus-scale.html">GPUs &amp; scale</a>), or switching to LoRA so gradients and optimiser state exist only for a small fraction of parameters (<a href="../adaptation/fine-tuning.html">Fine-tuning</a>).</p>
+<div class="diagram"><img alt="Training the 1.3B model at sequence length 2,048 and batch 8: about 21 GB scales with the parameters, and activations add 92 GB with naive attention, 27 GB with FlashAttention, under 3 GB with checkpointing." src="../img/pytorch-memory-1-3b.png"/></div><p class="diagram-caption">Training the 1.3B model at sequence length 2,048 and batch 8: about 21 GB scales with the parameters, and activations add 92 GB with naive attention, 27 GB with FlashAttention, under 3 GB with checkpointing.</p>
 <p>Inference is different: no gradients, no optimiser, no saved activations; memory is weights plus the KV cache (<a href="../fundamentals/tokens-context-cost.html">Tokens, context &amp; cost</a>).</p>
 </section>
 <section id="step-8-activation-checkpointing-trades-compute-for-memory">

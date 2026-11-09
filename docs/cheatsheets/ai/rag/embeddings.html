@@ -66,7 +66,7 @@
 <div class="hero">
   <h1>Embeddings <span>// Knowledge &amp; RAG</span></h1>
   <p>Turning meaning into numbers: dense vectors, cosine similarity, sentence embeddings and contrastive training.</p>
-  <div class="tags"><span class="tag">39 min read</span><span class="tag">3 diagrams</span></div>
+  <div class="tags"><span class="tag">39 min read</span><span class="tag">4 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -179,6 +179,7 @@
 \[ \mathcal{L}_i = -\log \frac{e^{s_{ii}/\tau}}{\sum_{j=1}^{B} e^{s_{ij}/\tau}} \]
 <p>Here \(\tau\) is the temperature, a small positive number. Minimising this loss raises \(s_{ii}\) and lowers every \(s_{ij}\) for \(j \neq i\).</p>
 <p>Worked, with \(B = 4\) and our money-back query as \(q_1\). Its row of cosines against the four passages in the batch is \([0.82,\ 0.41,\ 0.35,\ 0.60]\), where 0.82 is its true passage. With \(\tau = 0.05\), dividing gives logits \([16.4,\ 8.2,\ 7.0,\ 12.0]\). The softmax probability of the true passage is 0.988, and the loss is \(-\log 0.988 = 0.013\): this query is already well separated, so it contributes almost nothing to the gradient. A random untrained model would score all four about equally, giving a loss near \(\log 4 = 1.386\).</p>
+<div class="diagram"><img alt="A batch of 4 question-passage pairs gives a 4 × 4 cosine matrix whose off-diagonal cells are free negatives; for the money-back query, dividing its row by τ = 0.05 and taking a softmax gives the true passage 0.988 and a loss of 0.013." src="../img/embeddings-infonce-step.png"/></div><p class="diagram-caption">A batch of 4 question-passage pairs gives a 4 × 4 cosine matrix whose off-diagonal cells are free negatives; for the money-back query, dividing its row by τ = 0.05 and taking a softmax gives the true passage 0.988 and a loss of 0.013.</p>
 <p>Two design choices hide in that formula, and both are interview material:</p>
 <ul>
 <li><strong>Why in-batch negatives?</strong> They are free: a batch of 4,096 pairs gives each query 4,095 negatives with no extra embedding work. That is why these models train with very large batches.</li>

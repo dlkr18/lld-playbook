@@ -115,6 +115,7 @@ SET hnsw.ef_search = 100;                      -- per session or transaction; de
 <li><strong>Partial indexes or partitioning</strong> for large tenants: a separate HNSW index per big tenant (<code>CREATE INDEX ... WHERE tenant_id = 7</code>), or list-partition the table by tenant group so each partition has its own index, and the filter selects the partition before the vector search starts.</li>
 <li><strong>Raising <code>ef_search</code></strong> helps a moderate filter at the cost of every query's latency. It cannot rescue a 1-in-800 filter.</li>
 </ol>
+<div class="diagram"><img src="../img/pgvector-filter-plans.png" alt="Tenant 42 owns 1 row in 800: an HNSW scan followed by the WHERE clause returns almost nothing, an iterative scan finds 10 rows after about 12,700 candidates, and the B-tree on tenant_id gives an exact answer from the tenant's own rows."></div><p class="diagram-caption">Tenant 42 owns 1 row in 800: an HNSW scan followed by the WHERE clause returns almost nothing, an iterative scan finds 10 rows after about 12,700 candidates, and the B-tree on tenant_id gives an exact answer from the tenant's own rows.</p>
 <p>For our help desk the combination is: B-tree on <code>tenant_id</code> for exact search on the many small tenants, partial HNSW indexes for the dozen largest, and iterative scans enabled as a safety net for role filters. The model in the code section shows all three behaviours on synthetic data.</p>
 </section>
 
