@@ -1,0 +1,255 @@
+<!-- Deep lesson: Classical machine learning. Merged into foundations/classical-ml by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Feature</td><td>One input number describing an example, such as a ticket's sentiment score or the customer's plan.</td></tr>
+<tr><td>Label</td><td>The answer you want the model to predict for an example: hours to resolve, or whether it escalated.</td></tr>
+<tr><td>Loss</td><td>A number that says how wrong the model's predictions are on some data. Training makes it small.</td></tr>
+<tr><td>Linear regression</td><td>Predict a number as a weighted sum of features plus a constant, fitted by minimising squared error.</td></tr>
+<tr><td>Logistic regression</td><td>Predict a probability by passing a weighted sum through the sigmoid function, fitted by minimising log-loss.</td></tr>
+<tr><td>Gradient descent</td><td>Repeatedly nudge the weights a small step in the direction that lowers the loss fastest.</td></tr>
+<tr><td>Train / validation / test split</td><td>Data for fitting, data for choosing settings, and data touched once at the end to estimate real-world performance.</td></tr>
+<tr><td>Overfitting</td><td>Fitting the noise in the training data so well that predictions on new data get worse.</td></tr>
+<tr><td>Bias / variance</td><td>Error from a model too simple to capture the pattern, versus error from a model so flexible it changes with every training sample.</td></tr>
+<tr><td>Regularisation</td><td>A penalty on large weights (L2) or on non-zero weights (L1) that trades a little training fit for better generalisation.</td></tr>
+<tr><td>Precision / recall</td><td>Of the items flagged, the fraction that were truly positive; of the truly positive items, the fraction that were flagged.</td></tr>
+<tr><td>ROC-AUC / PR-AUC</td><td>Threshold-free ranking quality: the chance a random positive outranks a random negative, and the area under the precision–recall curve.</td></tr>
+<tr><td>Data leakage</td><td>A feature or split that lets information unavailable at prediction time into training, so offline scores are too good to be true.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>Classical machine learning is the study of fitting a function to examples so that it predicts well on examples it has never seen. LLMs did not replace that discipline; they inherited it. Train and test splits, overfitting, leakage, precision and recall, and choosing a threshold from costs are exactly the tools you use to evaluate an LLM feature, an LLM-as-judge or a retrieval system. And a logistic regression on top of embeddings is still the cheapest good classifier you can ship.</p>
+<p>The questions interviewers ask:</p>
+<ol>
+<li>Explain the bias–variance trade-off, and how you would tell which one is hurting you.</li>
+<li>Your classifier is 87% accurate. Why might that be worthless, and which metrics would you look at instead?</li>
+<li>What is data leakage? Give an example you would actually catch.</li>
+<li>How do you choose a decision threshold, and why is 0.5 usually wrong?</li>
+</ol>
+<p>The running example is a <strong>support-ticket triage</strong> system for a software company. It needs two models. A <em>regression</em> model predicts hours to resolve a ticket, from the number of systems the ticket involves. A <em>classification</em> model flags tickets likely to escalate to an engineer, from four features: message sentiment (−1 very negative to +1 positive), the customer's prior tickets in 30 days, whether the customer is on the enterprise plan, and message length in words. The classifier's data is 5,000 historical tickets, of which 10.9% escalated, split 3,000 / 1,000 / 1,000 into training, validation and test. All numbers below come from actually fitting these models on synthetic data; the code at the end reproduces the classifier's numbers.</p>
+</section>
+
+<section data-label="Step 1: what learning means">
+<p>Every supervised learning method has the same three parts:</p>
+<ol>
+<li>A <strong>model family</strong>: the set of functions you are willing to consider, for example "a straight line", "a weighted sum through a sigmoid", or "a tree of if-then splits".</li>
+<li>A <strong>loss</strong>: a number measuring how wrong one member of that family is on the training data.</li>
+<li>An <strong>optimiser</strong>: a procedure for finding the member with the lowest loss.</li>
+</ol>
+<p>The goal, however, is not low training loss. A lookup table that memorises every training ticket has zero training loss and is useless on tomorrow's tickets. The goal is low loss on <em>new</em> data drawn from the same source, called <strong>generalisation</strong>. Since we cannot measure the future, we hold some data back, never fit on it, and treat performance there as our estimate. Everything in this lesson is either about fitting (Steps 2 to 4) or about making that estimate honest (Steps 5 to 9).</p>
+</section>
+
+<section data-label="Step 2: linear regression, solved exactly">
+<p>Five resolved tickets, \(x\) = systems involved, \(y\) = hours to resolve:</p>
+<table>
+<thead><tr><th>\(x\)</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr></thead>
+<tbody><tr><td>\(y\)</td><td>3</td><td>5</td><td>6</td><td>9</td><td>10</td></tr></tbody>
+</table>
+<p>The model family is a line, \(\hat y = b + w x\). The loss is the <strong>mean squared error</strong>, \(\text{MSE} = \frac{1}{n}\sum (y - \hat y)^2\). Squaring makes every error positive and punishes large errors more than small ones; it is also the right loss if the noise is roughly normally distributed.</p>
+<p>For a line, the best weights have a closed form. The slope is how much \(x\) and \(y\) move together divided by how much \(x\) moves on its own:</p>
+\[ w = \frac{\sum (x_i - \bar x)(y_i - \bar y)}{\sum (x_i - \bar x)^2} = \frac{18}{10} = 1.8, \qquad b = \bar y - w \bar x = 6.6 - 1.8 \times 3 = 1.2 \]
+<p>(\(\bar x = 3\) and \(\bar y = 6.6\) are the means.) Predictions are 3.0, 4.8, 6.6, 8.4, 10.2; errors 0, 0.2, −0.6, 0.6, −0.2; MSE 0.16. Each extra system adds 1.8 hours.</p>
+<p>Always compare with the dumbest possible model. Predicting the mean (6.6 hours) for every ticket gives MSE 6.64. The fraction of that baseline error the line removes is \(R^2 = 1 - 0.16/6.64 = 0.976\). A model that does not clearly beat its baseline has learned nothing, however good its loss looks in isolation.</p>
+</section>
+
+<section data-label="Step 3: gradient descent, and why feature scale matters">
+<p>Closed forms exist only for a few models. The general method, and the one every neural network uses, is <strong>gradient descent</strong>: start anywhere, compute how the loss changes with each weight, step against that direction, repeat. For MSE on a line, the gradients are</p>
+\[ \frac{\partial\,\text{MSE}}{\partial b} = \frac{2}{n}\sum(\hat y_i - y_i), \qquad \frac{\partial\,\text{MSE}}{\partial w} = \frac{2}{n}\sum(\hat y_i - y_i)\,x_i \]
+<p>Starting at \(b = w = 0\), every prediction is 0, so the gradients are −13.2 and −46.8: both weights should increase, \(w\) much more. With a learning rate \(\eta\), each step does \(w \leftarrow w - \eta \cdot \text{gradient}\).</p>
+<table>
+<thead><tr><th>Setup</th><th>\(\eta\)</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>\(x\) as given (1 to 5)</td><td>0.01</td><td>Reaches within 1% of the best MSE in 572 steps</td></tr>
+<tr><td>\(x\) as given</td><td>0.05</td><td>113 steps</td></tr>
+<tr><td>\(x\) as given</td><td>0.10</td><td>Diverges: the weights reach \(10^{270}\)</td></tr>
+<tr><td>Same feature in units 100 times larger (100 to 500)</td><td>just under the largest stable</td><td>After 200,000 steps, \(b\) is still 0.54 instead of 1.2</td></tr>
+<tr><td>\(x\) standardised (mean 0, std 1)</td><td>0.45</td><td>2 steps</td></tr>
+</tbody>
+</table>
+<p>Why such different behaviour from the same data? The loss surface is a bowl, and its shape depends on the scale of the features. When one direction is steep (the weight on a feature with large values) and another is shallow (the intercept), the learning rate must be small enough not to overshoot the steep direction, which makes progress along the shallow one glacial. The ratio of steepest to shallowest curvature, the <strong>condition number</strong>, is 70 for the raw feature, about 605,000 when \(x\) is recorded in units 100 times larger (100 to 500), and exactly 1 after standardising, where the bowl is perfectly round and one well-sized step lands near the bottom.</p>
+<p>That is why you <strong>standardise features</strong> (subtract the mean, divide by the standard deviation) before any gradient-based or distance-based method, and why neural networks use normalisation layers. The scaler must be fitted on the training set only and then applied, unchanged, to validation and test data; fitting it on all data leaks test statistics into training (Step 9).</p>
+</section>
+
+<section data-label="Step 4: logistic regression for a yes/no answer">
+<p>For escalation the answer is yes or no, and we want a probability. A weighted sum \(s = b + \sum_j w_j x_j\) can be any number, so logistic regression squashes it with the <strong>sigmoid</strong>:</p>
+\[ p = \sigma(s) = \frac{1}{1 + e^{-s}} \]
+<p>The sigmoid maps 0 to 0.5, large positive numbers toward 1 and large negative numbers toward 0. Its inverse gives the interpretation: \(s = \log\frac{p}{1-p}\), the <strong>log-odds</strong>. So each weight is the change in log-odds per unit of its feature, and \(e^{w}\) is the factor by which the odds multiply.</p>
+<p>The loss is <strong>log-loss</strong> (binary cross-entropy): \(-\log p\) for tickets that escalated and \(-\log(1-p)\) for those that did not, averaged. It is the two-class case of the cross-entropy in <a href="@@foundations/math@@">The math you need</a>, and for the same reason it beats squared error: it pushes hardest on confident mistakes. There is no closed form, so it is fitted by gradient descent or a related method.</p>
+<p>Fitted on the 3,000 training tickets:</p>
+<table>
+<thead><tr><th>Feature</th><th>Weight</th><th>Odds multiplier \(e^{w}\)</th><th>Reading</th></tr></thead>
+<tbody>
+<tr><td>Sentiment (per unit)</td><td>−1.795</td><td>0.166</td><td>Going from neutral (0) to fully positive (+1) cuts the odds of escalation about six-fold</td></tr>
+<tr><td>Prior tickets (each)</td><td>+0.399</td><td>1.49</td><td>Each recent ticket raises the odds by about half</td></tr>
+<tr><td>Enterprise plan</td><td>+0.897</td><td>2.45</td><td>Enterprise customers have about 2.5 times the odds</td></tr>
+<tr><td>Length (per word)</td><td>+0.001</td><td>1.001</td><td>No useful effect</td></tr>
+<tr><td>Intercept</td><td>−3.651</td><td></td><td>Baseline log-odds for a neutral, short, non-enterprise first ticket</td></tr>
+</tbody>
+</table>
+<p>Two cautions. Raw weights depend on units (per word versus per hundred words), so compare features' importance using weights fitted on standardised features. And a weight describes association in this data, not cause: enterprise customers may escalate more because they have more complex setups, not because of the plan itself.</p>
+</section>
+
+<section data-label="Step 5: generalisation and the held-out split">
+<p>To see overfitting directly, return to regression. Draw 12 training tickets from the true relationship \(y = 1.2 + 1.8x\) plus random noise (standard deviation 0.8 hours), and 2,000 test tickets from the same source. Fit polynomials of increasing degree:</p>
+<table>
+<thead><tr><th>Model</th><th>Training MSE</th><th>Test MSE</th></tr></thead>
+<tbody>
+<tr><td>Degree 1 (a line)</td><td>0.434</td><td>0.945</td></tr>
+<tr><td>Degree 3</td><td>0.329</td><td>1.005</td></tr>
+<tr><td>Degree 9</td><td>0.039</td><td>1,484.7</td></tr>
+</tbody>
+</table>
+<p>Training error falls every time we add flexibility; test error rises. The degree-9 curve has ten coefficients for twelve points, so it can bend through almost every one, noise included, and between and beyond them it swings wildly. Its largest coefficient is about 34 million. That is <strong>overfitting</strong>: the model learned the particular sample, not the relationship.</p>
+<p>This is why data is split three ways. The <strong>training set</strong> fits weights. The <strong>validation set</strong> chooses everything else: model degree, regularisation strength, threshold, features. The <strong>test set</strong> is used once at the end. If you pick the degree that scores best on the test set, you have fitted the test set too, and its score is no longer an honest estimate. With little data, <strong>k-fold cross-validation</strong> rotates which fifth (say) is held out and averages, so every example serves as validation once.</p>
+</section>
+
+<section data-label="Step 6: bias and variance">
+<p>Prediction error on new data has three sources. <strong>Noise</strong> is irreducible: here, 0.64 (the noise standard deviation squared). <strong>Bias</strong> is error from the model family being wrong, for example a line fitted to a curve; it stays no matter how much data you add. <strong>Variance</strong> is error from the fitted model depending on which training sample you happened to get.</p>
+<p>Measure variance directly: draw 200 different 12-ticket training sets, fit each model, and predict at \(x = 4.5\) (true value 9.3).</p>
+<ul>
+<li><strong>Degree 1:</strong> the 200 predictions average 9.22, a bias of −0.08, and the typical miss is 0.28 hours.</li>
+<li><strong>Degree 9:</strong> the typical miss is 3.4 hours, and a few fits predict values in the millions. Low bias in principle, enormous variance in practice.</li>
+</ul>
+<p>The diagnosis interviewers want follows from the learning curves:</p>
+<ul>
+<li><strong>High bias:</strong> training and validation error are both high and close together. More data will not help. Use a more flexible model or better features.</li>
+<li><strong>High variance:</strong> training error is low, validation error much higher. More data, regularisation, a simpler model, or averaging many models (as random forests do) will help.</li>
+</ul>
+<p>The trade-off is not a law that every model must sit on. Very large neural networks trained on huge datasets with good regularisation achieve both low bias and low variance; the trade-off describes what happens when you add flexibility while holding data fixed.</p>
+</section>
+
+<section data-label="Step 7: regularisation">
+<p>Regularisation adds a penalty for large weights to the loss. <strong>L2</strong> (ridge regression, or "weight decay" in neural networks) adds \(\alpha \sum_j w_j^2\):</p>
+\[ \text{loss} = \text{MSE} + \alpha \sum_j w_j^2 \]
+<p>The model may still use all ten polynomial terms but pays for every large coefficient, so it chooses smooth curves unless the data strongly demands otherwise. The same degree-9 model with features standardised and ridge penalties of increasing strength:</p>
+<table>
+<thead><tr><th>\(\alpha\)</th><th>Training MSE</th><th>Test MSE</th><th>Largest weight</th></tr></thead>
+<tbody>
+<tr><td>0 (none)</td><td>0.039</td><td>1,484.7</td><td>≈ 34 million</td></tr>
+<tr><td>0.01</td><td>0.330</td><td>0.960</td><td>3.3</td></tr>
+<tr><td>0.1</td><td>0.352</td><td>0.959</td><td>2.5</td></tr>
+<tr><td>10</td><td>0.942</td><td>1.280</td><td>0.48</td></tr>
+<tr><td>100</td><td>2.051</td><td>2.228</td><td>0.14</td></tr>
+</tbody>
+</table>
+<p>A small penalty removes almost all of the overfitting: test error falls from 1,485 to 0.96, the level of the correct straight-line model. Too large a penalty flattens the model until it underfits (high bias). \(\alpha\) is chosen on the validation set.</p>
+<p><strong>L1</strong> (lasso) penalises \(\alpha\sum_j |w_j|\) instead. Its effect differs in a useful way: L1 drives unhelpful weights to <em>exactly</em> zero, so it selects features. On the escalation model with moderate strength, L1 sets the length weight to exactly 0.000 and keeps the other three, while L2 merely shrinks it to 0.036. Use L1 when you suspect many features are useless and want a smaller model; L2 when features are correlated and you want their weight shared rather than one picked arbitrarily.</p>
+</section>
+
+<section data-label="Step 8: metrics that match the decision">
+<p>Back to escalation. The test set has 1,000 tickets, 126 of which escalated. The model outputs a probability; to act, we flag tickets above a <strong>threshold</strong>. At the default 0.5:</p>
+<table>
+<thead><tr><th></th><th>Predicted escalate</th><th>Predicted fine</th></tr></thead>
+<tbody>
+<tr><td>Actually escalated (126)</td><td>5 (true positives)</td><td>121 (false negatives)</td></tr>
+<tr><td>Actually fine (874)</td><td>1 (false positive)</td><td>873 (true negatives)</td></tr>
+</tbody>
+</table>
+<p>Accuracy is \((5 + 873)/1000 = 87.8\%\). A model that always says "fine" scores 87.4%. The classifier barely beats doing nothing, because with 87% negatives, accuracy is dominated by the easy majority. Look instead at:</p>
+<ul>
+<li><strong>Precision</strong> = TP / (TP + FP) = 5/6 = 0.83: flagged tickets are usually real.</li>
+<li><strong>Recall</strong> = TP / (TP + FN) = 5/126 = 0.04: it catches 4% of escalations. Useless for the purpose.</li>
+<li><strong>F1</strong>, the harmonic mean of the two, is 0.08, which exposes the problem in one number.</li>
+</ul>
+<p>The model itself is not useless; the threshold is. Threshold-free metrics judge the ranking: <strong>ROC-AUC</strong> is 0.79 (a random escalated ticket gets a higher score than a random fine one 79% of the time; 0.5 is chance). <strong>PR-AUC</strong> (average precision) is 0.38, against a chance level equal to the positive rate, 0.126. For rare positives PR-AUC is the more honest of the two, because ROC-AUC is flattered by the many easy negatives.</p>
+<p><strong>Choosing the threshold from costs.</strong> Suppose an engineer reviewing a flagged ticket costs $50, and a missed escalation (an angry enterprise customer, an SLA credit) costs $400. Flagging a ticket with escalation probability \(p\) is worth it when the expected saving exceeds the review cost: \(400p &gt; 50\), so \(p &gt; 0.125\). That holds only if the probabilities are <strong>calibrated</strong>, meaning tickets scored around 0.14 escalate about 14% of the time. Checking by bins on the test set: tickets scored 0.10 to 0.20 averaged 0.144 predicted and escalated 14.6% of the time. Calibrated enough near the threshold, which is the region that matters (the 0.2 to 0.4 bin is less good: 0.275 predicted, 36.8% actual).</p>
+<table>
+<thead><tr><th>Threshold</th><th>Flagged</th><th>Precision</th><th>Recall</th><th>Total cost</th></tr></thead>
+<tbody>
+<tr><td>Never flag</td><td>0</td><td>–</td><td>0</td><td>$50,400</td></tr>
+<tr><td>0.5</td><td>6</td><td>0.83</td><td>0.04</td><td>$48,700</td></tr>
+<tr><td>0.3</td><td>66</td><td>0.44</td><td>0.23</td><td>$42,100</td></tr>
+<tr><td>0.125</td><td>318</td><td>0.28</td><td>0.70</td><td>$31,100</td></tr>
+<tr><td>0.05</td><td>620</td><td>0.18</td><td>0.90</td><td>$35,800</td></tr>
+</tbody>
+</table>
+<p>The derived value is a starting point, not a final answer: sweeping thresholds on the validation set shows the cost curve is flat between about 0.12 and 0.2 (validation cost $27,250 at 0.125, $26,550 at 0.2), and on this test set 0.15 happens to cost $29,900. Differences that small are sampling noise, so take the cost-derived threshold, confirm it on validation, and do not chase the test-set minimum. At 0.125 the model saves 38% of the cost of doing nothing, with a precision of only 0.28. That is the right answer for this business, and it would look terrible on an "accuracy" dashboard (73% here). Metrics follow costs. The same reasoning sets the threshold for an LLM-as-judge, a hallucination detector or a moderation filter (<a href="@@production/eval-metrics@@">Eval metrics</a>).</p>
+</section>
+
+<section data-label="Step 9: leakage and honest splits">
+<p>A colleague adds a fifth feature, "reassigned to tier 2", and the test ROC-AUC jumps from 0.79 to 0.98. Celebrate? The feature is set by an agent <em>during</em> the escalation process. In the historical data it is nearly a copy of the label. At the moment the model is meant to run, when the ticket arrives, it is always 0. Scored with that feature set to 0, as it would be in production, the model's recall at a 0.5 threshold is exactly 0: it learned to rely on a signal it will never see.</p>
+<p>That is <strong>data leakage</strong>: information unavailable at prediction time reaching training. The tell is a score that is too good. Common forms:</p>
+<ul>
+<li><strong>Target leakage:</strong> features recorded after, or because of, the outcome (resolution codes, reassignment flags, "refund issued").</li>
+<li><strong>Temporal leakage:</strong> a random split puts next month's tickets in training and last month's in test, so the model learns the future. For anything deployed over time, split by time: train on January to September, validate on October, test on November.</li>
+<li><strong>Group leakage:</strong> the same customer's tickets in both training and test let the model memorise customers. Split by customer when the model must generalise to new customers.</li>
+<li><strong>Preprocessing leakage:</strong> fitting a scaler, an imputer, a vocabulary or a feature selection on all the data before splitting.</li>
+<li><strong>Duplicate leakage:</strong> near-identical examples on both sides of the split. For LLMs this is benchmark contamination: test questions that appeared in the pretraining data.</li>
+</ul>
+<p>The defence is a question you ask of every feature: <em>at the exact moment this prediction is made, would I know this value?</em></p>
+</section>
+
+<section data-label="A recipe for a new prediction problem">
+<ol>
+<li><strong>Define the decision and its costs</strong> before touching data: what action does a prediction trigger, and what do each kind of error cost? This picks the metric and later the threshold.</li>
+<li><strong>Split by how the model will be used</strong>: by time for anything deployed over time, by group (customer, document, patient) when new groups appear. Lock the test set away.</li>
+<li><strong>Baseline</strong>: majority class, mean, or a one-rule heuristic. Every later number is quoted against it.</li>
+<li><strong>Simple model first</strong>: linear or logistic regression on standardised features. It is fast, interpretable, and often within a few points of anything fancier.</li>
+<li><strong>Then gradient-boosted trees</strong> (XGBoost, LightGBM) for tabular data: they handle non-linear effects, interactions and unscaled features, and usually win on tables. Neural networks rarely beat them on small tabular data.</li>
+<li><strong>Tune on validation</strong>: regularisation, depth, threshold. Look at learning curves to tell bias from variance.</li>
+<li><strong>Error analysis</strong>: read 50 misclassified examples and group them. The groups tell you which feature or label fix is worth most.</li>
+<li><strong>Test once</strong>, then monitor in production for drift, because the data the model sees will change (<a href="@@production/mlops-drift@@">MLOps &amp; drift</a>).</li>
+</ol>
+<p>For LLM applications the same recipe holds with different parts: the "model" may be a prompt, the "features" are retrieved context, and the test set is your eval set, which must be kept out of every prompt and few-shot example you write.</p>
+</section>
+
+<section data-label="In code: the escalation model end to end">
+<pre data-lang="python">import numpy as np
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import roc_auc_score, average_precision_score
+
+rng = np.random.default_rng(42)
+n = 5000
+sentiment = rng.uniform(-1, 1, n)
+prior = rng.poisson(1.5, n)
+enterprise = rng.random(n) &lt; 0.3
+length = rng.normal(120, 40, n).clip(10)
+true_logit = -3.6 - 1.8 * sentiment + 0.45 * prior + 1.0 * enterprise   # length has no effect
+y = (rng.random(n) &lt; 1 / (1 + np.exp(-true_logit))).astype(int)
+X = np.c_[sentiment, prior, enterprise, length]
+
+train, test = slice(0, 3000), slice(4000, 5000)          # 3000-4000 is validation
+model = make_pipeline(StandardScaler(), LogisticRegression())   # scaler fitted on train only
+model.fit(X[train], y[train])
+p = model.predict_proba(X[test])[:, 1]
+yt = y[test]
+
+print(f"escalation rate {y.mean():.3f}; always-'fine' accuracy {1 - yt.mean():.3f}")
+print(f"ROC-AUC {roc_auc_score(yt, p):.2f}  PR-AUC {average_precision_score(yt, p):.2f}")
+
+REVIEW, MISS = 50, 400                                  # dollars
+for t in [0.5, 0.3, REVIEW / MISS, 0.05]:
+    flag = p &gt;= t
+    tp, fp, fn = (flag &amp; (yt == 1)).sum(), (flag &amp; (yt == 0)).sum(), (~flag &amp; (yt == 1)).sum()
+    cost = REVIEW * flag.sum() + MISS * fn
+    print(f"t={t:.3f} flagged={flag.sum():4d} precision={tp / max(tp + fp, 1):.2f} "
+          f"recall={tp / (tp + fn):.2f} cost=${cost:,}")
+</pre>
+<p>It prints an escalation rate of 0.109, an always-"fine" accuracy of 0.874, ROC-AUC 0.79 and PR-AUC 0.38, and the threshold table above: $48,700 at 0.5, $42,100 at 0.3, $31,100 at 0.125 and $35,800 at 0.05.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"High accuracy means a good model."</strong> With 87% negatives, predicting "no" for everything scores 87%. Report precision, recall and PR-AUC against the base rate.</li>
+<li><strong>"0.5 is the threshold."</strong> 0.5 is only right when both errors cost the same and classes are balanced. Derive the threshold from costs, then check calibration.</li>
+<li><strong>Tuning on the test set.</strong> Every choice made by looking at test scores fits the test set. Choose on validation; open the test set once.</li>
+<li><strong>Random splits for time-ordered data.</strong> The model sees the future during training and the offline score overstates production performance. Split by time.</li>
+<li><strong>Fitting the scaler or imputer on all data.</strong> Test statistics leak into training. Fit preprocessing inside the training fold (a pipeline does this for you).</li>
+<li><strong>Reading weights as causes.</strong> A weight is an association in this data, measured in this feature's units. Standardise to compare; run an experiment to claim cause.</li>
+<li><strong>"More data always helps."</strong> It cures variance, not bias. If training and validation error are both high and close, add features or flexibility instead.</li>
+<li><strong>Celebrating a suspiciously large jump.</strong> A jump from 0.79 to 0.98 AUC from one feature is more often leakage than insight. Ask when the feature's value becomes known.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>Training MSE is 0.30 and validation MSE is 0.33; both are far above the noise level of 0.05. Bias or variance problem, and what do you try first?</summary><div class="answer">Bias: the two errors are close and both high, so the model cannot capture the pattern. More data will not help. Try a more flexible model, better features, or less regularisation.</div></details>
+<details><summary>A fraud model flags transactions; a missed fraud costs $900 and a manual review costs $30. Assuming calibrated probabilities, what threshold should you use?</summary><div class="answer">Flag when \(900p &gt; 30\), so \(p &gt; 30/900 \approx 0.033\). Then confirm on validation data that the probabilities are calibrated near that value, or recalibrate first.</div></details>
+<details><summary>Why did fitting with \(x\) recorded in units 100 times larger (100 to 500) take over 200,000 gradient steps while the standardised version took 2?</summary><div class="answer">The raw feature makes the loss bowl extremely elongated (condition number about 605,000): the learning rate must be tiny to avoid overshooting the steep direction, so progress along the shallow direction (the intercept) crawls. Standardising makes the bowl round (condition number 1), so one well-sized step goes straight to the bottom.</div></details>
+<details><summary>Your test set has 2% positives. Model A has ROC-AUC 0.95 and PR-AUC 0.20; model B has ROC-AUC 0.93 and PR-AUC 0.35. Which do you ship for a "review the flagged items" workflow?</summary><div class="answer">Probably B. With rare positives, ROC-AUC is inflated by the many easy negatives; PR-AUC measures how clean the flagged set is at each recall, which is what reviewers experience. Confirm by comparing precision at the recall level the business needs.</div></details>
+<details><summary>When would you choose L1 over L2 regularisation?</summary><div class="answer">When you expect many features to be irrelevant and want a sparse, cheaper, more interpretable model: L1 sets unhelpful weights to exactly zero. Prefer L2 when features are correlated and you want weight spread across them rather than one chosen arbitrarily.</div></details>
+<details><summary>A churn model uses "number of support calls in the 30 days after the prediction date". Offline AUC is 0.97. What is wrong, and how do you fix it?</summary><div class="answer">Target and temporal leakage: the feature uses information from after the prediction moment, and churning customers often call to cancel. Recompute it over the 30 days <em>before</em> the prediction date, split by time, and re-evaluate; expect a much lower but honest AUC.</div></details>
+<details><summary>Logistic regression gives the enterprise-plan feature a weight of 0.897. Explain what that number means to a product manager.</summary><div class="answer">Holding the other features fixed, an enterprise customer's odds of escalation are \(e^{0.897} \approx 2.45\) times a non-enterprise customer's. It is an association in historical data, not proof that the plan causes escalations.</div></details>
+</section>

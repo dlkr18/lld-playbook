@@ -1,0 +1,176 @@
+<!-- Deep lesson: Interview answer kit. Merged into projects/answer-kit by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Claim</td><td>The one-sentence answer, said first. Everything after it is support.</td></tr>
+<tr><td>Mechanism</td><td>Why the claim is true: what happens inside the system that makes it work.</td></tr>
+<tr><td>Trade-off</td><td>What the choice costs (latency, money, complexity, risk) and when you would choose differently.</td></tr>
+<tr><td>Example</td><td>One concrete system you built or designed, with a number that moved.</td></tr>
+<tr><td>Golden set</td><td>A fixed, labelled set of realistic inputs with expected outcomes, used to compare versions.</td></tr>
+<tr><td>Grounding</td><td>Making the model answer only from supplied evidence, with citations that code can check.</td></tr>
+<tr><td>Abstention</td><td>The system deliberately saying "not enough evidence" and handing off, instead of guessing.</td></tr>
+<tr><td>KV cache</td><td>The stored attention keys and values of every token so far, so each new token does not recompute the whole prefix. It grows with context length and number of concurrent requests.</td></tr>
+<tr><td>Blast radius</td><td>The worst damage a component can do if it misbehaves. Safety design shrinks it rather than trusting the component.</td></tr>
+<tr><td>Signal of seniority</td><td>What an interviewer listens for to decide level: scope of the decision, use of numbers, naming failure modes, and owning operations.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>AI engineering interviews ask a small set of questions over and over, in different words. They are not testing whether you have heard of RAG or agents. They are testing whether you can make a decision about an LLM system, say why it works, say what it costs, and back it with a number from something real. Most candidates fail by answering with a list of techniques. This kit gives a model answer for each of the eight most common questions, every one in the same four-part shape, and a rubric for what moves an answer from SDE2 to SDE3.</p>
+<p>The questions, in the order covered:</p>
+<ol>
+<li>How would you evaluate an LLM feature?</li>
+<li>Your RAG system gives wrong answers. How do you debug it?</li>
+<li>How do you reduce hallucinations?</li>
+<li>RAG, fine-tuning or long context: when would you use which?</li>
+<li>How do you stop an agent from looping or doing something harmful?</li>
+<li>How would you halve the cost or latency of an LLM feature?</li>
+<li>How do you defend against prompt injection?</li>
+<li>What limits LLM serving throughput, and what is the KV cache?</li>
+</ol>
+<p>Every model answer uses one running example so the numbers stay consistent: the course's capstone support assistant (3,000 questions a day, router plus retrieval plus one bounded order agent, built in <a href="@@projects/build-spec@@">build-spec</a> through <a href="@@projects/build-ship@@">build-ship</a>). Replace its numbers with your own wherever you have them; the page below this lesson has templates for turning your own work into these stories.</p>
+</section>
+
+<section data-label="Step 1: the four-part answer">
+<p>A strong answer to a technical question has four parts, in this order, and fits in about 90 seconds:</p>
+<ul>
+<li><strong>Claim</strong>, one sentence: "I'd evaluate it with a labelled set sliced by query type, graded per slice, gated in CI, then confirmed online."</li>
+<li><strong>Mechanism</strong>, two or three sentences on why that works. This is where understanding shows.</li>
+<li><strong>Trade-off</strong>: what it costs and when you would do something else. An answer without a trade-off sounds like a blog post.</li>
+<li><strong>Example</strong>: one system, one decision, one number that moved.</li>
+</ul>
+<p>Why this order: interviewers grade as they listen, and many decide within the first sentence whether you know the answer. A claim first lets them follow your support; leading with background makes them wait and guess. Then stop and let them probe. The follow-up questions are where levels are decided, and a concise first answer invites them.</p>
+</section>
+
+<section data-label="Step 2: evaluating an LLM feature">
+<p><strong>Claim.</strong> Define success as measurable spec lines first, build a labelled golden set from real inputs sliced by type, grade with deterministic checks where possible and a calibrated LLM judge where not, compare versions pairwise on the same cases, and confirm online with production signals.</p>
+<p><strong>Mechanism.</strong> LLM outputs vary run to run and are open-ended, so spot checks measure your luck. A golden set fixes the inputs, so differences come from the system. Slices matter because aggregates hide failures: an overall 0.90 can contain a multi-hop slice at 0.40. A judge is itself a model, so it must agree with humans beyond chance (Cohen's kappa, not raw agreement) before its scores count. Pairing (same cases, compare only the ones where versions disagree) is far more sensitive than comparing totals.</p>
+<p><strong>Trade-off.</strong> Small sets are cheap and noisy: 108/120 has a 95% interval of 83% to 94%, so they catch big regressions, not 2-point ones. Judges cost money per case; deterministic assertions are free. Online metrics are real but slow at low volume.</p>
+<p><strong>Example.</strong> "On the support assistant, 75 retrieval questions and 120 end-to-end cases, five slices including 10 unanswerable ones graded on abstention. A cheaper answer model scored 104 versus 108; paired split 9 to 5, p = 0.42, so not significant, but two of the nine losses were wrong policy facts, so we ran a week of shadow evaluation instead of shipping." Depth: <a href="@@production/evals@@">evals</a>.</p>
+</section>
+
+<section data-label="Step 3: debugging wrong RAG answers">
+<p><strong>Claim.</strong> First split the failure into retrieval or generation by checking whether the right passage reached the prompt; then fix the stage that failed, measured on a labelled set.</p>
+<p><strong>Mechanism.</strong> A grounded answer needs the evidence in context. If Recall@5 (gold passage in the top 5) is low, no prompt fixes it. If recall is high but answers are wrong, the problem is generation: ignored evidence, bad synthesis, or no abstention. Within retrieval, separate the candidate pool from the ordering: a reranker can only reorder what the first stage returned, so if Recall@30 is low, fix chunking, add lexical search, or rewrite the query.</p>
+<p><strong>Trade-off.</strong> Labelling gold passages takes an afternoon for 75 questions and saves weeks of prompt-guessing. Every added stage (hybrid, rerank, rewriting) adds latency and must earn its row in an ablation table.</p>
+<p><strong>Example.</strong> "Dense-only Recall@5 was 0.64. Structure-aware chunks with heading trails took it to 0.74, hybrid search to 0.81 (exact invoice codes went from 0.4 to 0.9), a cross-encoder to 0.90. The multi-hop slice stayed at 0.40 because the second fact never entered the pool, so query decomposition, not a better reranker, fixed it." Depth: <a href="@@rag/rag-pipeline@@">RAG pipeline</a>, <a href="@@projects/build-knowledge@@">build-knowledge</a>.</p>
+</section>
+
+<section data-label="Step 4: reducing hallucinations">
+<p><strong>Claim.</strong> You do not make the model stop guessing; you design the system so it answers only from evidence, cites it, gets checked by code, and abstains when evidence is missing, and you measure both wrong answers and over-abstention.</p>
+<p><strong>Mechanism.</strong> A language model produces fluent continuations whether or not it knows; nothing inside it reliably flags "I don't know" (<a href="@@fundamentals/limits@@">limits</a>). So the controls are outside it: retrieval supplies the facts, the prompt requires numbered citations, a deterministic verifier rejects citations to non-existent sources and uncited policy claims, and an explicit "insufficient evidence" outcome routes to a human. The abstention threshold is an economic choice: if a wrong answer costs about $150 and an escalation $4.50, answer only when the chance of being wrong is below \(4.50/150 = 3\%\).</p>
+<p><strong>Trade-off.</strong> Stricter grounding raises precision and lowers coverage; push too far and the human queue drowns. Track both directions on an unanswerable slice and an answerable slice.</p>
+<p><strong>Example.</strong> "We graded 10 unanswerable questions on abstention and gated releases on both slices; a stricter prompt once fixed fabrication and doubled false abstentions, which the answerable-slice gate caught before release."</p>
+</section>
+
+<section data-label="Step 5: RAG, fine-tuning or long context">
+<p><strong>Claim.</strong> Use RAG for knowledge that changes or must be cited, fine-tuning for behaviour (format, style, a narrow task, a cheaper model), and long context for a single large document per request; most production systems combine RAG with a modest prompt.</p>
+<p><strong>Mechanism.</strong> Fine-tuning changes weights, so knowledge baked in is frozen at training time and cannot cite a source; updating it means retraining. RAG updates by re-indexing a document. Long context makes the model read everything each call: you pay for every input token every time, and models use facts buried in the middle of long contexts less reliably.</p>
+<p><strong>Trade-off, in numbers.</strong> The support corpus is about 12 million tokens, larger than any production model's context window. Even stuffing 100,000 tokens of policy per question costs about $0.30 at $3 per million input tokens, roughly 21 times the $0.014 of a 3,500-token RAG prompt, and is slower to first token. Fine-tuning becomes attractive later as a cost play: once thousands of approved (question, answer) pairs exist, a small tuned model may match a larger one on the common slice.</p>
+<p><strong>Example.</strong> "Policies change weekly, so a fine-tune would answer June questions with March's policy. We chose RAG and planned a fine-tune of the router after a quarter of logged data." Depth: <a href="@@adaptation/fine-tuning@@">fine-tuning</a>, <a href="@@fundamentals/how-llms-are-trained@@">how LLMs are trained</a>.</p>
+</section>
+
+<section data-label="Step 6: stopping an agent looping or doing harm">
+<p><strong>Claim.</strong> Bound it with budgets, keep the deterministic parts out of the model, put every write behind validation, policy code, idempotency and, for the risky tail, a human; and test trajectories over repeated runs.</p>
+<p><strong>Mechanism.</strong> Each step is a stochastic choice, so reliability compounds: at 97% per step, three steps succeed 91% of the time and six steps 83%. Step, token and wall-clock budgets each catch a different failure (loops, huge tool results, slow tools); repeated identical calls signal a stuck agent. The model proposes; a policy engine decides; the database enforces limits and an idempotency key makes retries harmless.</p>
+<p><strong>Trade-off.</strong> Tighter budgets mean more escalations; human approval on everything means reviewers rubber-stamp. Gate the tail (above $50, unverifiable claims) and size the queue: about 27 approvals a day at 30 seconds each is 13.5 minutes.</p>
+<p><strong>Example.</strong> "A content-derived idempotency key as the refunds table's primary key: at 2,376 proposals a month and a 1% ambiguous-timeout rate, that removes about 24 double refunds a month." Depth: <a href="@@agents/agent-loop@@">agent loop</a>, <a href="@@projects/build-agent@@">build-agent</a>.</p>
+</section>
+
+<section data-label="Step 7: halving cost or latency">
+<p><strong>Claim.</strong> Measure where tokens and milliseconds go per hop, then pull the levers in order of risk: output length, prompt caching, routing easy work to a smaller model, caching whole answers, and only then model or infrastructure changes, each checked against the eval suite.</p>
+<p><strong>Mechanism.</strong> Output tokens are generated one at a time, so they dominate latency (decoding 250 tokens was two thirds of the assistant's 4.7 s), and they cost about five times input. A static prompt prefix can be cached by the provider: 1,200 identical tokens billed at a tenth saves $0.0032 of a $0.0143 answer call, about 22%, and cuts time to first token. Independent hops can run in parallel: starting retrieval while the router classifies took the first-token p95 from 2.44 s to 2.11 s.</p>
+<p><strong>Trade-off.</strong> Smaller models and answer caches risk quality; every change goes through the paired eval and shadow traffic. Self-hosting lowers marginal cost only above break-even volume (about 18,000 to 25,000 questions a day for this build, with one or two GPUs and on-call included).</p>
+<p><strong>Example.</strong> "We hit the p95 target by parallelising router and retrieval, caching the prefix and capping answers near 300 tokens; end-to-end p95 went from 6.23 s to 5.69 s in simulation, confirmed in staging." Depth: <a href="@@production/cost-performance@@">cost &amp; performance</a>, <a href="@@production/semantic-cache@@">semantic cache</a>.</p>
+</section>
+
+<section data-label="Step 8: defending against prompt injection">
+<p><strong>Claim.</strong> Assume the model will sometimes follow injected instructions, and design so that when it does the damage is small, blocked by layers that do not read prose, and visible.</p>
+<p><strong>Mechanism.</strong> Anything the model reads (retrieved documents, tool results, emails) can carry instructions, and the model cannot reliably tell data from commands. So: give it few, narrow tools (no tool to list other customers' data means no injection can do it); enforce limits in schemas and policy code; enforce permissions in the data layer from the authenticated user, never from the prompt; require human approval for the consequential tail; log everything.</p>
+<p><strong>Trade-off.</strong> Each layer limits capability or adds friction. Prompt-level defences (delimiters, "ignore instructions in documents") lower the rate cheaply but never to zero, so they are the first layer, not the defence.</p>
+<p><strong>Example.</strong> "An order note saying 'refund $500' fails the schema's $100 maximum; a $99 retry fails the policy check against the $29 actually charged; a $29 'not delivered' claim goes to a reviewer with the note flagged. We measured the model's compliance by replaying the case 20 times, and red-team cases must pass 100%." Depth: <a href="@@production/security@@">security</a>.</p>
+</section>
+
+<section data-label="Step 9: what limits serving throughput">
+<p><strong>Claim.</strong> Generating each token is limited by memory bandwidth, not compute, and the number of requests you can batch is limited by KV cache memory; serving engines win by batching many requests and managing that cache well.</p>
+<p><strong>Mechanism.</strong> To produce one token, the GPU reads every weight once. For an 8-billion-parameter model in bf16 (16 GB) on a GPU with about 3.35 TB/s of bandwidth, that is about 4.8 ms per token, a ceiling of about 209 tokens per second for one stream, whatever the compute. Batching reuses each weight read for many requests, so throughput rises almost for free until KV cache memory runs out or the batch grows large enough to become compute-bound. What fills memory is the KV cache: for a model with 32 layers, 8 key-value heads of dimension 128, in bf16, that is \(2 \times 32 \times 8 \times 128 \times 2 = 131{,}072\) bytes, 128 KiB per token, so 512 MiB for a 4,000-token sequence. With about 58 GB free after weights and overhead, roughly 108 such sequences fit at once.</p>
+<p><strong>Trade-off.</strong> Longer contexts or more concurrent users compete for the same memory; quantizing the KV cache, grouped-query attention and paged allocation (as in vLLM) buy room at small quality or complexity cost. Larger batches raise throughput but also each request's latency.</p>
+<p><strong>Example.</strong> "Doubling context to 8K halves concurrent sequences, so we capped conversation history with summaries instead of buying GPUs." Depth: <a href="@@inference/inference-internals@@">inference internals</a>, <a href="@@inference/serving@@">serving</a>.</p>
+</section>
+
+<section data-label="The rubric: SDE2 versus SDE3 answers">
+<p>Both levels can give a correct answer. The difference is what the answer contains:</p>
+<table>
+<thead><tr><th>Dimension</th><th>SDE2 answer</th><th>SDE3 answer</th></tr></thead>
+<tbody>
+<tr><td>Scope</td><td>The component: "I added a reranker"</td><td>The system and the decision: "retrieval was the bottleneck, so retrieval got the budget"</td></tr>
+<tr><td>Numbers</td><td>Result numbers ("recall went up")</td><td>Before, after, sample size and uncertainty ("0.81 to 0.90 on 75 questions; the multi-hop slice is only 5")</td></tr>
+<tr><td>Trade-offs</td><td>Named</td><td>Quantified and tied to a requirement ("+200 ms, inside the 6 s p95")</td></tr>
+<tr><td>Failure modes</td><td>Fixed when found</td><td>Anticipated, with the guard and the test ("idempotency key; red-team case must pass 100%")</td></tr>
+<tr><td>Operations</td><td>Ships it</td><td>How it is rolled out, monitored, rolled back and paid for</td></tr>
+<tr><td>Alternatives</td><td>Rarely mentioned</td><td>The rejected option and why ("not multi-agent: one thread, writes, auditability")</td></tr>
+<tr><td>Influence</td><td>Did the work</td><td>Changed how the team decides ("every fix ships with the eval case that would have caught it")</td></tr>
+</tbody>
+</table>
+<p>The same question at both levels. "How did you improve retrieval?" SDE2: "I switched to hybrid search with RRF and a cross-encoder; recall improved a lot." SDE3: "Answers were wrong, so I split the failure: recall@5 was 0.64, so retrieval. I built 75 labelled questions in five slices. Chunking by structure gave the biggest gain, hybrid fixed exact codes specifically, reranking added 9 points for 200 ms inside our budget. Multi-hop stayed at 0.40 because the facts were in different documents, so I added query decomposition behind a gate so simple queries didn't pay for it. The suite now runs in CI." The second is longer only because each sentence carries a decision and a number.</p>
+</section>
+
+<section data-label="In code: the numbers you should be able to produce live">
+<p>Interviewers often ask you to estimate on the spot. This script reproduces every number used in the model answers; work through it until you can do each line on a whiteboard.</p>
+<pre data-lang="python">import math
+
+# 1. cost per request: the number behind every cost answer
+def cost(tokens_in, tokens_out, price_in=3e-6, price_out=15e-6):
+    return tokens_in * price_in + tokens_out * price_out
+
+rag = cost(3500, 250)
+print("RAG answer: $%.4f   stuff 100K tokens instead: $%.2f (%.0fx)"
+      % (rag, cost(100_000, 250), cost(100_000, 250) / rag))
+print("cached 1,200-token prefix saves $%.4f per answer" % (1200 * 3e-6 * 0.9))
+
+# 2. KV cache: why long context and concurrency fight for GPU memory
+layers, kv_heads, head_dim, bytes_per = 32, 8, 128, 2       # an 8B, GQA, bf16 model
+per_token = 2 * layers * kv_heads * head_dim * bytes_per      # K and V
+print("KV cache %d KiB/token, %.0f MiB per 4K-token sequence"
+      % (per_token / 1024, per_token * 4096 / 2**20))
+free_gb = 80 - 16 - 6                                         # H100 minus weights, overhead
+print("about %d concurrent 4K sequences fit in %d GB" % (free_gb * 1e9 // (per_token * 4096), free_gb))
+print("decode ceiling, one stream: %.0f tokens/s" % (3.35e12 / 16e9))  # bandwidth / weight bytes
+
+# 3. agents: reliability compounds
+print("success of 3 / 6 steps at 97%% each: %.2f / %.2f" % (0.97**3, 0.97**6))
+
+# 4. evals: how wide is the error bar?
+def wilson(k, n, z=1.96):
+    p = k / n
+    c, h = p + z*z/(2*n), z * math.sqrt(p*(1-p)/n + z*z/(4*n*n))
+    return (c - h) / (1 + z*z/n), (c + h) / (1 + z*z/n)
+print("108/120 -&gt; %.1f%% to %.1f%%" % tuple(100 * x for x in wilson(108, 120)))
+
+# 5. hallucination: answer only when expected loss of answering is lower
+print("abstain above P(wrong) = %.0f%%" % (100 * 4.50 / 150))
+</pre>
+<p>It prints $0.0143 versus $0.30 (21×), $0.0032 saved, 128 KiB per token and 512 MiB per 4K sequence, about 108 sequences in 58 GB, 209 tokens per second, 0.91 and 0.83, 83.3% to 94.2%, and the 3% line.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"List every technique I know."</strong> Breadth without a decision reads as junior. Pick the one that fits, say why, and name what you rejected.</li>
+<li><strong>"Lead with background."</strong> Lead with the claim; interviewers decide early whether you know the answer.</li>
+<li><strong>"Numbers I don't have are better invented."</strong> An invented number collapses under one follow-up. "We didn't measure that; I would by…" is a strong answer.</li>
+<li><strong>"Hallucinations are fixed by a better prompt."</strong> They are contained by system design: grounding, verification, abstention, measured on two slices.</li>
+<li><strong>"Fine-tuning teaches the model our data."</strong> It changes behaviour; it is a poor, uncitable, stale store of changing facts.</li>
+<li><strong>"The model will refuse injected instructions."</strong> Usually, not always. Answer with layers and blast radius.</li>
+<li><strong>"Throughput is about FLOPs."</strong> Token generation is bandwidth-bound; batching and KV memory set throughput.</li>
+<li><strong>"Accuracy went up, so it's better."</strong> On how many cases, with what interval, paired or not, and which slice paid for it?</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>Give the four-part answer to "Should we fine-tune on our support tickets?" in four sentences.</summary><div class="answer">Claim: not for knowledge; RAG for policies, and maybe later a fine-tuned small model as a cost optimisation. Mechanism: weights freeze facts at training time and cannot cite; RAG re-indexes a changed document. Trade-off: fine-tuning can lower cost and latency for a narrow, stable task once enough approved pairs exist. Example: policies change weekly, so we chose RAG and revisit fine-tuning the router after a quarter of logged data.</div></details>
+<details><summary>Someone proposes putting all 300 policy documents (about 3 million tokens) in context. Answer with numbers.</summary><div class="answer">It exceeds the context window of nearly every production model, and where it fits you would pay for 3 million input tokens on every question (about $9 a call at $3/M). Even 100,000 tokens per call costs about $0.30 at $3/M, about 21× a $0.014 RAG answer, with slower first token and weaker use of mid-context facts. RAG with five 400-token chunks is the right default.</div></details>
+<details><summary>A model has 40 layers, 8 KV heads of dimension 128, in bf16. How much KV cache does a 10,000-token conversation need?</summary><div class="answer">\(2 \times 40 \times 8 \times 128 \times 2 = 163{,}840\) bytes per token, so about 1.64 GB for 10,000 tokens (1.53 GiB).</div></details>
+<details><summary>Rewrite this as an SDE3 answer: "I built an agent with LangGraph and it worked well."</summary><div class="answer">Something like: "An order agent with three narrow tools inside a workflow: only investigations needed a loop. Budgets of 6 steps, 20K tokens and 45 s, since reliability at 97% per step drops to 83% at six. Refunds go through a policy engine and an idempotency key; over $50 needs approval. Trajectory tests run 5 times per case; red-team cases must pass every run."</div></details>
+<details><summary>"Your eval went from 88% to 91% on 100 cases. Ship?" What do you ask before answering?</summary><div class="answer">Is it paired on the same cases, and what is the discordant split? What is the run-to-run noise of the baseline? Which slices moved, especially abstention and the expensive failure types? With 100 cases a 3-point gain is usually within noise.</div></details>
+<details><summary>What separates an SDE2 and an SDE3 answer to "how do you stop an agent looping"?</summary><div class="answer">SDE2 names a max-steps limit. SDE3 gives step, token and wall-clock budgets with what each catches, repeat detection, escalation with findings as the outcome, the reliability arithmetic behind the cap, and how it is tested over repeated runs.</div></details>
+</section>

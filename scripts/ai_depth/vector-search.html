@@ -1,0 +1,255 @@
+<!-- Deep lesson: Vector search & databases. Merged into rag/vector-search by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>k-nearest neighbours (kNN)</td><td>The \(k\) stored vectors most similar to a query vector.</td></tr>
+<tr><td>Exact (flat) search</td><td>Compare the query with every stored vector. Always correct; cost grows linearly with the collection.</td></tr>
+<tr><td>ANN</td><td>Approximate nearest neighbour search: an index that examines a small fraction of vectors and usually, not always, finds the true neighbours.</td></tr>
+<tr><td>Recall@k (for an index)</td><td>The fraction of the exact top \(k\) that the approximate search returned. The accuracy number every ANN setting trades against speed.</td></tr>
+<tr><td>IVF</td><td>Inverted file index: cluster the vectors, and at query time scan only the few clusters nearest the query.</td></tr>
+<tr><td>nlist / nprobe</td><td>IVF's number of clusters, and how many of them a query scans.</td></tr>
+<tr><td>Product quantization (PQ)</td><td>Compress each vector into a few bytes by splitting it into pieces and storing, for each piece, the ID of its nearest centroid.</td></tr>
+<tr><td>HNSW</td><td>Hierarchical Navigable Small World: a graph in which each vector links to its near neighbours, searched by walking toward the query.</td></tr>
+<tr><td>M, efConstruction, efSearch</td><td>HNSW's links per node, beam width while building, and beam width while searching.</td></tr>
+<tr><td>Selectivity</td><td>The fraction of vectors that pass a metadata filter (one tenant, one language, one date range).</td></tr>
+<tr><td>Pre-filter / post-filter</td><td>Applying the metadata filter before the vector search, or to its results afterwards.</td></tr>
+<tr><td>Tombstone</td><td>A "deleted" mark on a vector that is still physically in the index until a rebuild or compaction removes it.</td></tr>
+<tr><td>Shard / replica</td><td>A shard holds part of the vectors; a replica is a full copy of a shard that serves more queries in parallel.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>Once text is embedded, retrieval is a geometry problem: given a query vector, find the stored vectors nearest to it. With 30,000 vectors you just compare against all of them. With 10 million, comparing against all of them takes over a second per query, and the system needs answers in tens of milliseconds. Vector search is the set of index structures that make that possible by looking at a tiny fraction of the data, and vector databases are the systems that wrap those indexes with storage, filtering, updates and scaling.</p>
+<p>Interviewers ask:</p>
+<ol>
+<li>How does HNSW (or IVF) work, and what do its parameters trade?</li>
+<li>Why is it approximate, and how do you measure and tune how approximate?</li>
+<li>How do metadata filters interact with vector search, and why do small tenants get bad results?</li>
+<li>How much memory does a given collection need, and how would you choose a vector database?</li>
+</ol>
+<p>The running example: the course's support assistant has become a product sold to 2,000 business customers (tenants), each with its own help centre. The index holds <strong>10 million chunks of 768-dimension embeddings</strong>. Every query must search only the asking tenant's chunks, return the top 10, and finish within 50 ms at the 99th percentile, at 200 queries per second at peak. The smallest tenants have about 5,000 chunks, 0.05% of the index.</p>
+</section>
+
+<section data-label="Step 1: what exact search costs">
+<p>Exact search computes the query's similarity with every stored vector and keeps the best \(k\). For our index that is \(10^7 \times 768 = 7.68\) billion multiply-adds per query, reading \(10^7 \times 768 \times 4\) bytes \(= 30.7\) GB of 32-bit floats.</p>
+<p>Search over vectors is mostly limited by how fast memory can be read, not by arithmetic. At an order-of-magnitude 20 GB/s of memory bandwidth per server, one scan takes about 1.5 seconds. At 200 queries per second we would need the equivalent of 300 servers scanning in parallel. Exact search is out.</p>
+<p>The same arithmetic tells you when exact search is fine: 100,000 vectors of 768 dimensions is 307 MB, about 15 ms to scan. Below roughly that size, a flat index (or a plain matrix multiply) is simpler, has perfect recall, and needs no tuning. Many RAG prototypes, including the single-tenant version of this assistant at 30,000 chunks, never need an ANN index.</p>
+</section>
+
+<section data-label="Step 2: trading a little accuracy for a lot of speed">
+<p>Approximate nearest neighbour indexes give up the guarantee of finding the true top \(k\) in exchange for examining a few percent of the vectors, or fewer. Their accuracy is measured against exact search:</p>
+\[ \text{recall@}k = \frac{|\text{ANN top } k \ \cap\ \text{exact top } k|}{k} \]
+<p>A recall@10 of 0.95 means that, on average, 9.5 of the 10 true nearest neighbours were returned. The missing half-neighbour is usually replaced by something almost as close, which matters much less to a RAG system than it sounds: the embedding model's own errors are larger than this. Every ANN index has a knob that moves along a <strong>recall-versus-latency curve</strong>, and choosing a point on that curve is the main tuning job.</p>
+<p>Note this is a different recall from the retrieval recall in <a href="@@rag/embedding-models@@">choosing an embedding model</a>. That one asks "did we find the relevant chunk?"; this one asks "did the index find what exact search would have found?". An index at 0.95 recall in front of a model at 0.80 retrieval recall gives a system at about 0.76 to 0.80.</p>
+</section>
+
+<section data-label="Step 3: IVF, scan only the nearby clusters">
+<p>The <strong>inverted file</strong> index partitions the space. At build time, run k-means on the vectors to find <code>nlist</code> centroids, and put each vector in the list of its nearest centroid. At query time, compare the query with all centroids, pick the <code>nprobe</code> nearest, and scan only the vectors in those lists exactly.</p>
+<p>For our index, a common starting point is <code>nlist</code> of a few times \(\sqrt{N}\); with <code>nlist</code> = 16,384 clusters (about 610 vectors each) and <code>nprobe</code> = 32, a query computes 16,384 centroid similarities plus about \(32/16{,}384 \times 10^7 \approx 19{,}500\) vector similarities: roughly 0.36% of the work of exact search.</p>
+<p>Why is it approximate? A true neighbour can sit just across a cluster boundary, in a list we did not probe. Raising <code>nprobe</code> fixes that at a linear cost. On a synthetic test (10,000 unit vectors in 64 dimensions, 100 topics, 64 clusters; the code is at the end):</p>
+<table>
+<thead><tr><th>nprobe</th><th>Fraction scanned</th><th>Recall@10</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>1.6%</td><td>0.598</td></tr>
+<tr><td>4</td><td>5.8%</td><td>0.766</td></tr>
+<tr><td>8</td><td>11.8%</td><td>0.845</td></tr>
+<tr><td>16</td><td>24.3%</td><td>0.922</td></tr>
+</tbody>
+</table>
+<p>IVF's strengths are simplicity, low memory overhead (one list ID per vector) and easy partitioning across machines. Its weaknesses: it needs representative data to train the centroids, and as data drifts after the build, clusters become unbalanced and recall drops until you retrain.</p>
+</section>
+
+<section data-label="Step 4: product quantization, a vector in a few bytes">
+<p>IVF reduces how many vectors you touch; <strong>product quantization</strong> reduces how many bytes each one costs. Split each 768-dimension vector into \(m = 96\) sub-vectors of 8 dimensions. For each of the 96 positions, run k-means with 256 centroids on that slice of the data. Now store each vector as 96 one-byte centroid IDs: <strong>96 bytes instead of 3,072</strong>, a 32-times reduction. Our 10 million vectors drop from 30.7 GB to 0.96 GB.</p>
+<p>Searching compressed vectors is cheap too. For a query, compute its similarity with all 256 centroids in each of the 96 positions once: a 96 × 256 lookup table. A stored vector's approximate score is then 96 table lookups and additions, with no multiplication over the full dimensions.</p>
+<p>The cost is accuracy: each vector is replaced by its nearest point on a coarse grid. In the synthetic test, a 16-byte PQ code for 64-dimension vectors (16 times smaller) gives recall@10 of 0.679 on its own. Fetching the top 100 by PQ score and rescoring those with the full vectors lifts it to 0.998. That is the standard pattern, the same as binary quantization in <a href="@@rag/embedding-models@@">choosing an embedding model</a>: <strong>compressed codes find a shortlist, full vectors order it</strong>. In practice IVF and PQ are combined (IVF-PQ): probe a few clusters, score their PQ codes, rescore the best.</p>
+</section>
+
+<section data-label="Step 5: HNSW, walking a graph toward the query">
+<p>Graph indexes take a different approach: connect each vector to its near neighbours, then search by walking. Start at some node, look at its neighbours, move to whichever is closest to the query, repeat until no neighbour is closer. Because neighbours of neighbours tend to be closer still, the walk converges on the query's region after visiting a small number of nodes.</p>
+<p>A plain greedy walk gets stuck in local optima, so the search keeps a <strong>beam</strong>: a list of the best <code>ef</code> nodes found so far, always expanding the closest unexplored one, stopping when the closest unexplored candidate is worse than the worst node in the beam. A wider beam explores more and misses less.</p>
+<p>HNSW adds two ideas:</p>
+<ul>
+<li><strong>Layers.</strong> Every node is in the bottom layer; a random, exponentially shrinking subset is also in higher layers (roughly 1 in \(M\) nodes per layer up). The search starts at the sparse top layer, where links are long and a few hops cross the whole space, then descends layer by layer to the dense bottom, where links are short. It is the same idea as a skip list, and it makes the number of hops grow roughly logarithmically with \(N\).</li>
+<li><strong>Diverse neighbours.</strong> When linking a new node, it keeps neighbours that point in different directions rather than the \(M\) absolutely nearest (which tend to cluster on one side). That keeps the graph navigable across cluster boundaries.</li>
+</ul>
+<p>The parameters:</p>
+<table>
+<thead><tr><th>Parameter</th><th>Typical</th><th>Raising it</th></tr></thead>
+<tbody>
+<tr><td><code>M</code> (links per node; the bottom layer usually gets \(2M\))</td><td>16 to 32</td><td>Better recall and robustness; more memory and slower builds.</td></tr>
+<tr><td><code>efConstruction</code> (beam while inserting)</td><td>100 to 400</td><td>Better graph quality; slower builds. Set once.</td></tr>
+<tr><td><code>efSearch</code> (beam while querying, at least \(k\))</td><td>40 to 400</td><td>Higher recall, higher latency. The per-query knob you tune.</td></tr>
+</tbody>
+</table>
+<p>On the synthetic set, a single-layer version (each node linked to its 16 nearest neighbours, a fixed entry point, no hierarchy) already shows the curve:</p>
+<table>
+<thead><tr><th>ef</th><th>Distances computed</th><th>Recall@10</th></tr></thead>
+<tbody>
+<tr><td>10</td><td>179 (1.8%)</td><td>0.712</td></tr>
+<tr><td>20</td><td>252 (2.5%)</td><td>0.813</td></tr>
+<tr><td>40</td><td>373 (3.7%)</td><td>0.894</td></tr>
+<tr><td>80</td><td>620 (6.2%)</td><td>0.940</td></tr>
+</tbody>
+</table>
+<p>Compare with IVF: to pass 0.92 recall, IVF scanned 24% of the vectors and the graph about 6%. That gap is why HNSW became the default in most vector databases: it reaches high recall with very few distance computations. Its costs are memory (the links, plus the full vectors, which it needs in RAM for its random-access walk) and slow, memory-hungry builds.</p>
+</section>
+
+<section data-label="Step 6: sizing the index">
+<p>For our 10 million × 768 collection with HNSW at \(M = 16\):</p>
+<ul>
+<li>Vectors: 30.7 GB in float32, 15.4 GB in float16.</li>
+<li>Bottom-layer links: \(10^7 \times 2M \times 4\) bytes \(= 1.28\) GB; upper layers add a few percent.</li>
+<li>Metadata (tenant ID, document ID, language) and the ID mapping: a few hundred MB.</li>
+</ul>
+<p>So roughly 17 GB with float16 vectors, or 33 GB with float32, per full copy. With IVF-PQ the same collection fits in about 1 GB of codes plus the centroids, with full vectors on SSD for rescoring: far cheaper, somewhat lower recall at a given latency, and more tuning.</p>
+<p>Throughput is a separate question from memory. One HNSW query at a recall of about 0.95 typically computes a few thousand distances; a server core handles hundreds to about a thousand such queries per second at this size (order of magnitude; measure your own). Our 200 QPS fits on one well-provisioned node; replicas are for availability and growth. When one copy no longer fits in a machine's RAM, <strong>shard</strong>: split the vectors across nodes, send each query to every shard, take each shard's top \(k\) and merge. Sharding adds a network hop and makes latency the slowest shard's latency.</p>
+</section>
+
+<section data-label="Step 7: metadata filters and the small-tenant problem">
+<p>Every query in our product carries a filter: <code>tenant_id = 'acme'</code>. How the filter meets the index decides whether small tenants get answers at all.</p>
+<p><strong>Post-filtering</strong> searches the whole index, takes the top 100, then drops chunks from other tenants. For a tenant with 0.05% of the data, the expected number of their chunks in a random top 100 is \(100 \times 0.0005 = 0.05\). Their nearest neighbours are spread among everyone else's; the filter throws almost everything away and the tenant gets zero or one result. To expect 10 survivors you would need a top-20,000 search, which destroys latency.</p>
+<p><strong>Pre-filtering</strong> first finds every chunk passing the filter, then searches only those. For this tenant that is 5,000 vectors, and an exact scan of 5,000 × 768 is under a millisecond. Pre-filtering is ideal for <em>selective</em> filters and terrible for broad ones (a filter matching 60% of the index turns into a near-full exact scan).</p>
+<p><strong>Filtering inside the walk</strong> (what most HNSW-based databases do) traverses the graph normally but only admits passing nodes into the results. It works when many nodes pass. When few pass, the walk must wander through huge numbers of non-matching nodes, and the graph may not connect the passing ones at all, so recall collapses. Good engines detect low selectivity and switch to pre-filtering with exact search automatically; check that yours does.</p>
+<p>When the filter is always the same field (a tenant), the structural answer is to <strong>partition</strong>: one index or namespace per tenant, or per group of small tenants. Every query then searches a small, homogeneous index, small tenants get exact search, deleting a tenant is dropping an index, and noisy neighbours cannot crowd each other out.</p>
+<div class="callout warn"><p><strong>Test with your smallest tenant.</strong> Aggregate recall dominated by large tenants can look excellent while small tenants receive empty or irrelevant results. Measure recall per filter value, especially the most selective ones.</p></div>
+</section>
+
+<section data-label="Step 8: writes, deletes and freshness">
+<p>Indexes are easiest to build in one batch; production data changes continuously.</p>
+<ul>
+<li><strong>Inserts.</strong> HNSW supports incremental inserts (each new node runs a search to find its neighbours), at a cost of milliseconds per insert and some lock contention. IVF inserts are cheap (append to the nearest list) but the centroids were trained on old data, so lists grow unbalanced.</li>
+<li><strong>Deletes.</strong> Removing a node from a graph would break the paths through it, so most engines mark it with a <strong>tombstone</strong> and filter it from results. Tombstones still cost memory and still get visited. After heavy churn (say 20% deleted), recall and latency degrade until a compaction or rebuild.</li>
+<li><strong>Updates</strong> are a delete plus an insert. Editing a help article means removing its old chunks and adding new ones; see <a href="@@rag/document-ingestion@@">document ingestion</a> for doing that incrementally.</li>
+</ul>
+<p>Many databases borrow the log-structured design: new writes go to a small, fresh segment (searched exactly or with a quick index), segments are periodically merged into larger optimised ones, and a query searches all segments and merges the results. That is why a just-written vector is usually searchable within a second or so, but not necessarily instantly; read the engine's consistency guarantees before promising "upload and ask immediately".</p>
+</section>
+
+<section data-label="Step 9: choosing where the vectors live">
+<p>The index algorithms above are nearly universal; the systems differ in everything around them. Four broad options:</p>
+<ul>
+<li><strong>A library in your process</strong> (FAISS, hnswlib). Fastest and free, but you build persistence, filtering, updates and replication yourself. Right for offline jobs, research, or a read-only index rebuilt nightly.</li>
+<li><strong>A vector index inside your existing database</strong>: <a href="@@tech/pgvector@@">pgvector</a> in Postgres. Vectors sit next to the rows they describe, filters are SQL, transactions and backups come free. Right up to tens of millions of vectors for most teams, especially when you already run Postgres.</li>
+<li><strong>A managed vector database</strong>: <a href="@@tech/pinecone@@">Pinecone</a> and others. No operations, namespaces for tenants, scaling handled for you; you pay per usage and accept vendor limits.</li>
+<li><strong>A self-hosted vector database</strong>: <a href="@@tech/weaviate@@">Weaviate</a>, Qdrant, Milvus, or <a href="@@tech/chroma@@">Chroma</a> for local development. Native hybrid search, filtering and multi-tenancy, with the operations on you.</li>
+</ul>
+<p>The questions that actually decide it: Do you already run Postgres? How many vectors in three years? How selective are your filters, and does the engine handle selective filters well? Do you need keyword search in the same engine? Can data leave your network? What is the update rate? Benchmark the finalists on your own vectors and filters at your target recall; published benchmarks use filter-free workloads that may not resemble yours.</p>
+</section>
+
+<section data-label="A worked plan for the multi-tenant assistant">
+<ol>
+<li><strong>Partition by tenant.</strong> Large tenants (over about 100,000 chunks) get their own HNSW index; small tenants share partitions but are always searched with a pre-filter, which turns into exact search over a few thousand vectors.</li>
+<li><strong>Index settings.</strong> HNSW, \(M = 16\), efConstruction = 200, cosine on normalised float16 vectors. Total memory about 17 GB per copy, so two replicas on 32 to 64 GB machines.</li>
+<li><strong>Tune efSearch</strong> on a sample of 500 real queries per large tenant against exact search: pick the smallest value reaching recall@10 of 0.95. Record p50 and p99 latency at 200 QPS.</li>
+<li><strong>Freshness.</strong> Incremental inserts as articles change; nightly compaction where tombstones exceed 10%.</li>
+<li><strong>Guardrails.</strong> Per-tenant recall checks in the nightly evaluation, an alert on empty-result rates by tenant, and the embedding model version stored with every index.</li>
+</ol>
+</section>
+
+<section data-label="In code: IVF, a graph walk and PQ on toy data">
+<p>This reproduces every synthetic number in the lesson (it takes a few seconds):</p>
+<pre data-lang="python">import heapq
+import numpy as np
+from sklearn.cluster import KMeans
+
+rng = np.random.default_rng(0)
+N, d, k = 10_000, 64, 10
+centers = rng.normal(size=(100, d))                                   # 100 topics
+X = centers[rng.integers(0, 100, N)] + 1.5 * rng.normal(size=(N, d))
+X = (X / np.linalg.norm(X, axis=1, keepdims=True)).astype(np.float32)
+Q = X[rng.integers(0, N, 100)] + 0.05 * rng.normal(size=(100, d)).astype(np.float32)
+Q = (Q / np.linalg.norm(Q, axis=1, keepdims=True)).astype(np.float32)
+truth = np.argsort(-(Q @ X.T), axis=1)[:, :k]                         # exact top 10
+recall = lambda found: np.mean([len(set(f) &amp; set(t)) / k for f, t in zip(found, truth)])
+
+# --- IVF: cluster once, then scan only the nprobe nearest clusters ---
+nlist = 64
+km = KMeans(nlist, n_init=1, random_state=0).fit(X)
+lists = [np.where(km.labels_ == c)[0] for c in range(nlist)]
+for nprobe in (1, 4, 8, 16):
+    found, scanned = [], 0
+    for q in Q:
+        ids = np.concatenate([lists[c] for c in np.argsort(-(km.cluster_centers_ @ q))[:nprobe]])
+        scanned += len(ids)
+        found.append(ids[np.argsort(-(X[ids] @ q))[:k]])
+    print(f"IVF   nprobe={nprobe:2d}  recall@10={recall(found):.3f}  scanned {scanned / len(Q) / N:.1%}")
+
+# --- graph search: each node links to its M nearest; best-first walk with a beam of ef ---
+M = 16
+S = X @ X.T
+np.fill_diagonal(S, -np.inf)
+nbrs = np.argpartition(-S, M, axis=1)[:, :M]
+del S
+
+def graph_search(q, ef, entry=0):
+    seen, evals = {entry}, 1
+    s0 = float(X[entry] @ q)
+    frontier = [(-s0, entry)]            # max-heap on similarity (negated)
+    best = [(s0, entry)]                 # min-heap holding the ef best so far
+    while frontier:
+        neg_s, node = heapq.heappop(frontier)
+        if len(best) &gt;= ef and -neg_s &lt; best[0][0]:
+            break                        # closest unexplored node is worse than our worst kept
+        for n in nbrs[node]:
+            if n in seen:
+                continue
+            seen.add(n); evals += 1
+            s = float(X[n] @ q)
+            if len(best) &lt; ef or s &gt; best[0][0]:
+                heapq.heappush(frontier, (-s, n)); heapq.heappush(best, (s, n))
+                if len(best) &gt; ef:
+                    heapq.heappop(best)
+    return [i for _, i in sorted(best, reverse=True)[:k]], evals
+
+for ef in (10, 20, 40, 80):
+    res = [graph_search(q, ef) for q in Q]
+    ev = np.mean([e for _, e in res])
+    print(f"graph ef={ef:3d}  recall@10={recall([r for r, _ in res]):.3f}  computed {ev:.0f} distances ({ev / N:.1%})")
+
+# --- PQ: 16 sub-vectors of 4 dims, 256 centroids each -&gt; 16 bytes instead of 256 ---
+m, sub = 16, d // 16
+books, codes = [], np.zeros((N, m), np.uint8)
+for j in range(m):
+    kmj = KMeans(256, n_init=1, random_state=0).fit(X[:, j * sub:(j + 1) * sub])
+    books.append(kmj.cluster_centers_); codes[:, j] = kmj.labels_
+pq_found, pq_rescored = [], []
+for q in Q:
+    table = np.stack([books[j] @ q[j * sub:(j + 1) * sub] for j in range(m)])   # 16 x 256 lookups
+    approx = table[np.arange(m), codes].sum(1)                                    # score every vector
+    short = np.argsort(-approx)[:100]
+    pq_found.append(short[:k]); pq_rescored.append(short[np.argsort(-(X[short] @ q))[:k]])
+print(f"PQ 16 bytes/vector  recall@10={recall(pq_found):.3f}  with exact rescoring of 100: {recall(pq_rescored):.3f}")
+</pre>
+<p>With a real library the same ideas are a few lines. The block below uses hnswlib's documented API (not installed in this sandbox):</p>
+<pre data-lang="python"># needs: pip install hnswlib (documented API; not installed here, so not run)
+import hnswlib
+
+index = hnswlib.Index(space="cosine", dim=768)
+index.init_index(max_elements=1_000_000, M=16, ef_construction=200)
+index.add_items(vectors, ids)            # vectors: (n, 768) float32, ids: (n,) ints
+index.set_ef(80)                         # efSearch: raise until recall@10 meets your target
+labels, distances = index.knn_query(query_vectors, k=10)
+index.mark_deleted(old_id)               # a tombstone, not a physical removal
+</pre>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"We need a vector database" at 50,000 vectors.</strong> Exact search over that is milliseconds. Add an ANN index when measurements say so.</li>
+<li><strong>Tuning for speed without measuring recall.</strong> Every ANN setting trades recall; compute it against exact search on real queries before choosing efSearch or nprobe.</li>
+<li><strong>Post-filtering with selective filters.</strong> A tenant with 0.05% of the data expects 0.05 matches in a top 100. Use pre-filtering, partitions, or an engine that switches strategy by selectivity.</li>
+<li><strong>Reporting aggregate recall only.</strong> Large tenants dominate the average; small or rare filter values are where filtered search breaks.</li>
+<li><strong>Forgetting that HNSW needs the vectors in RAM.</strong> Size memory as vectors plus links plus metadata, per replica; use float16 or PQ with rescoring when it does not fit.</li>
+<li><strong>Assuming deletes free space.</strong> Tombstoned vectors stay until compaction, and heavy churn degrades recall and latency.</li>
+<li><strong>Trusting published benchmarks.</strong> They rarely use your dimension, filters or update rate. Benchmark finalists on your data at your target recall.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>How much memory does an HNSW index over 4 million 1,024-dimension float32 vectors with \(M = 32\) need, roughly?</summary><div class="answer">Vectors: \(4 \times 10^6 \times 1{,}024 \times 4 = 16.4\) GB. Bottom-layer links: \(4 \times 10^6 \times 64 \times 4 = 1.02\) GB. Plus metadata and upper layers: about 18 GB per copy. Storing vectors as float16 brings it to about 9.5 GB.</div></details>
+<details><summary>A tenant owns 0.2% of a shared index. With post-filtering on a top-50 search, how many of their chunks do you expect, and what would you do?</summary><div class="answer">\(50 \times 0.002 = 0.1\). Almost always zero. Pre-filter (their chunks are few enough to search exactly), move them into a per-tenant partition or namespace, or use an engine that switches to pre-filtering at low selectivity.</div></details>
+<details><summary>Why is a graph walk with a wider beam (higher efSearch) more accurate, and what does it cost?</summary><div class="answer">The beam keeps more candidate nodes and expands more of them, so the walk is less likely to stop in a local region that is not the true neighbourhood. It costs more distance computations per query, so latency rises roughly in proportion.</div></details>
+<details><summary>Explain in two sentences why PQ codes are paired with rescoring.</summary><div class="answer">PQ replaces each vector with its nearest point on a coarse grid, so approximate scores mis-order close neighbours. The true neighbours are nearly always in the PQ shortlist, so rescoring the top 100 or so with full vectors restores almost exact ordering cheaply.</div></details>
+<details><summary>Your index is 12 million vectors and one replica needs 70 GB of RAM. Your machines have 64 GB. Name three options.</summary><div class="answer">Store vectors as float16 (roughly halves memory); switch to IVF-PQ with full vectors on SSD for rescoring; or shard the index across two machines and merge each shard's top \(k\). Also consider whether a smaller embedding dimension (Matryoshka truncation) loses acceptable recall.</div></details>
+<details><summary>After a month of heavy edits, p99 latency has crept up and recall has dropped, with no config change. What is the likely cause?</summary><div class="answer">Accumulated tombstones and incremental inserts have degraded the graph (or, for IVF, unbalanced the clusters). Compact or rebuild the index, and schedule it based on the deleted fraction.</div></details>
+</section>

@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-labs.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
@@ -20,42 +24,55 @@
   <h2>Evaluating LLM features</h2>
   <a href="index.html">&larr; Production &amp; evals</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-surface"><span class="num">04</span> API Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#deep-dive-golden-sets"><span class="num">07</span> Deep Dive: Golden Sets</a>
-  <a href="#deep-dive-retrieval-metrics"><span class="num">08</span> Deep Dive: Retrieval Metrics</a>
-  <a href="#deep-dive-generation-metrics"><span class="num">09</span> Deep Dive: Generation Metrics</a>
-  <a href="#deep-dive-llm-as-judge"><span class="num">10</span> Deep Dive: LLM-as-Judge</a>
-  <a href="#deep-dive-ci-regression-gate"><span class="num">11</span> Deep Dive: CI Regression Gate</a>
-  <a href="#evals-you-can-t-ship-what-you-can-t-measure"><span class="num">12</span> Evals: you can&#x27;t ship what you can&#x27;t measure</a>
-  <a href="#the-dataset-jsonl-one-case-per-line"><span class="num">13</span> The dataset: JSONL, one case per line</a>
-  <a href="#the-runner-graders"><span class="num">14</span> The runner + graders</a>
-  <a href="#the-ci-gate-regression-comparison"><span class="num">15</span> The CI gate + regression comparison</a>
-  <a href="#calibrating-the-judge-step-by-step"><span class="num">16</span> Calibrating the judge, step by step</a>
-  <a href="#why-llm-evaluation-is-its-own-discipline"><span class="num">17</span> Why LLM evaluation is its own discipline</a>
-  <a href="#step-1-define-success-criteria"><span class="num">18</span> Step 1: define success criteria</a>
-  <a href="#step-2-build-the-eval-dataset-golden-set"><span class="num">19</span> Step 2: build the eval dataset (golden set)</a>
-  <a href="#step-3-choose-graders-cheapest-that-works-first"><span class="num">20</span> Step 3: choose graders, cheapest that works first</a>
-  <a href="#llm-as-judge-done-properly"><span class="num">21</span> LLM-as-judge, done properly</a>
-  <a href="#statistics-is-the-difference-real"><span class="num">22</span> Statistics: is the difference real?</a>
-  <a href="#regression-testing-in-ci"><span class="num">23</span> Regression testing in CI</a>
-  <a href="#online-evaluation-from-offline-score-to-real-impact"><span class="num">24</span> Online evaluation: from offline score to real impact</a>
-  <a href="#error-analysis-the-loop-that-actually-improves-quality"><span class="num">25</span> Error analysis: the loop that actually improves quality</a>
-  <a href="#a-test-plan-template-for-an-llm-feature"><span class="num">26</span> A test plan template for an LLM feature</a>
-  <a href="#production-ops"><span class="num">27</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">28</span> Related topics</a>
-  <a href="#where-people-get-lost"><span class="num">29</span> Where people get lost</a>
-  <a href="#how-this-connects"><span class="num">30</span> How this connects</a>
-  <a href="#check-yourself"><span class="num">31</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-surface"><span class="num">05</span> API Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#deep-dive-golden-sets"><span class="num">08</span> Deep Dive: Golden Sets</a>
+  <a href="#deep-dive-retrieval-metrics"><span class="num">09</span> Deep Dive: Retrieval Metrics</a>
+  <a href="#deep-dive-generation-metrics"><span class="num">10</span> Deep Dive: Generation Metrics</a>
+  <a href="#deep-dive-llm-as-judge"><span class="num">11</span> Deep Dive: LLM-as-Judge</a>
+  <a href="#deep-dive-ci-regression-gate"><span class="num">12</span> Deep Dive: CI Regression Gate</a>
+  <a href="#the-question"><span class="num">13</span> The question</a>
+  <a href="#step-1-an-eval-is-four-parts"><span class="num">14</span> Step 1: an eval is four parts</a>
+  <a href="#step-2-define-success-as-checkable-criteria"><span class="num">15</span> Step 2: define success as checkable criteria</a>
+  <a href="#step-3-building-the-golden-set"><span class="num">16</span> Step 3: building the golden set</a>
+  <a href="#step-4-graders-cheapest-that-works-first"><span class="num">17</span> Step 4: graders, cheapest that works first</a>
+  <a href="#step-5-trusting-a-judge-with-numbers"><span class="num">18</span> Step 5: trusting a judge, with numbers</a>
+  <a href="#step-6-is-the-difference-real-paired-statistics"><span class="num">19</span> Step 6: is the difference real? Paired statistics</a>
+  <a href="#step-7-the-release-gate-in-ci"><span class="num">20</span> Step 7: the release gate in CI</a>
+  <a href="#step-8-online-evaluation"><span class="num">21</span> Step 8: online evaluation</a>
+  <a href="#step-9-error-analysis-the-loop-that-improves-quality"><span class="num">22</span> Step 9: error analysis, the loop that improves quality</a>
+  <a href="#step-10-evaluating-agents"><span class="num">23</span> Step 10: evaluating agents</a>
+  <a href="#in-code-a-small-harness-with-the-statistics"><span class="num">24</span> In code: a small harness with the statistics</a>
+  <a href="#evals-you-can-t-ship-what-you-can-t-measure"><span class="num">25</span> Evals: you can&#x27;t ship what you can&#x27;t measure</a>
+  <a href="#the-dataset-jsonl-one-case-per-line"><span class="num">26</span> The dataset: JSONL, one case per line</a>
+  <a href="#the-runner-graders"><span class="num">27</span> The runner + graders</a>
+  <a href="#the-ci-gate-regression-comparison"><span class="num">28</span> The CI gate + regression comparison</a>
+  <a href="#calibrating-the-judge-step-by-step"><span class="num">29</span> Calibrating the judge, step by step</a>
+  <a href="#why-llm-evaluation-is-its-own-discipline"><span class="num">30</span> Why LLM evaluation is its own discipline</a>
+  <a href="#step-1-define-success-criteria"><span class="num">31</span> Step 1: define success criteria</a>
+  <a href="#step-2-build-the-eval-dataset-golden-set"><span class="num">32</span> Step 2: build the eval dataset (golden set)</a>
+  <a href="#step-3-choose-graders-cheapest-that-works-first"><span class="num">33</span> Step 3: choose graders, cheapest that works first</a>
+  <a href="#llm-as-judge-done-properly"><span class="num">34</span> LLM-as-judge, done properly</a>
+  <a href="#statistics-is-the-difference-real"><span class="num">35</span> Statistics: is the difference real?</a>
+  <a href="#regression-testing-in-ci"><span class="num">36</span> Regression testing in CI</a>
+  <a href="#online-evaluation-from-offline-score-to-real-impact"><span class="num">37</span> Online evaluation: from offline score to real impact</a>
+  <a href="#error-analysis-the-loop-that-actually-improves-quality"><span class="num">38</span> Error analysis: the loop that actually improves quality</a>
+  <a href="#a-test-plan-template-for-an-llm-feature"><span class="num">39</span> A test plan template for an LLM feature</a>
+  <a href="#production-ops"><span class="num">40</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">41</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">42</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">43</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">44</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Evaluating LLM features <span>// Production &amp; evals</span></h1>
   <p>Golden sets, graders, LLM-as-judge done properly, statistics, an eval harness in CI, online evaluation and error analysis.</p>
-  <div class="tags"><span class="tag">17 min read</span><span class="tag">3 diagrams</span></div>
+  <div class="tags"><span class="tag">35 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -63,17 +80,21 @@
 <p>Golden datasets, automated metrics, regression gates, and human eval loops. You cannot improve what you do not measure — especially for non-deterministic LLM outputs.</p>
 <div class="diagram"><img alt="Eval Harness &amp; Golden Sets architecture" src="../systems/img/eval-harness-main.png"/></div><p class="diagram-caption">Eval harness: golden Q&amp;A dataset, retrieval metrics, generation metrics (faithfulness, relevance), CI regression gate, human spot-check queue, production feedback loop.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Eval</strong></td><td>A repeatable test of an LLM feature: a dataset of cases, graders that score each output, a way to aggregate scores, and a rule for what result is acceptable.</td></tr><tr><td><strong>Golden set</strong></td><td>A curated, versioned set of test cases with known good answers or pass criteria, drawn from real usage and known failures.</td></tr><tr><td><strong>Grader</strong></td><td>Code, a model or a person that decides whether one output passes one criterion.</td></tr><tr><td><strong>Slice</strong></td><td>A subset of cases sharing a property (one intent, one region, adversarial inputs), reported separately so averages do not hide failures.</td></tr><tr><td><strong>Critical case</strong></td><td>A case whose failure blocks a release on its own, whatever the average (privacy leaks, wrong refunds).</td></tr><tr><td><strong>Paired comparison</strong></td><td>Comparing two versions on the same cases, so each case acts as its own control.</td></tr><tr><td><strong>Discordant pair</strong></td><td>A case where one version passes and the other fails. Only these carry information about which version is better.</td></tr><tr><td><strong>McNemar's test</strong></td><td>The standard significance test for paired pass/fail results, computed from the two counts of discordant pairs.</td></tr><tr><td><strong>Sensitivity / specificity (of a judge)</strong></td><td>How often an automated judge passes outputs that truly pass, and fails outputs that truly fail, measured against human labels.</td></tr><tr><td><strong>Non-inferiority gate</strong></td><td>A release rule that ships only if the data rule out a regression larger than a chosen margin.</td></tr><tr><td><strong>Online evaluation</strong></td><td>Measuring a feature on live traffic (A/B tests, user signals), as opposed to offline evaluation on a fixed set.</td></tr><tr><td><strong>Error analysis</strong></td><td>Reading failed cases, grouping them into causes and counting them, to decide what to fix next.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card"><p>LLM outputs are stochastic. Eval harness provides reproducible quality measurement across prompt, model, and retrieval changes.</p></div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Golden set</td><td>Human-labeled Q&amp;A with expected sources</td><td>Must be held-out from tuning</td></tr><tr><td>Faithfulness</td><td>Answer supported by context</td><td>LLM judge can be biased</td></tr><tr><td>Regression gate</td><td>Block deploy if metric drops</td><td>Flaky judges cause false blocks</td></tr></table></div>
 </section>
 <section id="api-surface">
-  <h2>04 &mdash; API Surface</h2>
+  <h2>05 &mdash; API Surface</h2>
 <div class="card"><pre>POST /v1/eval/run
   { suite: "rag-golden-v3", config: { model, retriever, prompt_v } }
   -&gt; { recall_at_5, faithfulness, latency_p99, pass: true }
@@ -83,20 +104,20 @@ from ragas import evaluate
 results = evaluate(dataset=golden, metrics=[faithfulness, answer_relevancy])</pre></div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card"><table><tr><th>Eval type</th><th>Use When</th><th>Skip When</th></tr><tr><td>Golden set</td><td>Every RAG/agent deploy</td><td>Exploratory prototype only</td></tr><tr><td>LLM judge</td><td>Scale beyond manual review</td><td>High-stakes legal — need human</td></tr><tr><td>A/B online</td><td>Post-launch optimization</td><td>Pre-launch baseline missing</td></tr></table></div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card"><pre>Golden Set -&gt; Eval Runner -&gt; [Retrieval metrics | Generation metrics]
               -&gt; Report -&gt; CI Gate (pass/fail) -&gt; Human review queue</pre></div>
 </section>
 <section id="deep-dive-golden-sets">
-  <h2>07 &mdash; Deep Dive: Golden Sets</h2>
+  <h2>08 &mdash; Deep Dive: Golden Sets</h2>
 <div class="diagram"><img alt="Golden set structure: question, gold_answer, gold_chunk_ids, difficulty tag, tenant" src="../systems/img/eval-harness-golden-zoom.png"/></div><p class="diagram-caption">Golden set structure: question, gold_answer, gold_chunk_ids, difficulty tag, tenant</p><div class="card"><p>200–500 pairs minimum. Tags: easy/medium/hard, single-hop/multi-hop. Synthetic bootstrap; human label source of truth.</p></div>
 </section>
 <section id="deep-dive-retrieval-metrics">
-  <h2>08 &mdash; Deep Dive: Retrieval Metrics</h2>
+  <h2>09 &mdash; Deep Dive: Retrieval Metrics</h2>
 <div class="card"><p>Retrieval is measured on its own, before generation, against a golden set of questions with the ids of the chunks that answer them.</p>
 <ul><li><strong>Recall@k</strong>: did any correct chunk appear in the top k? The first number to check: if it is low, nothing downstream can fix it.</li>
 <li><strong>MRR</strong>: how high did the first correct chunk rank, averaged over questions.</li>
@@ -104,7 +125,7 @@ results = evaluate(dataset=golden, metrics=[faithfulness, answer_relevancy])</pr
 <p>Re-run on every change to chunking, embedding model, index settings or reranker.</p></div>
 </section>
 <section id="deep-dive-generation-metrics">
-  <h2>09 &mdash; Deep Dive: Generation Metrics</h2>
+  <h2>10 &mdash; Deep Dive: Generation Metrics</h2>
 <div class="card"><p>Generation is measured given the retrieved context, usually with LLM judges validated against human labels.</p>
 <ul><li><strong>Faithfulness</strong>: is every claim in the answer supported by the retrieved chunks? The main hallucination metric.</li>
 <li><strong>Answer relevance</strong>: does the answer actually address the question?</li>
@@ -114,16 +135,210 @@ results = evaluate(dataset=golden, metrics=[faithfulness, answer_relevancy])</pr
 <p>Libraries that implement these: Ragas, DeepEval, Arize Phoenix. Whatever the tool, calibrate the judge on a hand-labelled sample before trusting its scores.</p></div>
 </section>
 <section id="deep-dive-llm-as-judge">
-  <h2>10 &mdash; Deep Dive: LLM-as-Judge</h2>
+  <h2>11 &mdash; Deep Dive: LLM-as-Judge</h2>
 <div class="diagram"><img alt="GPT-4 judge scores faithfulness 1-5 with rubric and chain-of-thought reasoning" src="../systems/img/eval-harness-judge-zoom.png"/></div><p class="diagram-caption">GPT-4 judge scores faithfulness 1-5 with rubric and chain-of-thought reasoning</p><div class="card"><p>Use stronger model as judge. Rubric in prompt. Correlate judge with human labels monthly.</p></div>
 </section>
 <section id="deep-dive-ci-regression-gate">
-  <h2>11 &mdash; Deep Dive: CI Regression Gate</h2>
+  <h2>12 &mdash; Deep Dive: CI Regression Gate</h2>
 <div class="card"><p>Block merge if Recall@5 drops &gt;2% or faithfulness drops &gt;5%. Run on PR with smaller smoke set (50 cases).</p></div>
 </section>
 <p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>13 &mdash; The question</h2>
+<p>A traditional feature is tested with assertions: given this input, expect exactly this output. LLM features break that model. Outputs are open-ended text, many different answers are correct, the same input can give different outputs on different runs, and a change that fixes one case often breaks three others. Without a systematic way to measure quality, every prompt edit is a guess and every release is a gamble. Evals are that systematic way, and interviewers for AI engineering roles probe them more than almost any other topic, because they separate people who have shipped LLM features from people who have demoed them.</p>
+<p>Interviewers ask:</p>
+<ol>
+<li>How do you turn "good answer" into something you can measure?</li>
+<li>How do you build the test set, and how big must it be?</li>
+<li>When is an LLM judge trustworthy, and how do you check?</li>
+<li>Version 2 scores 4 points higher than version 1. Is it really better, and would you ship it?</li>
+<li>How do offline evals connect to what happens with real users?</li>
+</ol>
+<p>Running example: the electronics shop's help-centre assistant (the RAG chain from <a href="../tech/langchain.html">LangChain</a>). Version 1 is in production. Version 2 adds a reranker and a rewritten prompt. The team must decide whether to ship v2, and build the evaluation that will decide every future change too. The metrics themselves (what BLEU, judges and win rates measure) are covered in <a href="eval-metrics.html">Evaluation metrics</a>; this lesson is about the process around them.</p>
+</section>
+<section id="step-1-an-eval-is-four-parts">
+  <h2>14 &mdash; Step 1: an eval is four parts</h2>
+<p>Every eval, from a unit-test-like check to a large benchmark, has the same structure:</p>
+<ol>
+<li><strong>Cases</strong>: inputs, plus whatever the graders need (a reference answer, required facts, the expected source document, a flag saying the case is critical).</li>
+<li><strong>Graders</strong>: one per criterion, each returning pass or fail (or a score) with a reason.</li>
+<li><strong>Aggregation</strong>: pass rates overall, per criterion and per slice, with uncertainty.</li>
+<li><strong>A decision rule</strong>, written down before looking at results: what makes a version shippable.</li>
+</ol>
+<p>Most weak evaluation setups have the first two and skip the last two. They produce a number, but nobody agreed in advance what number is good enough, so the number gets argued with instead of acted on.</p>
+</section>
+<section id="step-2-define-success-as-checkable-criteria">
+  <h2>15 &mdash; Step 2: define success as checkable criteria</h2>
+<p>"The assistant gives good answers" cannot be graded. Break it into criteria that a grader can decide, ideally each yes or no:</p>
+<table>
+<thead><tr><th>Criterion</th><th>Example check</th><th>Cheapest grader</th></tr></thead>
+<tbody>
+<tr><td>Correct</td><td>States the 30-day window for opened audio in the US</td><td>Required-facts check, else a judge with the reference</td></tr>
+<tr><td>Grounded</td><td>Every claim is supported by the retrieved policy text</td><td>Judge or entailment model, given the retrieved chunks</td></tr>
+<tr><td>Cited</td><td>Cites <code>returns.md</code></td><td>Regex</td></tr>
+<tr><td>Safe</td><td>No other customer's personal data</td><td>Regex for phone and address shapes, plus a judge</td></tr>
+<tr><td>Appropriately declines</td><td>Out-of-scope questions get a redirect, not an invented answer</td><td>Judge</td></tr>
+<tr><td>Operational</td><td>Latency under 4 s, cost under $0.002</td><td>Measured directly</td></tr>
+</tbody>
+</table>
+<p>Separate criteria give separate signals. If v2 fails, you need to know whether it is wrong, ungrounded or uncited, because each has a different fix (retrieval, prompt, output format). A single 1-to-10 "quality" score hides that and drifts between runs.</p>
+<p>Also decide what counts as a failure before seeing outputs. If the reference says "within 30 days if undamaged" and the answer omits "if undamaged", is that a pass? Write the answer into the grading guidelines once, not case by case.</p>
+</section>
+<section id="step-3-building-the-golden-set">
+  <h2>16 &mdash; Step 3: building the golden set</h2>
+<p>Where cases come from, in order of value:</p>
+<ul>
+<li><strong>Real traffic</strong>: sample production questions, stratified by intent (returns, delivery, warranty, payments...), so the set reflects what users actually ask.</li>
+<li><strong>Known failures</strong>: every bug report and every bad answer found in review becomes a case. This is how the set gets harder over time.</li>
+<li><strong>Edge and adversarial cases</strong>: region-specific policies, ambiguous questions, questions with no answer in the knowledge base, attempts to extract other customers' data (see <a href="../adaptation/constitutional-ai.html">Constitutional AI and red-teaming</a>).</li>
+<li><strong>Synthetic cases</strong>: a model generates questions from the policy documents. Useful for coverage; review them, because generated questions are cleaner than real ones.</li>
+</ul>
+<p>How many? It depends on the precision you need. For a pass rate around 85%, the 95% interval half-width is about \(1.96\sqrt{p(1-p)/n}\). With 50 cases that is about ±10 points: enough to catch a disaster, useless for comparing versions. To measure the overall rate within ±3 points you need about \(1.96^2 \times 0.85 \times 0.15 / 0.03^2 \approx 544\) cases. The shop's set has 600, across 12 intents. Per-intent slices then have about 50 cases each, so slice numbers are only good for spotting large problems; that is fine, as long as you read them that way.</p>
+<p>Mark the handful of <strong>critical cases</strong> (privacy, refunds, safety) whose failure blocks a release regardless of averages. Version the set like code, and never tune prompts against the exact cases you report on: keep a held-out portion that you look at only for release decisions.</p>
+</section>
+<section id="step-4-graders-cheapest-that-works-first">
+  <h2>17 &mdash; Step 4: graders, cheapest that works first</h2>
+<p>Graders form a ladder of cost and flexibility:</p>
+<ol>
+<li><strong>Code checks</strong>: required substrings, regexes, JSON schema validation, citation present, length and latency limits. Free, instant, deterministic. Use them for everything they can decide.</li>
+<li><strong>Reference comparison</strong>: exact match on structured fields; for free text, overlap metrics are too weak (see <a href="eval-metrics.html">Evaluation metrics</a>).</li>
+<li><strong>LLM judge</strong>: a strong model with a rubric, the reference and the retrieved context, answering one binary question per criterion. Handles paraphrase and judgement calls.</li>
+<li><strong>Human review</strong>: the ground truth, used to validate judges and to grade a sample of the hardest cases.</li>
+</ol>
+<p>Costs, illustratively: judging 600 cases at about 1,200 tokens each is 720,000 tokens, about $2 at $3 per million tokens, and a few minutes with concurrency. The same 600 cases graded by people at a minute each is ten hours of work. That ratio is why judges run on every change and humans run on samples. In the shop's harness, correctness of the policy facts, citations and data leaks are code checks; groundedness and appropriate declining are judge checks.</p>
+</section>
+<section id="step-5-trusting-a-judge-with-numbers">
+  <h2>18 &mdash; Step 5: trusting a judge, with numbers</h2>
+<p>An LLM judge is a classifier, and like any classifier it has error rates. Measure them before relying on it:</p>
+<ol>
+<li>Have people label 150 to 200 cases pass or fail on the criterion, following the written guidelines.</li>
+<li>Run the judge on the same cases.</li>
+<li>Compute its <strong>sensitivity</strong> (of truly passing outputs, the fraction it passes) and <strong>specificity</strong> (of truly failing outputs, the fraction it fails).</li>
+</ol>
+<p>Suppose the groundedness judge has sensitivity 0.95 and specificity 0.80: it rarely fails good answers but lets 20% of ungrounded ones through. Two consequences follow.</p>
+<p>First, the measured pass rate is biased. If the judge reports 86% grounded, the true rate \(p\) satisfies \(0.86 = 0.95\,p + (1 - 0.80)(1 - p)\), so \(p = (0.86 - 0.20)/(0.95 - 0.20) = 0.88\). Here the bias is small, but with a weaker judge or a lower true rate it can be large, and it can differ between versions if v2's failures are of a kind the judge misses more often.</p>
+<p>Second, the specificity is what to improve. The usual levers: make the question narrower ("Is every number in the answer present in the context?" rather than "Is it grounded?"), give the judge the retrieved context and the reference, ask for reasoning before the verdict, use few-shot examples of borderline cases, and use a different, strong model as judge. Re-measure after each change. For pairwise judgements, also run both answer orders, because of position bias.</p>
+</section>
+<section id="step-6-is-the-difference-real-paired-statistics">
+  <h2>19 &mdash; Step 6: is the difference real? Paired statistics</h2>
+<p>v1 passes 492 of the 600 cases (82%); v2 passes 516 (86%). A 4-point gain. Is it real?</p>
+<p>Treating the two scores as independent samples, the standard error of the difference is \(\sqrt{0.82 \times 0.18/600 + 0.86 \times 0.14/600} \approx 0.021\), so the 95% interval is about \(4.0 \pm 4.1\) points: it includes zero. Inconclusive.</p>
+<p>But the two versions ran on the <em>same</em> cases, and most cases are easy or hard for both. Only cases where the versions disagree carry information. Count them:</p>
+<table>
+<thead><tr><th></th><th>v2 passes</th><th>v2 fails</th></tr></thead>
+<tbody>
+<tr><td>v1 passes</td><td>474</td><td>18 (\(b\))</td></tr>
+<tr><td>v1 fails</td><td>42 (\(c\))</td><td>66</td></tr>
+</tbody>
+</table>
+<p>The difference is \((c - b)/n = 24/600 = 4.0\) points. Its paired standard error is \(\sqrt{\big((b + c)/n - d^2\big)/n} = \sqrt{(0.1 - 0.0016)/600} \approx 0.0128\), so the interval is about +1.5 to +6.5 points, clearly above zero. McNemar's test agrees: \(\chi^2 = (b - c)^2/(b + c) = 576/60 = 9.6\), a p-value of about 0.002.</p>
+<p>The same data, analysed correctly, turned "inconclusive" into "v2 is better". Always compare versions on the same cases with a paired analysis. Two more sources of noise to handle: if outputs are sampled at non-zero temperature, run each case several times or fix the temperature low for evaluation; and if a judge grades, its own randomness adds variance, so keep its temperature at zero.</p>
+</section>
+<section id="step-7-the-release-gate-in-ci">
+  <h2>20 &mdash; Step 7: the release gate in CI</h2>
+<p>Run the eval automatically on every change to prompts, retrieval settings, models or code paths that touch the model, and gate on a rule decided in advance. The shop's rule:</p>
+<ul>
+<li><strong>Any critical case fails: block.</strong> No average excuses a privacy leak.</li>
+<li><strong>Non-inferiority</strong>: ship only if the paired interval for (new − current) lies above −2 points, meaning the data rule out a regression of more than 2 points. v2's interval, +1.5 to +6.5, passes.</li>
+<li><strong>Slices</strong>: flag (for human review, not automatic block) any intent whose pass rate fell by more than 10 points, since per-slice numbers on 50 cases are noisy.</li>
+<li><strong>Operational</strong>: block if p95 latency or cost per answer exceeds budget.</li>
+</ul>
+<p>Practicalities: 600 cases at about 3 seconds each with 16 in parallel take about two minutes, cheap enough to run on every pull request. Cache outputs by (case, version) so re-running graders does not re-call the model, and store every run's outputs and grades so you can diff two runs case by case.</p>
+<div class="callout"><p><strong>Why non-inferiority rather than "must improve".</strong> Many changes (a cheaper model, a refactor) are meant to keep quality the same, not raise it. Requiring a significant improvement would block them all; requiring only "not significantly worse" would let a real 3-point drop through on a noisy run. Ruling out a drop larger than a stated margin matches the actual decision.</p></div>
+</section>
+<section id="step-8-online-evaluation">
+  <h2>21 &mdash; Step 8: online evaluation</h2>
+<p>Offline evals measure quality on a fixed set. Users ask new things, and what matters to the business is outcomes: was the question resolved, did the customer need a human, did they come back. So after the gate, v2 goes to an <strong>A/B test</strong>: a share of conversations get v2, the rest v1, and outcome metrics are compared.</p>
+<p>The shop tracks <strong>escalation rate</strong> (conversations handed to a human). It is 20% on v1, and the team wants to detect a drop to 18%. The sample needed per arm, for a two-sided test at 5% significance with 80% power, is about</p>
+\[ n \approx \frac{(1.96 + 0.84)^2\,\big(0.20 \times 0.80 + 0.18 \times 0.82\big)}{(0.20 - 0.18)^2} \approx 6{,}000 \]
+<p>conversations per arm. At 50,000 conversations a day split evenly, that is under a day of traffic; run for at least a full week anyway, to cover weekday and weekend patterns.</p>
+<p>Alongside the A/B metric, monitor guardrail metrics (refusal rate, average answer length, cost, latency, thumbs-down rate) and sample live conversations for judge and human review, which catches failure types the golden set lacks. Disagreement between offline and online results is information: usually it means the golden set no longer resembles real traffic. See <a href="observability.html">Observability</a> and <a href="mlops-drift.html">MLOps and drift</a>.</p>
+</section>
+<section id="step-9-error-analysis-the-loop-that-improves-quality">
+  <h2>22 &mdash; Step 9: error analysis, the loop that improves quality</h2>
+<p>Evals tell you how often the system fails; error analysis tells you why, which is what you need to improve it. The procedure:</p>
+<ol>
+<li>Take the failures from the latest run (v2 fails 84 of 600).</li>
+<li>Read each one with its trace: the question, retrieved chunks, prompt and answer.</li>
+<li>Write a short note on what went wrong, without forcing categories at first.</li>
+<li>Group the notes into causes and count them.</li>
+<li>Fix the largest cause, add representative cases for it, and re-run.</li>
+</ol>
+<p>For the shop, a hypothetical tally might be: retrieval missed the right policy (38), wrong region's policy retrieved (17), correct chunk but the answer dropped a condition (14), question genuinely not covered by the knowledge base (9), grader error (6). That count redirects effort: nearly two-thirds of failures are retrieval problems, so a region filter and better chunking will do more than any prompt change. Notice the six grader errors: error analysis also audits the eval itself.</p>
+<p>Reading 84 failures takes an hour or two. It is the highest-value hour in the whole process, and the step most often skipped.</p>
+</section>
+<section id="step-10-evaluating-agents">
+  <h2>23 &mdash; Step 10: evaluating agents</h2>
+<p>For agents, the final answer is not enough: an agent can reach the right answer by an unsafe or wasteful path (refunding before checking the order, calling the search tool twelve times). Add <strong>trajectory</strong> checks on the recorded steps: required tools called, forbidden actions not taken, approval obtained before refunds, step and token counts within budget. Run agent evals in a sandbox with fake tools that record calls, so tests are repeatable and safe. Because agent runs vary more, run each case several times and report the pass rate across runs as well as per case. See <a href="../agents/agent-loop.html">The agent loop</a>.</p>
+</section>
+<section id="in-code-a-small-harness-with-the-statistics">
+  <h2>24 &mdash; In code: a small harness with the statistics</h2>
+<p>Cases with required facts, expected sources and a critical flag; three code graders; failure reasons; the paired comparison from Step 6; the judge correction from Step 5; and the gate from Step 7. Pure Python; in real use the <code>outputs</code> dict comes from calling the application.</p>
+<pre><span class="kw">import</span> json, math, re
+
+<span class="cm"># --- 1. cases: input, what a correct answer must contain, which source it must cite ---</span>
+cases = [
+    {<span class="st">"</span><span class="st">id</span><span class="st">"</span>: <span class="st">"</span><span class="st">ret-01</span><span class="st">"</span>, <span class="st">"</span><span class="st">q</span><span class="st">"</span>: <span class="st">"</span><span class="st">Can I return opened headphones after 20 days?</span><span class="st">"</span>, <span class="st">"</span><span class="st">must</span><span class="st">"</span>: [<span class="st">"</span><span class="st">30 days</span><span class="st">"</span>], <span class="st">"</span><span class="st">source</span><span class="st">"</span>: <span class="st">"</span><span class="st">returns.md</span><span class="st">"</span>, <span class="st">"</span><span class="st">critical</span><span class="st">"</span>: <span class="nr">False</span>},
+    {<span class="st">"</span><span class="st">id</span><span class="st">"</span>: <span class="st">"</span><span class="st">ret-02</span><span class="st">"</span>, <span class="st">"</span><span class="st">q</span><span class="st">"</span>: <span class="st">"</span><span class="st">Return window for opened headphones in Germany?</span><span class="st">"</span>, <span class="st">"</span><span class="st">must</span><span class="st">"</span>: [<span class="st">"</span><span class="st">14</span><span class="st">"</span>], <span class="st">"</span><span class="st">source</span><span class="st">"</span>: <span class="st">"</span><span class="st">returns-eu.md</span><span class="st">"</span>, <span class="st">"</span><span class="st">critical</span><span class="st">"</span>: <span class="nr">False</span>},
+    {<span class="st">"</span><span class="st">id</span><span class="st">"</span>: <span class="st">"</span><span class="st">gift-01</span><span class="st">"</span>, <span class="st">"</span><span class="st">q</span><span class="st">"</span>: <span class="st">"</span><span class="st">Can I get a refund on a gift card?</span><span class="st">"</span>, <span class="st">"</span><span class="st">must</span><span class="st">"</span>: [<span class="st">"</span><span class="st">not refundable</span><span class="st">"</span>], <span class="st">"</span><span class="st">source</span><span class="st">"</span>: <span class="st">"</span><span class="st">giftcards.md</span><span class="st">"</span>, <span class="st">"</span><span class="st">critical</span><span class="st">"</span>: <span class="nr">False</span>},
+    {<span class="st">"</span><span class="st">id</span><span class="st">"</span>: <span class="st">"</span><span class="st">priv-01</span><span class="st">"</span>, <span class="st">"</span><span class="st">q</span><span class="st">"</span>: <span class="st">"</span><span class="st">What</span><span class="st">'</span><span class="st">s the address on order A2201?</span><span class="st">"</span>, <span class="st">"</span><span class="st">must</span><span class="st">"</span>: [<span class="st">"</span><span class="st">can</span><span class="st">'</span><span class="st">t share</span><span class="st">"</span>], <span class="st">"</span><span class="st">source</span><span class="st">"</span>: <span class="nr">None</span>, <span class="st">"</span><span class="st">critical</span><span class="st">"</span>: <span class="nr">True</span>},
+]
+<span class="cm"># --- 2. outputs from the system under test (in real life: call the app) ---</span>
+outputs = {
+    <span class="st">"</span><span class="st">ret-01</span><span class="st">"</span>: <span class="st">"</span><span class="st">Yes, opened audio products can be returned within 30 days if undamaged [returns.md].</span><span class="st">"</span>,
+    <span class="st">"</span><span class="st">ret-02</span><span class="st">"</span>: <span class="st">"</span><span class="st">Opened headphones can be returned within 30 days [returns.md].</span><span class="st">"</span>,
+    <span class="st">"</span><span class="st">gift-01</span><span class="st">"</span>: <span class="st">"</span><span class="st">Gift cards are not refundable [giftcards.md].</span><span class="st">"</span>,
+    <span class="st">"</span><span class="st">priv-01</span><span class="st">"</span>: <span class="st">"</span><span class="st">Sorry, I can</span><span class="st">'</span><span class="st">t share details from another customer</span><span class="st">'</span><span class="st">s order.</span><span class="st">"</span>,
+}
+
+<span class="cm"># --- 3. graders: cheapest first; each returns (passed, reason) ---</span>
+<span class="kw">def</span> <span class="fn">contains_facts</span>(case, out):
+    missing = [m <span class="kw">for</span> m in case[<span class="st">"</span><span class="st">must</span><span class="st">"</span>] <span class="kw">if</span> m.lower() not in out.lower()]
+    <span class="kw">return</span> not missing, <span class="st">f</span><span class="st">"</span><span class="st">missing </span><span class="st">{</span>missing<span class="st">}</span><span class="st">"</span> <span class="kw">if</span> missing <span class="kw">else</span> <span class="st">"</span><span class="st">ok</span><span class="st">"</span>
+<span class="kw">def</span> <span class="fn">cites_right_source</span>(case, out):
+    cited = re.findall(<span class="st">r</span><span class="st">"</span><span class="st">\</span><span class="st">[([</span><span class="st">\</span><span class="st">w.-]+)</span><span class="st">\</span><span class="st">]</span><span class="st">"</span>, out)
+    <span class="kw">if</span> case[<span class="st">"</span><span class="st">source</span><span class="st">"</span>] is <span class="nr">None</span>:
+        <span class="kw">return</span> not cited, <span class="st">"</span><span class="st">ok</span><span class="st">"</span> <span class="kw">if</span> not cited <span class="kw">else</span> <span class="st">f</span><span class="st">"</span><span class="st">unexpected citation </span><span class="st">{</span>cited<span class="st">}</span><span class="st">"</span>
+<span class="kw">return</span> case[<span class="st">"</span><span class="st">source</span><span class="st">"</span>] in cited, <span class="st">f</span><span class="st">"</span><span class="st">cited </span><span class="st">{</span>cited<span class="st">}</span><span class="st">, expected </span><span class="st">{</span>case[<span class="st">'</span><span class="st">source</span><span class="st">'</span>]<span class="st">}</span><span class="st">"</span>
+<span class="kw">def</span> <span class="fn">no_phone_or_address</span>(case, out):
+    leak = re.search(<span class="st">r</span><span class="st">"</span><span class="st">\</span><span class="st">d</span><span class="st">{3}</span><span class="st">[- ]?</span><span class="st">\</span><span class="st">d</span><span class="st">{</span><span class="st">3,4}|</span><span class="st">\</span><span class="st">d+ </span><span class="st">\</span><span class="st">w+ (Road|Street|Ave)</span><span class="st">"</span>, out)
+    <span class="kw">return</span> leak is <span class="nr">None</span>, <span class="st">"</span><span class="st">ok</span><span class="st">"</span> <span class="kw">if</span> leak is <span class="nr">None</span> <span class="kw">else</span> <span class="st">f</span><span class="st">"</span><span class="st">possible leak: </span><span class="st">{</span>leak.group()<span class="st">}</span><span class="st">"</span>
+
+graders = [contains_facts, cites_right_source, no_phone_or_address]
+
+results = []
+<span class="kw">for</span> case in cases:
+    checks = {g.__name__: g(case, outputs[case[<span class="st">"</span><span class="st">id</span><span class="st">"</span>]]) <span class="kw">for</span> g in graders}
+    passed = <span class="tp">all</span>(ok <span class="kw">for</span> ok, _ in checks.values())
+    results.append({<span class="st">"</span><span class="st">id</span><span class="st">"</span>: case[<span class="st">"</span><span class="st">id</span><span class="st">"</span>], <span class="st">"</span><span class="st">pass</span><span class="st">"</span>: passed, <span class="st">"</span><span class="st">critical</span><span class="st">"</span>: case[<span class="st">"</span><span class="st">critical</span><span class="st">"</span>],
+                    <span class="st">"</span><span class="st">fails</span><span class="st">"</span>: {k: why <span class="kw">for</span> k, (ok, why) in checks.items() <span class="kw">if</span> not ok}})
+<span class="tp">print</span>(json.dumps([r <span class="kw">for</span> r in results <span class="kw">if</span> not r[<span class="st">"</span><span class="st">pass</span><span class="st">"</span>]], indent=<span class="nr">1</span>))
+<span class="tp">print</span>(<span class="st">"</span><span class="st">pass rate:</span><span class="st">"</span>, <span class="tp">sum</span>(r[<span class="st">"</span><span class="st">pass</span><span class="st">"</span>] <span class="kw">for</span> r in results) / <span class="tp">len</span>(results))
+
+<span class="cm"># --- 4. paired comparison of two versions on the same 600 cases ---</span>
+<span class="kw">def</span> <span class="fn">paired_diff</span>(b, c, n):
+    <span class="st">"""b: v1 pass &amp; v2 fail, c: v1 fail &amp; v2 pass. Returns diff, 95% CI, McNemar chi-square."""</span>
+    d = (c - b) / n
+    se = math.sqrt(((b + c) / n - d * d) / n)
+    <span class="kw">return</span> d, (d - <span class="nr">1.96</span> * se, d + <span class="nr">1.96</span> * se), (b - c) ** <span class="nr">2</span> / (b + c)
+
+d, ci, chi2 = paired_diff(b=<span class="nr">18</span>, c=<span class="nr">42</span>, n=<span class="nr">600</span>)
+<span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">v2 - v1 = </span><span class="st">{</span>d<span class="st">:</span><span class="st">+.1%</span><span class="st">}</span><span class="st">, 95% CI </span><span class="st">{</span>ci[<span class="nr">0</span>]<span class="st">:</span><span class="st">+.1%</span><span class="st">}</span><span class="st"> to </span><span class="st">{</span>ci[<span class="nr">1</span>]<span class="st">:</span><span class="st">+.1%</span><span class="st">}</span><span class="st">, McNemar chi2 = </span><span class="st">{</span>chi2<span class="st">:</span><span class="st">.1f</span><span class="st">}</span><span class="st">"</span>)
+
+<span class="cm"># --- 5. correct a judge-measured pass rate for the judge's own errors ---</span>
+<span class="kw">def</span> <span class="fn">corrected_pass_rate</span>(observed, sensitivity, specificity):
+    <span class="kw">return</span> (observed + specificity - <span class="nr">1</span>) / (sensitivity + specificity - <span class="nr">1</span>)
+<span class="tp">print</span>(<span class="st">"</span><span class="st">judge says 86</span><span class="st">%</span><span class="st"> pass; corrected:</span><span class="st">"</span>, <span class="tp">round</span>(corrected_pass_rate(<span class="nr">0.86</span>, <span class="nr">0.95</span>, <span class="nr">0.80</span>), <span class="nr">3</span>))
+
+<span class="cm"># --- 6. the gate ---</span>
+critical_fail = <span class="tp">any</span>(r[<span class="st">"</span><span class="st">critical</span><span class="st">"</span>] and not r[<span class="st">"</span><span class="st">pass</span><span class="st">"</span>] <span class="kw">for</span> r in results)
+<span class="tp">print</span>(<span class="st">"</span><span class="st">BLOCK release</span><span class="st">"</span> <span class="kw">if</span> critical_fail or ci[<span class="nr">0</span>] &lt; -<span class="nr">0.02</span> <span class="kw">else</span> <span class="st">"</span><span class="st">ok to ship</span><span class="st">"</span>)   <span class="cm"># non-inferiority: rule out a 2-point drop</span>
+</pre>
+<p>It prints the one failing case (<code>ret-02</code>: the EU question answered with the US policy, missing "14" and citing the wrong file), a pass rate of 0.75 on these four cases, then <code>v2 - v1 = +4.0%, 95% CI +1.5% to +6.5%, McNemar chi2 = 9.6</code>, a corrected judge pass rate of 0.88, and <code>ok to ship</code>.</p>
+<p>Notice what the failing case is: a retrieval error (wrong region) surfacing as both a correctness and a citation failure. Per-criterion reasons are what make that visible.</p>
+</section>
 <section id="evals-you-can-t-ship-what-you-can-t-measure">
-  <h2>12 &mdash; Evals: you can&#x27;t ship what you can&#x27;t measure</h2>
+  <h2>25 &mdash; Evals: you can&#x27;t ship what you can&#x27;t measure</h2>
 <p>Agents are non-deterministic; a prompt tweak can shift a whole trajectory. Evals are how you know a change helped, not hurt. This topic builds the complete harness: a dataset format, a runner, deterministic and judge graders, a CI gate, and the statistics that stop you from shipping noise. Three levels of eval, then the machinery.</p>
 <h3>1 · Assertion / golden evals (run in CI)</h3>
 <div class="code-block"><div class="code-file"><span>test_agent.py</span><span class="code-lang">python</span></div><pre>CASES=[(<span class="st">"</span><span class="st">status of X-92?</span><span class="st">"</span>, [<span class="st">"</span><span class="st">shipped</span><span class="st">"</span>]), (<span class="st">"</span><span class="st">refund window?</span><span class="st">"</span>, [<span class="st">"</span><span class="st">30 days</span><span class="st">"</span>])]
@@ -144,7 +359,7 @@ results = evaluate(dataset=golden, metrics=[faithfulness, answer_relevancy])</pr
 <span class="kw">assert</span> trace.steps &lt;= <span class="nr">5</span> <span class="cm"># efficient</span></pre></div>
 </section>
 <section id="the-dataset-jsonl-one-case-per-line">
-  <h2>13 &mdash; The dataset: JSONL, one case per line</h2>
+  <h2>26 &mdash; The dataset: JSONL, one case per line</h2>
 <p>Keep the eval set in the repo, reviewed like code. JSONL because it diffs line-by-line, streams, and every tool reads it. Each case declares <i>which graders apply</i> — assertion cases and judged cases live in one file.</p>
 <div class="code-block"><div class="code-file"><span>evals/support_v3.jsonl — one line per case</span><span class="code-lang">json</span></div><pre>{<span class="tp">"id"</span>:<span class="st">"ord-001"</span>,<span class="tp">"input"</span>:<span class="st">"status of order X-92?"</span>,<span class="tp">"graders"</span>:[<span class="st">"contains"</span>,<span class="st">"trajectory"</span>],
  <span class="tp">"must_contain"</span>:[<span class="st">"shipped"</span>],<span class="tp">"max_steps"</span>:<span class="nr">4</span>,<span class="tp">"forbidden_tools"</span>:[<span class="st">"refund"</span>],
@@ -163,7 +378,7 @@ initiates refund flow; does NOT promise a refund amount before lookup"</span>,
 </ul>
 </section>
 <section id="the-runner-graders">
-  <h2>14 &mdash; The runner + graders</h2>
+  <h2>27 &mdash; The runner + graders</h2>
 <div class="code-block"><div class="code-file"><span>evals/runner.py — dataset in, scored results out</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> json, statistics, concurrent.futures <span class="kw">as</span> cf
 
 <span class="cm"># ---- deterministic graders: cheap, exact, run first ---------------------------</span>
@@ -210,7 +425,7 @@ GRADERS = {<span class="st">"</span><span class="st">contains</span><span class=
 <p>Two deliberate choices: <b><code>min()</code> across graders</b> — a case passes only if every applicable grader passes (an on-topic answer that called a forbidden tool is a fail, full stop). And <b>crash = 0.0</b> — the suite must never silently shrink because a case errored.</p>
 </section>
 <section id="the-ci-gate-regression-comparison">
-  <h2>15 &mdash; The CI gate + regression comparison</h2>
+  <h2>28 &mdash; The CI gate + regression comparison</h2>
 <p>The naive gate — <code>assert pass_rate &gt;= 0.90</code> — flaps, because agent runs are stochastic. With 100 cases and a true pass rate of 90%, run-to-run standard deviation is √(0.9·0.1/100) = 3%: your "regression" is often noise. Compare <i>paired per-case results</i> against the baseline and bootstrap the difference:</p>
 <div class="code-block"><div class="code-file"><span>evals/gate.py — paired bootstrap gate, not a naive threshold</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> json, random
 
@@ -238,7 +453,7 @@ GRADERS = {<span class="st">"</span><span class="st">contains</span><span class=
 <p>Worked read of the output: baseline 0.91, candidate 0.88 on 120 cases → Δ = −0.03, and the paired bootstrap says P(worse) = 97% → block, this is real. Same Δ on 25 cases → P(worse) ≈ 78% → it ships (but you go add cases, because your suite is too small to see 3 points). The <i>pairing</i> is what gives you power: it cancels the shared noise of which cases are hard. Also note the asymmetric rule: security-tagged cases get zero statistical tolerance — one regression blocks.</p>
 </section>
 <section id="calibrating-the-judge-step-by-step">
-  <h2>16 &mdash; Calibrating the judge, step by step</h2>
+  <h2>29 &mdash; Calibrating the judge, step by step</h2>
 <p>An uncalibrated judge is a random number generator with gravitas. Calibration is measuring the judge against humans <i>before</i> trusting it in the gate:</p>
 <ol>
 <li><b>Sample ~50–100 real outputs</b> stratified across difficulty (not just easy wins) — production traces if you have them, eval-run outputs if not.</li>
@@ -260,7 +475,7 @@ GRADERS = {<span class="st">"</span><span class="st">contains</span><span class=
 </ol></div>
 </section>
 <section id="why-llm-evaluation-is-its-own-discipline">
-  <h2>17 &mdash; Why LLM evaluation is its own discipline</h2>
+  <h2>30 &mdash; Why LLM evaluation is its own discipline</h2>
 <p>The skill behind Q4. One idea runs through it: treat quality like latency, something you measure on every change, slice by slice, with error bars.</p>
 <ul>
 <li>No single correct output: many phrasings are right, many fluent ones are wrong.</li>
@@ -272,7 +487,7 @@ GRADERS = {<span class="st">"</span><span class="st">contains</span><span class=
 <p>So you need the equivalent of a test suite plus monitoring, built for fuzzy outputs. Teams call this <strong>eval-driven development</strong>: write the eval first, then iterate the prompt/model/pipeline against it.</p>
 </section>
 <section id="step-1-define-success-criteria">
-  <h2>18 &mdash; Step 1: define success criteria</h2>
+  <h2>31 &mdash; Step 1: define success criteria</h2>
 <p>Turn "the feature should be good" into checkable statements, split into three tiers:</p>
 <table>
 <tr><th>Tier</th><th>Examples</th></tr>
@@ -283,7 +498,7 @@ GRADERS = {<span class="st">"</span><span class="st">contains</span><span class=
 <p>Write thresholds: "ship if task accuracy ≥ 85% overall and ≥ 75% on every slice, JSON validity 100%, p95 &lt; 2 s." Now "is it ready?" has an answer.</p>
 </section>
 <section id="step-2-build-the-eval-dataset-golden-set">
-  <h2>19 &mdash; Step 2: build the eval dataset (golden set)</h2>
+  <h2>32 &mdash; Step 2: build the eval dataset (golden set)</h2>
 <ul>
 <li><strong>Sources</strong>: real production logs (best), domain-expert-written cases, known past failures, adversarial inputs (injections, empty input, wrong language), synthetic cases generated by an LLM and then reviewed.</li>
 <li><strong>Coverage by slice</strong>: tag each case (intent, difficulty, language, customer tier, length). Overall averages hide a broken slice.</li>
@@ -293,7 +508,7 @@ GRADERS = {<span class="st">"</span><span class="st">contains</span><span class=
 </ul>
 </section>
 <section id="step-3-choose-graders-cheapest-that-works-first">
-  <h2>20 &mdash; Step 3: choose graders, cheapest that works first</h2>
+  <h2>33 &mdash; Step 3: choose graders, cheapest that works first</h2>
 <table>
 <tr><th>Grader</th><th>How</th><th>Good for</th></tr>
 <tr><td>Code assertions</td><td>Parse JSON, regex, schema check, length, contains/doesn't contain</td><td>Format, guardrails; fast, free, deterministic</td></tr>
@@ -306,7 +521,7 @@ GRADERS = {<span class="st">"</span><span class="st">contains</span><span class=
 <p>Evaluate components separately too: retrieval (recall@k), routing (classification accuracy), tool selection, then end-to-end. When end-to-end fails, component evals tell you where.</p>
 </section>
 <section id="llm-as-judge-done-properly">
-  <h2>21 &mdash; LLM-as-judge, done properly</h2>
+  <h2>34 &mdash; LLM-as-judge, done properly</h2>
 <ul>
 <li><strong>Binary or few-level criteria</strong> ("Is every claim supported by the context? yes/no") beat 1–10 scores, which drift and cluster.</li>
 <li><strong>One criterion per judge call</strong> rather than one mega-prompt grading everything.</li>
@@ -324,7 +539,7 @@ GRADERS = {<span class="st">"</span><span class="st">contains</span><span class=
 <span class="st">Then output exactly one line: VERDICT: PASS if all claims are supported, else VERDICT: FAIL.</span><span class="st">"""</span></pre>
 </section>
 <section id="statistics-is-the-difference-real">
-  <h2>22 &mdash; Statistics: is the difference real?</h2>
+  <h2>35 &mdash; Statistics: is the difference real?</h2>
 <pre class="formula">standard error of a pass rate: SE = √( p(1−p) / n )
 95% CI ≈ p ± 1.96·SE
 n = 200, p = 0.80 → ±5.5 points     n = 1000 → ±2.5 points</pre>
@@ -339,7 +554,7 @@ n = 200, p = 0.80 → ±5.5 points     n = 1000 → ±2.5 points</pre>
 </div>
 </section>
 <section id="regression-testing-in-ci">
-  <h2>23 &mdash; Regression testing in CI</h2>
+  <h2>36 &mdash; Regression testing in CI</h2>
 <ul>
 <li>Every prompt, model, retrieval or code change runs the eval suite automatically (GitHub Actions job), like unit tests.</li>
 <li>Fast tier on every PR (50 cases, assertions + cheap judges); full tier nightly or before release.</li>
@@ -350,7 +565,7 @@ n = 200, p = 0.80 → ±5.5 points     n = 1000 → ±2.5 points</pre>
 <p>Tools you'll hear about: promptfoo (YAML test suites in CI), DeepEval (pytest-style), Ragas (RAG metrics), Inspect, LangSmith, Braintrust, Arize Phoenix, Langfuse (tracing + evals). Knowing one well is enough; a plain pytest harness is fine too.</p>
 </section>
 <section id="online-evaluation-from-offline-score-to-real-impact">
-  <h2>24 &mdash; Online evaluation: from offline score to real impact</h2>
+  <h2>37 &mdash; Online evaluation: from offline score to real impact</h2>
 <ul>
 <li><strong>Shadow mode</strong>: run the new version on live traffic without showing users; compare outputs and costs.</li>
 <li><strong>Canary / staged rollout</strong>: 1% → 10% → 100% with automated rollback on guardrail breaches.</li>
@@ -361,7 +576,7 @@ n = 200, p = 0.80 → ±5.5 points     n = 1000 → ±2.5 points</pre>
 </ul>
 </section>
 <section id="error-analysis-the-loop-that-actually-improves-quality">
-  <h2>25 &mdash; Error analysis: the loop that actually improves quality</h2>
+  <h2>38 &mdash; Error analysis: the loop that actually improves quality</h2>
 <ol>
 <li>Read 50–100 real outputs or traces. Write a free-text note on each failure.</li>
 <li>Group notes into failure categories (retrieval missed, wrong tool, format broken, hallucinated number, ignored instruction).</li>
@@ -372,7 +587,7 @@ n = 200, p = 0.80 → ±5.5 points     n = 1000 → ±2.5 points</pre>
 <p>Interviewers love hearing this: it shows you looked at data instead of only staring at an aggregate score.</p>
 </section>
 <section id="a-test-plan-template-for-an-llm-feature">
-  <h2>26 &mdash; A test plan template for an LLM feature</h2>
+  <h2>39 &mdash; A test plan template for an LLM feature</h2>
 <table>
 <tr><th>Section</th><th>Contents</th></tr>
 <tr><td>Scope</td><td>Feature, users, inputs, what's out of scope</td></tr>
@@ -387,23 +602,40 @@ n = 200, p = 0.80 → ±5.5 points     n = 1000 → ±2.5 points</pre>
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>27 &mdash; Production &amp; Ops</h2>
+  <h2>40 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Weekly human spot-check 50 production queries</li><li>Thumbs down → auto-add to review queue</li><li>Eval dashboard per model version</li></ul></div>
 </section>
 <section id="related-topics">
-  <h2>28 &mdash; Related topics</h2>
+  <h2>41 &mdash; Related topics</h2>
 <div class="card"><ul><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a></li><li><a href="../adaptation/rlhf.html">RLHF &amp; reward models</a></li><li><a href="../agents/agent-loop.html">The agent loop</a></li><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a></li></ul></div>
 </section>
 <section id="where-people-get-lost">
-  <h2>29 &mdash; Where people get lost</h2>
+  <h2>42 &mdash; Where people get lost</h2>
 <div class="card"><ul><li>Eval leakage — golden Q derived from dev chunks</li><li>Single metric optimization</li><li>Flaky LLM judge without calibration</li><li>No eval before prompt change</li></ul></div>
+<ul>
+<li><strong>"We'll eyeball a few outputs."</strong> Ten examples cannot detect a 5-point change, and they are chosen by whoever is looking. Use a versioned set and a written decision rule.</li>
+<li><strong>One overall quality score.</strong> Separate criteria tell you what to fix; a single 1-to-10 score hides it and drifts.</li>
+<li><strong>Comparing versions with unpaired statistics.</strong> Running both on the same cases and using discordant pairs can turn an inconclusive result into a clear one, as in Step 6.</li>
+<li><strong>Trusting an unvalidated judge.</strong> Measure its sensitivity and specificity against human labels, and re-measure when you change the judge or the rubric.</li>
+<li><strong>Tuning on the test set.</strong> Iterating prompts against the exact cases you report on overfits them. Keep a held-out portion for release decisions.</li>
+<li><strong>Averages hiding critical failures.</strong> A 90% pass rate with one privacy leak is a blocked release. Mark critical cases.</li>
+<li><strong>Stopping at offline scores.</strong> Offline quality is a gate, not the goal; confirm with an A/B test on outcome metrics.</li>
+<li><strong>Skipping error analysis.</strong> Counting failures by cause is what tells you whether to fix retrieval, the prompt, the data or the grader.</li>
+</ul>
 </section>
 <section id="how-this-connects">
-  <h2>30 &mdash; How this connects</h2>
-<h3>Builds on</h3><ul><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a> &mdash; Zero- and few-shot, chain of thought, decomposition, self-critique, injection defence.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="../agents/agent-loop.html">The agent loop</a> &mdash; The loop in depth and in code: budgets, errors, human approval, reliability, safety, and how to evaluate an agent.</li><li><a href="../adaptation/rlhf.html">RLHF &amp; reward models</a> &mdash; Teaching taste: preference data, reward models, PPO and the KL leash.</li></ul><h3>Where this shows up later</h3><ul><li><a href="observability.html">Observability</a> &mdash; Seeing inside a twelve-step agent: traces, spans, metrics, tools, and what to alert on.</li><li><a href="../tech/langchain.html">LangChain</a> &mdash; Chains, runnables, retrievers and the integrations layer.</li><li><a href="../tech/llamaindex.html">LlamaIndex</a> &mdash; Data-first RAG framework: loaders, indexes, query engines.</li></ul>
+  <h2>43 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../prompting/prompt-techniques.html">Prompting techniques</a> &mdash; Zero- and few-shot, chain of thought, decomposition, self-critique, injection defence.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="../agents/agent-loop.html">The agent loop</a> &mdash; The loop in depth and in code: budgets, errors, human approval, reliability, safety, and how to evaluate an agent.</li><li><a href="../adaptation/rlhf.html">RLHF &amp; reward models</a> &mdash; Teaching taste: preference data, reward models, PPO and the KL leash.</li><li><a href="../adaptation/constitutional-ai.html">Constitutional AI &amp; red-teaming</a> &mdash; Alignment from written principles, and attacking your own model before users do.</li><li><a href="eval-metrics.html">Evaluation metrics</a> &mdash; Perplexity, BLEU/ROUGE, benchmarks, LLM-as-judge and human evaluation: what each measures.</li></ul><h3>Where this shows up later</h3><ul><li><a href="observability.html">Observability</a> &mdash; Seeing inside a twelve-step agent: traces, spans, metrics, tools, and what to alert on.</li><li><a href="cost-performance.html">Cost &amp; latency</a> &mdash; Where the money and the milliseconds go: pricing, prefill vs decode, routing, batching and prompt caching.</li><li><a href="hybrid-patterns.html">Hybrid LLM patterns</a> &mdash; LLM extracts and code decides, routing and cascades, LLMs with classic ML, guardrails, text-to-SQL.</li><li><a href="mlops-drift.html">MLOps &amp; drift</a> &mdash; Version everything that changes behaviour, and notice when the world moves.</li><li><a href="../tech/frameworks.html">Choosing an agent framework</a> &mdash; The landscape, the same agent in five frameworks, and framework vs thin harness vs raw.</li><li><a href="../tech/langchain.html">LangChain</a> &mdash; Chains, runnables, retrievers and the integrations layer.</li><li><a href="../tech/llamaindex.html">LlamaIndex</a> &mdash; Data-first RAG framework: loaders, indexes, query engines.</li><li><a href="../tech/crewai.html">CrewAI</a> &mdash; Role-based multi-agent crews: agents, tasks, processes.</li></ul>
 </section>
 <section id="check-yourself">
-  <h2>31 &mdash; Check yourself</h2>
+  <h2>44 &mdash; Check yourself</h2>
+<details><summary>Your golden set has 80 cases and v1 scores 85%. Roughly how precise is that number, and what does it mean for comparing versions?</summary><div class="answer">Half-width \(1.96\sqrt{0.85 \times 0.15/80} \approx 0.078\), so about ±8 points. It can flag a disaster but cannot distinguish versions a few points apart; grow the set (about 544 cases for ±3 points) and use paired comparisons.</div></details>
+<details><summary>Two versions are run on 600 shared cases; v1 passes and v2 fails on 30, v1 fails and v2 passes on 20. What is the difference and is it significant?</summary><div class="answer">\(d = (20 - 30)/600 \approx -1.7\) points (v2 worse). McNemar \(\chi^2 = (30 - 20)^2/50 = 2.0\), p about 0.16: not significant. Paired SE \(= \sqrt{(50/600 - 0.000278)/600} \approx 0.0118\), interval about −4.0 to +0.6 points. Under a "rule out a 2-point drop" gate, this blocks: the data cannot exclude a drop larger than 2 points.</div></details>
+<details><summary>A judge reports 70% of answers grounded. Against human labels it has sensitivity 0.90 and specificity 0.70. What is the corrected rate?</summary><div class="answer">\(p = (0.70 - 0.30)/(0.90 - 0.30) = 0.40/0.60 \approx 0.67\). The judge's misses on ungrounded answers inflate the reported rate by about 3 points.</div></details>
+<details><summary>Why use a non-inferiority gate rather than "ship only if significantly better"?</summary><div class="answer">Many changes aim to keep quality while cutting cost or latency; requiring significant improvement would block them. A non-inferiority gate ships when the data rule out a regression larger than a stated margin, which is the decision actually being made.</div></details>
+<details><summary>Escalation rate is 20%. How many conversations per arm do you need to detect a drop to 17% (5% significance, 80% power)?</summary><div class="answer">\(n \approx (2.80)^2 (0.16 + 0.17 \times 0.83)/(0.03)^2 = 7.84 \times 0.3011 / 0.0009 \approx 2{,}600\) per arm.</div></details>
+<details><summary>v2 passes the offline gate but its A/B test shows more escalations. Name two likely explanations and what you would do.</summary><div class="answer">The golden set no longer resembles live traffic (new question types), or the offline criteria miss something users care about (answers correct but too long, or declining too often). Sample the escalated conversations, run error analysis on them, add representative cases and criteria to the golden set, and re-evaluate.</div></details>
+<details><summary>What does error analysis add that a pass rate cannot?</summary><div class="answer">Causes and their counts. A pass rate says how often the system fails; grouping failures (retrieval miss, wrong region, dropped condition, grader error) says which fix will remove the most failures, and also exposes errors in the eval itself.</div></details>
 <details><summary>What belongs in a RAG golden set?</summary><div class="answer">question, gold_answer, gold_chunk_ids, optional difficulty/tags. 200–500 human-labeled pairs held out from tuning.</div></details>
 <details><summary>Key metrics for RAG?</summary><div class="answer">Retrieval: Recall@5, nDCG@5. Generation: faithfulness, answer relevance, context precision. Ops: p99 latency, cost/query.</div></details>
 <details><summary>LLM-as-judge reliability?</summary><div class="answer">Calibrate against human labels monthly. Use rubric + stronger judge model. Ensemble 3 judges for high-stakes.</div></details>

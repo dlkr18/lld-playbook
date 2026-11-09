@@ -1,0 +1,265 @@
+<!-- Deep lesson: Limits & hallucination. Merged into fundamentals/limits by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Hallucination</td><td>Output that is fluent and confident but not supported by the facts or by the context the model was given.</td></tr>
+<tr><td>Parametric knowledge</td><td>What the model "knows" from training, stored implicitly in its weights. Fixed at training time and impossible to inspect directly.</td></tr>
+<tr><td>Knowledge cutoff</td><td>The date after which no text was in the training data. The model cannot know later events and is usually thin on the months just before.</td></tr>
+<tr><td>Grounding</td><td>Supplying the facts in the prompt (from retrieval or a tool) and requiring the answer to rest on them.</td></tr>
+<tr><td>Faithfulness</td><td>Whether every claim in an answer is supported by the provided context. An answer can be faithful and still wrong if the context was wrong.</td></tr>
+<tr><td>Calibration</td><td>Whether stated confidence matches observed accuracy: of all answers given with 80% confidence, about 80% should be right.</td></tr>
+<tr><td>Abstention</td><td>Declining to answer ("I could not find this in the handbook") instead of guessing.</td></tr>
+<tr><td>Selective prediction</td><td>Answering only when a confidence score clears a threshold. Trades <em>coverage</em> (the fraction of questions answered) for accuracy on the answers given.</td></tr>
+<tr><td>Self-consistency check</td><td>Asking the same question several times at non-zero temperature and measuring how often the answers agree. Low agreement signals a guess.</td></tr>
+<tr><td>Effective context</td><td>How much of the context window the model can actually use reliably, which is less than the advertised maximum.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>An LLM is a next-token predictor trained to produce text that looks like its training data. Everything it gets wrong "by design" follows from that: it says plausible things rather than true things, knows nothing after its training data ends, sees numbers as chunks of characters, and only attends to what fits in its window. These are properties to engineer around, not bugs a future release will remove.</p>
+<p>The questions interviewers ask about it:</p>
+<ol>
+<li>Why do LLMs hallucinate, mechanically, and why does a bigger model not make it go away?</li>
+<li>Does RAG solve hallucination? If not, what fraction of errors is left and where do they come from?</li>
+<li>How do you make a system say "I don't know", and how do you choose when it should?</li>
+<li>How would you detect hallucinations in production, where nobody has the right answer to hand?</li>
+</ol>
+<p><strong>The running example.</strong> Northwind, a 3,000-person company, ships "Ask HR", an assistant over its 400-page employee handbook. An employee asks:</p>
+<div class="callout"><p><em>"How many weeks of paid parental leave do I get in Germany? I'm on a 0.6 part-time contract."</em></p></div>
+<p>The true answer, from handbook section 7.2, is 20 weeks prorated to 0.6, which is <strong>12 weeks</strong>. The policy changed in March from 16 weeks to 20.</p>
+</section>
+
+<section data-label="Step 1: the model outputs a distribution, not a fact">
+<p>Ask a bare model, with no handbook in context, to complete <em>"At Northwind, paid parental leave in Germany is"</em>. Northwind's handbook was never in the training data, so the model has no memory of the answer. What it has is a strong sense of what numbers usually follow such sentences. Suppose the next-token logits over the plausible numbers are:</p>
+<table>
+<thead><tr><th>Token</th><th>16</th><th>12</th><th>14</th><th>18</th><th>20</th><th>26</th></tr></thead>
+<tbody>
+<tr><td>Logit</td><td>2.0</td><td>1.7</td><td>1.3</td><td>1.1</td><td>1.0</td><td>0.4</td></tr>
+<tr><td>Probability</td><td>0.311</td><td>0.231</td><td>0.155</td><td>0.127</td><td>0.114</td><td>0.063</td></tr>
+</tbody>
+</table>
+<p>The entropy of this distribution is 2.41 bits, roughly a choice among five equal options. For <em>"The capital of France is"</em>, a typical distribution puts over 99% on "Paris": under 0.1 bits.</p>
+<p>So the model is uncertain about the number. The text it writes is not. Greedy decoding emits "16 weeks", and the rest of the sentence is just as fluent as the Paris answer, because fluency comes from the language around the fact, which the model has seen millions of times. The uncertainty lives in one token; the confidence lives in the other forty. That gap between internal uncertainty and surface confidence is the core of hallucination.</p>
+<p>Two consequences follow immediately:</p>
+<ul>
+<li><strong>Lowering temperature does not help.</strong> At \(T = 0\) the model says "16" every time. You have made the wrong answer reproducible. (Temperature and sampling are covered in <a href="@@fundamentals/decoding@@">Decoding &amp; sampling</a>.)</li>
+<li><strong>The signal is partly recoverable.</strong> If you can see the 0.311 (via logprobs) or estimate it (via repeated sampling, Step 8), you know this answer is a guess.</li>
+</ul>
+</section>
+
+<section data-label="Step 2: why training rewards guessing">
+<p>Why does the model not say "I don't know" when its distribution is this flat? Because almost nothing in its training rewarded that.</p>
+<p>Pretraining text rarely says "I don't know" after a question, so the model learns answer-shaped continuations. Post-training and most benchmarks grade binary: right scores 1, wrong and "I don't know" both score 0. Under that rule, guessing always wins. If the model's best guess is right with probability \(p\), then</p>
+\[ \mathbb{E}[\text{score} \mid \text{guess}] = p \cdot 1 + (1 - p) \cdot 0 = p \;&gt;\; 0 = \mathbb{E}[\text{score} \mid \text{abstain}] \]
+<p>for any \(p &gt; 0\). A model optimised against such graders learns to bluff, exactly as a student does on a multiple-choice exam with no negative marking.</p>
+<p>Now add a penalty \(c\) for a wrong answer. Guessing is worth \(p - c(1-p)\), abstaining is worth 0, so guessing only pays when</p>
+\[ p &gt; \frac{c}{1 + c} \]
+<p>For our "16 weeks" guess with \(p = 0.311\):</p>
+<table>
+<thead><tr><th>Penalty for a wrong answer \(c\)</th><th>Break-even confidence \(c/(1+c)\)</th><th>Expected score of guessing "16"</th><th>Best action</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>0</td><td>+0.311</td><td>Guess</td></tr>
+<tr><td>1</td><td>0.50</td><td>−0.378</td><td>Abstain</td></tr>
+<tr><td>3</td><td>0.75</td><td>−1.755</td><td>Abstain</td></tr>
+<tr><td>9</td><td>0.90</td><td>−5.888</td><td>Abstain</td></tr>
+</tbody>
+</table>
+<p>This table is the abstention story in miniature (Step 8 returns to it). The product decides \(c\): wrong answers are cheap in a trivia game and expensive when someone plans their leave around them.</p>
+<p><strong>Why a bigger model does not fix it.</strong></p>
+<p>Some facts appear many times in training data (the capital of France); others appear once (one company's policy, one person's birthday, one paper's exact result). Theoretical work on calibrated language models argues that, for arbitrary facts with no pattern to learn, the rate of hallucination is bounded below by roughly the fraction of such facts seen exactly once in training (<a href="https://arxiv.org/abs/2311.14648">Kalai &amp; Vempala, 2023</a>). From one sighting, a model cannot tell a real fact from a plausible one it never saw. Scale helps with facts seen often; it does not help with the long tail, and your company's internal data is all long tail.</p>
+</section>
+
+<section data-label="Step 3: the kinds of wrong">
+<p>"Hallucination" covers several failures with different fixes. Naming them precisely is the first thing that separates a strong interview answer.</p>
+<table>
+<thead><tr><th>Kind</th><th>"Ask HR" example</th><th>Root cause</th><th>Primary fix</th></tr></thead>
+<tbody>
+<tr><td>Fabrication (extrinsic, no context)</td><td>"16 weeks" with no handbook in the prompt</td><td>Fact not in parametric knowledge; model guesses</td><td>Grounding (retrieval or tool)</td></tr>
+<tr><td>Stale knowledge</td><td>"16 weeks", correct before March</td><td>Knowledge cutoff</td><td>Grounding on a live source; dates in context</td></tr>
+<tr><td>Unfaithful to context (intrinsic)</td><td>Section 7.2 in context says 20, the answer says 16</td><td>Prior from training overrides the context</td><td>Quote-and-cite; faithfulness check</td></tr>
+<tr><td>Unsupported addition (extrinsic, with context)</td><td>"20 weeks, and you can extend by 4 unpaid" (not in the handbook)</td><td>Model fills gaps with plausible general knowledge</td><td>"Only from the sources" plus claim-level verification</td></tr>
+<tr><td>Reasoning or arithmetic error</td><td>Retrieves 20 weeks, computes 0.6 × 20 = 14</td><td>Numbers are tokens, not quantities (Step 5)</td><td>Do the arithmetic in code</td></tr>
+<tr><td>Blend</td><td>"20 weeks, as set by the German Federal Parental Allowance Act" (mixes company policy with a real statute)</td><td>Two true things fused into one false one</td><td>Citation of the exact supporting span</td></tr>
+</tbody>
+</table>
+<p>The blend is the most dangerous: every component checks out on its own, and models more often recombine than invent from nothing.</p>
+</section>
+
+<section data-label="Step 4: the knowledge cutoff, and the thin months before it">
+<p>Anything after the training cutoff, including Northwind's March policy change, is unknown to the weights. Two less obvious effects matter more.</p>
+<p><strong>The months before the cutoff are thinly covered.</strong> The web keeps writing about an event for years after it happens: news, then analysis, then references in other articles. At training time, last month's events have only their first wave of text. So the model is weaker on that period than on two years earlier, and often unsure of its own cutoff.</p>
+<p><strong>The model does not know what it does not know.</strong> Asked about a library's version 3 API released after the cutoff, a model trained on thousands of version 2 examples writes version 2 code with version-3-sounding names.</p>
+<p>The design rule: anything that changes (policies, prices, people in roles, versions, today's date) must come from context, never from weights. Put the current date in the system prompt. Route questions with time-sensitive words to retrieval or a tool. Store a "last updated" date with every retrieved chunk so that both the model and the user can see how fresh the source is.</p>
+</section>
+
+<section data-label="Step 5: numbers are tokens, so arithmetic is pattern-matching">
+<p>The model never sees the number 1,234,567. It sees tokens. With the <code>cl100k_base</code> tokenizer (used by several OpenAI models), the strings in our example split like this:</p>
+<table>
+<thead><tr><th>Text</th><th>Tokens</th></tr></thead>
+<tbody>
+<tr><td><code>1234567</code></td><td><code>123</code> | <code>456</code> | <code>7</code></td></tr>
+<tr><td><code>20 weeks x 0.6 = 12 weeks</code></td><td><code>20</code> | <code> weeks</code> | <code> x</code> | <code> </code> | <code>0</code> | <code>.</code> | <code>6</code> | <code> =</code> | <code> </code> | <code>12</code> | <code> weeks</code></td></tr>
+<tr><td><code>strawberry</code> (no leading space)</td><td><code>str</code> | <code>aw</code> | <code>berry</code></td></tr>
+<tr><td><code> strawberry</code> (with leading space)</td><td><code> strawberry</code> (one token)</td></tr>
+</tbody>
+</table>
+<p>Three-digit chunks do not line up with place value: 1234567 is chunked from the left as 123|456|7, while place value groups from the right as 1|234|567. To multiply \(1234567 \times 89 = 109{,}876{,}463\), the model has to produce the right output tokens by learned pattern, carrying digits across chunk boundaries it was never told about. Small, common calculations ("0.6 × 20") are seen often enough to be reliable; long or unusual ones are not. Counting letters fails for the same reason: " strawberry" is one token, and the model has no direct view of its letters.</p>
+<p>Modern models, especially reasoning models that write out steps, are much better at arithmetic, but "better" is not "exact", and the errors look like correct answers. The fix is architectural: <strong>the model extracts, code computes</strong>. "Ask HR" should retrieve <code>weeks = 20</code> and <code>fte = 0.6</code>, and a function should return <code>12</code>. (This pattern is developed in <a href="@@production/hybrid-patterns@@">Hybrid LLM patterns</a>.)</p>
+</section>
+
+<section data-label="Step 6: context limits, and why more context is not free">
+<p>Why not put the whole handbook in the prompt? 400 pages at about 500 words a page is 200,000 words; at roughly 1.33 tokens per word, about 267,000 tokens. That does not fit some windows, and where it fits, three costs remain.</p>
+<ul>
+<li><strong>Money and latency.</strong> At an illustrative $3 per million input tokens, each question costs about $0.80 in input alone. Retrieving five 500-token chunks costs about 2,500 tokens, roughly $0.0075: about a hundred times cheaper. (Prompt caching narrows the gap for a fixed document; see <a href="@@production/cost-performance@@">Cost &amp; latency</a>.)</li>
+<li><strong>Position effects.</strong> Models use information at the start and end of a long context more reliably than information in the middle; accuracy on a fact can fall noticeably when it is buried mid-context (<a href="https://arxiv.org/abs/2307.03172">Liu et al., 2023</a>, "Lost in the Middle"). Newer models have reduced this, not removed it.</li>
+<li><strong>Distractors.</strong> The handbook also describes US parental leave (12 weeks, unpaid), the old 16-week German policy in a change log, and a "parental leave for adoption" section. Every near-miss is a candidate for a blended answer.</li>
+</ul>
+<p>The <strong>effective context</strong>, what the model uses reliably, is smaller than the advertised window. Retrieve tightly, put key material first or last, and remove superseded text from the index rather than hoping the model ignores it. How the window works mechanically is in <a href="@@fundamentals/tokens-context-cost@@">Tokens, context &amp; cost</a>; managing it in long-running agents is in <a href="@@agents/memory-context@@">Memory &amp; context engineering</a>.</p>
+</section>
+
+<section data-label="Step 7: grounding moves the error, it does not remove it">
+<p>Now build "Ask HR" properly: retrieve the most relevant handbook chunks and instruct the model to answer only from them. This is the right architecture (detailed in <a href="@@rag/rag-pipeline@@">The RAG pipeline</a>). It changes the error budget; it does not zero it. Put numbers on each stage, using rates of the kind you would measure on your own evaluation set:</p>
+<ul>
+<li><strong>Retrieval recall</strong>: the right chunk (section 7.2) is in the top five for 85% of questions.</li>
+<li><strong>Faithfulness</strong>: when the right chunk is present, the answer is correct and supported 95% of the time.</li>
+<li><strong>Abstention when missing</strong>: when the right chunk is absent, how often the model says "I could not find this" rather than answering from memory or from a distractor.</li>
+</ul>
+<p>Correct answers are \(0.85 \times 0.95 = 0.8075\) regardless of abstention. What abstention changes is the split of the remaining 19%:</p>
+<table>
+<thead><tr><th>Abstains when chunk missing</th><th>Correct</th><th>Wrong</th><th>Abstained</th></tr></thead>
+<tbody>
+<tr><td>0% (always answers)</td><td>80.8%</td><td>19.3%</td><td>0%</td></tr>
+<tr><td>60%</td><td>80.8%</td><td>10.3%</td><td>9.0%</td></tr>
+<tr><td>90%</td><td>80.8%</td><td>5.8%</td><td>13.5%</td></tr>
+</tbody>
+</table>
+<p>The wrong row is \(0.85 \times 0.05 + 0.15 \times (1 - a)\), where \(a\) is the abstention rate when the chunk is missing. Two lessons fall out:</p>
+<ol>
+<li><strong>Most remaining errors come from retrieval misses, not from the generator.</strong> With always-answer behaviour, 15 of the 19.3 points are questions where the right chunk never arrived. Improving recall (hybrid search, reranking, better chunking) is usually the highest-leverage fix for hallucination in a RAG system.</li>
+<li><strong>Abstention converts wrong answers into "I don't know"s.</strong> It never creates correct answers. Whether that trade is worth it is the penalty question from Step 2.</li>
+</ol>
+</section>
+
+<section data-label="Step 8: abstention as a threshold you choose">
+<p>To abstain deliberately, you need a confidence score per answer and a threshold. Sources of a score, roughly in order of reliability:</p>
+<ul>
+<li><strong>Retrieval score</strong> of the best chunk. Cheap, available before generation; catches "nothing relevant found".</li>
+<li><strong>Self-consistency</strong>: sample the answer five times at temperature around 0.7 and measure agreement. Five times "12 weeks" means no guessing; 16, 12, 16, 20, 14 (agreement 40%) means guessing. Works with any API, at five times the generation cost.</li>
+<li><strong>Token log-probabilities</strong> of the key tokens (the "12"). Often overconfident after instruction tuning; calibrate first.</li>
+<li><strong>A verifier</strong>: a second call or a small natural-language inference (NLI) model that checks whether the answer is entailed by the retrieved text.</li>
+</ul>
+<p>Now pick the threshold. Take ten labelled questions from the "Ask HR" dev set, each with a combined confidence score and whether the answer was correct. Say a wrong answer costs 5 (an employee acts on it) and an abstention costs 1 (they email HR instead):</p>
+<table>
+<thead><tr><th>Threshold</th><th>Answered (coverage)</th><th>Accuracy on answered</th><th>Wrong</th><th>Abstained</th><th>Cost = 5·wrong + 1·abstained</th></tr></thead>
+<tbody>
+<tr><td>0 (always answer)</td><td>10 (100%)</td><td>60%</td><td>4</td><td>0</td><td>20</td></tr>
+<tr><td>0.50</td><td>7 (70%)</td><td>71%</td><td>2</td><td>3</td><td>13</td></tr>
+<tr><td>0.70</td><td>5 (50%)</td><td>80%</td><td>1</td><td>5</td><td>10</td></tr>
+<tr><td>0.82</td><td>4 (40%)</td><td>100%</td><td>0</td><td>6</td><td>6</td></tr>
+</tbody>
+</table>
+<p>(The ten confidences are 0.95, 0.91, 0.88, 0.82, 0.74, 0.66, 0.58, 0.49, 0.41, 0.30, with the 0.74, 0.58, 0.41 and 0.30 answers wrong.) The cost-minimising threshold is 0.82, which answers only 40% of questions. Make wrong answers cheaper and the best threshold falls; Check yourself works one case. The threshold is a product decision expressed as a number, and the curve of accuracy against coverage is what you show the product owner.</p>
+<div class="callout warn"><p><strong>Ten examples is far too few.</strong> With ten points the "best" threshold is mostly noise. In practice you need a few hundred labelled questions, and you should check the chosen threshold on a held-out split. The method is the point here, not the number.</p></div>
+<p>A good abstention is specific: "I couldn't find part-time rules for Germany in the handbook; the closest section is 7.2 (link); HR can confirm." A bare "I don't know" feels broken, and users route around it.</p>
+</section>
+
+<section data-label="Step 9: detecting hallucination in production">
+<p>In production there is no answer key, so detection relies on the sources and on internal consistency. Four checks, cheapest first:</p>
+<ol>
+<li><strong>Structural citation check.</strong> Require every claim to cite a chunk ID and quote the supporting span. Then verify in code that each quote appears in the cited chunk. Catches fabricated citations and many blends almost free; misses a real quote used for a claim it does not support.</li>
+<li><strong>Entailment check.</strong> For each sentence of the answer, ask an NLI model or a judge LLM whether the cited text entails it. Catches unsupported additions; costs an extra call per answer or claim.</li>
+<li><strong>Self-consistency.</strong> As in Step 8. Particularly good at catching fabrication when retrieval missed, because guesses vary between samples and grounded facts do not (the idea behind SelfCheckGPT, <a href="https://arxiv.org/abs/2303.08896">Manakul et al., 2023</a>).</li>
+<li><strong>User signals and sampling for review.</strong> Thumbs-down, escalations to HR, and a weekly human review of a random sample stratified by confidence. This is how you learn the true rates Step 7 assumed.</li>
+</ol>
+<p>Each check has a false-positive rate, so route rather than block: a failed citation check triggers one regeneration with the failure quoted back, and if it fails again the system abstains. How to build these into an eval harness is covered in <a href="@@production/evals@@">Evaluating LLM features</a>; the metrics themselves (faithfulness, answer relevance) in <a href="@@production/eval-metrics@@">Evaluation metrics</a>.</p>
+</section>
+
+<section data-label="The worked example, end to end">
+<p>"Ask HR" answering the running question with every defence in place:</p>
+<ol>
+<li><strong>Freshness and routing.</strong> The system prompt includes today's date. The question mentions a policy, so it goes to retrieval, never to a bare model call. No "16 weeks from memory".</li>
+<li><strong>Retrieval.</strong> Hybrid search plus a reranker over the handbook, with the superseded change-log entry removed from the index. Section 7.2 comes back first with a reranker score of 0.91.</li>
+<li><strong>Extraction, not computation.</strong> The model is asked for JSON: <code>{"weeks": 20, "prorated": true, "source": "hb-7.2", "quote": "20 weeks of paid parental leave, prorated for part-time contracts"}</code>. Code computes \(20 \times 0.6 = 12\).</li>
+<li><strong>Verification.</strong> The quote check passes (the span is in hb-7.2). The entailment check passes.</li>
+<li><strong>Confidence and threshold.</strong> Reranker score 0.91 and five-sample agreement of 1.0 combine above the 0.82 threshold, so the system answers: "You get 12 weeks: the German policy is 20 weeks of paid leave, prorated for part-time contracts (handbook 7.2, updated March)."</li>
+</ol>
+<p>Had retrieval missed section 7.2, the best chunk would have scored low, samples would have disagreed, and the system would have abstained with a link to HR. The goal is not a model that is never wrong but a system whose wrong answers are rare, cheap and visible.</p>
+</section>
+
+<section data-label="A decision guide">
+<table>
+<thead><tr><th>Symptom</th><th>Likely cause</th><th>First fix</th><th>Then</th></tr></thead>
+<tbody>
+<tr><td>Confident answers about your own data that are invented</td><td>No grounding</td><td>Retrieval or a lookup tool</td><td>Cite-and-verify</td></tr>
+<tr><td>Grounded system still wrong on many questions</td><td>Retrieval recall</td><td>Measure recall@k; hybrid search, reranking, chunking</td><td>Abstain on low retrieval score</td></tr>
+<tr><td>Right chunk retrieved, answer contradicts it</td><td>Prior overrides context; distractors</td><td>Quote-then-answer; remove superseded docs</td><td>Entailment check</td></tr>
+<tr><td>Wrong totals, counts, dates</td><td>Token-level arithmetic</td><td>Model extracts, code computes</td><td>Unit tests on the code path</td></tr>
+<tr><td>Outdated answers</td><td>Knowledge cutoff</td><td>Date in prompt; route time-sensitive questions to tools</td><td>Freshness metadata on chunks</td></tr>
+<tr><td>Quality falls as conversations or documents grow</td><td>Effective context smaller than window</td><td>Retrieve tighter; put key material first or last</td><td>Summarise or compact history</td></tr>
+<tr><td>Wrong answers are costly, some abstention is acceptable</td><td>Always-answer behaviour</td><td>Confidence score plus a cost-chosen threshold</td><td>Useful abstention message with escalation</td></tr>
+</tbody>
+</table>
+</section>
+
+<section data-label="In code: thresholds, agreement and citation checks">
+<pre data-lang="python">import re
+from collections import Counter
+
+# 1. Pick an abstention threshold from a labelled dev set by expected cost.
+def best_threshold(conf, correct, cost_wrong=5.0, cost_abstain=1.0):
+    best = None
+    for t in sorted(set(conf)) + [1.01]:          # 1.01 = "always abstain"
+        cost = sum(cost_wrong * (1 - ok) if c &gt;= t else cost_abstain
+                   for c, ok in zip(conf, correct))
+        if best is None or cost &lt; best[1]:
+            best = (t, cost)
+    return best
+
+conf    = [0.95, 0.91, 0.88, 0.82, 0.74, 0.66, 0.58, 0.49, 0.41, 0.30]
+correct = [1,    1,    1,    1,    0,    1,    0,    1,    0,    0]
+print(best_threshold(conf, correct))              # (0.82, 6.0)
+
+# 2. Self-consistency: sample the same question several times, measure agreement.
+def agreement(answers):
+    norm = [re.sub(r"\W+", " ", a).strip().lower() for a in answers]
+    top, n = Counter(norm).most_common(1)[0]
+    return top, n / len(norm)
+
+print(agreement(["16 weeks", "12 weeks", "16 weeks", "20 weeks", "14 weeks"]))  # ('16 weeks', 0.4)
+print(agreement(["20 weeks", "20 weeks.", "20 Weeks", "20 weeks", "20 weeks"]))  # ('20 weeks', 1.0)
+
+# 3. Citation check: every quoted span must appear verbatim in the cited chunk.
+def verify(citations, chunks):
+    squash = lambda s: re.sub(r"\s+", " ", s).strip().lower()
+    return [c for c in citations
+            if c["chunk"] not in chunks or squash(c["quote"]) not in squash(chunks[c["chunk"]])]
+
+chunks = {"hb-7.2": "Employees in Germany receive 20 weeks of paid parental leave, "
+                    "prorated for part-time contracts."}
+cites = [{"chunk": "hb-7.2", "quote": "20 weeks of paid parental leave"},
+         {"chunk": "hb-7.2", "quote": "26 weeks for the second child"},
+         {"chunk": "hb-9.1", "quote": "anything"}]
+print(len(verify(cites, chunks)), "unsupported citations")   # 2 unsupported citations</pre>
+<p>The three functions are the skeleton of a production guard: <code>best_threshold</code> runs offline on a labelled set, <code>agreement</code> and <code>verify</code> run on every live answer. The first call reproduces the 0.82 threshold and cost of 6 from Step 8; the second shows the scattered guesses from Step 1 scoring 0.4 agreement against a grounded answer's 1.0.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"Hallucination is a bug the next model will fix."</strong> It follows from the training objective and from facts seen rarely or never. Bigger models hallucinate less on common knowledge and still guess on your private data.</li>
+<li><strong>"RAG eliminates hallucination."</strong> It moves most errors to retrieval misses and adds new ones (unfaithful use of context, distractors). Measure recall and faithfulness separately.</li>
+<li><strong>"Temperature 0 stops hallucination."</strong> It makes the most likely answer repeat. If the most likely answer is a guess, you get the same guess every time.</li>
+<li><strong>"Tell the model not to make things up."</strong> The instruction helps a little at the margin. It does not give the model knowledge it lacks or a confidence signal it cannot see. Grounding, verification and thresholds do the work.</li>
+<li><strong>"The model will say when it does not know."</strong> Training rewarded answering. Abstention has to be designed: a score, a threshold chosen by cost, and a useful fallback message.</li>
+<li><strong>Trusting the model's arithmetic because it is usually right.</strong> Usually right with no visible difference when wrong is the worst kind of error. Compute in code.</li>
+<li><strong>"A longer context window means I can skip retrieval."</strong> Effective context is smaller than the window, costs scale with every token, and distractors grow with size.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>A grader gives +1 for right, −2 for wrong and 0 for abstaining. Above what confidence should the model answer?</summary><div class="answer">Guessing is worth \(p - 2(1-p) = 3p - 2\), which beats 0 when \(p &gt; 2/3 \approx 0.67\). In general the break-even is \(c/(1+c)\) for wrong-answer penalty \(c\).</div></details>
+<details><summary>Retrieval recall is 90%, faithfulness given the right chunk is 96%, and the model answers from memory whenever retrieval misses (and is then wrong). What fraction of answers is wrong, and which stage would you improve first?</summary><div class="answer">Correct: \(0.90 \times 0.96 = 0.864\). Wrong: \(0.90 \times 0.04 + 0.10 = 0.136\), of which 10 points come from retrieval misses and 3.6 from the generator. Improve recall first, and add abstention on low retrieval scores, which could turn most of those 10 points into "I don't know".</div></details>
+<details><summary>Your "Ask HR" bot computes prorated leave wrong in about 1 in 50 answers. What do you change?</summary><div class="answer">Stop asking the model to compute. Have it extract the inputs (weeks, FTE, source) as structured output, compute in code, and test that function. The model then only has to read the right numbers, which the citation check can verify.</div></details>
+<details><summary>Give two reasons a model is weak on events from the few months before its cutoff, not just after it.</summary><div class="answer">Recent events have only their first wave of coverage at training time (later analysis and references do not exist yet), and data pipelines often include less of the newest crawl. Models are therefore thin and unsure about that period and often unsure of their own cutoff.</div></details>
+<details><summary>You can afford one extra check per answer. Your failures are mostly invented details added to otherwise correct answers. Citation quote check or entailment check?</summary><div class="answer">Entailment check. Invented details are unsupported additions; they may come with no citation or with a real quote that does not support them. The quote check only proves the quoted span exists; the entailment check asks whether the source supports each claim.</div></details>
+<details><summary>With the ten dev-set questions in Step 8, a wrong answer now costs 2 instead of 5. What threshold minimises cost?</summary><div class="answer">Compute \(2 \cdot \text{wrong} + \text{abstained}\): threshold 0 gives 8; 0.49 gives \(2 \cdot 2 + 2 = 6\); 0.66 gives \(2 \cdot 1 + 4 = 6\); 0.82 gives \(0 + 6 = 6\). Three thresholds tie; prefer 0.49 because it answers 80% of questions for the same cost. Cheaper mistakes push the threshold down.</div></details>
+</section>

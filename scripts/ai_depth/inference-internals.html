@@ -1,0 +1,252 @@
+<!-- Deep lesson: Inference internals. Merged into inference/inference-internals by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Autoregressive generation</td><td>Producing text one token at a time, where each new token is fed back in as input for the next step.</td></tr>
+<tr><td>Prefill</td><td>The first forward pass, over the whole prompt at once. It fills the KV cache and produces the first output token.</td></tr>
+<tr><td>Decode</td><td>Every forward pass after prefill. Each one processes a single new token per sequence and produces the next.</td></tr>
+<tr><td>KV cache</td><td>The stored key and value vectors of every earlier token, in every layer, so they are computed once instead of at every step.</td></tr>
+<tr><td>GQA (grouped-query attention)</td><td>Several query heads share one key/value head. Fewer KV heads means a proportionally smaller KV cache.</td></tr>
+<tr><td>HBM</td><td>The GPU's main memory (80 GB on an H100). Large but, compared with the compute units, slow to read from.</td></tr>
+<tr><td>Memory-bound / compute-bound</td><td>Whether a step's time is set by how many bytes it must move from HBM, or by how many arithmetic operations it must do.</td></tr>
+<tr><td>TTFT</td><td>Time to first token: from request arrival to the first output token. Dominated by queueing plus prefill.</td></tr>
+<tr><td>TPOT / ITL</td><td>Time per output token (also inter-token latency): the gap between consecutive streamed tokens. Set by decode.</td></tr>
+<tr><td>Continuous batching</td><td>Re-forming the batch at every decode step, so finished sequences leave and waiting ones join immediately.</td></tr>
+<tr><td>PagedAttention</td><td>Storing each sequence's KV cache in small fixed-size blocks located through a table, like virtual-memory pages.</td></tr>
+<tr><td>Chunked prefill</td><td>Splitting a long prompt's prefill into pieces that run alongside other sequences' decode steps.</td></tr>
+<tr><td>Speculative decoding</td><td>A cheap drafter guesses several tokens; the large model checks them all in one pass and keeps the ones it agrees with.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>A model that scores well on benchmarks is useless if it takes eight seconds to start answering or costs ten times what it should. Inference internals is the study of what actually happens on the GPU between "request arrives" and "last token streamed", and therefore of where latency, throughput and memory go.</p>
+<p>The interview questions on this topic are remarkably consistent:</p>
+<ol>
+<li>Why is generating tokens slow, and why does a GPU sit at low utilization while doing it?</li>
+<li>What is the KV cache, how big is it, and why does it, rather than the weights, limit how many users one GPU can serve?</li>
+<li>What do continuous batching and PagedAttention fix, and how?</li>
+<li>How can speculative decoding make generation faster without changing the output?</li>
+</ol>
+<p>One running example carries through the whole lesson. A chat request arrives at a server running an <strong>8B-parameter model</strong> shaped like Llama 3 8B: 32 layers, 32 query heads, 8 key/value heads, head dimension 128, weights in BF16 (2 bytes each, about 16 GB in total). The prompt is <strong>2,000 tokens</strong> (system prompt, chat history and retrieved documents) and the answer will be <strong>300 tokens</strong>. The hardware is one <strong>H100 with 80 GB of HBM</strong>; we use its datasheet figures of roughly 989 TFLOP/s of dense BF16 compute and 3.35 TB/s of memory bandwidth. Real kernels reach a fraction of both, so every timing below is an order-of-magnitude estimate, not a benchmark.</p>
+</section>
+
+<section data-label="Step 1: one token at a time">
+<p>The model outputs a distribution over the next token for the last position (<a href="@@fundamentals/decoding@@">Decoding &amp; sampling</a> covers how one is chosen). To produce 300 tokens you run it, pick a token, append it, and run it again, 300 times. Token 151 is an input to token 152, so generation is a <strong>sequential loop</strong> that no hardware parallelism removes for a single sequence.</p>
+<p>A forward pass costs about <strong>2 FLOPs per parameter per token</strong> (one multiply and one add per weight): \(2 \times 8.03\times10^{9} \approx 16\) GFLOPs per token here. The naive loop reprocesses all \(t\) tokens at step \(t\). For our 300 tokens that sums to about \(10^{16}\) FLOPs, roughly <strong>2,150 times</strong> the work of processing only the new tokens. Nearly all of it recomputes results that have not changed.</p>
+</section>
+
+<section data-label="Step 2: the KV cache, and why only K and V">
+<p>Inside each attention layer, every token's hidden vector is projected into three vectors: a <strong>query</strong> \(q\), a <strong>key</strong> \(k\) and a <strong>value</strong> \(v\). The output for position \(t\) is a weighted average of the values of positions 1 to \(t\), with weights from how well \(q_t\) matches each key (the full mechanism is in <a href="@@fundamentals/transformers@@">Transformers &amp; attention</a>):</p>
+\[ \text{out}_t = \sum_{i \le t} \operatorname{softmax}_i\!\Big(\frac{q_t \cdot k_i}{\sqrt{d}}\Big)\, v_i \]
+<p>Here \(d\) is the head dimension. Two facts make caching possible:</p>
+<ul>
+<li><strong>Causal masking</strong> means token \(i\) only ever looks at tokens up to \(i\). So once \(k_i\) and \(v_i\) are computed, nothing that happens later can change them.</li>
+<li>To compute the new position's output you need the new query \(q_t\) but the <em>old</em> keys and values. Old queries are never used again, so there is no point keeping them.</li>
+</ul>
+<p>So the server keeps, per layer, the keys and values of every token so far. Each decode step computes \(q, k, v\) for the new token only, appends \(k\) and \(v\), and attends over the cache. Memory is spent to save compute; the rest of this topic is mostly about that memory bill.</p>
+</section>
+
+<section data-label="Step 3: how big the cache is">
+<p>Per token, the cache stores one key and one value vector per KV head per layer:</p>
+\[ \text{KV bytes per token} = 2 \times L \times H_{kv} \times d_{\text{head}} \times b \]
+<p>where \(L\) is the number of layers, \(H_{kv}\) the number of key/value heads, \(d_{\text{head}}\) the head dimension, \(b\) the bytes per number, and the leading 2 counts keys and values. For the running example:</p>
+\[ 2 \times 32 \times 8 \times 128 \times 2 = 131{,}072 \text{ bytes} = 128\ \text{KiB per token} \]
+<p>Our request holds 2,000 + 300 = 2,300 tokens by the end, so its cache is \(2{,}300 \times 131{,}072 \approx 0.30\) GB. That sounds small next to 16 GB of weights, but the weights are shared by every request and the cache is not. At an 8,192-token context one sequence needs 1.07 GB; at 131,072 tokens it needs 17.2 GB, more than the model itself.</p>
+<p><strong>Why GQA exists.</strong></p>
+<p>Classic multi-head attention (MHA) gives every query head its own KV head. With 32 KV heads our model would need 512 KiB per token, and a GPU would hold a quarter as many conversations. <strong>Grouped-query attention</strong> lets each group of 4 query heads share one KV head (multi-query attention is the extreme: one). The quality cost is small, so most recent open models use it: an architecture choice made for serving economics.</p>
+<p>The other factors are levers too: fewer bytes per number (an FP8 cache halves \(b\); see <a href="@@inference/model-compression@@">Quantization &amp; compression</a>) and fewer tokens (shorter prompts, summarised history, retrieval instead of whole documents).</p>
+</section>
+
+<section data-label="Step 4: prefill and decode are different workloads">
+<p>The request's life has two phases with opposite characters.</p>
+<p><strong>Prefill</strong> runs all 2,000 prompt tokens through the model in one pass. All tokens are known in advance, so the work is big matrix-matrix multiplies:</p>
+\[ 2 \times 8.03\times10^{9} \times 2{,}000 \approx 3.2\times10^{13}\ \text{FLOPs} \]
+<p>At the 989 TFLOP/s peak that is 32 ms; at a realistic 50% utilisation, about <strong>65 ms</strong>. Meanwhile the weights (16 GB) are read from HBM roughly once for the whole pass, which takes about 4.8 ms. Arithmetic dominates: prefill is <strong>compute-bound</strong>.</p>
+<p><strong>Decode</strong> processes one new token. The arithmetic is only 16 GFLOPs, about 0.016 ms of peak compute. But to do it, every weight must still travel from HBM to the compute units, plus this request's 0.30 GB of cache:</p>
+\[ \frac{16.06\ \text{GB} + 0.30\ \text{GB}}{3.35\ \text{TB/s}} \approx 4.9\ \text{ms} \]
+<p>The compute units are busy for 0.016 ms of a 4.9 ms step. Decode is <strong>memory-bound</strong>: one stream tops out near 1 / 4.9 ms ≈ <strong>205 tokens per second</strong>, and a chip with more FLOP/s but the same bandwidth would not raise it.</p>
+<p>The general tool is <strong>arithmetic intensity</strong>, FLOPs per byte moved. The H100 balances at about 989 / 3.35 ≈ 295. Batch-1 decode does about 1 FLOP per byte; a 2,000-token prefill about 2,000. The roofline behind this is in <a href="@@inference/gpus-scale@@">GPUs &amp; distributed training</a>. In one sentence: <em>prefill spends compute, decode spends bandwidth</em>.</p>
+<div class="callout"><p><strong>Why "GPU utilisation 30%" is normal.</strong> A serving GPU spends most of its time in decode, where the compute units mostly wait for memory. Low compute utilisation during decode is not idle capacity. Watch memory bandwidth use and KV-cache occupancy instead.</p></div>
+</section>
+
+<section data-label="Step 5: the latency a user feels">
+<p>The two phases map onto the two numbers users notice:</p>
+<ul>
+<li><strong>TTFT</strong> (time to first token) = time waiting in the queue + prefill. It grows with prompt length. For us: about 65 ms plus queueing.</li>
+<li><strong>TPOT</strong> (time per output token, also called inter-token latency) = one decode step. It grows with model size, cache size and how many other sequences share the step. For us at batch 1: about 4.9 ms.</li>
+</ul>
+<p>End-to-end latency is then</p>
+\[ T_{\text{e2e}} \approx \text{TTFT} + (n_{\text{out}} - 1) \times \text{TPOT} = 0.065 + 299 \times 0.0049 \approx 1.5\ \text{s} \]
+<p>The 2,000 prompt tokens cost 65 ms; the 300 output tokens cost 1.46 s. That asymmetry is why providers price output tokens several times higher than input (see <a href="@@production/cost-performance@@">Cost &amp; latency</a>). And because answers stream, the product question is usually "is TTFT small and is TPOT well under reading speed", not "is the whole answer fast".</p>
+</section>
+
+<section data-label="Step 6: batching spends the spare compute">
+<p>Decode wastes more than 99% of the GPU's arithmetic at batch 1. The fix is to decode many sequences in the same step. The weights are read once and each weight is used for \(B\) multiply-adds instead of one, so arithmetic intensity rises to about \(B\) FLOPs per byte. What is <em>not</em> shared is each sequence's own KV cache, which must still be read separately.</p>
+<p>A simple model of one decode step at batch \(B\), with an average context of 2,150 tokens per sequence:</p>
+\[ t_{\text{step}} \approx \max\Big(\frac{W + B \times \text{KV}_{\text{seq}}}{\text{bandwidth}},\ \frac{2 P B}{\text{FLOP/s}}\Big) \]
+<p>where \(W\) is the weight bytes and \(P\) the parameter count. Plugging in:</p>
+<table>
+<thead><tr><th>Batch \(B\)</th><th>Step time</th><th>Tokens/s, whole GPU</th><th>Tokens/s, per user</th><th>Memory used</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>4.9 ms</td><td>205</td><td>205</td><td>16.4 GB</td></tr>
+<tr><td>8</td><td>5.5 ms</td><td>1,463</td><td>183</td><td>18.5 GB</td></tr>
+<tr><td>32</td><td>7.5 ms</td><td>4,275</td><td>134</td><td>25.7 GB</td></tr>
+<tr><td>64</td><td>10.2 ms</td><td>6,288</td><td>98</td><td>35.4 GB</td></tr>
+<tr><td>128</td><td>15.6 ms</td><td>8,225</td><td>64</td><td>54.6 GB</td></tr>
+<tr><td>200</td><td>21.6 ms</td><td>9,251</td><td>46</td><td>76.4 GB</td></tr>
+</tbody>
+</table>
+<p>Read the table as the central trade-off of serving. Going from batch 1 to batch 64 multiplies total throughput by about 30 while each user's stream slows only from 205 to 98 tokens per second, still far faster than anyone reads. Beyond that, the cache reads dominate each step: throughput gains flatten while per-user speed keeps falling. And at around 200 sequences the GPU runs out of memory: \(80 - 16 - 4\) GB of overhead leaves 60 GB, which fits about 198 caches of 0.30 GB. <strong>Memory for the KV cache, not compute, sets the maximum batch.</strong></p>
+</section>
+
+<section data-label="Step 7: continuous batching">
+<p>Batching sounds simple until sequences finish at different times. <strong>Static batching</strong> forms a batch, runs it until every sequence is done, then starts the next. Suppose four requests in one batch need 50, 100, 300 and 600 output tokens. The batch runs for 600 steps; the slot of the 50-token request sits idle for 550 of them. Useful work is \(50 + 100 + 300 + 600 = 1{,}050\) token-steps out of \(4 \times 600 = 2{,}400\) available: <strong>44% utilisation</strong>. Worse, a new request arriving at step 51 waits about 550 steps for its first token, even though a slot is free.</p>
+<p><strong>Continuous batching</strong> (iteration-level scheduling) decides the batch at every step: finished sequences leave, waiting ones are prefilled and join the next decode step. A freed slot is reused one step later, and a new request never waits for the slowest member of someone else's batch. On real chat traffic, with widely varying output lengths, this is the largest single throughput win a server can make, commonly several-fold. Its cost is that admitting a request means running a prefill, which is much heavier than a decode step; Step 9 handles that.</p>
+</section>
+
+<section data-label="Step 8: PagedAttention, memory management for the cache">
+<p>Early servers reserved one <strong>contiguous slab</strong> per request sized for the maximum length, since the answer length is unknown in advance. With an 8,192-token limit, our 2,300-token request leaves 72% of its slab unused, so far fewer sequences fit than memory could hold.</p>
+<p><strong>PagedAttention</strong> (introduced with vLLM) borrows virtual memory. The cache is cut into <strong>blocks</strong> of, say, 16 tokens; each sequence has a <strong>block table</strong> mapping its token positions to physical blocks anywhere in the pool; the attention kernel follows the table. Blocks are allocated as tokens are produced.</p>
+<ul>
+<li><strong>Waste</strong> falls to the unused part of each sequence's last block, on average about 7.5 tokens out of 2,300, or 0.3%.</li>
+<li><strong>Sharing</strong> becomes possible: two sequences whose prompts start with the same 1,000-token system prompt can point at the same physical blocks. With 50 such sequences, sharing saves \(49 \times 1{,}000 \times 128\) KiB ≈ 6.4 GB. When a shared block would be modified, it is copied first (copy-on-write), which also makes parallel sampling of several answers to one prompt cheap.</li>
+<li><strong>Preemption</strong> becomes clean: when the pool is full, the scheduler can evict a sequence's blocks (and later recompute or swap them back) instead of failing.</li>
+</ul>
+<p>A full pool preempts, which wastes work: the preemption count is one of the first things to check when throughput suddenly collapses.</p>
+</section>
+
+<section data-label="Step 9: prefix caching and chunked prefill">
+<p>Two refinements build directly on paged blocks.</p>
+<p><strong>Prefix caching</strong> keeps finished requests' KV blocks, indexed by a hash of their tokens. A new prompt that starts with the same tokens (system prompt, few-shot examples, earlier turns) reuses them and skips that part of prefill. If 1,500 of our 2,000 prompt tokens hit, prefill drops from about 65 ms to 16 ms. It is the self-hosted form of providers' prompt-caching discounts, and it rewards one discipline: stable content first, changing content last.</p>
+<p><strong>Chunked prefill</strong> fixes interference. A 30,000-token document's prefill takes about \(2 \times 8\times10^9 \times 30{,}000 / (0.5 \times 989\times10^{12}) \approx 0.97\) s; run as one step, it freezes every other user's stream for a second. Split into 2,048-token chunks (about 66 ms each), one per step alongside everyone's decode, it delays only the newcomer. Larger chunks finish prefill sooner; smaller ones keep TPOT steadier. Running prefill and decode on separate GPU pools (disaggregated serving) is the next step, covered in <a href="@@inference/serving@@">Serving &amp; scaling</a>.</p>
+</section>
+
+<section data-label="Step 10: speculative decoding">
+<p>Small-batch decode leaves compute idle; speculative decoding spends it on guessing. A cheap <strong>drafter</strong> (a small sibling model, extra heads on the big model, or n-grams copied from the prompt) proposes \(k\) tokens, and the <strong>target</strong> model scores all \(k\) positions in one pass. That pass reads the weights once, so it costs about one decode step: verification is a tiny prefill.</p>
+<p>The output is unchanged. With \(p\) the target's probability for a drafted token and \(q\) the drafter's, accept it with probability \(\min(1, p/q)\); on the first rejection, drop the rest of the draft and sample a replacement from \(\max(0, p - q)\), renormalised. Every emitted token is then distributed exactly as the target alone would sample it. Under greedy decoding this reduces to "keep drafted tokens while they match the target's argmax".</p>
+<p>The probability that a draft token is accepted is \(\alpha = \sum_x \min(p(x), q(x))\), the overlap of the two distributions. If each of \(k\) draft tokens is accepted with probability \(\alpha\) independently, the expected number of tokens produced per target pass (including the replacement or bonus token) is</p>
+\[ E = \frac{1 - \alpha^{k+1}}{1 - \alpha} \]
+<p>With \(\alpha = 0.8\) and \(k = 4\): \(E = (1 - 0.8^5)/0.2 = 3.36\) tokens per pass. If the drafter costs 5% of a target step per token, one round costs \(1 + 4 \times 0.05 = 1.2\) target steps, so the speed-up is about \(3.36 / 1.2 = 2.8\times\). With \(\alpha = 0.5\) it is 1.6×; with \(\alpha = 0.3\), 1.2×, and drafting 8 tokens at \(\alpha = 0.3\) gains almost nothing. Acceptance is high for code, structured output and answers that quote the prompt; low for creative text at high temperature.</p>
+<p>The verification pass is only "free" while decode is memory-bound. At large batch (Step 6) it costs real compute and the gain shrinks or reverses: speculation is a latency tool for lightly loaded servers, not a throughput tool for saturated ones.</p>
+</section>
+
+<section data-label="A worked example: sizing one GPU">
+<p>Put the steps together for the running example. A product team wants to know how many concurrent chats one H100 can carry with this 8B model, with prompts of 2,000 tokens and answers of 300.</p>
+<ol>
+<li><strong>Weights:</strong> 16 GB, fixed, shared by all requests.</li>
+<li><strong>Cache per request:</strong> 128 KiB × 2,300 tokens ≈ 0.30 GB at the end of the answer.</li>
+<li><strong>Room:</strong> 80 − 16 − about 4 GB for activations and runtime ≈ 60 GB, so about 198 requests in flight before preemption starts.</li>
+<li><strong>Latency at that load:</strong> around batch 128, a decode step is about 15.6 ms (64 tokens/s per user) and total output is about 8,200 tokens/s. At 300 tokens per answer that is roughly 27 answers completed per second, before counting prefill time.</li>
+<li><strong>Prefill share:</strong> 27 requests/s × 2,000 tokens = 54,000 prompt tokens/s, which at half of peak compute needs \(2 \times 8.03\times10^9 \times 54{,}000 / 4.9\times10^{14} \approx 1.75\) GPUs' worth of time. The plan does not fit: prefill alone would need more than the whole GPU.</li>
+<li><strong>Corrected rate:</strong> count GPU time per request instead. Prefill costs about 65 ms; 300 decode tokens at batch 128 cost \(300 \times 15.6/128 \approx 37\) ms of shared step time. About 101 ms per request means roughly <strong>10 requests per second</strong>, not 27. If 1,500 of the 2,000 prompt tokens hit a prefix cache, prefill drops to about 16 ms and the rate roughly doubles to 19 per second.</li>
+<li><strong>What each user now sees:</strong> at 10 requests per second, prefill occupies \(10 \times 65\) ms ≈ 64% of every second, so decode steps run only in the remaining 36%: about \(0.36 / 15.6\text{ ms} \approx 23\) steps per second. Each stream gets about <strong>23 tokens/s, not the 64</strong> of the decode-only table, and a 300-token answer takes about 13 s. Little's law closes the loop: 10 requests/s × 13 s ≈ 128 in flight, the batch we assumed. Step 6's table is decode alone; under real load, prefill time comes out of every user's stream.</li>
+</ol>
+<p>The napkin does not give a final number; it shows which resource runs out first. With long prompts, prefill compute bites before decode bandwidth, so prefix caching or shorter prompts beat a faster decode kernel. Confirm with a load test on real traffic (<a href="@@inference/serving@@">Serving &amp; scaling</a>).</p>
+</section>
+
+<section data-label="Which lever for which symptom">
+<table>
+<thead><tr><th>Symptom</th><th>Likely cause</th><th>Lever</th></tr></thead>
+<tbody>
+<tr><td>High TTFT, short queue</td><td>Long prompts; prefill compute</td><td>Prefix caching, shorter prompts, retrieval instead of stuffing, tensor parallelism for big models</td></tr>
+<tr><td>High TTFT, long queue</td><td>Not enough capacity</td><td>More replicas; check that the KV pool is not the limit</td></tr>
+<tr><td>Slow streaming (high TPOT) at low load</td><td>Bandwidth: too many bytes per step</td><td>Weight quantization, a smaller model, speculative decoding</td></tr>
+<tr><td>TPOT spikes when certain users arrive</td><td>Huge prefills stalling decode</td><td>Chunked prefill, a separate pool for long-context traffic</td></tr>
+<tr><td>Throughput plateaus well below expectations; preemptions rising</td><td>KV pool full</td><td>FP8 KV cache, a GQA model, cap context length, more memory per replica</td></tr>
+<tr><td>Throughput fine, cost too high</td><td>Batch too small for the hardware</td><td>Raise max batch until TPOT approaches its target, consolidate replicas</td></tr>
+</tbody>
+</table>
+</section>
+
+<section data-label="In code: the cache, the napkin, and the speculative rule">
+<p>First, the KV cache on a toy single-head attention: the outputs with and without the cache are identical, and the cached loop computes far fewer key/value projections.</p>
+<pre data-lang="python">import numpy as np
+
+rng = np.random.default_rng(0)
+d = 16                                        # tiny model width, one head
+Wq, Wk, Wv = (rng.normal(size=(d, d)) / d**0.5 for _ in range(3))
+x = rng.normal(size=(12, d))                  # 12 token embeddings
+
+def attend(q, K, V):
+    s = K @ q / np.sqrt(d)
+    w = np.exp(s - s.max()); w /= w.sum()
+    return w @ V
+
+# without a cache: at step t, recompute K and V for all t tokens
+out_naive, kv_rows_naive = [], 0
+for t in range(1, len(x) + 1):
+    K, V = x[:t] @ Wk, x[:t] @ Wv
+    kv_rows_naive += t
+    out_naive.append(attend(x[t - 1] @ Wq, K, V))
+
+# with a cache: compute k, v for the new token only, append
+K_cache, V_cache, out_cached, kv_rows_cached = [], [], [], 0
+for t in range(len(x)):
+    K_cache.append(x[t] @ Wk); V_cache.append(x[t] @ Wv)
+    kv_rows_cached += 1
+    out_cached.append(attend(x[t] @ Wq, np.array(K_cache), np.array(V_cache)))
+
+print(np.allclose(out_naive, out_cached))     # True: identical outputs
+print(kv_rows_naive, kv_rows_cached)          # 78 vs 12 key/value projections
+</pre>
+<p>Second, the napkin model from Steps 3 to 5, reproducing the running example and two what-ifs.</p>
+<pre data-lang="python">def napkin(params=8.03e9, layers=32, kv_heads=8, head_dim=128, w_bytes=2, kv_bytes=2,
+           prompt=2000, output=300, gpu_bytes=80e9, overhead=4e9,
+           flops=989e12, mfu=0.5, bw=3.35e12):
+    weights = params * w_bytes
+    kv_tok = 2 * layers * kv_heads * head_dim * kv_bytes
+    kv_seq = kv_tok * (prompt + output)
+    ttft = 2 * params * prompt / (flops * mfu)
+    tpot = (weights + kv_seq) / bw                      # batch of 1
+    max_seqs = int((gpu_bytes - weights - overhead) // kv_seq)
+    print(f"KV per token {kv_tok/1024:.0f} KiB, per request {kv_seq/1e9:.2f} GB")
+    print(f"TTFT ~{ttft*1e3:.0f} ms, TPOT ~{tpot*1e3:.2f} ms, end-to-end ~{ttft + (output-1)*tpot:.2f} s")
+    print(f"KV room fits ~{max_seqs} requests of this size")
+
+napkin()                     # the running example
+napkin(kv_bytes=1)           # FP8 KV cache: twice the requests
+napkin(kv_heads=32)          # same model with full multi-head attention
+</pre>
+<p>It prints 128 KiB per token, 0.30 GB per request, TTFT about 65 ms, TPOT 4.88 ms, about 1.53 s end to end and room for about 198 requests; 397 with an FP8 cache; 49 with full multi-head attention.</p>
+<p>Third, the speculative-decoding acceptance rule. Sampling 200,000 tokens through draft-then-verify reproduces the target distribution, and the acceptance rate equals the overlap of the two distributions.</p>
+<pre data-lang="python">import numpy as np
+
+rng = np.random.default_rng(1)
+p = np.array([0.60, 0.25, 0.10, 0.05])   # target model's next-token distribution
+q = np.array([0.40, 0.40, 0.15, 0.05])   # draft model's distribution
+
+def one_token():
+    x = rng.choice(4, p=q)                       # draft proposes
+    if rng.random() &lt; min(1.0, p[x] / q[x]):     # target accepts with prob min(1, p/q)
+        return x
+    resid = np.maximum(p - q, 0)                 # on rejection, resample from what q under-covers
+    return rng.choice(4, p=resid / resid.sum())
+
+draws = np.array([one_token() for _ in range(200_000)])
+print(np.round(np.bincount(draws, minlength=4) / len(draws), 3))  # ~[0.60 0.25 0.10 0.05]
+print("acceptance rate:", np.minimum(p, q).sum())                  # 0.80
+</pre>
+<p>In production, engines such as vLLM, SGLang and TensorRT-LLM implement all of this behind flags; the mechanism is what lets you read their metrics.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"The GPU is at 30% utilisation, so we have headroom."</strong> Decode is memory-bound; compute utilisation is structurally low. Look at KV-pool occupancy, preemptions and TPOT at the current batch.</li>
+<li><strong>"The weights are what fill the GPU."</strong> For serving many users at long context, the per-request KV cache usually takes more memory than the shared weights. At 128K tokens, one sequence's cache exceeds this 8B model's weights.</li>
+<li><strong>"The KV cache stores queries too."</strong> Old queries are never used again. Only keys and values are cached, which is where the name comes from.</li>
+<li><strong>"Long prompts slow down streaming."</strong> Mainly they raise TTFT (prefill). They affect TPOT only through larger cache reads and through prefill interference, which chunked prefill controls.</li>
+<li><strong>"Speculative decoding approximates the big model."</strong> With the rejection rule, output is distributed exactly as the target's. What varies is the speed-up, which depends on acceptance rate and on load.</li>
+<li><strong>"Bigger batches are always better."</strong> They raise total throughput and lower cost but slow every stream. Batch size is set by a TPOT target and by KV memory, not maximised blindly.</li>
+<li><strong>"PagedAttention makes attention faster."</strong> It makes memory allocation efficient, which lets more sequences fit and enables sharing. The arithmetic is the same.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>A model has 80 layers, 8 KV heads, head dimension 128 and a BF16 cache. How much KV memory does one 32,000-token conversation need?</summary><div class="answer">Per token: \(2 \times 80 \times 8 \times 128 \times 2 = 327{,}680\) bytes (320 KiB). Times 32,000 tokens ≈ 10.5 GB for a single conversation.</div></details>
+<details><summary>Why does decode at batch 1 run at about the same speed on two GPUs with very different FLOP/s but the same memory bandwidth?</summary><div class="answer">Each decode step must read all the weights and the cache from HBM while doing only about 1 FLOP per byte. The time is bytes ÷ bandwidth; extra arithmetic capacity sits idle.</div></details>
+<details><summary>Why is it safe to cache keys and values but pointless to cache queries?</summary><div class="answer">With causal masking, a past token's key and value never change once computed. A new token's output needs only its own query against all past keys and values; past queries are never used again.</div></details>
+<details><summary>Static batching runs four requests needing 20, 40, 80 and 400 output tokens together. What fraction of decode slots does useful work, and what would continuous batching change?</summary><div class="answer">Useful token-steps: 540. Available: \(4 \times 400 = 1{,}600\). About 34%. Continuous batching refills each slot as soon as its sequence finishes, so new requests start within a step instead of waiting up to 380 steps.</div></details>
+<details><summary>Your drafter's acceptance rate is 0.6 and costs 5% of a target step per token. Is \(k = 4\) or \(k = 8\) better?</summary><div class="answer">\(k = 4\): \(E = (1 - 0.6^5)/0.4 = 2.31\), cost 1.2, speed-up ≈ 1.92. \(k = 8\): \(E = (1 - 0.6^9)/0.4 = 2.47\), cost 1.4, speed-up ≈ 1.77. \(k = 4\) wins: at moderate acceptance, long drafts are mostly thrown away.</div></details>
+<details><summary>P99 inter-token latency doubles whenever one tenant sends 50-page documents, while P50 is flat. What is happening and what do you change?</summary><div class="answer">Their very long prefills run as single heavy steps and stall every other sequence's decode. Enable chunked prefill (or lower the chunk size), and consider routing very long prompts to a separate pool.</div></details>
+<details><summary>Every request in your app starts with the same 3,000-token system prompt and tool definitions. Name two things that get cheaper with prefix caching, and the prompt-ordering rule that makes it work.</summary><div class="answer">Prefill compute (and so TTFT) for those 3,000 tokens, and KV memory, because all requests share the same physical blocks. It only works if the shared part is an exact token prefix, so stable content goes first and per-request content last.</div></details>
+</section>

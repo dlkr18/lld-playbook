@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
@@ -30,17 +34,29 @@
   <a href="#multi-tenancy"><span class="num">10</span> Multi-Tenancy</a>
   <a href="#modules"><span class="num">11</span> Modules</a>
   <a href="#weaviate-vs-pinecone-vs-pgvector-vs-chroma"><span class="num">12</span> Weaviate vs Pinecone vs pgvector vs Chroma</a>
-  <a href="#production-ops"><span class="num">13</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">14</span> Related topics</a>
-  <a href="#where-people-get-lost"><span class="num">15</span> Where people get lost</a>
-  <a href="#how-this-connects"><span class="num">16</span> How this connects</a>
-  <a href="#check-yourself"><span class="num">17</span> Check yourself</a>
+  <a href="#the-question"><span class="num">13</span> The question</a>
+  <a href="#step-1-the-mental-model-objects-with-two-indexes-each"><span class="num">14</span> Step 1: the mental model, objects with two indexes each</a>
+  <a href="#step-2-the-data-model-properties-tokenization-and-ids"><span class="num">15</span> Step 2: the data model, properties, tokenization and ids</a>
+  <a href="#step-3-vectorizer-modules-versus-bringing-your-own-vectors"><span class="num">16</span> Step 3: vectorizer modules versus bringing your own vectors</a>
+  <a href="#step-4-the-write-path-memory-and-compression"><span class="num">17</span> Step 4: the write path, memory and compression</a>
+  <a href="#step-5-filtering-with-allow-lists"><span class="num">18</span> Step 5: filtering with allow-lists</a>
+  <a href="#step-6-hybrid-search-and-how-the-scores-are-fused"><span class="num">19</span> Step 6: hybrid search and how the scores are fused</a>
+  <a href="#step-7-multi-tenancy-a-shard-per-tenant"><span class="num">20</span> Step 7: multi-tenancy, a shard per tenant</a>
+  <a href="#step-8-scaling-out-replication-and-consistency"><span class="num">21</span> Step 8: scaling out, replication and consistency</a>
+  <a href="#step-9-operations-and-failure-modes"><span class="num">22</span> Step 9: operations and failure modes</a>
+  <a href="#choosing-weaviate"><span class="num">23</span> Choosing Weaviate</a>
+  <a href="#in-code-the-v4-client-and-the-fusion-arithmetic"><span class="num">24</span> In code: the v4 client, and the fusion arithmetic</a>
+  <a href="#production-ops"><span class="num">25</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">26</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">27</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">28</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">29</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Weaviate <span>// Tech &amp; tools</span></h1>
   <p>Open-source vector database with modules, hybrid search and multi-tenancy.</p>
-  <div class="tags"><span class="tag">8 min read</span><span class="tag">4 diagrams</span></div>
+  <div class="tags"><span class="tag">25 min read</span><span class="tag">4 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -53,7 +69,7 @@
 </section>
 <section id="new-words">
   <h2>02 &mdash; New words</h2>
-<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Reranking</strong></td><td>Cross-encoder reorders retrieved candidates; biggest RAG quality lever.</td></tr><tr><td><strong>Hybrid search</strong></td><td>Fuse vector similarity with keyword/BM25 search.</td></tr></tbody></table>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Collection</strong></td><td>Weaviate's unit of schema (called a "class" in older versions): a named set of objects with typed properties and vector settings.</td></tr><tr><td><strong>Object</strong></td><td>One stored item: a UUID, its properties (title, price, ...) and one or more vectors.</td></tr><tr><td><strong>Named vectors</strong></td><td>Several separately indexed vectors on one object, for example one for the title and one for the description.</td></tr><tr><td><strong>Module</strong></td><td>A plug-in that lets the server call a model for you: a vectorizer (embeds text on import and query), a reranker, or a generative model.</td></tr><tr><td><strong>Inverted index</strong></td><td>A map from each term or property value to the objects containing it. Powers filters and BM25 keyword search.</td></tr><tr><td><strong>BM25F</strong></td><td>Keyword relevance scoring across several fields, with per-field weights (for example, title counts twice as much as description).</td></tr><tr><td><strong>Hybrid search</strong></td><td>One query that runs vector search and BM25 together and fuses the two result lists into one ranking.</td></tr><tr><td><strong>\(\alpha\) (alpha)</strong></td><td>The hybrid weight: 1 is pure vector, 0 is pure keyword, values between blend them.</td></tr><tr><td><strong>Allow-list</strong></td><td>The set of object ids that pass a filter, computed from the inverted index before the vector search runs.</td></tr><tr><td><strong>Shard</strong></td><td>A piece of a collection with its own vector index, inverted index and object store. With multi-tenancy, each tenant is its own shard.</td></tr><tr><td><strong>Vector compression (PQ, BQ, SQ)</strong></td><td>Storing compressed codes instead of full float vectors in memory, then rescoring the best candidates with full vectors.</td></tr><tr><td><strong>Consistency level</strong></td><td>How many replicas must acknowledge a write or answer a read: ONE, QUORUM or ALL.</td></tr></tbody></table>
 </section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
@@ -273,9 +289,217 @@ Get { Document(tenant: "acme", hybrid: { ... }) { ... } }</pre>
 </table>
 </div>
 </section>
+<p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>13 &mdash; The question</h2>
+<p>Some retrieval problems are not served well by vectors alone or keywords alone. Product search is the clearest case: a shopper types "Sony WH-1000XM5 replacement ear pads", and the right result must match the exact model number and also understand that "ear cushions" means "ear pads". Weaviate is an open-source vector database (written in Go, self-hosted or managed) built around that kind of problem: it keeps a vector index and a keyword index side by side for every collection, answers hybrid queries in one call, and gives each tenant its own isolated shard.</p>
+<p>The interview questions:</p>
+<ol>
+<li>How is a Weaviate collection stored, and what happens on import and on a query?</li>
+<li>How does hybrid search fuse vector and keyword scores, and how do you choose \(\alpha\)?</li>
+<li>How do multi-tenancy, filtering, replication and memory work at scale?</li>
+<li>When is it the right choice over pgvector or Pinecone?</li>
+</ol>
+<p>The running example: an e-commerce platform that hosts online stores for 5,000 small merchants. A search-and-answer assistant lets shoppers search a store's catalogue and ask questions about products. There are 2 million products in total, about 400 per store on average, each with a title, description, brand, SKU, price and stock flag, embedded with a 1,024-dimension model. On a typical day about 900 stores receive traffic; the rest are dormant.</p>
+</section>
+<section id="step-1-the-mental-model-objects-with-two-indexes-each">
+  <h2>14 &mdash; Step 1: the mental model, objects with two indexes each</h2>
+<p>Think of Weaviate as a document store in which every collection automatically carries two search structures:</p>
+<pre class="ascii-diagram">collection "Product"  (per shard)
+  object store      UUID -&gt; properties (title, description, sku, price, ...)
+  inverted index    term / value -&gt; object ids     (filters, BM25 keyword search)
+  vector index      HNSW over each named vector     (nearest-neighbour search)</pre>
+<p>Every object written goes into all three. A vector query uses the vector index, a keyword query the inverted index, a filter the inverted index, and a hybrid query both search indexes plus the inverted index for filters. That is the core difference from a pure vector store, where keyword search and rich filtering are add-ons or another system, and from pgvector, where you assemble the same thing yourself in SQL.</p>
+<p>The second idea is <strong>modules</strong>: Weaviate can call models on your behalf. With a vectorizer module configured, you import plain objects and the server embeds them; you query with text (<code>near_text</code>) and the server embeds the query. Reranker and generative modules extend the same idea to reranking results and generating answers in the query call. Useful, but each module puts an external model call inside your database's request path (Step 3).</p>
+</section>
+<section id="step-2-the-data-model-properties-tokenization-and-ids">
+  <h2>15 &mdash; Step 2: the data model, properties, tokenization and ids</h2>
+<p>A collection declares its properties with data types (text, number, boolean, date, arrays) and, for text, a <strong>tokenization</strong> that decides how the inverted index splits it. This choice quietly decides whether keyword search works:</p>
+<ul>
+<li><code>word</code> tokenization (the usual default for text) splits on non-alphanumeric characters and lower-cases: "WH-1000XM5" becomes the tokens "wh" and "1000xm5". Good for descriptions.</li>
+<li><code>field</code> tokenization keeps the whole value as one token: "WH-1000XM5" stays intact, so an exact SKU match is a single precise term. Good for SKUs, brands as identifiers, and anything you filter on by exact value.</li>
+</ul>
+<p>Make SKU a <code>field</code>-tokenized property and keep the model number in the title with <code>word</code> tokenization, and both exact and partial matches work.</p>
+<p><strong>Ids.</strong> Every object has a UUID. Generate it deterministically from your own key (a name-based UUID, version 5, from the store id and SKU), and re-importing a product overwrites it instead of creating a duplicate, which makes re-ingestion idempotent. Random UUIDs make every re-import a duplication bug.</p>
+<p><strong>Named vectors.</strong> An object can have several vectors, each with its own index: a title vector for short queries, a description vector for questions about features, perhaps an image vector. A query names which one to search. This beats concatenating everything into one embedding when queries target different aspects, at the price of one index's memory per vector.</p>
+<p>Weaviate also supports <strong>cross-references</strong> between objects (product to brand). They are convenient for modelling, but following them at query time is far slower than reading a property, so store the values you filter or rank on directly on the object.</p>
+</section>
+<section id="step-3-vectorizer-modules-versus-bringing-your-own-vectors">
+  <h2>16 &mdash; Step 3: vectorizer modules versus bringing your own vectors</h2>
+<p>With a vectorizer module, import is simple: send properties, the server calls the embedding provider, stores the vector. The costs are less visible:</p>
+<ul>
+<li>Import throughput and query latency now include a call to an external embedding API, with its rate limits and outages. A provider hiccup becomes a failed batch import or a failed search.</li>
+<li>The vectorizer settings are part of the collection's configuration. Changing the embedding model means a new collection (or a new named vector) and a full re-embed.</li>
+<li>Batch imports report per-object failures (for example, rate-limited embedding calls). If you do not inspect the failed-objects list after each batch, some products are simply missing from search.</li>
+</ul>
+<p>Bringing your own vectors (vectorizer set to none, vectors supplied on import and query) puts embedding in your pipeline, where you can batch, cache, retry and version it. Teams commonly prototype with a module and move to their own vectors for production ingestion; it is also how you guarantee the same model embeds documents and queries. Either way, choose the model with <a href="../rag/embedding-models.html">choosing an embedding model</a>.</p>
+</section>
+<section id="step-4-the-write-path-memory-and-compression">
+  <h2>17 &mdash; Step 4: the write path, memory and compression</h2>
+<p>An import, normally sent in batches of a few hundred objects, writes each object to the shard's object store (a log-structured store on disk), adds its terms and values to the inverted index, and inserts each of its vectors into the HNSW graph, recording the change in a write-ahead log so the graph can be rebuilt after a crash. HNSW insertion is the expensive part; an asynchronous-indexing option lets imports return before vectors are indexed, trading search freshness for import speed.</p>
+<p>Memory is where Weaviate deployments succeed or fail, because HNSW graphs and, by default, the vectors themselves are held in RAM for speed. For our catalogue:</p>
+<table>
+<thead><tr><th>Configuration</th><th>Vectors in memory</th></tr></thead>
+<tbody>
+<tr><td>One 1,024-dimension vector per product, uncompressed</td><td>\(2{,}000{,}000 \times 1{,}024 \times 4\) bytes \(\approx 8.2\) GB</td></tr>
+<tr><td>Two named vectors (title and description)</td><td>about 16.4 GB</td></tr>
+<tr><td>One vector with product quantization to 128 one-byte codes</td><td>\(2{,}000{,}000 \times 128\) bytes \(\approx 0.26\) GB</td></tr>
+<tr><td>One vector with binary quantization (1 bit per dimension)</td><td>also about 0.26 GB</td></tr>
+</tbody>
+</table>
+<p>Compression shrinks memory roughly 32-fold here. It loses some precision, so the engine searches with the compressed codes, fetches a larger candidate set, and <strong>rescores</strong> it with the full vectors from disk. Whether recall holds depends on the embedding model (binary quantization works well with some models and badly with others), so measure recall@10 against uncompressed search on real queries before switching. The HNSW links add memory on top in every configuration. The shared trade-offs of HNSW and quantization are in <a href="../rag/vector-search.html">vector search</a>.</p>
+</section>
+<section id="step-5-filtering-with-allow-lists">
+  <h2>18 &mdash; Step 5: filtering with allow-lists</h2>
+<p>Shoppers filter: in stock only, under $100, brand Sony. Weaviate evaluates the filter first, on the inverted index, producing an <strong>allow-list</strong> of matching object ids, then runs the vector search restricted to that list. Results are the best matches among allowed objects, the correct semantics for both shopping filters and permissions.</p>
+<p>The cost depends on the allow-list's size relative to the shard:</p>
+<ul>
+<li><strong>Large allow-list</strong> (in stock: 90% of products): the HNSW walk proceeds almost normally, skipping the few excluded nodes.</li>
+<li><strong>Small allow-list</strong> (a rare brand: 30 products): walking a graph where nearly every node must be skipped is slow and can miss results. Below a configurable size, Weaviate abandons the graph and compares the query with every allowed object exactly ("flat" search), which for 30 or even tens of thousands of objects is fast and has perfect recall.</li>
+<li><strong>The awkward middle</strong>, where the filter keeps a moderate fraction that is uncorrelated with the query's neighbourhood, is where graph search with filters is hardest; newer filter strategies (such as ACORN) change how the walk explores neighbours to keep it efficient. If filtered queries are slow, this is where to look.</li>
+</ul>
+<p>Two practical rules: mark properties you filter on as filterable (and range-filterable for numbers you compare), so the inverted index can serve them; and if one filter value partitions every query (a store id), make it a tenant instead (Step 7), so the filter is replaced by choosing a shard.</p>
+</section>
+<section id="step-6-hybrid-search-and-how-the-scores-are-fused">
+  <h2>19 &mdash; Step 6: hybrid search and how the scores are fused</h2>
+<p>A hybrid query runs a vector search and a BM25F keyword search over chosen properties (with optional boosts, such as <code>title^2</code> to weight titles double), then fuses the two lists. Two fusion methods exist, and they behave differently.</p>
+<p><strong>Relative score fusion</strong> (the default in recent versions) rescales each list's scores to the range 0 to 1 with min-max normalisation (best result 1, worst 0), then combines:</p>
+\[ s = \alpha \, \hat{v} + (1 - \alpha)\, \hat{k} \]
+<p>where \(\hat v\) and \(\hat k\) are the normalised vector and keyword scores (0 if the object is absent from that list).</p>
+<p><strong>Ranked fusion</strong> ignores score values and uses positions: each object gets \(1/(60 + \text{rank})\) from each list it appears in, as in reciprocal rank fusion, with the vector list's terms multiplied by \(\alpha\) and the keyword list's by \(1 - \alpha\). The worked numbers below show the unweighted sums; at \(\alpha = 0.5\) every score is halved and the order is unchanged.</p>
+<p>Worked, for "Sony WH-1000XM5 replacement ear pads". Vector search returns P1 "ear cushion kit for over-ear headphones" (similarity 0.86), P2 "WH-1000XM5 ear pads, Sony-compatible" (0.81), P3 "Sony WH-1000XM4 headphones" (0.78), P4 "universal leather ear pads" (0.74). BM25 returns P2 (9.4), P3 (6.1), P5 "WH-1000XM5 carrying case" (5.2).</p>
+<ul>
+<li>Normalised vector scores: P1 1.0, P2 0.583, P3 0.333, P4 0. Normalised keyword: P2 1.0, P3 0.214, P5 0.</li>
+<li>Relative score, \(\alpha = 0.75\): P1 \(0.75\), P2 \(0.75 \times 0.583 + 0.25 \times 1.0 = 0.688\). The generic cushion kit beats the exact product.</li>
+<li>Relative score, \(\alpha = 0.5\): P2 \(0.792\), P1 \(0.5\). The exact product wins.</li>
+<li>Ranked fusion: P2 \(1/62 + 1/61 = 0.0325\), P3 \(1/63 + 1/62 = 0.0320\), P1 \(1/61 = 0.0164\). P2 wins, but the XM4 headphones (wrong model, not ear pads) come second, because appearing in both lists is rewarded regardless of how weak the keyword match was.</li>
+</ul>
+<p>Three lessons. \(\alpha\) is a real product decision: catalogue search with model numbers wants more keyword weight than a "help me choose" question. Min-max normalisation is relative to each result list, so scores are not comparable across queries, and a single strong outlier compresses everyone else. And no fusion method fixes a ranking that needs judgement; a reranker over the top 30 to 50 does (see <a href="../rag/reranking.html">reranking</a>). Tune \(\alpha\) and the fusion method on a labelled query set split by query type (identifier queries versus descriptive ones); see <a href="../rag/hybrid-search.html">hybrid search</a> for the general theory.</p>
+</section>
+<section id="step-7-multi-tenancy-a-shard-per-tenant">
+  <h2>20 &mdash; Step 7: multi-tenancy, a shard per tenant</h2>
+<p>With multi-tenancy enabled on a collection, each tenant (each merchant store) gets its own shard: its own object store, inverted index and HNSW graph. Every read and write names the tenant. Three properties follow.</p>
+<p><strong>Isolation by construction.</strong> A query for store 42 physically cannot touch store 43's shard, so a missing filter cannot leak another merchant's catalogue. Deleting a merchant is deleting a tenant.</p>
+<p><strong>Work proportional to the tenant.</strong> A search in a 400-product store runs over 400 objects, not 2 million; small shards can use exact search and still be fast. The comparison with one big shard plus a <code>store_id</code> filter is the same argument as namespaces in <a href="pinecone.html">Pinecone</a>.</p>
+<p><strong>Memory only for active tenants.</strong> Tenants have an activity status. Active tenants are loaded and searchable; inactive ones stay on disk and use no memory; offloaded ones are moved to cold object storage. For our platform, if about 900 of 5,000 stores are active on a day, active vectors are about \(900 \times 400 \times 4\) KB \(\approx 1.5\) GB instead of 8.2 GB for all. The cost is a reactivation delay when a dormant store gets traffic, so automate activation (on first request, or on a schedule) and keep busy stores always active.</p>
+<p>The limit: one query cannot span tenants. A platform-wide search ("find this product across all stores") needs a separate, non-tenant collection built for it.</p>
+</section>
+<section id="step-8-scaling-out-replication-and-consistency">
+  <h2>21 &mdash; Step 8: scaling out, replication and consistency</h2>
+<p>A cluster spreads shards across nodes. A collection without multi-tenancy is split into a configured number of shards; with multi-tenancy, tenants are distributed over nodes. Each shard can be <strong>replicated</strong>: with a replication factor of 3, three nodes hold a copy, so one node can fail without losing data or availability.</p>
+<p>Replicas of data are leaderless: any replica accepts reads and writes, and each request carries a <strong>consistency level</strong>:</p>
+<ul>
+<li><strong>ONE</strong>: one replica must respond. Fastest, may read stale data.</li>
+<li><strong>QUORUM</strong>: a majority, 2 of 3.</li>
+<li><strong>ALL</strong>: every replica. Strongest, and fails if any replica is down.</li>
+</ul>
+<p>The rule from distributed systems applies: if a write is acknowledged by \(W\) replicas and a read consults \(R\) replicas, the read is guaranteed to include the latest write when \(R + W &gt; N\). With \(N = 3\), QUORUM writes (\(W = 2\)) plus QUORUM reads (\(R = 2\)) satisfy \(4 &gt; 3\); QUORUM writes plus ONE reads do not (\(3 \not&gt; 3\)), so a read may miss a just-written product until background repair catches up. For product search, ONE reads with QUORUM writes is usually fine: a price change visible a second later harms nobody. For permissions data, use QUORUM on both. (The schema itself is replicated with a consensus protocol, so all nodes agree on collection definitions.)</p>
+</section>
+<section id="step-9-operations-and-failure-modes">
+  <h2>22 &mdash; Step 9: operations and failure modes</h2>
+<ul>
+<li><strong>Memory pressure.</strong> When vectors and graphs outgrow RAM, latency degrades sharply or nodes are killed. Monitor memory per node, set limits, and plan compression or more nodes before you need them.</li>
+<li><strong>Silent partial imports.</strong> Batch imports return per-object errors. Check them every batch and retry failures, or search results will quietly lack products.</li>
+<li><strong>Module dependency.</strong> With server-side vectorizers, the embedding provider's outage is your search outage. Bring your own vectors for critical paths, or have a fallback.</li>
+<li><strong>Schema changes.</strong> Adding a property is easy; changing tokenization, a vectorizer or a vector index type usually means a new collection and a re-import. Use collection aliases or versioned names so the application can switch atomically.</li>
+<li><strong>Backups.</strong> Use the backup feature to object storage, and keep your source data and import pipeline so a collection can be rebuilt.</li>
+<li><strong>Upgrades.</strong> Rolling upgrades need replication; with a replication factor of 1, an upgrade is an outage.</li>
+</ul>
+</section>
+<section id="choosing-weaviate">
+  <h2>23 &mdash; Choosing Weaviate</h2>
+<table>
+<thead><tr><th>Situation</th><th>Weaviate?</th><th>Reason</th></tr></thead>
+<tbody>
+<tr><td>Hybrid keyword plus vector is central (catalogues, codes, names)</td><td>Strong fit</td><td>BM25F and fusion in one query, per-property boosts and tokenization</td></tr>
+<tr><td>Thousands of tenants, many dormant</td><td>Strong fit</td><td>Shard per tenant, inactive tenants use no memory</td></tr>
+<tr><td>Need open source or self-hosting (data residency, on-premises)</td><td>Yes</td><td>Runs anywhere; a managed cloud exists too</td></tr>
+<tr><td>Vectors must join and commit with relational data</td><td>No</td><td><a href="pgvector.html">pgvector</a> keeps them in one transaction</td></tr>
+<tr><td>No appetite to operate a cluster</td><td>Managed offering, or Pinecone</td><td>Self-hosted memory, replication and upgrades need care</td></tr>
+<tr><td>Prototype or tests</td><td>Fine, heavier than needed</td><td><a href="chroma.html">Chroma</a> is lighter</td></tr>
+</tbody>
+</table>
+<p>The interview summary: Weaviate is the choice when hybrid retrieval and multi-tenancy are first-class requirements and you are willing to run (or pay for) a dedicated search database; its costs are memory planning and cluster operations.</p>
+</section>
+<section id="in-code-the-v4-client-and-the-fusion-arithmetic">
+  <h2>24 &mdash; In code: the v4 client, and the fusion arithmetic</h2>
+<pre><span class="cm"># Not run here: needs a Weaviate server and `pip install weaviate-client`. Written against the v4 Python client's documented API (2025).</span>
+<span class="kw">import</span> weaviate
+<span class="kw">from</span> weaviate.classes.config <span class="kw">import</span> Configure, Property, DataType, Tokenization
+<span class="kw">from</span> weaviate.classes.query <span class="kw">import</span> Filter, HybridFusion, MetadataQuery
+<span class="kw">from</span> weaviate.classes.tenants <span class="kw">import</span> Tenant
+<span class="kw">from</span> weaviate.util <span class="kw">import</span> generate_uuid5
+
+client = weaviate.connect_to_local()
+products = client.collections.create(
+    <span class="st">"</span><span class="st">Product</span><span class="st">"</span>,
+    properties=[
+        Property(name=<span class="st">"</span><span class="st">title</span><span class="st">"</span>, data_type=DataType.TEXT),                  <span class="cm"># word tokenization</span>
+        Property(name=<span class="st">"</span><span class="st">description</span><span class="st">"</span>, data_type=DataType.TEXT),
+        Property(name=<span class="st">"</span><span class="st">sku</span><span class="st">"</span>, data_type=DataType.TEXT, tokenization=Tokenization.FIELD),
+        Property(name=<span class="st">"</span><span class="st">price</span><span class="st">"</span>, data_type=DataType.NUMBER),
+        Property(name=<span class="st">"</span><span class="st">in_stock</span><span class="st">"</span>, data_type=DataType.BOOL),
+    ],
+    vectorizer_config=Configure.Vectorizer.none(),                         <span class="cm"># bring your own vectors</span>
+    multi_tenancy_config=Configure.multi_tenancy(enabled=<span class="nr">True</span>),
+)
+products.tenants.create([Tenant(name=<span class="st">"</span><span class="st">store-0042</span><span class="st">"</span>)])
+store = products.with_tenant(<span class="st">"</span><span class="st">store-0042</span><span class="st">"</span>)
+
+<span class="kw">with</span> store.batch.fixed_size(batch_size=<span class="nr">200</span>) <span class="kw">as</span> batch:
+    <span class="kw">for</span> p in catalogue:
+        batch.add_object(properties=p[<span class="st">"</span><span class="st">props</span><span class="st">"</span>], vector=p[<span class="st">"</span><span class="st">vec</span><span class="st">"</span>],
+                         uuid=generate_uuid5(<span class="st">f</span><span class="st">"</span><span class="st">store-0042:</span><span class="st">{</span>p[<span class="st">'</span><span class="st">props</span><span class="st">'</span>][<span class="st">'</span><span class="st">sku</span><span class="st">'</span>]<span class="st">}</span><span class="st">"</span>))   <span class="cm"># idempotent</span>
+<span class="tp">print</span>(<span class="st">"</span><span class="st">failed:</span><span class="st">"</span>, <span class="tp">len</span>(store.batch.failed_objects))                         <span class="cm"># always check</span>
+
+res = store.query.hybrid(
+    query=<span class="st">"</span><span class="st">Sony WH-1000XM5 replacement ear pads</span><span class="st">"</span>, vector=query_vec,
+    alpha=<span class="nr">0.5</span>, fusion_type=HybridFusion.RELATIVE_SCORE,
+    query_properties=[<span class="st">"</span><span class="st">title^2</span><span class="st">"</span>, <span class="st">"</span><span class="st">description</span><span class="st">"</span>, <span class="st">"</span><span class="st">sku</span><span class="st">"</span>],
+    filters=Filter.by_property(<span class="st">"</span><span class="st">in_stock</span><span class="st">"</span>).equal(<span class="nr">True</span>),
+    limit=<span class="nr">10</span>, return_metadata=MetadataQuery(score=<span class="nr">True</span>),
+)
+client.close()
+</pre>
+<p>The fusion arithmetic and the replication rule, runnable anywhere:</p>
+<pre><span class="kw">def</span> <span class="fn">minmax</span>(scores):
+    lo, hi = <span class="tp">min</span>(scores.values()), <span class="tp">max</span>(scores.values())
+    <span class="kw">return</span> {k: (v - lo) / (hi - lo) <span class="kw">if</span> hi &gt; lo <span class="kw">else</span> <span class="nr">1.0</span> <span class="kw">for</span> k, v in scores.items()}
+
+<span class="kw">def</span> <span class="fn">relative_score_fusion</span>(vec, kw, alpha):
+    v, k = minmax(vec), minmax(kw)
+    ids = <span class="tp">set</span>(v) | <span class="tp">set</span>(k)
+    <span class="kw">return</span> {i: alpha * v.get(i, <span class="nr">0.0</span>) + (<span class="nr">1</span> - alpha) * k.get(i, <span class="nr">0.0</span>) <span class="kw">for</span> i in ids}
+
+<span class="kw">def</span> <span class="fn">ranked_fusion</span>(vec, kw, k=<span class="nr">60</span>):
+    <span class="cm"># unweighted RRF; Weaviate also scales the vector list by alpha and the keyword list by 1 - alpha</span>
+    out = {}
+    <span class="kw">for</span> lst in (vec, kw):
+        <span class="kw">for</span> rank, i in <span class="tp">enumerate</span>(<span class="tp">sorted</span>(lst, key=lst.get, reverse=<span class="nr">True</span>), start=<span class="nr">1</span>):
+            out[i] = out.get(i, <span class="nr">0.0</span>) + <span class="nr">1</span> / (k + rank)
+    <span class="kw">return</span> out
+
+<span class="cm"># query: "Sony WH-1000XM5 replacement ear pads"</span>
+vec = {<span class="st">"</span><span class="st">P1 ear cushion kit</span><span class="st">"</span>: <span class="nr">0.86</span>, <span class="st">"</span><span class="st">P2 XM5 ear pads</span><span class="st">"</span>: <span class="nr">0.81</span>, <span class="st">"</span><span class="st">P3 XM4 headphones</span><span class="st">"</span>: <span class="nr">0.78</span>, <span class="st">"</span><span class="st">P4 universal pads</span><span class="st">"</span>: <span class="nr">0.74</span>}
+kw  = {<span class="st">"</span><span class="st">P2 XM5 ear pads</span><span class="st">"</span>: <span class="nr">9.4</span>, <span class="st">"</span><span class="st">P3 XM4 headphones</span><span class="st">"</span>: <span class="nr">6.1</span>, <span class="st">"</span><span class="st">P5 XM5 carrying case</span><span class="st">"</span>: <span class="nr">5.2</span>}
+
+<span class="kw">for</span> alpha in (<span class="nr">0.75</span>, <span class="nr">0.5</span>):
+    fused = relative_score_fusion(vec, kw, alpha)
+    top = <span class="tp">sorted</span>(fused.items(), key=<span class="kw">lambda</span> x: -x[<span class="nr">1</span>])[:<span class="nr">3</span>]
+    <span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">relativeScore alpha=</span><span class="st">{</span>alpha<span class="st">}</span><span class="st">:</span><span class="st">"</span>, [(i, <span class="tp">round</span>(s, <span class="nr">3</span>)) <span class="kw">for</span> i, s in top])
+top = <span class="tp">sorted</span>(ranked_fusion(vec, kw).items(), key=<span class="kw">lambda</span> x: -x[<span class="nr">1</span>])[:<span class="nr">3</span>]
+<span class="tp">print</span>(<span class="st">"</span><span class="st">ranked fusion:</span><span class="st">"</span>, [(i, <span class="tp">round</span>(s, <span class="nr">4</span>)) <span class="kw">for</span> i, s in top])
+
+<span class="cm"># replication: with N copies, reads see the latest write when R + W &gt; N</span>
+N = <span class="nr">3</span>
+<span class="kw">for</span> name, level in ((<span class="st">"</span><span class="st">ONE</span><span class="st">"</span>, <span class="nr">1</span>), (<span class="st">"</span><span class="st">QUORUM</span><span class="st">"</span>, N // <span class="nr">2</span> + <span class="nr">1</span>), (<span class="st">"</span><span class="st">ALL</span><span class="st">"</span>, N)):
+    <span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">{</span>name<span class="st">}</span><span class="st">: </span><span class="st">{</span>level<span class="st">}</span><span class="st"> of </span><span class="st">{</span>N<span class="st">}</span><span class="st"> replicas; QUORUM write + </span><span class="st">{</span>name<span class="st">}</span><span class="st"> read overlap: </span><span class="st">{</span>N // <span class="nr">2</span> + <span class="nr">1</span> + level &gt; N<span class="st">}</span><span class="st">"</span>)
+</pre>
+<p>It prints P1 first at \(\alpha = 0.75\) (0.75 against 0.688), P2 first at 0.5 (0.792), ranked fusion with P2 then the XM4 headphones, and that only QUORUM or ALL reads are guaranteed to overlap a QUORUM write: the results of Steps 6 and 8.</p>
+</section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>13 &mdash; Production &amp; Ops</h2>
+  <h2>25 &mdash; Production &amp; Ops</h2>
 <div class="card"><table>
 <tr><th>Concern</th><th>Practice</th></tr>
 <tr><td><strong>HA</strong></td><td>3+ node cluster; replication factor ≥ 2</td></tr>
@@ -287,7 +511,7 @@ Get { Document(tenant: "acme", hybrid: { ... }) { ... } }</pre>
 </table></div>
 </section>
 <section id="related-topics">
-  <h2>14 &mdash; Related topics</h2>
+  <h2>26 &mdash; Related topics</h2>
 <div class="card"><ul>
 <li><a href="../rag/vector-search.html">Vector search &amp; databases</a> — ANN, hybrid, metadata concepts</li>
 <li><a href="pinecone.html">Pinecone</a> · <a href="pgvector.html">pgvector</a> · <a href="chroma.html">Chroma</a> — sibling engines</li>
@@ -298,7 +522,7 @@ Get { Document(tenant: "acme", hybrid: { ... }) { ... } }</pre>
 </ul></div>
 </section>
 <section id="where-people-get-lost">
-  <h2>15 &mdash; Where people get lost</h2>
+  <h2>27 &mdash; Where people get lost</h2>
 <div class="card"><ul>
 <li><strong>Self-host without K8s expertise:</strong> replication and upgrades bite — use Weaviate Cloud or <a href="pinecone.html">Pinecone</a>.</li>
 <li><strong>Wrong alpha for query type:</strong> SKU queries need low alpha; semantic-only needs high alpha.</li>
@@ -307,13 +531,29 @@ Get { Document(tenant: "acme", hybrid: { ... }) { ... } }</pre>
 <li><strong>No reranker after hybrid:</strong> fusion alone often insufficient for top-5 quality.</li>
 <li><strong>GraphQL over-fetch:</strong> returning huge text properties on every query — latency and cost.</li>
 </ul></div>
+<ul>
+<li><strong>"Hybrid search fixes exact-match queries automatically."</strong> Only if tokenization keeps identifiers intact and \(\alpha\) gives keywords enough weight. Check both on identifier queries.</li>
+<li><strong>Reading fused scores as absolute.</strong> Relative score fusion normalises within each result list; a score of 0.8 means different things for different queries. Do not threshold on it across queries.</li>
+<li><strong>Random UUIDs.</strong> Re-imports duplicate objects. Derive UUIDs from your own keys.</li>
+<li><strong>Ignoring batch failures.</strong> Imports can succeed overall while individual objects fail. Inspect failed objects every batch.</li>
+<li><strong>A store-id filter instead of tenants.</strong> Every query then searches all 2 million products and one missing filter leaks data. Make the partition a tenant.</li>
+<li><strong>Forgetting memory per named vector.</strong> Each named vector is a full index. Two 1,024-dimension vectors on 2 million objects is about 16 GB before links.</li>
+<li><strong>Assuming ONE reads are consistent.</strong> With \(N = 3\), only \(R + W &gt; 3\) guarantees a read sees the latest write.</li>
+</ul>
 </section>
 <section id="how-this-connects">
-  <h2>16 &mdash; How this connects</h2>
+  <h2>28 &mdash; How this connects</h2>
 <h3>Builds on</h3><ul><li><a href="../rag/embedding-models.html">Choosing an embedding model</a> &mdash; Model families, dimensions, benchmarks, cost, and when to fine-tune or switch.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="../rag/hybrid-search.html">Hybrid search &amp; query understanding</a> &mdash; BM25 plus vectors fused with RRF, query rewriting, decomposition and HyDE.</li><li><a href="../rag/reranking.html">Reranking</a> &mdash; Cross-encoder rerankers: retrieve wide, rescore, keep the best few.</li><li><a href="pgvector.html">pgvector</a> &mdash; Vector search inside Postgres: HNSW/IVFFlat, hybrid with full-text, operations.</li></ul><h3>Where this shows up later</h3><ul><li><a href="chroma.html">Chroma</a> &mdash; Lightweight embedded vector store for prototypes and local RAG.</li></ul>
 </section>
 <section id="check-yourself">
-  <h2>17 &mdash; Check yourself</h2>
+  <h2>29 &mdash; Check yourself</h2>
+<details><summary>Vector scores for three results are 0.90, 0.85, 0.70; keyword scores for two of them are 12 (first result) and 4 (third result). With relative score fusion and \(\alpha = 0.6\), what does the first result score?</summary><div class="answer">Normalised vector: \((0.90 - 0.70)/0.20 = 1.0\). Normalised keyword: \((12 - 4)/8 = 1.0\). Score \(= 0.6 \times 1.0 + 0.4 \times 1.0 = 1.0\).</div></details>
+<details><summary>3 million objects with one 768-dimension vector each. How much memory for uncompressed vectors, and with binary quantization?</summary><div class="answer">\(3{,}000{,}000 \times 768 \times 4 \approx 9.2\) GB uncompressed; at 1 bit per dimension, \(3{,}000{,}000 \times 96\) bytes \(\approx 0.29\) GB, plus graph links and full vectors on disk for rescoring.</div></details>
+<details><summary>A shopper searches for SKU "AB-77-X" and gets nothing relevant, though the product exists. What do you check?</summary><div class="answer">The SKU property's tokenization (word tokenization splits it into "ab", "77", "x"; field tokenization keeps it whole), whether the SKU property is in the hybrid query's properties, and whether \(\alpha\) gives keyword search enough weight. Also check the object was imported (batch failures).</div></details>
+<details><summary>Replication factor 3, writes at QUORUM. A product's price changed and a read at ONE shows the old price. Is that a bug?</summary><div class="answer">No. QUORUM write (2) plus ONE read (1) is 3, not greater than 3, so the read may hit the replica not yet updated. Use QUORUM reads if that matters, or accept brief staleness for prices.</div></details>
+<details><summary>8,000 tenants with 500 objects each at 1,024 dimensions; 1,000 are active on a given day. Memory for active vectors versus all?</summary><div class="answer">Active: \(1{,}000 \times 500 \times 4{,}096\) bytes \(\approx 2.0\) GB. All: \(8{,}000 \times 500 \times 4{,}096 \approx 16.4\) GB. Inactive tenants stay on disk.</div></details>
+<details><summary>Your team wants search results to reflect a product deletion within the same request that deleted it, and the products table lives in Postgres. Weaviate or pgvector?</summary><div class="answer">pgvector: the delete and the search share Postgres transactions, so the next query cannot return it. With Weaviate, you would delete in two systems and handle replica consistency; it fits better when hybrid search and tenancy needs dominate.</div></details>
+<details><summary>A rare-brand filter matches 25 products in a 2-million-object collection, and filtered queries are slow. Why, and what helps?</summary><div class="answer">The HNSW walk must skip almost every node. Below the flat-search cutoff, Weaviate compares the query with the allowed objects exactly, which is fast for 25; check that cutoff and that the brand property is indexed as filterable. If the filter partitions all queries, use tenants.</div></details>
 <details>
 <summary>What is Weaviate’s killer feature vs Pinecone?</summary>
 <div class="answer">Native <strong>hybrid search</strong> in one GraphQL call — BM25 + vector with alpha tuning. Avoids dual-system (Elasticsearch + vector DB) fusion code. <a href="pinecone.html">Pinecone</a> wins on pure managed simplicity and hyperscale zero-ops.</div>

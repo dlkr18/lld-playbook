@@ -1,0 +1,232 @@
+<!-- Deep lesson: MLOps & drift. Merged into production/mlops-drift by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Release</td><td>The full set of things that determine behaviour, pinned together: model snapshot, prompt, examples, decoding settings, index build, tool schemas, code.</td></tr>
+<tr><td>Model snapshot vs alias</td><td>A snapshot names one fixed model version; an alias ("latest") can be repointed by the provider without notice.</td></tr>
+<tr><td>Covariate drift</td><td>The inputs change: \(P(x)\) moves. Different topics, lengths, languages or formats arrive than before.</td></tr>
+<tr><td>Concept drift</td><td>The right answer for the same input changes: \(P(y \mid x)\) moves, for example because a business rule changed.</td></tr>
+<tr><td>Label shift</td><td>The mix of correct answers changes: \(P(y)\) moves, for example more billing tickets than before.</td></tr>
+<tr><td>Reference window</td><td>The period whose data counts as "normal", against which current data is compared.</td></tr>
+<tr><td>PSI</td><td>Population stability index: one number for how far a distribution has moved from its reference. Near 0 means stable.</td></tr>
+<tr><td>Domain classifier</td><td>A model trained to tell reference data from current data. If it cannot (AUC near 0.5), nothing has drifted that it can see.</td></tr>
+<tr><td>Label delay</td><td>The time between a prediction and learning whether it was right. Often days, sometimes never.</td></tr>
+<tr><td>Proxy metric</td><td>A signal available immediately that correlates with quality: confidence, abstention rate, human corrections, judge scores.</td></tr>
+<tr><td>Shadow / canary</td><td>Shadow: the new release runs on live traffic but its outputs are discarded. Canary: it serves a small share of real users.</td></tr>
+<tr><td>Slice</td><td>A subset of traffic (a category, a language, a customer tier) whose metrics are tracked separately.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>A model that passed its evaluation in March can be wrong in June without anyone touching it. Customers start asking about a new product, a policy changes what the correct answer is, a provider updates the model behind an alias, an upstream system changes the format of its input. MLOps for LLM systems is the discipline of knowing exactly what you are running, noticing when the world it runs in has moved, telling which kind of movement it is, and changing the system safely in response.</p>
+<p>What interviewers ask:</p>
+<ol>
+<li>What is drift, what kinds are there, and how do you detect each when labels arrive late?</li>
+<li>What must be versioned in an LLM application, and why is the model name not enough?</li>
+<li>How do you roll out a prompt or model change and know, statistically, that it did not make things worse?</li>
+<li>When drift is detected, how do you decide between changing the prompt, retraining, or rolling back?</li>
+</ol>
+<p><strong>Running example: TicketRouter.</strong> A prompted LLM classifies about <strong>20,000 support tickets a day</strong> into 8 queues: billing, shipping, returns, account, technical, product questions, cancellations and other. Low-confidence tickets go to a human triage queue. Labels come from humans: if an agent moves a ticket to a different queue, the original prediction was wrong; if nobody moves it within 48 hours, it is treated as right. Last month's measured accuracy was about 90%.</p>
+</section>
+
+<section data-label="Step 1: know exactly what is running">
+<p>You cannot reason about why behaviour changed if you cannot list what could have changed. For TicketRouter the behaviour depends on:</p>
+<ul>
+<li>the <strong>model</strong>, as a pinned snapshot, not an alias;</li>
+<li>the <strong>prompt template</strong> and its <strong>few-shot examples</strong>, as content hashes;</li>
+<li><strong>decoding settings</strong> (temperature, max tokens, structured-output schema);</li>
+<li>the <strong>confidence threshold</strong> that sends tickets to humans;</li>
+<li>the <strong>preprocessing code</strong> that strips signatures and quoted replies from the ticket;</li>
+<li>for retrieval systems, the <strong>index build</strong> (chunker, embedding model, corpus snapshot).</li>
+</ul>
+<p>Pin all of them together as one immutable <strong>release</strong> with an ID, and record that release ID on every prediction (see <a href="@@production/observability@@">Observability</a>). Then "what changed between Tuesday and Wednesday?" is a diff of two release records, and any logged prediction can be reproduced with the exact configuration that produced it.</p>
+<p>The model alias deserves its own warning. If you call "provider-model-latest", the provider may repoint it to a newer model; your system changes behaviour on a date you did not choose. Pin snapshots in production, and treat a snapshot upgrade like any other release: evaluated before, rolled out gradually.</p>
+</section>
+
+<section data-label="Step 2: three ways the world moves">
+<p>Write the task as learning \(P(y \mid x)\): given a ticket \(x\), the probability of each queue \(y\). The joint distribution of tickets and correct queues can change in three distinct ways, and each needs a different response:</p>
+<ul>
+<li><strong>Covariate drift</strong>, \(P(x)\) changes. The shop launches a smart-home hub; technical tickets about pairing and firmware jump from 12% to 22% of traffic. The rule for routing them is unchanged.</li>
+<li><strong>Concept drift</strong>, \(P(y \mid x)\) changes. Finance decides that refunds of subscriptions are now handled by the account team, not billing. The tickets look exactly as before; the correct answer for them is different.</li>
+<li><strong>Label shift</strong>, \(P(y)\) changes with the per-class appearance staying the same: more billing tickets in the week invoices go out. Often seasonal and harmless.</li>
+</ul>
+<p>Two more sources look like drift from the outside but come from your side of the fence: a <strong>model change</strong> (a provider update, or your own release), and an <strong>upstream change</strong> (the email system starts appending a long footer that mentions "billing" to every ticket). Both alter behaviour while the real world stands still.</p>
+</section>
+
+<section data-label="Step 3: why the mix alone moves accuracy">
+<p>Covariate drift hurts only when traffic moves toward inputs the model handles worse. TicketRouter's accuracy differs by category; it is weakest on technical tickets (78%), which are varied and jargon-heavy, and on "other" (70%):</p>
+<table>
+<thead><tr><th>Queue</th><th>billing</th><th>shipping</th><th>returns</th><th>account</th><th>technical</th><th>product</th><th>cancel</th><th>other</th></tr></thead>
+<tbody>
+<tr><td>Accuracy</td><td>0.95</td><td>0.94</td><td>0.93</td><td>0.90</td><td>0.78</td><td>0.88</td><td>0.92</td><td>0.70</td></tr>
+<tr><td>Mix last month</td><td>0.20</td><td>0.18</td><td>0.15</td><td>0.12</td><td>0.12</td><td>0.10</td><td>0.08</td><td>0.05</td></tr>
+<tr><td>Mix after launch</td><td>0.24</td><td>0.15</td><td>0.12</td><td>0.11</td><td>0.22</td><td>0.08</td><td>0.05</td><td>0.03</td></tr>
+</tbody>
+</table>
+<p>Overall accuracy is the mix-weighted average: \(\sum_c \text{share}_c \times \text{acc}_c\). Before the launch that is 0.897; after, 0.889. Not a single per-category accuracy changed, yet the headline number fell, because more traffic now lands in the weakest large slice. The reverse also happens: a real regression on a small slice can be hidden by a favourable mix elsewhere.</p>
+<p>So the first monitoring rule is <strong>track metrics per slice</strong>, not only in aggregate, and interpret aggregate changes in the light of the mix.</p>
+</section>
+
+<section data-label="Step 4: putting a number on distribution change">
+<p>To detect that the mix moved, compare the current distribution of some input feature with a reference window. For a categorical feature (here, the predicted category, or a topic tag) or a numeric one cut into bins, the <strong>population stability index</strong> is</p>
+\[ \text{PSI} = \sum_{i} (a_i - e_i) \ln\frac{a_i}{e_i} \]
+<p>where \(e_i\) is the reference share in bin \(i\) and \(a_i\) the current share. Each term is non-negative (if \(a_i &gt; e_i\), both factors are positive; if smaller, both negative), so PSI is zero only when nothing moved. It is a symmetric form of the KL divergence.</p>
+<p>For the launch, the eight terms sum to <strong>0.110</strong>, and one bin dominates: technical, \((0.22 - 0.12) \ln(0.22/0.12) = 0.061\), more than half the total. That is the useful property of PSI in practice: the per-bin contributions say <em>where</em> the distribution moved, not just that it did.</p>
+<p>Common rules of thumb read PSI below 0.1 as stable, 0.1 to 0.25 as a moderate shift worth investigating, and above 0.25 as a major shift. They are conventions, not laws; calibrate thresholds on your own history by computing week-over-week PSI during periods you know were normal.</p>
+</section>
+
+<section data-label="Step 5: significance is not importance">
+<p>An obvious alternative is a statistical test: a chi-square test on category counts, or a Kolmogorov–Smirnov test on a numeric feature, alerting when the p-value is small. With production volumes this backfires. Take a trivial wobble, billing up from 20% to 21% and two small categories down half a point, measured on one day's 20,000 tickets. The chi-square test gives \(p \approx 10^{-7}\): "highly significant". The PSI is 0.0013: nothing worth a second look.</p>
+<p>A p-value answers "is there any difference at all?", and with enough data the answer is almost always yes. The operational question is "is the difference large enough to matter?", which is a question about effect size. Use effect-size measures (PSI, distance between distributions, change in a slice's share) with thresholds calibrated on normal variation, and use tests only to confirm that a large-looking change on a <em>small</em> sample is not noise.</p>
+</section>
+
+<section data-label="Step 6: drift in text and embeddings">
+<p>Classical models have tidy numeric features to monitor. An LLM's input is free text, so you construct features worth watching:</p>
+<ul>
+<li><strong>Cheap structural features</strong>: length in tokens, language, share containing attachments, code or URLs. The email-footer incident shows up immediately as a jump in median length and in the share of tickets containing "billing".</li>
+<li><strong>Topic</strong>: the model's own predicted category (with the caveat that a model change also moves it; see Step 7), or clusters of input embeddings.</li>
+<li><strong>Embedding distribution</strong>: embed every ticket with a fixed embedding model and compare the current window's embeddings with the reference window's.</li>
+</ul>
+<p>Comparing two clouds of 1,000-dimensional vectors directly is awkward. A robust trick is the <strong>domain classifier</strong>: label reference tickets 0 and current tickets 1, train a simple classifier to tell them apart, and measure its cross-validated AUC. If the two windows come from the same distribution, no classifier can separate them and the AUC is about 0.5. The more they differ, the higher it goes. On simulated ticket embeddings (code below): 0.50 for two samples of the same month, 0.55 when only the category mix shifts, 0.61 when technical tickets also start discussing a new product. And the tickets the classifier is most confident are "new" are exactly the ones to read first.</p>
+</section>
+
+<section data-label="Step 7: when labels arrive late, read the symptoms together">
+<p>TicketRouter's labels arrive after 48 hours, and only for tickets humans touched. Many LLM tasks have worse delay, or no labels at all. You need signals available now, and the trick is to read them as a combination, because each kind of change leaves a different signature:</p>
+<table>
+<thead><tr><th>Input drift (PSI on inputs)</th><th>Output drift (PSI on predictions)</th><th>Labelled accuracy (delayed)</th><th>Most likely cause</th></tr></thead>
+<tbody>
+<tr><td>Up</td><td>Up</td><td>Stable or down</td><td>Covariate drift or label shift: the world sends different tickets</td></tr>
+<tr><td>Flat</td><td>Up</td><td>Often down</td><td>Something on your side: model, prompt or preprocessing changed</td></tr>
+<tr><td>Flat</td><td>Flat</td><td>Down</td><td>Concept drift: same tickets, new right answers</td></tr>
+<tr><td>Up (one feature, e.g. length)</td><td>Up</td><td>Down</td><td>Upstream format change</td></tr>
+</tbody>
+</table>
+<p>The third row is the dangerous one. When subscription refunds moved to the account team, roughly 5% of tickets started being routed wrongly with full confidence, overall accuracy fell by about 5 points, and every input and output monitor stayed flat, because nothing about the tickets or the model's behaviour changed. Only label-based signals catch concept drift: human corrections, re-route rates, downstream outcomes. That is why some stream of real labels, even small and late, is not optional.</p>
+<p>Fast proxies fill the gap: the share of tickets falling below the confidence threshold, the re-route rate in the first hours, and an LLM judge scoring a small sample against the current routing policy. Proxies are correlated with quality, not equal to it; confirm their alarms with labels.</p>
+<div class="callout warn"><p><strong>Concept drift also poisons your evaluation set.</strong> The golden examples labelled "billing" for subscription refunds are now wrong. An offline evaluation will score the old behaviour as correct and a fixed prompt as a regression. Re-label affected eval cases when a policy changes, and version the eval set with the release (see <a href="@@production/evals@@">Evaluating LLM features</a>).</p></div>
+</section>
+
+<section data-label="Step 8: how many labels it takes to see a drop">
+<p>Whether you are watching for drift or judging a new release, the question "did accuracy really fall?" is a statistics question with a known answer. To detect a drop from \(p_1\) to \(p_2\) between two groups (before vs after, or control vs canary) with significance level \(\alpha\) and power \(1 - \beta\), each group needs about</p>
+\[ n \approx \frac{(z_{1-\alpha/2} + z_{1-\beta})^2 \,\big(p_1(1-p_1) + p_2(1-p_2)\big)}{(p_1 - p_2)^2} \]
+<p>labelled examples, where the \(z\) values are standard normal quantiles (1.96 and 0.84 for \(\alpha = 0.05\) and 80% power). From a 90% baseline:</p>
+<table>
+<thead><tr><th>Drop to detect</th><th>Labelled examples per group</th></tr></thead>
+<tbody>
+<tr><td>90% → 89%</td><td>14,749</td></tr>
+<tr><td>90% → 87%</td><td>1,772</td></tr>
+<tr><td>90% → 85%</td><td>683</td></tr>
+</tbody>
+</table>
+<p>The squared difference in the denominator is the lesson: halving the effect you want to see quadruples the data you need. Detecting one point of change needs more labelled tickets than a 10% canary sees in a week; detecting three points needs about a day of a 10% canary, plus the 48-hour label delay. Decide the smallest change worth detecting before the rollout, and size the canary and its duration from it, instead of watching a dashboard and hoping.</p>
+</section>
+
+<section data-label="Step 9: changing the system safely">
+<p>Every release, whether a prompt edit, a model snapshot upgrade, new few-shot examples or a re-built index, follows the same path, with gates sized by Step 8:</p>
+<ol>
+<li><strong>Offline gate</strong>: run the versioned evaluation set, per slice. Block on regressions beyond the noise level, with special attention to slices the change was not meant to touch.</li>
+<li><strong>Shadow</strong>: run the new release on live traffic and discard its outputs. Compare its predictions with production's: where do they disagree, and on which slices? This costs model calls but no user risk, and catches crashes, cost spikes and large behaviour shifts within hours. Side-effecting actions must be disabled in shadow mode.</li>
+<li><strong>Canary</strong>: serve a small share (say 10%, about 2,000 tickets a day) and compare its labelled accuracy, proxy metrics and cost with the control group over a period long enough to reach the required sample size and let labels arrive.</li>
+<li><strong>Full rollout</strong>, with the previous release kept deployable for instant rollback. For retrieval changes, keep the old index online until the new one has proven itself.</li>
+</ol>
+<p>Rollback should be a configuration flip back to a previous release ID, rehearsed, not a rebuild. Note what rollback cannot undo: tickets already misrouted, answers already sent. That is the argument for the shadow and canary stages.</p>
+</section>
+
+<section data-label="Step 10: responding to drift">
+<p>Detection is half the job. The response depends on the diagnosis from Step 7:</p>
+<ul>
+<li><strong>Covariate drift onto a weak slice</strong> (the hub launch): improve the model where traffic now is. Add few-shot examples of hub tickets, describe the new product in the prompt, or route that slice to a specialised prompt. Re-weight the evaluation set so it reflects the new mix.</li>
+<li><strong>Concept drift</strong> (the refund policy): this is a specification change. Update the category definitions in the prompt, re-label the affected evaluation examples, and treat it as a release. No amount of retraining on old labels can learn a rule that is not in the data.</li>
+<li><strong>Model change</strong>: if a pinned snapshot is being retired, evaluate the replacement as a candidate release before the deadline, not after. If an alias moved under you, pin and roll back first, investigate second.</li>
+<li><strong>Upstream change</strong>: fix it at the input, by updating preprocessing to strip the new footer, rather than teaching the model to cope with it.</li>
+<li><strong>Fine-tuned models</strong>: retrain on a schedule or on a drift trigger, but only with fresh, correctly labelled data and through the same gates. Retraining on the model's own uncorrected predictions bakes its errors in.</li>
+</ul>
+<p>Some teams retrain or refresh on a fixed calendar; others on triggers. Prompted LLM systems usually need fewer "retrains" and more <em>specification maintenance</em>: keeping the prompt, examples and eval set in step with how the business actually works.</p>
+</section>
+
+<section data-label="In code: measuring drift and sizing a canary">
+<p>PSI on the category mix, with per-bin contributions, and the effect of the mix on overall accuracy:</p>
+<pre data-lang="python">import numpy as np
+
+cats = ["billing", "shipping", "returns", "account", "technical", "product", "cancel", "other"]
+ref  = np.array([0.20, 0.18, 0.15, 0.12, 0.12, 0.10, 0.08, 0.05])   # last month's mix
+cur  = np.array([0.24, 0.15, 0.12, 0.11, 0.22, 0.08, 0.05, 0.03])   # the week after the launch
+acc  = np.array([0.95, 0.94, 0.93, 0.90, 0.78, 0.88, 0.92, 0.70])   # per-category accuracy, unchanged
+
+def psi(expected, actual, eps=1e-6):
+    e, a = np.clip(expected, eps, None), np.clip(actual, eps, None)
+    return float(np.sum((a - e) * np.log(a / e)))
+
+print(f"overall accuracy before {ref @ acc:.3f}, after {cur @ acc:.3f}")
+print(f"PSI of the category mix: {psi(ref, cur):.3f}")
+for c, e, a in zip(cats, ref, cur):
+    print(f"  {c:9s} {e:.2f} -&gt; {a:.2f}  contribution {(a - e) * np.log(a / e):.4f}")
+</pre>
+<p>A significance test versus an effect size on a trivial shift, and drift in embeddings measured with a domain classifier (numpy, scipy and scikit-learn):</p>
+<pre data-lang="python">import numpy as np
+from scipy.stats import chisquare
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import cross_val_score
+
+rng = np.random.default_rng(0)
+ref = np.array([0.20, 0.18, 0.15, 0.12, 0.12, 0.10, 0.08, 0.05])
+tiny = np.array([0.21, 0.18, 0.15, 0.12, 0.12, 0.095, 0.08, 0.045])   # a one-point wobble
+n = 20_000
+counts = rng.multinomial(n, tiny)
+psi = np.sum((tiny - ref) * np.log(tiny / ref))
+print(f"tiny shift: chi-square p = {chisquare(counts, ref * n).pvalue:.1e}, PSI = {psi:.4f}")
+
+# Embedding drift with a domain classifier: can a model tell last month's tickets from this week's?
+centroids = rng.normal(size=(8, 64))                  # one cluster per category, 64-dim "embeddings"
+def tickets(mix, k, shift=0.0):
+    labels = rng.choice(8, size=k, p=mix)
+    x = centroids[labels] + rng.normal(scale=2.0, size=(k, 64))
+    x[labels == 4] += shift                           # technical tickets now talk about a new product
+    return x
+
+def drift_auc(a, b):
+    X, y = np.vstack([a, b]), np.r_[np.zeros(len(a)), np.ones(len(b))]
+    return cross_val_score(LogisticRegression(max_iter=2000), X, y, cv=5, scoring="roc_auc").mean()
+
+cur = np.array([0.24, 0.15, 0.12, 0.11, 0.22, 0.08, 0.05, 0.03])
+print(f"same distribution  AUC {drift_auc(tickets(ref, 3000), tickets(ref, 3000)):.2f}")
+print(f"mix shifted        AUC {drift_auc(tickets(ref, 3000), tickets(cur, 3000)):.2f}")
+print(f"mix + new content  AUC {drift_auc(tickets(ref, 3000), tickets(cur, 3000, shift=0.6)):.2f}")
+</pre>
+<p>It prints \(p \approx 10^{-7}\) but PSI 0.0013 for the wobble, then AUCs of 0.50, 0.55 and 0.61. And the sample-size formula from Step 8:</p>
+<pre data-lang="python">from math import ceil
+from statistics import NormalDist
+
+def n_per_arm(p1, p2, alpha=0.05, power=0.8):
+    """Labelled examples needed in each arm to detect accuracy p1 -&gt; p2 (two-sided test)."""
+    z = NormalDist().inv_cdf
+    za, zb = z(1 - alpha / 2), z(power)
+    return ceil((za + zb) ** 2 * (p1 * (1 - p1) + p2 * (1 - p2)) / (p1 - p2) ** 2)
+
+for drop in (0.01, 0.03, 0.05):
+    n = n_per_arm(0.90, 0.90 - drop)
+    print(f"detect 90% -&gt; {90 - drop*100:.0f}%: {n:5d} labelled tickets per arm")
+</pre>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"We didn't deploy anything, so nothing changed."</strong> Provider aliases, index rebuilds, upstream formats and the world itself all change behaviour without a deploy. Pin and record everything in a release.</li>
+<li><strong>"Input monitoring will catch drift."</strong> It cannot see concept drift: the inputs and the model's outputs stay the same while the right answers change. You need some stream of real labels.</li>
+<li><strong>Alerting on p-values.</strong> At production volume every trivial wobble is significant. Alert on effect sizes calibrated on normal weeks.</li>
+<li><strong>Watching only the aggregate.</strong> Mix changes move the average without any slice changing, and can hide real slice regressions. Track per slice.</li>
+<li><strong>Trusting an old evaluation set after a policy change.</strong> Its labels encode the old rules; fix them before using it as a gate.</li>
+<li><strong>A one-day canary for a one-point regression.</strong> Small effects need thousands of labelled examples per arm. Size the canary from the smallest change you care about.</li>
+<li><strong>Retraining as the answer to everything.</strong> Concept drift needs a specification change; upstream format changes need a preprocessing fix; covariate drift may need only better examples.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>Name the kind of drift: (a) customers start writing in Spanish; (b) "late delivery" tickets now go to a new logistics queue; (c) the provider repoints the model alias.</summary><div class="answer">(a) Covariate drift, \(P(x)\) changed. (b) Concept drift, \(P(y \mid x)\) changed for the same input. (c) Not drift in the world: a model change on your side of the system, which shows up as output drift with flat inputs.</div></details>
+<details><summary>A two-bin feature moves from 70/30 to 60/40. What is its PSI, and would you investigate?</summary><div class="answer">\((0.6-0.7)\ln(0.6/0.7) + (0.4-0.3)\ln(0.4/0.3) = 0.0154 + 0.0288 \approx 0.044\). Below the usual 0.1 threshold: note it, but by itself not an investigation, unless the feature is one the model is known to be sensitive to.</div></details>
+<details><summary>Input PSI and prediction PSI are both flat, but the human re-route rate has doubled over two weeks. What is the most likely cause and the fix?</summary><div class="answer">Concept drift: the correct routing for some tickets changed (a policy or team change). Find which tickets are re-routed and to where, update the category definitions and examples in the prompt, re-label affected eval cases, and ship it as a release.</div></details>
+<details><summary>You want to detect a drop from 92% to 90% accuracy in a canary. Roughly how many labelled examples per arm, and how long at 1,500 labelled tickets a day per arm?</summary><div class="answer">\(7.85 \times (0.92 \times 0.08 + 0.90 \times 0.10)/0.02^2 \approx 7.85 \times 0.1636 / 0.0004 \approx 3{,}200\) per arm, so a little over two days of labels, plus the label delay.</div></details>
+<details><summary>Overall accuracy fell from 89.7% to 88.9%, yet every per-category accuracy is unchanged. Explain, and say what you would do.</summary><div class="answer">The traffic mix moved toward a weaker category (technical, 78%). Overall accuracy is a mix-weighted average, so it fell without any slice getting worse. Improve the weak slice (examples, a specialised prompt) and re-weight the eval set to the new mix.</div></details>
+<details><summary>Why is calling a model alias like "latest" in production a reliability and MLOps problem, and what do you do instead?</summary><div class="answer">The provider can change the model behind it at any time, changing behaviour without a release, an evaluation or a rollback path. Pin a snapshot, record it in the release, and treat upgrades as evaluated, gradual releases.</div></details>
+<details><summary>A domain classifier separating last month's tickets from this week's reaches AUC 0.52; a week later 0.68. What do you do with the second result?</summary><div class="answer">Investigate: the windows are now clearly distinguishable. Read the tickets the classifier scores as most "new", check which slices and features changed, compare slice accuracy and proxy metrics, and decide whether the prompt, examples or preprocessing need a change.</div></details>
+</section>

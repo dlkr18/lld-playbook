@@ -1,0 +1,287 @@
+<!-- Deep lesson: What an agent is. Merged into agents/what-is-an-agent by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Control flow</td><td>The decision about which step runs next and when the whole process stops. Who owns it is the line between a workflow and an agent.</td></tr>
+<tr><td>Agent</td><td>A system in which a language model chooses the next action, sees its result, and repeats until it decides the task is done (or a budget stops it).</td></tr>
+<tr><td>Workflow</td><td>A system where code fixes the sequence of steps and the model only fills in parts of them, such as a classification or a draft.</td></tr>
+<tr><td>Augmented LLM</td><td>One model call given extra powers, such as retrieved documents or one round of tool use, but no loop.</td></tr>
+<tr><td>Tool</td><td>A function the model may ask your code to run, described to it by a name, a description and an argument schema.</td></tr>
+<tr><td>Environment</td><td>Everything outside the model that the agent observes and changes: databases, APIs, files, a browser, the user.</td></tr>
+<tr><td>Observation</td><td>What comes back from the environment after an action: a tool result, an error, a user reply.</td></tr>
+<tr><td>Action space</td><td>The full set of things the agent may do at a step: each tool with its allowed arguments, plus "answer and stop".</td></tr>
+<tr><td>Policy</td><td>The rule that maps what the agent has seen so far to its next action. In an LLM agent, the policy is the model plus its prompt.</td></tr>
+<tr><td>Trajectory</td><td>The full record of one run: every model output, action, observation and the final answer, in order.</td></tr>
+<tr><td>Autonomy</td><td>How many decisions the system makes without a human or fixed code making them: which step, which tool, when to stop, whether to act on the world.</td></tr>
+<tr><td>Agentic</td><td>An adjective for degree, not a category: a system is more agentic the more of its control flow the model decides.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>"Agent" is the most overloaded word in AI engineering. Vendors call a chatbot with a search box an agent; researchers mean a model that runs for hours on its own. An interviewer is not asking for a definition you memorised. They want to know whether you can tell, for a given product, how much of the decision-making to hand to the model, and what that costs.</p>
+<p>The questions you will be asked, in some form:</p>
+<ol>
+<li>What makes something an agent rather than an LLM application with a few calls in it?</li>
+<li>When would you build a workflow instead of an agent, and how would you decide with numbers?</li>
+<li>Why do agents fail more than single calls, and what does that do to cost and latency?</li>
+<li>What are the main ways to structure an agent, and when is each one right?</li>
+</ol>
+<p><strong>The running example.</strong> An online shop gets this support message:</p>
+<div class="callout"><p>"I think I was charged twice for order ORD-482913. Can you sort it out?"</p></div>
+<p>The shop has three internal functions: <code>get_order(order_id)</code>, <code>get_charges(order_id)</code> and <code>refund(order_id, charge_id, amount)</code>. The truth, which nobody knows yet, is that the order cost $59.99 and the card was charged twice. We will build the assistant four ways, from a single model call up to a full agent, and measure each one. By the end you should be able to say exactly which of the four is an agent, and which one you would ship.</p>
+</section>
+
+<section data-label="Step 1: one model call, then one call with extra inputs">
+<p>Start with the simplest design: send the message to a model with the refund policy in the system prompt, and return its reply. The model can be polite, restate the policy and ask for details. What it cannot do is <em>find out</em> whether the customer was charged twice, because the charges live in a payments database. A model call is a function from input text to output text: it cannot read anything that is not in its input, and it cannot change anything in the world (see <a href="@@fundamentals/what-is-an-llm@@">what an LLM is</a>). Two capabilities are missing: <strong>seeing</strong> facts in your systems, and <strong>doing</strong> things such as issuing a refund.</p>
+<p>The next design, the <strong>augmented LLM</strong>, adds seeing. Either code looks up the order and charges and pastes them into the prompt, or the model is shown the tools and gets one round to request some. Now it can say "I can see two charges of $59.99". It is still one decision: if it needs a fact that only becomes knowable after the first result (the charge IDs, which it needs before it can refund), one round cannot get there.</p>
+<p>For many products this is the right design. A documentation bot is an augmented LLM: retrieve, then answer. Nothing loops, so cost and latency are predictable. Climb above this rung only with a reason.</p>
+</section>
+
+<section data-label="Step 2: workflows, where code owns the control flow">
+<p>To actually resolve the duplicate charge, several steps must happen in order: fetch the order, fetch the charges, decide whether the second charge is a duplicate, refund it, tell the customer. A <strong>workflow</strong> writes that order down in code:</p>
+<pre class="ascii-diagram">message ──► get_order ──► get_charges ──► LLM: "duplicate?" ──yes──► refund ──► LLM: write reply
+                                               │
+                                               └──no──► escalate to a human</pre>
+<p>The model is used twice: once as a classifier and once as a writer. Code decides everything else: which function runs first, what the branch condition is, and when the process ends. If the model's answer to "duplicate?" is wrong, the damage is limited to the branches you drew.</p>
+<p>Workflows come in a few recurring shapes worth naming:</p>
+<table>
+<thead><tr><th>Shape</th><th>What code fixes</th><th>Fits when</th></tr></thead>
+<tbody>
+<tr><td>Prompt chaining</td><td>A fixed sequence of model calls, each consuming the last one's output, with checks between them</td><td>A task splits cleanly into known stages (extract, then draft, then translate)</td></tr>
+<tr><td>Routing</td><td>A classifier call picks one of several fixed paths</td><td>Requests fall into distinct types that need different handling</td></tr>
+<tr><td>Parallelisation</td><td>Several calls run at once on parts of the input, or on the same input for a vote</td><td>Independent sub-parts, or you want several opinions</td></tr>
+<tr><td>Orchestrator-workers</td><td>One call splits the task into sub-tasks at runtime; workers run them; a final call merges</td><td>The sub-tasks cannot be known in advance but each is simple</td></tr>
+<tr><td>Evaluator-optimiser</td><td>One call drafts, another critiques, loop until the critic passes or a limit hits</td><td>Clear quality criteria and iteration measurably helps</td></tr>
+</tbody>
+</table>
+<p>The last two already hand a little control to the model: the orchestrator decides how many sub-tasks exist, the evaluator decides when to stop. That is the first hint that "workflow versus agent" is a spectrum, not a switch.</p>
+<p>Measure design 3 on our request. It makes two model calls. With a 1,000-token classification prompt (instructions, order and charges) returning about 30 tokens, and an 800-token reply prompt returning about 150 tokens, it uses 1,800 input and 180 output tokens. At an illustrative price of $3 per million input tokens and $15 per million output tokens, that is:</p>
+\[ 1800 \times \tfrac{3}{10^6} + 180 \times \tfrac{15}{10^6} = 0.0054 + 0.0027 = \$0.0081 \]
+<p>Under a cent, two model calls, and a latency you can predict to within a second.</p>
+</section>
+
+<section data-label="Step 3: the defining move, the model chooses the next step">
+<p>Now remove the diagram. Give the model the three tools and a goal, and let it decide what to do, one step at a time:</p>
+<pre class="ascii-diagram">            ┌───────────────────────────────────────────────┐
+goal ──────►│ model reads everything so far                 │
+            │   │                                           │
+            │   ├── chooses a tool + arguments ──► your code runs it
+            │   │                                     │     │
+            │   │◄──────── observation (result) ──────┘     │
+            │   │                                           │
+            │   └── chooses "answer and stop" ──────────────┼──► reply
+            └───────────────────────────────────────────────┘
+                 (your code stops it anyway after N steps)</pre>
+<p>A run on our request looks like this:</p>
+<ol>
+<li>Model: call <code>get_order("ORD-482913")</code>. Observation: total $59.99, delivered.</li>
+<li>Model: call <code>get_charges("ORD-482913")</code>. Observation: two charges, <code>ch_1</code> and <code>ch_2</code>, both $59.99.</li>
+<li>Model: call <code>refund("ORD-482913", "ch_2", 59.99)</code>. Observation: ok.</li>
+<li>Model: answer "I found two charges of $59.99 and refunded the second one." Stop.</li>
+</ol>
+<p>The tool calls are the same ones the workflow made. What changed is <strong>who decided</strong>. Nothing in the code says "fetch charges after the order" or "refund the later charge". The model chose each step after reading the previous observation, and it chose when to stop. That is the definition this course uses:</p>
+<div class="callout"><p><strong>An agent is a system in which the model decides the control flow:</strong> which action to take next, with what arguments, and when the task is finished. It does this in a loop of observe, decide, act, against an environment it can read and change.</p></div>
+<p>Three consequences follow directly from the definition:</p>
+<ul>
+<li><strong>The number of steps is not known in advance.</strong> If the customer had typed the wrong order number, the agent might call <code>get_order</code>, see "not found", and ask the customer, a path nobody drew. The same code might take 2 steps on one request and 9 on another.</li>
+<li><strong>The model sees its own results.</strong> Each decision is conditioned on the observations so far. That is what lets it recover from an error or change plan, and what lets errors accumulate.</li>
+<li><strong>The loop still belongs to you.</strong> Your code runs the tools, enforces a step limit, checks permissions and decides what the model is allowed to see. The model proposes; the runtime disposes. The details are in <a href="@@agents/agent-loop@@">the agent loop</a>.</li>
+</ul>
+<p>The useful one-line test, then, is not "does it use tools?" (the augmented LLM does) or "does it make several calls?" (the workflow does). It is: <strong>if you read the code, can you predict the sequence of steps?</strong> If yes, it is a workflow. If the sequence is only knowable by running it, it is an agent.</p>
+</section>
+
+<section data-label="Step 4: the vocabulary that comes from reinforcement learning">
+<p>The words agent, environment, observation, action and policy come from reinforcement learning, and the mapping is exact:</p>
+<table>
+<thead><tr><th>RL term</th><th>In an LLM agent</th><th>In the running example</th></tr></thead>
+<tbody>
+<tr><td>Environment</td><td>The systems the tools touch, plus the user</td><td>The orders and payments databases</td></tr>
+<tr><td>Observation</td><td>A tool result, an error message, a user reply</td><td>"two charges, ch_1 and ch_2, $59.99"</td></tr>
+<tr><td>Action space</td><td>The tool list with argument schemas, plus "answer"</td><td>get_order, get_charges, refund, answer</td></tr>
+<tr><td>Policy</td><td>The model, its system prompt and tool descriptions</td><td>Whatever model you call, with the support instructions</td></tr>
+<tr><td>State</td><td>The message history the model is shown</td><td>The goal plus every call and result so far</td></tr>
+<tr><td>Episode / trajectory</td><td>One run from goal to final answer</td><td>The four steps above</td></tr>
+</tbody>
+</table>
+<p>Two lessons fall out. <strong>The action space is a design decision</strong>: an agent can never do what its tools do not allow, and can always attempt what they do allow. A generic <code>run_sql(query)</code> instead of <code>get_charges(order_id)</code> turns three narrow actions into every possible query, including <code>DELETE</code>. And <strong>the state is only what you put in the context window</strong>: the model has no memory between calls, so a fact not in the messages cannot influence the policy. That is why <a href="@@agents/memory-context@@">memory and context engineering</a> is a core agent skill.</p>
+</section>
+
+<section data-label="Step 5: autonomy is a spectrum, and agentic is a degree">
+<p>Put the four designs side by side and ask, for each decision, who makes it:</p>
+<table>
+<thead><tr><th>Design</th><th>Which step next</th><th>When to stop</th><th>Can change the world</th><th>Model calls</th></tr></thead>
+<tbody>
+<tr><td>1. Single call</td><td>Nobody (one step)</td><td>Fixed</td><td>No</td><td>1</td></tr>
+<tr><td>2. Augmented LLM</td><td>Code, or one model choice</td><td>Fixed</td><td>Rarely</td><td>1 to 2</td></tr>
+<tr><td>3. Workflow</td><td>Code</td><td>Code</td><td>Yes, on fixed branches</td><td>Fixed, here 2</td></tr>
+<tr><td>4. Agent</td><td>Model</td><td>Model (under a code budget)</td><td>Yes, any tool it holds</td><td>Variable, here 4</td></tr>
+</tbody>
+</table>
+<p>Each row hands one more decision to the model, so "agentic" is a matter of degree. You will hear <strong>AI agent</strong> for one concrete system of the design-4 kind (a support agent, a coding agent) and <strong>agentic AI</strong> for the broader style where models plan, act and coordinate, often several agents with memory and long-running goals. The difference is scope. In an interview, say what is delegated: "the model picks tools and decides when to stop; code owns the budget, the permissions and the approval step for refunds." That sentence is worth more than any definition.</p>
+</section>
+
+<section data-label="Step 6: why autonomy costs, in reliability">
+<p>Each model decision has some chance of being wrong: the wrong tool, a wrong argument, a misread result, stopping too early. Suppose each step is right with probability \(p\), independently, and a run needs \(n\) steps to all be right. Then the run succeeds with probability:</p>
+\[ P(\text{success}) = p^{\,n} \]
+<table>
+<thead><tr><th>Per-step accuracy \(p\)</th><th>3 steps</th><th>5 steps</th><th>10 steps</th><th>20 steps</th></tr></thead>
+<tbody>
+<tr><td>0.99</td><td>0.970</td><td>0.951</td><td>0.904</td><td>0.818</td></tr>
+<tr><td>0.95</td><td>0.857</td><td>0.774</td><td>0.599</td><td>0.358</td></tr>
+<tr><td>0.90</td><td>0.729</td><td>0.590</td><td>0.349</td><td>0.122</td></tr>
+</tbody>
+</table>
+<p>A step accuracy of 95% sounds excellent, yet a 10-step task then fails 4 times in 10. This is the single most important number in agent design, and it explains several things practitioners do:</p>
+<ul>
+<li>They <strong>shorten trajectories</strong>: one tool that returns the order with its charges removes a step.</li>
+<li>They <strong>move decisions that do not need judgement into code</strong>: if a refund always follows a confirmed duplicate, code can do it, and its accuracy is 1.</li>
+<li>They <strong>add checks</strong> that catch a wrong step before the next one builds on it.</li>
+</ul>
+<p>The formula is a pessimistic simplification. Real agents can notice an error ("order not found") and correct it, so steps are not independent and a wrong step is not always fatal. That self-correction is the reason to build an agent at all. But the direction is right: every extra model-made decision is another chance to fail, and long unattended runs fail more often than short ones.</p>
+</section>
+
+<section data-label="Step 7: why autonomy costs, in tokens and time">
+<p>A model has no memory between calls, so every step of the loop re-sends the whole conversation so far. Model the agent's run on our request with a 1,500-token system prompt plus tool definitions, a 50-token user message, and each step adding about 120 tokens of model output and 250 tokens of tool result:</p>
+<table>
+<thead><tr><th>Model call</th><th>Input tokens sent</th></tr></thead>
+<tbody>
+<tr><td>1 (choose get_order)</td><td>1,550</td></tr>
+<tr><td>2 (choose get_charges)</td><td>1,920</td></tr>
+<tr><td>3 (choose refund)</td><td>2,290</td></tr>
+<tr><td>4 (write answer)</td><td>2,660</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>8,420</strong></td></tr>
+</tbody>
+</table>
+<p>Add 4 × 120 = 480 output tokens and the cost is \(8420 \times 3/10^6 + 480 \times 15/10^6 \approx \$0.032\): four times the workflow's $0.0081. Because each call carries everything before it, the <em>total</em> input tokens of a run grow with the square of the number of steps: call \(k\) sends \(1550 + 370(k-1)\) tokens, so \(n\) calls send \(1550n + 370\,n(n-1)/2\). The same agent at 8 steps sends 22,760 input tokens; at 16 steps, 69,200, about $0.24 a run. <a href="@@fundamentals/tokens-context-cost@@">Prompt caching</a> cuts the price of the repeated prefix but not the growth.</p>
+<p>Latency adds up the same way, because steps are sequential: each one waits for the previous observation. With an illustrative 0.5 s to the first token and 80 output tokens per second, the workflow's two calls plus tools take about 3.5 s; the agent's four calls plus three tool calls take about 8.6 s. For a chat window that difference is noticeable; for a background job it does not matter. Latency targets therefore push towards workflows for interactive paths and allow agents for asynchronous ones.</p>
+</section>
+
+<section data-label="Step 8: why autonomy pays, the long tail">
+<p>If agents are less reliable, slower and more expensive, why build them? Because a workflow only handles the paths you drew. Real support traffic has a long tail: "charged twice but one is pending", "charged twice on two different cards", "charged once but my bank shows two holds", "refund went to an expired card". Each needs a different sequence of lookups. A workflow either grows a branch for each, or sends them to a human.</p>
+<p>An agent with the same tools can handle many of these without new code, because it reads each observation and decides what to look up next. Whether that is worth it is an arithmetic question. Take 10,000 requests a day, a human handling cost of $4 per escalated ticket, a model cost of $0.0081 per request for the workflow (Step 2) and $0.035 per request for the agent (a little above Step 7's $0.032, because tail requests take more steps), and these illustrative accuracies. The router runs the workflow's classifier on every request and the agent only on the 22% the workflow does not cover.</p>
+<table>
+<thead><tr><th>Design</th><th>Resolved automatically</th><th>Escalated</th><th>Model cost / day</th><th>Human cost / day</th><th>Total / day</th></tr></thead>
+<tbody>
+<tr><td>Workflow: 3 drawn intents cover 78% of traffic, 97% right on those</td><td>7,566</td><td>2,434</td><td>$81</td><td>$9,736</td><td>$9,817</td></tr>
+<tr><td>Agent for everything, 88% right</td><td>8,800</td><td>1,200</td><td>$350</td><td>$4,800</td><td>$5,150</td></tr>
+<tr><td>Router: workflow for the 3 intents, agent for the other 22% at 75%</td><td>9,216</td><td>784</td><td>$158</td><td>$3,136</td><td>$3,294</td></tr>
+</tbody>
+</table>
+<p>Three lessons from the table. First, model cost is tiny next to the cost of failure; arguing about cents per call misses where the money is. Second, the hybrid wins: deterministic paths for the common, well-understood cases, the agent for the tail. Many production "agents" are shaped like this. Third, the table assumes every failure is <em>detected</em> and escalated. An agent that confidently refunds the wrong charge costs far more than $4. That is why the write action (<code>refund</code>) stays behind a policy check and, above a threshold, a human approval, however good the model is.</p>
+</section>
+
+<section data-label="Step 9: the architectures you will be asked to name">
+<p>Once the model owns control flow, there are a few standard ways to organise its thinking. Each gets its own lesson; here is the map:</p>
+<ul>
+<li><strong>Tool-calling loop (ReAct style).</strong> One model, one loop: think, act, observe, repeat. The default, and what the running example used. Mechanics in <a href="@@agents/agent-loop@@">the agent loop</a> and <a href="@@agents/tool-calling@@">tool calling</a>.</li>
+<li><strong>Plan-and-execute.</strong> One call writes a plan of several steps; an executor carries them out, re-planning if something fails. Fewer expensive decisions, at the risk of a stale plan. See <a href="@@agents/reasoning@@">reasoning patterns</a>.</li>
+<li><strong>Reflection.</strong> The agent, or a separate critic, reviews a draft or a failed attempt and tries again with the critique in context. Useful when correctness can be checked (code, tests).</li>
+<li><strong>Router plus specialists.</strong> A cheap classifier sends each request to a workflow or to a narrow agent with a small tool set. The hybrid from Step 8.</li>
+<li><strong>Multi-agent.</strong> Several model instances with separate contexts, coordinated by an orchestrator or by handoffs. Buys parallelism and context isolation at a large token cost. See <a href="@@agents/multi-agent@@">multi-agent systems</a>.</li>
+</ul>
+<p>All of them share one core: a <strong>model</strong> that decides, <strong>tools</strong> that define what it can see and do, and a <strong>runtime</strong> that runs the loop and enforces limits.</p>
+</section>
+
+<section data-label="A worked example: the four designs on one request">
+<table>
+<thead><tr><th></th><th>Single call</th><th>Augmented LLM</th><th>Workflow</th><th>Agent</th></tr></thead>
+<tbody>
+<tr><td>Resolves ORD-482913</td><td>No: explains policy</td><td>No: can see charges, cannot act</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Handles "wrong order number"</td><td>Asks generically</td><td>Says "not found"</td><td>Escalates (no branch)</td><td>Asks the customer, retries</td></tr>
+<tr><td>Model calls</td><td>1</td><td>1</td><td>2</td><td>4 here, variable</td></tr>
+<tr><td>Cost (illustrative)</td><td>&lt; $0.01</td><td>&lt; $0.01</td><td>$0.008</td><td>$0.032, rising with steps</td></tr>
+<tr><td>Latency (illustrative)</td><td>~2 s</td><td>~2.5 s</td><td>~3.5 s</td><td>~8.6 s, variable</td></tr>
+<tr><td>Predictable path</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td></tr>
+<tr><td>Main risk</td><td>Unhelpful</td><td>Unhelpful on multi-step cases</td><td>Unhandled paths</td><td>Wrong action, loops, cost spikes</td></tr>
+</tbody>
+</table>
+<p>Only the last column is an agent, and the workflow is the better product for this exact request. The agent earns its place on the requests the workflow cannot handle.</p>
+</section>
+
+<section data-label="Choosing: least autonomy that works">
+<p>A decision procedure you can say in an interview:</p>
+<ol>
+<li><strong>Can one call with the right context do it?</strong> Then build an augmented LLM. Most Q&amp;A, summarisation and extraction stops here.</li>
+<li><strong>Can you write the steps down?</strong> If the path is the same for most inputs, build a workflow. Use routing for a few distinct request types.</li>
+<li><strong>Is the path genuinely unknowable in advance, and is a wrong step recoverable or checkable?</strong> Only then build an agent, with a narrow tool set.</li>
+<li><strong>Bound it.</strong> Step limit, token and money budget, timeouts, and human approval for irreversible writes.</li>
+<li><strong>Measure it on a task set</strong>, run several times each, before and after any change. If an agent and a workflow score the same, ship the workflow.</li>
+</ol>
+<p>Too much autonomy shows in traces: the agent takes the same 3 steps every time (write them as a workflow), or failures cluster on a decision code could make. Too little shows in the escalation queue: requests that needed one extra lookup, and a workflow that grows a branch every week.</p>
+</section>
+
+<section data-label="In code: the same tools, two owners of control flow">
+<p>This runs as-is. The model is replaced by plain Python functions so you can see exactly where the decisions live: in the workflow they are in <code>workflow()</code>, in the agent they are in <code>policy()</code>, which stands in for the LLM.</p>
+<pre data-lang="python"># Tools: the same three functions both designs can use.
+ORDERS = {"ORD-482913": {"total": 59.99, "status": "delivered"}}
+CHARGES = {"ORD-482913": [{"id": "ch_1", "amount": 59.99}, {"id": "ch_2", "amount": 59.99}]}
+REFUNDS = []
+
+def get_order(order_id):   return ORDERS.get(order_id, {"error": "ORDER_NOT_FOUND"})
+def get_charges(order_id): return CHARGES.get(order_id, [])
+def refund(order_id, charge_id, amount):
+    REFUNDS.append((order_id, charge_id, amount))
+    return {"ok": True, "refunded": amount}
+
+TOOLS = {"get_order": get_order, "get_charges": get_charges, "refund": refund}
+
+# --- Design 1: a workflow. Code owns the control flow; the model fills one blank.
+def classify(order, charges):            # stands in for ONE LLM call
+    return "duplicate" if len(charges) == 2 and charges[0]["amount"] == charges[1]["amount"] else "other"
+
+def workflow(order_id):
+    order, charges = get_order(order_id), get_charges(order_id)   # fixed step 1, 2
+    if classify(order, charges) == "duplicate":                     # fixed branch
+        return refund(order_id, charges[-1]["id"], charges[-1]["amount"])
+    return {"escalate": True}
+
+# --- Design 2: an agent. The model chooses the next action and when to stop.
+def policy(history):                     # stands in for the LLM; reads everything so far
+    seen = [h["tool"] for h in history if "tool" in h]
+    if "get_order" not in seen:   return {"tool": "get_order", "args": {"order_id": "ORD-482913"}}
+    if "get_charges" not in seen: return {"tool": "get_charges", "args": {"order_id": "ORD-482913"}}
+    charges = next(h["result"] for h in history if h.get("tool") == "get_charges")
+    if len(charges) == 2 and "refund" not in seen:
+        c = charges[-1]
+        return {"tool": "refund", "args": {"order_id": "ORD-482913", "charge_id": c["id"], "amount": c["amount"]}}
+    return {"final": "Refunded the duplicate charge of $59.99."}
+
+def agent(task, max_steps=6):
+    history = [{"user": task}]
+    for step in range(max_steps):          # the loop is ours; the choices are the model's
+        action = policy(history)
+        if "final" in action:
+            return action["final"], step + 1
+        result = TOOLS[action["tool"]](**action["args"])
+        history.append({"tool": action["tool"], "args": action["args"], "result": result})
+    return "stopped: step budget", max_steps
+
+print(workflow("ORD-482913"))           # {'ok': True, 'refunded': 59.99}
+REFUNDS.clear()
+print(agent("I think I was charged twice for ORD-482913"))   # (..., 4) -> four policy calls
+print(REFUNDS)                          # [('ORD-482913', 'ch_2', 59.99)]
+</pre>
+<p>Both refund <code>ch_2</code>. The difference is where you would look to change behaviour: in the workflow you edit <code>workflow()</code>; in the agent you can only change the policy's inputs (the prompt, the tool descriptions, the tools themselves) and the limits in <code>agent()</code>. Replace <code>policy()</code> with a real model call and you have the loop from <a href="@@agents/agent-loop@@">the next lesson</a>; the step count of 4 is the four model calls costed in Step 7.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"It calls tools, so it is an agent."</strong> A single call that uses a tool once is an augmented LLM. The test is whether the model decides the sequence of steps and when to stop.</li>
+<li><strong>"More autonomy is more advanced, so better."</strong> Each model-made decision is another chance to fail (\(p^n\)) and another full-context call. Use the least autonomy that solves the task.</li>
+<li><strong>"The model controls the agent."</strong> The model proposes actions; your runtime executes them, and owns the budget, permissions, approvals and what the model sees. Safety lives in the runtime, not the prompt.</li>
+<li><strong>"A 95%-accurate step is good enough."</strong> At 10 dependent steps that is about a 60% success rate. Shorten paths and move routine decisions into code.</li>
+<li><strong>Judging by model cost alone.</strong> In the Step 8 table, model cost was 1 to 7% of the total. Failures, escalations and wrong actions dominate.</li>
+<li><strong>Giving the agent broad tools for flexibility.</strong> A generic SQL or shell tool makes the action space everything the tool can do, including damage. Narrow, typed tools make agents safer and more accurate.</li>
+<li><strong>Arguing about "agent" versus "agentic".</strong> State which decisions the model makes and which code makes; that is the useful content.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>A system retrieves five documents, then makes one model call to answer with citations. Is it an agent? What would make it one?</summary><div class="answer">No: code fixes the steps (retrieve, then answer), so it is an augmented LLM. It becomes an agent when the model decides at runtime whether to search again, with what query, and when it has enough to answer, as in agentic RAG.</div></details>
+<details><summary>Each step of a 6-step agent task is right 97% of the time. Roughly what is the end-to-end success rate, and what are two ways to raise it?</summary><div class="answer">\(0.97^6 \approx 0.833\), about 83%. Raise it by cutting steps (a combined tool, or moving fixed decisions into code) and by adding checks that catch a wrong step before the next one depends on it (validation, a verifier, approval on writes).</div></details>
+<details><summary>Using Step 7's model (1,550 input tokens on the first call, each step adding 370), how many input tokens does a 6-call run send in total?</summary><div class="answer">The calls send 1,550, 1,920, 2,290, 2,660, 3,030 and 3,400 tokens, totalling 14,850. It grows with the square of the step count because each call re-sends everything before it.</div></details>
+<details><summary>What one question best separates a workflow from an agent when you read the code?</summary><div class="answer">"Can I predict the sequence of steps from the code?" If yes, code owns control flow and it is a workflow. If the sequence is only knowable by running it, the model owns it and it is an agent.</div></details>
+<details><summary>Your support traffic is 85% three well-understood request types and 15% a varied tail. Escalation costs $4. What do you build and why?</summary><div class="answer">A router: deterministic workflows for the three common types (cheap, fast, highly reliable) and a narrow agent for the tail, with escalation on failure. As in Step 8, the reduction in escalations on the tail is worth far more than the extra model cost, while the common cases keep workflow reliability.</div></details>
+<details><summary>Why is "the agent decides when to stop" not enough on its own, and what does the runtime add?</summary><div class="answer">Models can loop, repeat a failing call, or never judge the task done. The runtime adds a hard step limit, token and money budgets, timeouts, and a fallback (partial answer or escalation) when any is hit.</div></details>
+<details><summary>A teammate proposes giving the support agent a single <code>run_sql(query)</code> tool "so it can answer anything". What is your response?</summary><div class="answer">It enlarges the action space to every possible query, including writes and data the user should not see, and makes the model write correct SQL against your schema, which lowers per-step accuracy. Offer narrow, typed tools (get_order, get_charges) with access control in code; add new tools when traces show a real gap.</div></details>
+</section>

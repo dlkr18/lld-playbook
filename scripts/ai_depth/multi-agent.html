@@ -1,0 +1,234 @@
+<!-- Deep lesson: Multi-agent systems. Merged into agents/multi-agent by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Multi-agent system</td><td>Several agents, each a model with its own context, instructions and tools, working on parts of one task under some coordination.</td></tr>
+<tr><td>Orchestrator (supervisor)</td><td>The agent that splits the task, assigns the parts, and combines the results. It usually does little work itself.</td></tr>
+<tr><td>Worker (sub-agent)</td><td>An agent given one part of the task with a fresh context; it returns a result to whoever delegated.</td></tr>
+<tr><td>Brief</td><td>The message that starts a worker: its goal, the inputs, what to return and in what shape, its tools and limits.</td></tr>
+<tr><td>Handoff</td><td>Transferring control of a conversation from one agent to another, along with some or all of the context.</td></tr>
+<tr><td>Context isolation</td><td>Each agent sees only its own history, so one agent's long exploration does not fill another's window.</td></tr>
+<tr><td>Topology</td><td>The shape of who talks to whom: orchestrator and workers, a pipeline, peer handoffs, a hierarchy, a debate.</td></tr>
+<tr><td>Shared state (blackboard)</td><td>A store that several agents read from and write to, instead of passing everything in messages.</td></tr>
+<tr><td>Fan-out / fan-in</td><td>Sending parts of a task to many workers at once, then gathering their results.</td></tr>
+<tr><td>Amdahl's law</td><td>The speed-up from parallelism is limited by the part of the work that must still happen in sequence.</td></tr>
+<tr><td>Single writer</td><td>A rule that only one agent may perform side-effecting actions, so parallel agents cannot conflict.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>One agent with tools in a loop can do a lot. Multi-agent systems split work across several agents, each with its own context window, and they are among the most hyped and most argued-about designs in the field. Some teams report large gains on research-style tasks; others argue that splitting work across agents mainly multiplies cost and loses context. Both are right about different kinds of task, and an interviewer wants to see that you can tell which kind you have.</p>
+<p>The questions you will be asked:</p>
+<ol>
+<li>When does a multi-agent system beat a single agent, and when does it make things worse?</li>
+<li>What are the main topologies, and when would you use each?</li>
+<li>How do agents share information, and what goes wrong at the boundaries?</li>
+<li>How do you control cost, side effects and failures when many agents run at once?</li>
+</ol>
+<p><strong>The running example.</strong> The online shop's billing team asks for a monthly incident report: "Investigate the 12 duplicate-charge complaints from last month, find any common cause, and draft a report." Each investigation needs about 10 tool calls (order, charges, gateway logs, prior tickets), each returning about 1,500 tokens. The investigations are independent of each other; finding the common cause needs all of them. We will build it as one agent and as an orchestrator with workers, and measure both. A second, smaller task, investigating <em>one</em> complaint, will show when splitting hurts.</p>
+</section>
+
+<section data-label="Step 1: what changes when there are several agents">
+<p>A multi-agent system is not several different models. Usually every agent is the same model with a different system prompt, tool set and, crucially, <strong>its own context window</strong>. That last property is the whole mechanism. Everything multi-agent designs gain, and everything they lose, follows from it:</p>
+<ul>
+<li><strong>Gain: isolation.</strong> A worker can read 15,000 tokens of gateway logs and hand back 400 tokens of findings. The orchestrator's context grows by 400.</li>
+<li><strong>Gain: parallelism.</strong> Independent contexts can run at the same time.</li>
+<li><strong>Gain: specialisation.</strong> Each agent gets only the instructions and tools for its part: smaller prompts, fewer tools to choose between, narrower permissions.</li>
+<li><strong>Loss: shared understanding.</strong> A worker knows only what its brief says. Anything the orchestrator knows but did not write down is invisible to it.</li>
+<li><strong>Loss: coordination.</strong> Results must be merged, conflicts resolved, and side effects kept from colliding.</li>
+</ul>
+<p>Keep that ledger in mind: every design question below is a trade between these two columns.</p>
+</section>
+
+<section data-label="Step 2: the single-agent baseline">
+<p>One agent does the report task in one loop: 12 investigations of 10 tool calls each, then a final turn to write the report, 121 model turns in sequence. Use the cost model from <a href="@@agents/memory-context@@">memory and context engineering</a>: a 4,000-token prefix, 200 output tokens and a 1,500-token tool result per step, and old tool results cleared to 30-token stubs after three steps (without clearing, the last call would carry over 200,000 tokens).</p>
+<ul>
+<li><strong>Tokens.</strong> Even with clearing, the agent's own turns and the stubs accumulate: the last call carries about 36,000 tokens, and the run sends about 2.68 million input tokens in total. At illustrative prices of $3 and $15 per million input and output tokens, about $8.40.</li>
+<li><strong>Latency.</strong> With an illustrative 2 s per model turn and 0.3 s per tool call, \(121 \times 2 + 120 \times 0.3 = 278\) s, over four and a half minutes, because nothing overlaps.</li>
+<li><strong>Quality risk.</strong> By complaint 11, the context holds stubs and notes from ten other investigations. Details blur across cases ("was that 31 seconds apart, or was that the previous order?").</li>
+</ul>
+<p>Nothing here is broken; a single agent can do this task. But the task has a shape (many independent, read-heavy sub-tasks, each producing a small finding) that a single context handles poorly.</p>
+</section>
+
+<section data-label="Step 3: orchestrator and workers">
+<p>The orchestrator-workers topology fits that shape:</p>
+<pre class="ascii-diagram">                    orchestrator
+           plan: 12 briefs  │  synthesis: 12 reports -&gt; report
+        ┌─────────┬─────────┼─────────┬─────────┐
+     worker 1  worker 2  worker 3   ...     worker 12      (in parallel)
+     fresh ctx fresh ctx fresh ctx          fresh ctx
+     10 tool calls each, read-only tools, returns a 400-token report</pre>
+<ol>
+<li><strong>Plan.</strong> The orchestrator reads the 12 complaints and writes one brief per complaint: the order id, the question, the fields to report, the tools allowed, a turn limit.</li>
+<li><strong>Fan out.</strong> Twelve workers start with fresh 3,100-token contexts (instructions plus brief) and run their own tool loops.</li>
+<li><strong>Fan in.</strong> Each returns a structured 400-token report. The orchestrator reads all twelve (about 4,800 tokens), looks for patterns and writes the incident report.</li>
+</ol>
+<p>Measured with the same cost model:</p>
+<table>
+<thead><tr><th></th><th>Single agent</th><th>Orchestrator + 12 workers</th></tr></thead>
+<tbody>
+<tr><td>Model turns</td><td>121, in sequence</td><td>12 × 11 in parallel, plus 2 orchestrator turns</td></tr>
+<tr><td>Largest context</td><td>~36,000 tokens</td><td>~9,800 tokens (each worker)</td></tr>
+<tr><td>Input tokens sent</td><td>~2.68 M</td><td>~1.05 M</td></tr>
+<tr><td>Illustrative cost</td><td>~$8.40</td><td>~$3.60</td></tr>
+<tr><td>Wall-clock time (illustrative)</td><td>~278 s</td><td>~32 s (plan, the slowest worker, synthesis)</td></tr>
+</tbody>
+</table>
+<p>The latency gain is parallelism. The token saving is isolation: each worker re-sends only its own short history, never the other eleven investigations. Each investigation also happens in a clean context, which helps quality. The cost comparison is sensitive to assumptions (aggressive compaction would shrink the single agent's bill, and real workers often explore more than they strictly need), but the direction holds for this shape of task.</p>
+</section>
+
+<section data-label="Step 4: how much parallelism actually buys">
+<p>Two limits keep the speed-up below the number of workers.</p>
+<p><strong>The sequential part.</strong> Planning and synthesis cannot overlap with the workers. If a fraction \(f\) of the work is parallelisable and it is spread across \(N\) workers, Amdahl's law gives the speed-up:</p>
+\[ S(N) = \frac{1}{(1 - f) + f / N} \]
+<p>With \(f = 0.95\): 3.5× with 4 workers, 7.7× with 12, and only 16.8× with 100. The 5% that is sequential caps the speed-up at 20× however many workers you add. Our example's speed-up is about \(278 / 32 \approx 8.7\times\).</p>
+<p><strong>Concurrency limits.</strong> Model APIs have rate limits, and your own budget may cap concurrent calls. If only 4 workers may run at once, the 12 run in 3 waves of about 25 s each: roughly \(3 + 3 \times 25 + 4 = 82\) s instead of 32. With 2 at a time, about 157 s. Also, a fan-out waits for the <strong>slowest</strong> worker: one investigation that needs 30 tool calls instead of 10 sets the time for the whole batch. Give every worker a turn limit and a timeout, and let the orchestrator proceed with partial results, noting which cases are missing.</p>
+</section>
+
+<section data-label="Step 5: when splitting makes things worse">
+<p>Now the second task: investigate <em>one</em> complaint and reply to the customer. A tempting design is a pipeline of specialists: a triage agent classifies the complaint, hands off to an investigator, which hands off to a writer.</p>
+<table>
+<thead><tr><th></th><th>One agent</th><th>Triage → investigator → writer</th></tr></thead>
+<tbody>
+<tr><td>Input tokens</td><td>~96,000</td><td>~105,000 (three prefixes, plus handoff summaries)</td></tr>
+<tr><td>Illustrative cost</td><td>~$0.32</td><td>~$0.36</td></tr>
+<tr><td>Latency</td><td>~25 s</td><td>~31 s (three agents in sequence, extra turns)</td></tr>
+</tbody>
+</table>
+<p>Slightly more expensive and slower, and the real cost is not in the table: <strong>every handoff is a lossy compression</strong>. The writer sees the investigator's summary, not the evidence. If the summary says "duplicate confirmed" but omits that the second charge is still pending (and will drop off by itself), the writer promises a refund that should not happen. In a single agent, the same model that read the evidence writes the reply.</p>
+<p>The general rule: split work where the parts are <strong>independent</strong> and their results are <strong>small</strong> relative to the work of producing them. Do not split work where each step's decisions depend on the details of the previous one. Coding is the classic counter-example: if two agents write two halves of a feature in parallel, each makes implicit decisions (naming, error handling, data shapes) the other cannot see, and the halves do not fit. Tasks that are mostly <em>reading</em> (research, investigation, review) parallelise well; tasks that are mostly <em>writing interdependent things</em> usually do not.</p>
+</section>
+
+<section data-label="Step 6: the topologies">
+<table>
+<thead><tr><th>Topology</th><th>Shape</th><th>Fits</th><th>Watch for</th></tr></thead>
+<tbody>
+<tr><td>Orchestrator-workers</td><td>One planner fans out briefs, gathers reports</td><td>Breadth: research, audits, multi-source investigation</td><td>Brief quality; synthesis of many reports; the slowest worker</td></tr>
+<tr><td>Sub-agent as a tool</td><td>The main agent calls <code>investigate(order_id)</code>, which runs a whole agent and returns a summary</td><td>Isolating a context-heavy sub-task inside a single-agent design</td><td>The main agent cannot see the sub-agent's evidence</td></tr>
+<tr><td>Pipeline</td><td>Fixed sequence of specialists</td><td>Stable stages with clear contracts (extract, then verify, then format)</td><td>Lossy handoffs; latency adds up</td></tr>
+<tr><td>Handoff (routing)</td><td>A front agent transfers the conversation to a specialist, which takes over</td><td>Customer-facing assistants with distinct domains (billing, shipping) and different tools or permissions</td><td>What context transfers; agents bouncing users back and forth</td></tr>
+<tr><td>Hierarchical</td><td>Orchestrators of orchestrators</td><td>Very large tasks with natural sub-teams</td><td>Cost and latency multiply per level; rarely needed</td></tr>
+<tr><td>Debate / judge panel</td><td>Several agents answer or argue; a judge or vote decides</td><td>High-stakes judgements where independent views catch errors</td><td>\(n\) times the cost; correlated errors when all agents are the same model</td></tr>
+</tbody>
+</table>
+<p>Two of these are really single-agent designs with a twist. "Sub-agent as a tool" is the most common way multi-agent ideas enter production: a single main loop that delegates context-heavy reads. "Handoff" is a router (see <a href="@@agents/what-is-an-agent@@">what an agent is</a>) where the destination is an agent rather than a workflow. Frameworks give these shapes names and plumbing (see <a href="@@tech/langgraph@@">LangGraph</a>, <a href="@@tech/crewai@@">CrewAI</a> and <a href="@@tech/frameworks@@">frameworks</a>), but the shapes are what you should be able to draw.</p>
+</section>
+
+<section data-label="Step 7: briefs and reports are contracts">
+<p>Because a worker knows only what its brief says, the brief is the most important artefact in an orchestrator design. A weak brief ("look into ORD-500003") gets a worker that wanders, duplicates others' work, or returns prose the orchestrator cannot combine. A good brief has the parts of a well-written ticket:</p>
+<ul>
+<li><strong>Goal</strong>: "Decide whether ORD-500003 was charged twice."</li>
+<li><strong>Inputs</strong>: the order id, the customer's complaint text, the date range.</li>
+<li><strong>Output contract</strong>: the exact fields to return (duplicate yes/no, charge ids, amounts, <em>seconds between the two charges</em>, gateway error codes), as JSON.</li>
+<li><strong>Boundaries</strong>: the tools allowed (read-only), a turn limit, what not to do ("do not contact the customer, do not refund").</li>
+</ul>
+<p>The running example shows why the output contract matters. Nine of the twelve complaints are real duplicates, and in eight of them the two charges are about 30 seconds apart, a signature of the checkout client retrying after a gateway timeout. That is the common cause the billing team needs. But it is only visible if every worker reports the gap between charges. If the orchestrator's brief omits that field, each worker correctly answers its own question ("yes, duplicate") and the pattern is invisible at synthesis. No single agent made a mistake; the information was lost at the boundary. The code at the end reproduces exactly this.</p>
+<p>The return direction matters too. Ask for structured reports with a fixed schema (see <a href="@@prompting/structured-output@@">structured output</a>), so synthesis is a reliable merge rather than reading twelve essays. Where the orchestrator may need detail later, workers can write full notes to shared storage and return a reference with their summary.</p>
+</section>
+
+<section data-label="Step 8: shared state, side effects and limits">
+<p>Agents running at the same time need rules that a single loop never did.</p>
+<ul>
+<li><strong>A single writer for side effects.</strong> If two workers investigate overlapping complaints (the same customer complained twice), both may decide to refund the same charge. Make workers read-only and give side-effecting actions to one agent (the orchestrator, or a final step with human approval), which can de-duplicate. Keep idempotency keys on every write anyway (see <a href="@@agents/agent-loop@@">the agent loop</a>).</li>
+<li><strong>Shared state with clear ownership.</strong> A shared store (a "blackboard": a database table, a file per worker) lets agents leave findings without passing everything through messages. Give each worker its own area to write and let readers read everything; concurrent writers to one record need the same care as any concurrent system.</li>
+<li><strong>Budgets per agent and in total.</strong> Each worker has a turn limit and timeout; the run has a total token and money budget the orchestrator checks before fanning out more. Twelve workers that each loop to their limit cost twelve times a runaway single agent.</li>
+<li><strong>A delegation depth limit.</strong> If workers may spawn their own workers, cap the depth (often at 1), or a vague task can recurse into a tree of agents.</li>
+<li><strong>Partial failure handling.</strong> One worker timing out should produce "11 of 12 cases analysed; ORD-500007 failed: gateway log tool timeout", not a failed report.</li>
+</ul>
+</section>
+
+<section data-label="Step 9: tracing and evaluating many agents">
+<p>Debugging a multi-agent run without good traces is close to impossible: the failure might be in the plan, a brief, one worker's trajectory, or the synthesis. Give every agent's spans a shared run id and a parent id, so the trace is a tree: orchestrator, then each worker beneath it, with its model and tool calls, then synthesis. Record each brief and report verbatim; they are where most failures are visible.</p>
+<p>Evaluate at two levels. <strong>Components</strong>: given a fixed brief, does a worker return a correct, complete report (a task set of cases with known answers)? Given a set of reports, does synthesis find the planted pattern? <strong>End to end</strong>: on complete tasks, is the final report right, and at what cost and latency? Component evaluations tell you where to fix; end-to-end evaluations tell you whether the whole design beats the single-agent baseline. If it does not, on your tasks, by a margin larger than the noise, keep the single agent.</p>
+</section>
+
+<section data-label="Step 10: the debate, resolved by task shape">
+<p>Practitioners have argued publicly both ways. One camp, building long-running coding agents, argues that multi-agent designs are fragile because sub-agents act on partial context and make conflicting implicit decisions, and recommends a single thread with careful context management. Another camp, building research systems, reports that parallel sub-agents with isolated contexts cover far more ground and outperform a single agent on broad questions, at a much higher token cost. Both reports are consistent with Steps 3 to 5:</p>
+<ul>
+<li>When the work is <strong>broad, read-heavy and decomposable</strong> into independent parts whose results are small, multi-agent wins on latency, often on quality, sometimes even on tokens.</li>
+<li>When the work is <strong>deep, write-heavy and interdependent</strong>, every split loses context and creates conflicts; a single agent with good context engineering wins.</li>
+</ul>
+<p>In an interview, name the task's shape first, then the topology. "Twelve independent investigations, read-only, small structured findings: orchestrator-workers, with one writer for refunds" is a complete answer. "Multi-agent because it is more powerful" is not.</p>
+</section>
+
+<section data-label="A decision guide">
+<ol>
+<li><strong>Start with one agent</strong> and good context engineering. Measure it.</li>
+<li><strong>Is a sub-task context-heavy but its result small?</strong> Make it a sub-agent called as a tool. This is the most common and safest step.</li>
+<li><strong>Are there many independent sub-tasks, and does latency or breadth matter?</strong> Orchestrator-workers with structured briefs and reports, a concurrency limit, and partial-failure handling.</li>
+<li><strong>Do different parts need different tools or permissions?</strong> Handoffs or specialists, so each agent holds only what it needs (a billing agent never sees account-deletion tools).</li>
+<li><strong>Keep side effects with one writer</strong>, behind approval where irreversible.</li>
+<li><strong>Compare against the single-agent baseline</strong> on the same task set for quality, cost and latency. Keep the multi-agent design only if it wins.</li>
+</ol>
+</section>
+
+<section data-label="In code: fan-out, fan-in, and a brief that loses the answer">
+<p>This runs with the standard library (<code>asyncio</code>). Workers are simulated: each "takes" 11 model turns (scaled down 100 times for the demo) and returns only the fields its brief asks for. Workers are read-only by construction; the orchestrator is the only place a refund could be issued.</p>
+<pre data-lang="python">import asyncio, time
+from dataclasses import dataclass, field
+
+TURN = 0.02          # seconds per model turn (2 s scaled down 100x for the demo)
+# 12 complaints: (order, was it a real duplicate?, seconds between the two charges)
+CASES = [("ORD-%06d" % (500000 + i), dup, gap) for i, (dup, gap) in enumerate(
+    [(True, 31), (True, 29), (False, None), (True, 33), (True, 30), (True, 86400),
+     (True, 28), (False, None), (True, 32), (True, 30), (True, 27), (False, None)])]
+
+@dataclass
+class Brief:                       # what the orchestrator hands a worker
+    order_id: str
+    goal: str = "Decide whether this order was charged twice."
+    fields: list = field(default_factory=lambda: ["duplicate", "charge_ids"])
+    max_turns: int = 10
+    tools: tuple = ("get_order", "get_charges")      # read-only: workers never refund
+
+async def worker(brief, sem):
+    async with sem:                                   # concurrency limit (rate limits)
+        order, dup, gap = next(c for c in CASES if c[0] == brief.order_id)
+        await asyncio.sleep(TURN * 11)                # ~10 tool turns + 1 report turn
+        full = {"order_id": order, "duplicate": dup, "charge_ids": ["ch_a", "ch_b"] if dup else ["ch_a"],
+                "gap_seconds": gap}
+        return {k: full[k] for k in ["order_id"] + brief.fields}   # reports only what was asked
+
+async def orchestrate(fields, concurrency):
+    briefs = [Brief(o, fields=fields) for o, _, _ in CASES]       # plan: one brief per complaint
+    sem = asyncio.Semaphore(concurrency)
+    t0 = time.perf_counter()
+    reports = await asyncio.gather(*(worker(b, sem) for b in briefs))
+    elapsed = (time.perf_counter() - t0) / TURN * 2              # back to "real" seconds
+    dups = [r for r in reports if r["duplicate"]]
+    quick = [r for r in dups if r.get("gap_seconds") is not None and r["gap_seconds"] &lt; 60]
+    cause = (f"{len(quick)} of {len(dups)} duplicates were charged under 60 s apart: client retry after timeout"
+             if quick else "no common cause visible in the reports")
+    return round(elapsed), len(dups), cause
+
+for conc in (12, 4, 1):
+    print("concurrency", conc, "->", asyncio.run(orchestrate(["duplicate", "charge_ids", "gap_seconds"], conc))[0], "s")
+print(asyncio.run(orchestrate(["duplicate", "charge_ids", "gap_seconds"], 12)))
+print(asyncio.run(orchestrate(["duplicate", "charge_ids"], 12)))   # the brief forgot one field
+</pre>
+<p>The fan-out takes about 22 simulated seconds with 12 workers in parallel, about 66 with 4 at a time (three waves) and about 264 to 267 one at a time: Step 4's concurrency limit (the simulation counts model turns only, not tool time). With the full brief, synthesis reports "8 of 9 duplicates were charged under 60 s apart: client retry after timeout". With <code>gap_seconds</code> left out of the brief, every worker still answers its own question correctly, and synthesis reports "no common cause visible in the reports": the Step 7 failure, reproduced.</p>
+<p>In a real system, <code>worker</code> is an agent loop (as in <a href="@@agents/agent-loop@@">the agent loop</a>) whose system prompt is built from the brief and whose final turn is forced into the report schema; the orchestrator's plan and synthesis are two model calls.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"More agents means more intelligence."</strong> Usually it is the same model with different prompts. The real mechanisms are context isolation and parallelism; if a task needs neither, extra agents only add cost and handoffs.</li>
+<li><strong>Splitting interdependent work.</strong> Agents working in parallel on coupled parts make conflicting implicit decisions. Parallelise reading, not interdependent writing.</li>
+<li><strong>Thin briefs.</strong> A worker knows only its brief. Missing fields in the output contract lose information no later step can recover.</li>
+<li><strong>Unstructured reports.</strong> Synthesising twelve essays is unreliable. Ask for a fixed schema.</li>
+<li><strong>Letting every agent write.</strong> Parallel side effects collide. One writer, idempotency keys, approval for irreversible actions.</li>
+<li><strong>Expecting linear speed-up.</strong> Sequential planning and synthesis, rate limits and the slowest worker cap it (Amdahl's law).</li>
+<li><strong>No global budget.</strong> Per-agent limits are not enough; \(N\) agents can each spend their whole budget.</li>
+<li><strong>Not comparing with a single agent.</strong> A multi-agent design must beat a well-engineered single-agent baseline on your tasks to justify itself.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>A task has 20 independent sub-tasks, each 12 turns of 2 s, plus 3 turns of planning and synthesis. With a concurrency limit of 5, roughly how long does the orchestrator design take, versus one agent doing everything in sequence (ignore tool time)?</summary><div class="answer">Four waves of 5 workers: \(4 \times 12 \times 2 = 96\) s, plus \(3 \times 2 = 6\) s, about 102 s. One agent: \((20 \times 12 + 3) \times 2 = 486\) s. Raising concurrency to 20 would bring the fan-out to one wave, about 30 s in total.</div></details>
+<details><summary>With 90% of the work parallelisable, what speed-up do 12 workers give, and what is the ceiling with unlimited workers?</summary><div class="answer">\(1 / (0.1 + 0.9/12) = 1/0.175 \approx 5.7\times\). The ceiling is \(1/0.1 = 10\times\), set by the sequential 10%.</div></details>
+<details><summary>Why can the orchestrator design send fewer input tokens than one agent doing the same investigations, when it has more agents?</summary><div class="answer">Each worker re-sends only its own short history on each turn. The single agent re-sends a history that keeps growing with every investigation it has done, so its per-turn input keeps rising. Isolation removes that cross-investigation re-sending.</div></details>
+<details><summary>A team splits "implement the feature" into a front-end agent and a back-end agent running in parallel. What will go wrong, and what would you do instead?</summary><div class="answer">Each agent makes implicit decisions (API shapes, field names, error formats) the other cannot see, so the halves do not fit, and fixing it needs the context neither has. Use one agent for the coupled implementation, possibly delegating read-only sub-tasks (searching the codebase, reviewing) to sub-agents.</div></details>
+<details><summary>Two workers both conclude that charge ch_14 should be refunded. Design the system so the customer is refunded once.</summary><div class="answer">Workers are read-only and only report; the orchestrator (single writer) de-duplicates proposed actions by charge id before issuing any refund, behind approval, with an idempotency key per charge and a server-side "one refund per charge" check as a final guard.</div></details>
+<details><summary>Every worker report is correct, yet the final incident report misses the obvious common cause. Where would you look first, and why?</summary><div class="answer">At the briefs' output contract and the synthesis input. If the field that reveals the pattern (such as time between charges) was never requested, no worker reported it, so synthesis could not see it. Information lost at a boundary is invisible to every individual agent.</div></details>
+<details><summary>When is a handoff topology the right choice for a customer-facing assistant?</summary><div class="answer">When domains need different tools, permissions or instructions (billing versus account security), so each specialist holds only what it needs, and a conversation naturally belongs to one domain at a time. Pass enough context in the handoff (or the full history) and prevent agents from bouncing the user back and forth.</div></details>
+</section>

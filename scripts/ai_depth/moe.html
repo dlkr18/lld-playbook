@@ -1,0 +1,221 @@
+<!-- Deep lesson: Mixture of experts. Merged into inference/moe by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Feed-forward network (FFN)</td><td>The per-token two-layer network inside every transformer block, after attention. It holds most of a dense model's parameters.</td></tr>
+<tr><td>Expert</td><td>One of several independent FFNs that replace the single FFN in an MoE layer. Same shape as a normal FFN.</td></tr>
+<tr><td>Router (gate)</td><td>A small linear layer that scores every expert for each token and decides which experts process it.</td></tr>
+<tr><td>Top-\(k\) routing</td><td>Each token is sent to the \(k\) experts with the highest router scores; their outputs are mixed by the renormalised scores.</td></tr>
+<tr><td>Total parameters</td><td>Every weight in the model, all experts included. Sets the memory needed to hold it.</td></tr>
+<tr><td>Active parameters</td><td>The weights one token actually uses: shared layers plus its \(k\) experts. Sets the compute per token.</td></tr>
+<tr><td>Load balancing loss</td><td>An extra training loss that is smallest when tokens are spread evenly across experts.</td></tr>
+<tr><td>Expert collapse</td><td>The router sending most tokens to a few experts, so the others stop learning.</td></tr>
+<tr><td>Capacity factor</td><td>How many token slots each expert gets per batch, as a multiple of a perfectly even share.</td></tr>
+<tr><td>Token dropping</td><td>Skipping the expert computation for tokens that arrive after their expert is full; they pass through on the residual path.</td></tr>
+<tr><td>Expert parallelism (EP)</td><td>Placing different experts on different GPUs and sending each token to wherever its experts live.</td></tr>
+<tr><td>All-to-all</td><td>A collective operation in which every GPU sends a different chunk of data to every other GPU. EP uses two per MoE layer.</td></tr>
+<tr><td>Shared expert</td><td>An expert that processes every token, alongside the routed ones, to hold common knowledge.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>Bigger models know more, but in a dense transformer every parameter is used for every token: doubling the parameters doubles the compute per token, in training and at inference. A <strong>mixture of experts</strong> (MoE) breaks that link. It keeps many sets of FFN weights but uses only a few of them for each token, so the model can hold far more parameters than it spends compute on.</p>
+<p>That trade, more memory for less compute, shapes everything about MoE models: how they are trained, why they need special care to stay balanced, and why serving them is easy in one way and hard in another. The interview questions:</p>
+<ol>
+<li>What does "47B total, 13B active" mean, and which number determines cost?</li>
+<li>How does the router choose experts, and what stops it from sending everything to one?</li>
+<li>What does MoE change at serving time, in memory, speed and hardware?</li>
+<li>When would you choose an MoE model over a dense one?</li>
+</ol>
+<p><strong>Running example.</strong> A model shaped like Mixtral 8x7B, whose dimensions are public: 32 layers, hidden size 4,096, an FFN inner size of 14,336 using a SwiGLU FFN (three weight matrices), <strong>8 experts per layer with top-2 routing</strong>, grouped-query attention with 8 KV heads, and a 32,000-token vocabulary. We will count its parameters, route a token through it, train its router, and serve it on H100 80 GB GPUs.</p>
+</section>
+
+<section data-label="Step 1: where a transformer's parameters live">
+<p>Each transformer block has two parts: attention, which mixes information between tokens, and the FFN, which transforms each token's vector on its own (see <a href="@@fundamentals/transformers@@">Transformers &amp; attention</a>). Count them for one block of our model:</p>
+<ul>
+<li><strong>Attention:</strong> query and output projections of \(4{,}096 \times 4{,}096\) each, and key and value projections of \(4{,}096 \times 1{,}024\) each (GQA): about <strong>41.9M</strong> parameters.</li>
+<li><strong>FFN (SwiGLU):</strong> three matrices of \(4{,}096 \times 14{,}336\): about <strong>176.2M</strong> parameters.</li>
+</ul>
+<p>The FFN is four times larger than attention. In a dense version of this model (one FFN per layer), FFNs hold about 78% of all parameters. They are also where much of the model's stored knowledge appears to live: probing studies find facts associated with specific FFN neurons. So the FFN is the natural place to add capacity, and the place where making each token use only part of the weights saves the most.</p>
+</section>
+
+<section data-label="Step 2: the idea, conditional computation">
+<p>An MoE layer replaces the single FFN with \(E\) expert FFNs plus a router. For each token, the router picks \(k\) experts; only those run. The layer's output is the weighted sum of their outputs:</p>
+\[ y = \sum_{i \in \text{top-}k} g_i \, \text{FFN}_i(x) \]
+<p>where \(x\) is the token's vector and \(g_i\) is the router's weight for expert \(i\). Attention, embeddings and normalisation stay dense and shared.</p>
+<p>Counting with \(E = 8\), \(k = 2\):</p>
+<table>
+<thead><tr><th></th><th>Per layer</th><th>32 layers</th></tr></thead>
+<tbody>
+<tr><td>Experts held</td><td>8 × 176.2M = 1.41B</td><td>45.1B</td></tr>
+<tr><td>Experts used per token</td><td>2 × 176.2M = 352M</td><td>11.3B</td></tr>
+<tr><td>Attention + router (always used)</td><td>41.9M + 33K</td><td>1.34B</td></tr>
+<tr><td>Embeddings and output head</td><td colspan="2">2 × 32,000 × 4,096 = 0.26B</td></tr>
+</tbody>
+</table>
+<p>Total: <strong>46.7B</strong> parameters. Active per token: <strong>12.9B</strong>. The name "8x7B" suggests 56B; it is less because only the FFNs are multiplied by eight, and attention and embeddings are shared.</p>
+<p>The consequence is the whole point. A forward pass costs about 2 FLOPs per <em>active</em> parameter per token, so this model computes like a 13B dense model (about 26 GFLOPs per token) while holding the parameters of a 47B one. Published MoE results consistently report that, for the same training compute, sparse models reach a given quality sooner than dense ones; that is why many recent frontier and open models use MoE.</p>
+</section>
+
+<section data-label="Step 3: the router, worked for one token">
+<p>The router is a single matrix \(W_g\) of size \(4{,}096 \times 8\): it turns a token's vector into 8 scores (logits), one per expert. Suppose a token in a block of Python code gets these logits:</p>
+<table>
+<thead><tr><th>Expert</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th></tr></thead>
+<tbody>
+<tr><td>Logit</td><td>2.1</td><td>0.3</td><td>−0.5</td><td>1.4</td><td>0.0</td><td>−1.2</td><td>0.8</td><td>−0.3</td></tr>
+<tr><td>Softmax</td><td>0.443</td><td>0.073</td><td>0.033</td><td>0.220</td><td>0.054</td><td>0.016</td><td>0.121</td><td>0.040</td></tr>
+</tbody>
+</table>
+<p>Top-2 picks experts 0 and 3. Their probabilities are renormalised over the chosen pair: \(0.443 / (0.443 + 0.220) = 0.668\) and \(0.332\). The token's FFN output is \(0.668 \times \text{FFN}_0(x) + 0.332 \times \text{FFN}_3(x)\). Experts 1, 2, 4, 5, 6 and 7 never see this token, and their weights are not used for it.</p>
+<p>Three design points hide in this small calculation:</p>
+<ul>
+<li><strong>Why \(k = 2\), not 1?</strong> With \(k = 1\) (Switch Transformer style), each token gets one expert's view and the router's choice is all-or-nothing. With two, the output blends two experts and the router gets a gradient signal about the relative merit of both. More experts per token means more compute, so \(k\) is a quality-versus-cost knob.</li>
+<li><strong>How does the router learn?</strong> The gate weights \(g_i\) multiply the expert outputs, so the loss gradient flows into the router through them. The top-\(k\) selection itself is not differentiable; the router learns only from the experts it picked.</li>
+<li><strong>Specialisation is not by topic.</strong> Analyses of trained MoE models find experts specialise more by token type and syntax (punctuation, indentation, certain word pieces) than by human topics like "biology" or "law". "The maths expert" is mostly a myth.</li>
+</ul>
+</section>
+
+<section data-label="Step 4: why routers collapse, and the balancing loss">
+<p>Start training with a random router. By chance, some experts get slightly more tokens; they learn faster; they become better; the router learns to send them even more tokens. This rich-get-richer loop ends in <strong>expert collapse</strong>: two experts do all the work and six are dead weight. You have paid for 46.7B parameters and are using a fraction of them.</p>
+<p>The standard fix is an auxiliary <strong>load balancing loss</strong> added to the language-model loss. In the Switch Transformer form:</p>
+\[ \mathcal{L}_{\text{aux}} = \alpha \cdot E \sum_{i=1}^{E} f_i \, P_i \]
+<p>Here \(f_i\) is the fraction of token assignments that went to expert \(i\) in the batch, \(P_i\) is the average router probability given to expert \(i\), and \(\alpha\) is a small weight (around 0.01). \(f_i\) is a count and has no gradient; \(P_i\) does, so the loss pushes probability away from experts that are already receiving many tokens. When routing is perfectly even, \(f_i = P_i = 1/E\) and the sum times \(E\) equals exactly 1. Any imbalance makes it larger.</p>
+<p>The code at the end routes 2,048 random tokens through 8 experts. With a fresh router the loads are roughly even (446 to 587 assignments per expert) and the balance term is 1.0. Bias the router toward experts 0 and 3 and all 2,048 tokens go to those two; the term rises to 3.44, and its gradient pushes the router back.</p>
+<p>The weight \(\alpha\) is a real trade-off: too small and collapse wins, too large and the router is forced toward uniform, random-looking routing that ignores which expert actually suits the token. Later designs add a <strong>router z-loss</strong> that penalises very large router logits (it keeps training numerically stable) and some replace the auxiliary loss with per-expert bias terms adjusted directly from observed load, so balancing no longer competes with the language-model objective.</p>
+</section>
+
+<section data-label="Step 5: capacity, and what happens to overflow">
+<p>Hardware wants fixed-size work. In training, each expert is given a fixed buffer of token slots per batch:</p>
+\[ \text{capacity} = \text{capacity factor} \times \frac{T \times k}{E} \]
+<p>for a batch of \(T\) tokens. With \(T = 4{,}096\), \(k = 2\) and \(E = 8\), a perfectly even split gives each expert 1,024 tokens. A capacity factor of 1.25 gives each 1,280 slots, a 25% margin for imbalance.</p>
+<p>If the router sends 1,500 tokens to one expert, 220 overflow. Those tokens are <strong>dropped</strong> for that expert: they skip its computation and continue through the residual connection unchanged, which slightly hurts their representation. The capacity factor is therefore a direct trade between wasted compute (empty slots when the factor is high) and dropped tokens (when it is low). In the collapsed case from Step 4, scaled to this batch, each of the two hot experts would receive 4,096 assignments for 1,280 slots and drop more than two-thirds of them, which is another reason collapse is so damaging.</p>
+<p>Inference engines generally avoid dropping (dropless MoE), using variable-size grouped matrix multiplications instead of fixed buffers, because silently changing a user's output based on who else is in the batch is unacceptable.</p>
+</section>
+
+<section data-label="Step 6: expert parallelism and the all-to-all">
+<p>Our model's experts alone are about 90 GB in BF16 (45.1B parameters × 2 bytes), and frontier MoE models are many times larger. The natural way to spread them is <strong>expert parallelism</strong>: put experts 0 and 1 on GPU 0, 2 and 3 on GPU 1, and so on. Each MoE layer then becomes a communication pattern:</p>
+<pre class="ascii-diagram">every GPU: attention for its own tokens (dense, replicated)
+    │  router picks 2 experts per token
+    ▼
+all-to-all #1  (dispatch): send each token's vector to the GPUs holding its experts
+    ▼
+each GPU: run its experts on the tokens it received
+    ▼
+all-to-all #2  (combine): send results back to each token's home GPU, weight by g_i
+    ▼
+next layer</pre>
+<p>The traffic is easy to estimate. For a batch of 4,096 tokens, each sent to 2 experts, with 4,096-wide BF16 vectors, one all-to-all moves about \(4{,}096 \times 2 \times 4{,}096 \times 2\) bytes ≈ 67 MB. Two per layer across 32 layers is about <strong>4.3 GB per forward pass</strong>. Inside one NVLink-connected server that is manageable; across servers on a slower network it can dominate the step time. That is why EP is usually kept within a node or paired with fast interconnects, and why an imbalanced router hurts twice: the GPU holding a hot expert has more compute <em>and</em> receives more traffic, and every other GPU waits for it.</p>
+<p>EP combines with the other parallelism axes (data, tensor, pipeline) covered in <a href="@@inference/gpus-scale@@">GPUs &amp; distributed training</a>.</p>
+</section>
+
+<section data-label="Step 7: serving an MoE model">
+<p>At inference, MoE splits the two resources that a dense model ties together.</p>
+<p><strong>Memory follows total parameters.</strong> All 46.7B parameters must be resident, because any token may pick any expert. In BF16 that is about 93 GB, more than one 80 GB H100. Options: two GPUs (tensor or expert parallel), 8-bit weights (about 47 GB, fits one GPU with room for the KV cache), or 4-bit. For memory planning, an MoE model is as big as its total parameter count says.</p>
+<p><strong>Compute follows active parameters.</strong> Prefill, which is compute-bound, costs about 26 GFLOPs per token, the same as a 13B dense model and about 3.6 times less than a dense 47B model.</p>
+<p><strong>Decode bandwidth depends on the batch.</strong> Decode is memory-bound (see <a href="@@inference/inference-internals@@">Inference internals</a>): its speed is set by bytes read per step. At batch 1, each layer reads only the 2 chosen experts, about 26 GB in all, so a step takes about 7.7 ms at 3.35 TB/s, against about 28 ms for a dense 47B model. But a batch of tokens picks experts independently. If routing were uniform, the expected number of distinct experts touched per layer is \(8\big(1 - (6/8)^B\big)\) for a batch of \(B\) tokens:</p>
+<table>
+<thead><tr><th>Batch</th><th>1</th><th>4</th><th>8</th><th>16</th><th>64</th></tr></thead>
+<tbody><tr><td>Experts read per layer</td><td>2.0</td><td>5.5</td><td>7.2</td><td>7.9</td><td>8.0</td></tr></tbody>
+</table>
+<p>By batch 16, nearly every expert is read every step, so a decode step reads almost all 93 GB, like a dense 47B model. (Real routing is skewed and correlated, so the numbers are somewhat lower, but the shape holds.) The sparsity saving in bandwidth disappears exactly where serving economics live, at large batches. What remains is the compute saving, which matters once the batch is large enough to be compute-bound.</p>
+<p>So the honest summary: <strong>an MoE model needs the memory of its total size, runs single-user decode at roughly the speed of its active size, and runs large-batch decode at a bandwidth cost close to its total size but a compute cost of its active size.</strong> It is excellent on a big, well-utilised fleet and awkward on a single small GPU.</p>
+</section>
+
+<section data-label="Step 8: fine-grained and shared experts">
+<p>Recent MoE designs change the shape of the expert pool. <strong>Fine-grained experts</strong> split each big expert into several smaller ones and route to more of them: instead of 2 of 8, say 6 of 64 experts each an eighth of the size. Compute per token stays similar, but the number of possible expert combinations grows from \(\binom{8}{2} = 28\) to \(\binom{64}{6} \approx 75\) million, letting the model compose more specific mixtures. <strong>Shared experts</strong> process every token in addition to the routed ones, so common knowledge (grammar, frequent patterns) need not be duplicated in every routed expert. DeepSeek's MoE work popularised both ideas.</p>
+<p>The serving cost follows Step 7: more, smaller experts mean more, smaller matrix multiplications and more routing traffic, so efficient grouped kernels and good expert placement matter even more.</p>
+</section>
+
+<section data-label="Choosing MoE or dense">
+<table>
+<thead><tr><th>Situation</th><th>Leans toward</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>High-throughput serving on a multi-GPU node</td><td>MoE</td><td>Large batches use the compute saving; memory is available.</td></tr>
+<tr><td>Single 24 to 48 GB GPU, one user at a time</td><td>Dense (quantized)</td><td>An MoE's total size may not fit; the bandwidth advantage at batch 1 is lost if you must offload experts.</td></tr>
+<tr><td>Training a model from scratch on a fixed compute budget</td><td>MoE, if you have the engineering</td><td>Better quality per training FLOP; harder to train stably and to parallelise.</td></tr>
+<tr><td>Fine-tuning for a narrow task</td><td>Either; dense is simpler</td><td>MoE fine-tuning works but routing can shift and overfit; LoRA tooling is more mature for dense.</td></tr>
+<tr><td>Strict latency for single requests on modest hardware</td><td>Dense of similar active size</td><td>Same compute, a fraction of the memory, no routing overhead.</td></tr>
+</tbody>
+</table>
+<p>When someone quotes an MoE model, translate immediately: total parameters tell you the GPUs needed to hold it; active parameters tell you the cost per token once it is held.</p>
+</section>
+
+<section data-label="In code: a top-2 MoE layer you can inspect">
+<p>A complete MoE layer in numpy: router, top-2 selection, renormalised gates, per-expert computation on only its tokens, and the balance loss. The second call adds a bias that makes the router collapse onto experts 0 and 3.</p>
+<pre data-lang="python">import numpy as np
+
+rng = np.random.default_rng(0)
+T, d, ff, E, k = 2048, 16, 64, 8, 2                 # tokens, width, expert width, experts, top-k
+x = rng.normal(size=(T, d))
+experts = [(rng.normal(size=(d, ff)) / d**0.5, rng.normal(size=(ff, d)) / ff**0.5) for _ in range(E)]
+
+def moe(x, Wg, bias=0.0):
+    logits = x @ Wg + bias                           # (T, E) router scores
+    probs = np.exp(logits - logits.max(1, keepdims=True))
+    probs /= probs.sum(1, keepdims=True)
+    top = np.argsort(-logits, axis=1)[:, :k]         # each token's k best experts
+    gate = np.take_along_axis(probs, top, 1)
+    gate /= gate.sum(1, keepdims=True)               # renormalise over the chosen k
+    out = np.zeros_like(x)
+    for e, (W1, W2) in enumerate(experts):           # each expert sees only its tokens
+        rows, slot = np.nonzero(top == e)
+        h = np.maximum(x[rows] @ W1, 0) @ W2
+        out[rows] += gate[rows, slot, None] * h
+    f = np.bincount(top.ravel(), minlength=E) / (T * k)   # share of assignments per expert
+    P = probs.mean(0)                                      # mean router probability per expert
+    aux = E * np.sum(f * P)                                # Switch-style balance loss (1.0 = perfect)
+    return out, np.bincount(top.ravel(), minlength=E), aux
+
+Wg = rng.normal(size=(d, E)) * 0.1
+_, load, aux = moe(x, Wg)
+print("balanced router  loads", load, "aux", round(aux, 2))
+_, load, aux = moe(x, Wg, bias=np.array([3.0, 0, 0, 3.0, 0, 0, 0, 0]))
+print("collapsed router loads", load, "aux", round(aux, 2))
+print("capacity per expert at factor 1.25:", int(1.25 * T * k / E))
+</pre>
+<p>Output: balanced loads between 446 and 587 with a balance term of 1.0; collapsed loads of 2,048 on experts 0 and 3 and zero elsewhere, balance term 3.44; a capacity of 640 slots per expert, so in the collapsed case each hot expert would drop 1,408 tokens.</p>
+<p>And the parameter and bandwidth arithmetic from Steps 2 and 7:</p>
+<pre data-lang="python">from math import comb
+
+def moe_params(d=4096, ff=14336, layers=32, experts=8, k=2, kv_dim=1024, vocab=32000):
+    expert = 3 * d * ff                               # SwiGLU: gate, up and down matrices
+    attn = 2 * d * d + 2 * d * kv_dim                 # q, o full width; k, v grouped
+    shared = layers * (attn + d * experts) + 2 * vocab * d
+    return shared + layers * experts * expert, shared + layers * k * expert
+
+total, active = moe_params()
+print(f"total {total/1e9:.1f}B, active {active/1e9:.1f}B per token")
+print(f"BF16 weights {2*total/1e9:.0f} GB to hold, {2*active/1e9:.0f} GB touched per token")
+
+def experts_touched(batch, experts=8, k=2):
+    """Expected distinct experts per layer if each token picks k of E uniformly."""
+    miss = comb(experts - 1, k) / comb(experts, k)    # P(a given expert unused by one token)
+    return experts * (1 - miss ** batch)
+
+for b in (1, 4, 8, 16, 64):
+    print(f"batch {b:3d}: {experts_touched(b):.2f} of 8 experts read per layer")
+</pre>
+<p>It prints 46.7B total and 12.9B active, 93 GB to hold and 26 GB touched per token, and the experts-per-layer row of the table in Step 7.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"8x7B means eight 7B models, 56B in total."</strong> Only the FFNs are replicated; attention and embeddings are shared. The total is 46.7B.</li>
+<li><strong>"An MoE model is as cheap to host as its active size."</strong> Memory is set by total parameters. A 47B-total model needs 47B parameters resident, whatever fraction each token uses.</li>
+<li><strong>"MoE makes decode 3.6 times faster."</strong> Only at very small batch. With a few dozen sequences in a batch, nearly every expert is read every step, and bandwidth cost approaches the total size.</li>
+<li><strong>"Each expert is a domain specialist."</strong> Specialisation is mostly by token type and syntax, not by subject. Do not design systems that assume a "legal expert".</li>
+<li><strong>"The balancing loss is a minor detail."</strong> Without it, training collapses onto a few experts; with too much of it, routing becomes uniform and useless. Its weight is a first-order hyperparameter.</li>
+<li><strong>"Token dropping happens at inference."</strong> Dropping is a training-time capacity device. Serving engines run dropless so outputs do not depend on who else is in the batch.</li>
+<li><strong>"MoE is a different kind of model to call."</strong> To an API caller it is identical to a dense model. The differences are entirely in training and serving.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>An MoE model has 16 experts per layer, top-2 routing, experts of 100M parameters, 48 layers, and 2B parameters of shared layers. What are its total and active parameter counts?</summary><div class="answer">Experts: \(16 \times 100\text{M} \times 48 = 76.8\)B total, \(2 \times 100\text{M} \times 48 = 9.6\)B active. Adding 2B shared: about 78.8B total, 11.6B active.</div></details>
+<details><summary>Why is the router's choice of experts not directly trained by gradient descent, and how does the router learn anyway?</summary><div class="answer">Top-\(k\) selection is a discrete choice with no gradient. The router learns through the gate weights \(g_i\) that scale the chosen experts' outputs (and through the balancing loss on its probabilities), so it learns which of its picks helped more.</div></details>
+<details><summary>A batch of 8,192 tokens, 16 experts, top-2, capacity factor 1.0. The busiest expert receives 1,300 tokens. How many are dropped?</summary><div class="answer">Capacity is \(1.0 \times 8{,}192 \times 2 / 16 = 1{,}024\). 276 tokens are dropped for that expert and pass through on the residual path.</div></details>
+<details><summary>You must serve the 46.7B-total model on one H100 80 GB. What do you do, and what is the main cost?</summary><div class="answer">Quantize the weights: 8-bit is about 47 GB, leaving roughly 25 to 30 GB for the KV cache and runtime; 4-bit leaves more. The cost is some quality risk, which you measure on your own task evals, and less KV room than a 13B dense model would leave.</div></details>
+<details><summary>At batch 1, MoE decode reads about 26 GB per step; at batch 32, about 93 GB. Why, and what does that imply for serving cost?</summary><div class="answer">Each token picks its own experts; with 32 tokens almost every expert in every layer is chosen by someone, so all expert weights are read each step. At production batch sizes the bandwidth cost resembles a dense model of total size; the saving is in compute, which matters for prefill and compute-bound large batches.</div></details>
+<details><summary>During training, the balance term \(E \sum f_i P_i\) climbs from 1.0 to 2.8 and validation loss stalls. What is happening and what would you try?</summary><div class="answer">Routing is collapsing onto a few experts. Raise the balancing weight \(\alpha\), add or strengthen router z-loss, check the router's learning rate and initialisation, and monitor per-expert load histograms so you see it early.</div></details>
+<details><summary>A team says: "MoE lets us run a 47B-quality model at 13B cost on our single 24 GB GPU." What is right and wrong with that?</summary><div class="answer">Right: compute per token is like a 13B model. Wrong: all 47B parameters must be held; even at 4-bit that is about 23 GB of weights, leaving almost nothing for the KV cache, and offloading experts to CPU destroys decode speed. A dense model of about 13B would serve better on that GPU.</div></details>
+</section>

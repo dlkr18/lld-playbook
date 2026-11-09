@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-labs.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
@@ -20,33 +24,239 @@
   <h2>PyTorch in practice</h2>
   <a href="index.html">&larr; Math &amp; ML foundations</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#tensors-shapes-broadcasting"><span class="num">02</span> Tensors, shapes, broadcasting</a>
-  <a href="#autograd-in-pytorch"><span class="num">03</span> Autograd in PyTorch</a>
-  <a href="#nn-module-train-eval-state-dict"><span class="num">04</span> nn.Module, train/eval, state_dict</a>
-  <a href="#datasets-and-dataloaders"><span class="num">05</span> Datasets and DataLoaders</a>
-  <a href="#a-complete-trustworthy-training-loop"><span class="num">06</span> A complete, trustworthy training loop</a>
-  <a href="#mixed-precision-fp32-fp16-bf16-fp8"><span class="num">07</span> Mixed precision: fp32, fp16, bf16, fp8</a>
-  <a href="#where-gpu-memory-goes"><span class="num">08</span> Where GPU memory goes</a>
-  <a href="#activation-gradient-checkpointing"><span class="num">09</span> Activation (gradient) checkpointing</a>
-  <a href="#torch-compile-and-profiling"><span class="num">10</span> torch.compile and profiling</a>
-  <a href="#debugging-a-training-run"><span class="num">11</span> Debugging a training run</a>
-  <a href="#how-this-connects"><span class="num">12</span> How this connects</a>
-  <a href="#check-yourself"><span class="num">13</span> Check yourself</a>
-  <a href="#build-it"><span class="num">14</span> Build it</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#the-question"><span class="num">03</span> The question</a>
+  <a href="#step-1-tensors-shapes-and-broadcasting"><span class="num">04</span> Step 1: tensors, shapes and broadcasting</a>
+  <a href="#step-2-autograd-records-a-graph-and-accumulates-gradients"><span class="num">05</span> Step 2: autograd records a graph and accumulates gradients</a>
+  <a href="#step-3-modules-modes-and-state"><span class="num">06</span> Step 3: modules, modes and state</a>
+  <a href="#step-4-feeding-data-without-starving-the-gpu"><span class="num">07</span> Step 4: feeding data without starving the GPU</a>
+  <a href="#step-5-the-training-loop-line-by-line"><span class="num">08</span> Step 5: the training loop, line by line</a>
+  <a href="#step-6-mixed-precision-bf16-and-fp16"><span class="num">09</span> Step 6: mixed precision, bf16 and fp16</a>
+  <a href="#step-7-where-gpu-memory-goes"><span class="num">10</span> Step 7: where GPU memory goes</a>
+  <a href="#step-8-activation-checkpointing-trades-compute-for-memory"><span class="num">11</span> Step 8: activation checkpointing trades compute for memory</a>
+  <a href="#step-9-torch-compile-and-profiling"><span class="num">12</span> Step 9: torch.compile and profiling</a>
+  <a href="#debugging-a-run-the-order-that-saves-the-most-time"><span class="num">13</span> Debugging a run: the order that saves the most time</a>
+  <a href="#in-code-the-intent-classifier-complete"><span class="num">14</span> In code: the intent classifier, complete</a>
+  <a href="#tensors-shapes-broadcasting"><span class="num">15</span> Tensors, shapes, broadcasting</a>
+  <a href="#autograd-in-pytorch"><span class="num">16</span> Autograd in PyTorch</a>
+  <a href="#nn-module-train-eval-state-dict"><span class="num">17</span> nn.Module, train/eval, state_dict</a>
+  <a href="#datasets-and-dataloaders"><span class="num">18</span> Datasets and DataLoaders</a>
+  <a href="#a-complete-trustworthy-training-loop"><span class="num">19</span> A complete, trustworthy training loop</a>
+  <a href="#mixed-precision-fp32-fp16-bf16-fp8"><span class="num">20</span> Mixed precision: fp32, fp16, bf16, fp8</a>
+  <a href="#where-gpu-memory-goes"><span class="num">21</span> Where GPU memory goes</a>
+  <a href="#activation-gradient-checkpointing"><span class="num">22</span> Activation (gradient) checkpointing</a>
+  <a href="#torch-compile-and-profiling"><span class="num">23</span> torch.compile and profiling</a>
+  <a href="#debugging-a-training-run"><span class="num">24</span> Debugging a training run</a>
+  <a href="#where-people-get-lost"><span class="num">25</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">26</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">27</span> Check yourself</a>
+  <a href="#build-it"><span class="num">28</span> Build it</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>PyTorch in practice <span>// Math &amp; ML foundations</span></h1>
   <p>Tensors, autograd, a trustworthy training loop, mixed precision, GPU memory and debugging a run.</p>
-  <div class="tags"><span class="tag">5 min read</span><span class="tag">1 diagram</span></div>
+  <div class="tags"><span class="tag">22 min read</span><span class="tag">1 diagram</span></div>
 </div>
 
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
 <div class="diagram"><img src="../img/pytorch.png" alt="One step of a production training loop, read left to right along the top and back along the bottom, and where a GPU&#x27;s memory goes."></div><p class="diagram-caption">One step of a production training loop, read left to right along the top and back along the bottom, and where a GPU&#x27;s memory goes.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Tensor</strong></td><td>PyTorch's n-dimensional array. It has a shape, a dtype (number format) and a device (CPU or a GPU).</td></tr><tr><td><strong>Broadcasting</strong></td><td>Automatically stretching size-1 or missing dimensions so tensors of different shapes can be combined element by element.</td></tr><tr><td><strong>Autograd</strong></td><td>PyTorch's automatic differentiation: it records operations during the forward pass and applies the chain rule backwards when you call <code>backward()</code>.</td></tr><tr><td><strong>Leaf tensor / <code>.grad</code></strong></td><td>A tensor you created with <code>requires_grad=True</code> (usually a parameter). Its gradient is added into its <code>.grad</code> field.</td></tr><tr><td><strong><code>nn.Module</code></strong></td><td>The base class for layers and models. It tracks parameters, sub-modules, and a training/evaluation mode flag.</td></tr><tr><td><strong><code>state_dict</code></strong></td><td>A dictionary of a module's (or optimiser's) tensors by name: what you save and load as a checkpoint.</td></tr><tr><td><strong>DataLoader</strong></td><td>Wraps a dataset to produce shuffled mini-batches, optionally using background worker processes.</td></tr><tr><td><strong>Mixed precision</strong></td><td>Running most maths in a 16-bit format (bf16 or fp16) for speed and memory while keeping sensitive values in 32-bit.</td></tr><tr><td><strong>Loss scaling</strong></td><td>Multiplying the loss by a large factor before <code>backward()</code> so tiny fp16 gradients do not round to zero, then dividing it back out.</td></tr><tr><td><strong>Activations (saved tensors)</strong></td><td>Intermediate results of the forward pass that autograd keeps because the backward pass needs them. Often the largest memory cost in training.</td></tr><tr><td><strong>Activation checkpointing</strong></td><td>Saving only some activations and recomputing the rest during backward: less memory, more compute.</td></tr><tr><td><strong><code>torch.compile</code></strong></td><td>Captures a model's operations as a graph and generates fused, faster kernels for it.</td></tr></tbody></table>
+</section>
+<p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>03 &mdash; The question</h2>
+<p>PyTorch is how almost every model in this course is built, trained and fine-tuned. Its core is small: tensors, autograd and modules. Its difficulty is that a training loop with a bug usually <em>runs</em>. It produces a loss curve, the loss even goes down, and the model is quietly worse than it should be or will not fit on the GPU when you scale it up. The skill interviewers probe is knowing what each line of a training loop does to memory and to gradients.</p>
+<ol>
+<li>Write a correct training loop. What are the most common silent bugs?</li>
+<li>Where does GPU memory go during training, and what do you do when you run out?</li>
+<li>bf16 or fp16: what is the difference, and why does fp16 need loss scaling?</li>
+<li>What do activation checkpointing and <code>torch.compile</code> trade, and when would you use them?</li>
+</ol>
+<p>The running example: a <strong>ticket-intent classifier</strong>. Each support ticket has already been turned into a 384-number embedding (by an embedding model, see <a href="../rag/embeddings.html">Embeddings</a>), and we train a small network to sort tickets into five intents: billing, bug, login, feature request, cancellation. The data is 4,000 labelled tickets (3,200 for training, 800 for validation). The model is a two-layer MLP: 384 → 256 with GELU and 10% dropout → 5, which has \(384 \times 256 + 256 + 256 \times 5 + 5 = 99{,}845\) parameters. At the end we scale the same reasoning to a 1.3-billion-parameter model to see where memory goes.</p>
+</section>
+<section id="step-1-tensors-shapes-and-broadcasting">
+  <h2>04 &mdash; Step 1: tensors, shapes and broadcasting</h2>
+<p>A tensor is a block of numbers with a <strong>shape</strong>, a <strong>dtype</strong> and a <strong>device</strong>. One mini-batch of our tickets is a tensor of shape (32, 384), dtype <code>float32</code>, and the labels are shape (32,) of integers. The model maps (32, 384) to logits of shape (32, 5). Writing the shape next to every line is the most effective debugging habit in deep learning; most bugs are shape bugs.</p>
+<p>The first layer computes <code>x @ W.T + b</code> with <code>W</code> of shape (256, 384) and <code>b</code> of shape (256,). The matrix product gives (32, 256), but <code>b</code> is (256,). <strong>Broadcasting</strong> makes this work: PyTorch aligns shapes from the right, and any dimension that is missing or of size 1 is stretched to match. So <code>b</code> is treated as (1, 256), then as (32, 256): the same bias added to every row. That is exactly what we want.</p>
+<p>Broadcasting is also the source of a classic silent bug. A regression model outputs predictions of shape (3, 1); the targets are shape (3,). Compute the squared error:</p>
+<ul>
+<li>Predictions [[1], [2], [3]], targets [1, 2, 3]. The predictions are perfect.</li>
+<li><code>pred - target</code> broadcasts (3, 1) against (3,) to a <strong>(3, 3)</strong> matrix: every prediction minus every target.</li>
+<li>The mean of its squares is 1.333 instead of 0.0. Training will "work" and fit the wrong objective.</li>
+</ul>
+<p><code>F.mse_loss</code> prints a warning for this case; a hand-written <code>((pred - target) ** 2).mean()</code> does not. The fix is to make the shapes equal deliberately (<code>pred.squeeze(-1)</code>) and assert shapes in your loss code.</p>
+<p>Two more tensor facts that matter later. A tensor lives on one device, and an operation between a CPU and a GPU tensor is an error; moving data with <code>.to(device)</code> is a copy across a bus and is slow if done per item instead of per batch. And many operations (<code>view</code>, <code>transpose</code>, slicing) return a <em>view</em> of the same memory with different strides rather than a copy, which is cheap but means an in-place change through one view changes the other.</p>
+</section>
+<section id="step-2-autograd-records-a-graph-and-accumulates-gradients">
+  <h2>05 &mdash; Step 2: autograd records a graph and accumulates gradients</h2>
+<p>When a tensor with <code>requires_grad=True</code> takes part in an operation, PyTorch records that operation and keeps whatever the backward pass will need. For <code>c = (a * 3).relu().sum()</code>, the result carries <code>grad_fn=SumBackward0</code>, which points to <code>ReluBackward0</code>, which points to <code>MulBackward0</code>. Calling <code>c.backward()</code> walks that chain applying the chain rule, exactly as in <a href="neural-networks.html">Neural networks</a>, Step 3, and writes the results into each leaf tensor's <code>.grad</code>.</p>
+<p>The key word is <em>writes into</em>: gradients are <strong>added</strong> to <code>.grad</code>, not stored over it. Take \(w = 2\) and loss \((3w)^2\), whose gradient is \(18w = 36\). Call <code>backward()</code> three times without clearing and <code>w.grad</code> reads 36, then 72, then 108. In a training loop that forgets <code>optimizer.zero_grad()</code>, every step uses the sum of all previous gradients: the effective learning rate grows every step and training goes unstable.</p>
+<p>Accumulation is deliberate, because it is useful: to train with an effective batch of 128 when only 32 fit in memory, run four forward-backward passes, let the gradients add up, divide the loss by 4 so the sum is an average, then take one optimiser step and clear.</p>
+<p>Two context managers switch recording off:</p>
+<ul>
+<li><code>torch.no_grad()</code> (or the slightly faster <code>torch.inference_mode()</code>) for evaluation and inference. Without it, every evaluation batch builds a graph and keeps its activations alive: wasted memory, and sometimes an out-of-memory error in the validation loop of a run that trains fine.</li>
+<li><code>tensor.detach()</code> returns the same values cut off from the graph, for logging a loss value or using a model output as a fixed target.</li>
+</ul>
+</section>
+<section id="step-3-modules-modes-and-state">
+  <h2>06 &mdash; Step 3: modules, modes and state</h2>
+<p>An <code>nn.Module</code> does three jobs. It <strong>registers parameters</strong>: any <code>nn.Parameter</code> or sub-module assigned as an attribute is found by <code>model.parameters()</code>, which is how the optimiser knows what to update. Tensors stored in a plain Python list are invisible to it (use <code>nn.ModuleList</code>), a mistake that leaves part of a model untrained without any error.</p>
+<p>It carries a <strong>mode</strong>. <code>model.train()</code> and <code>model.eval()</code> flip a flag that some layers obey. Dropout is the clearest case: in training mode it zeroes each value with probability \(p\) and multiplies the survivors by \(1/(1-p)\) so the expected value is unchanged; in evaluation mode it does nothing. Run the same input through a dropout-0.5 layer twice in training mode and you get two different outputs, with some entries zeroed and the rest doubled; in evaluation mode the output is fixed. Forgetting <code>model.eval()</code> makes validation noisy and pessimistic. Forgetting to switch back to <code>model.train()</code> after evaluating silently turns dropout off for the rest of training. BatchNorm has the same split (batch statistics in training, running averages in evaluation).</p>
+<p>It exposes a <strong><code>state_dict</code></strong>: an ordered mapping from names (<code>"0.weight"</code>, <code>"0.bias"</code>, <code>"3.weight"</code>, …) to tensors. A checkpoint you can resume from saves the model's and the optimiser's <code>state_dict</code> (AdamW's moment estimates are part of training state), the learning-rate scheduler, the step count and the random-number-generator states. Saving only the model weights lets you run inference, but resuming training from them restarts Adam's statistics and the schedule, which shows up as a loss spike.</p>
+</section>
+<section id="step-4-feeding-data-without-starving-the-gpu">
+  <h2>07 &mdash; Step 4: feeding data without starving the GPU</h2>
+<p>A <code>Dataset</code> answers two questions: how many examples, and what is example \(i\). A <code>DataLoader</code> turns it into batches: it shuffles indices each epoch (for training; never needed for validation), groups them into batches of 32, and stacks the examples into tensors. For our tickets that is 100 batches per epoch.</p>
+<p>With real data, loading is often the bottleneck: reading files, decoding, tokenising, padding. If that happens in the training process, the GPU waits idle for every batch. <code>num_workers</code> greater than 0 runs loading in parallel background processes so the next batches are ready, and <code>pin_memory=True</code> places batches in page-locked memory so the copy to the GPU can overlap with computation. The tell-tale sign of a starving GPU is utilisation that oscillates between 0% and 100% instead of staying high; the fix is more workers or moving expensive preprocessing (tokenisation) offline.</p>
+<p>For text, batches contain sequences of different lengths. Padding everything to the maximum length wastes compute on pad tokens; sorting or bucketing by length so that each batch contains similar lengths, or packing several short sequences into one row, recovers it.</p>
+</section>
+<section id="step-5-the-training-loop-line-by-line">
+  <h2>08 &mdash; Step 5: the training loop, line by line</h2>
+<p>Every PyTorch training loop is the same six operations in the same order:</p>
+<ol>
+<li><strong>Move the batch</strong> to the model's device.</li>
+<li><strong>Forward</strong>: <code>logits = model(x)</code>, shape (32, 5).</li>
+<li><strong>Loss</strong>: <code>F.cross_entropy(logits, y)</code>. It takes raw logits and integer class labels, and applies log-softmax itself; passing probabilities is a silent bug.</li>
+<li><strong>Clear old gradients</strong>: <code>optimizer.zero_grad(set_to_none=True)</code>. Setting them to <code>None</code> instead of zeros saves a memory write.</li>
+<li><strong>Backward</strong>: <code>loss.backward()</code> fills every parameter's <code>.grad</code>.</li>
+<li><strong>Step</strong>: <code>optimizer.step()</code> updates the parameters (and <code>scheduler.step()</code> if there is one). Optionally clip gradients between backward and step.</li>
+</ol>
+<p>Zeroing can go anywhere before <code>backward()</code>; what matters is that it happens once per optimiser step. Then, periodically, evaluate under <code>model.eval()</code> and <code>torch.no_grad()</code>, and switch back.</p>
+<p>Before trusting any run, check the first loss. With five classes and a fresh model, the prediction should be close to uniform, so the loss should be near \(\log 5 = 1.609\). Ours is 1.607 on the first batch. Then the run itself, AdamW at learning rate \(10^{-3}\):</p>
+<table>
+<thead><tr><th>Epoch</th><th>Validation loss</th><th>Validation accuracy</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>1.049</td><td>91.5%</td></tr>
+<tr><td>2</td><td>0.377</td><td>94.0%</td></tr>
+<tr><td>3</td><td>0.248</td><td>93.6%</td></tr>
+<tr><td>4</td><td>0.213</td><td>94.0%</td></tr>
+<tr><td>5</td><td>0.202</td><td>93.2%</td></tr>
+</tbody>
+</table>
+<p>Validation accuracy stops improving after epoch 2 and wobbles by under a point (800 examples, so one point is 8 tickets), while validation loss keeps falling: the model is becoming more confident on examples it already gets right. Choose the checkpoint by the metric you care about, and expect the train–validation gap to widen if you keep going.</p>
+</section>
+<section id="step-6-mixed-precision-bf16-and-fp16">
+  <h2>09 &mdash; Step 6: mixed precision, bf16 and fp16</h2>
+<p>A 32-bit float spends 4 bytes per number. Modern GPUs do 16-bit matrix maths several times faster than 32-bit and 16-bit numbers halve memory and bandwidth, so training runs most operations in 16 bits. The two 16-bit formats split their bits differently, and the difference decides how you use them:</p>
+<table>
+<thead><tr><th>Format</th><th>Largest value</th><th>Smallest normal value</th><th>Gap after 1.0</th><th>1e-8 becomes</th><th>70,000 becomes</th><th>1 + 0.001 becomes</th></tr></thead>
+<tbody>
+<tr><td>fp32</td><td>\(3.4 \times 10^{38}\)</td><td>\(1.2 \times 10^{-38}\)</td><td>\(1.2 \times 10^{-7}\)</td><td>1e-8</td><td>70,000</td><td>1.001</td></tr>
+<tr><td>fp16</td><td>65,504</td><td>\(6.1 \times 10^{-5}\)</td><td>\(9.8 \times 10^{-4}\)</td><td><strong>0</strong></td><td><strong>inf</strong></td><td>1.00098</td></tr>
+<tr><td>bf16</td><td>\(3.4 \times 10^{38}\)</td><td>\(1.2 \times 10^{-38}\)</td><td>\(7.8 \times 10^{-3}\)</td><td>1.0e-8</td><td>70,144</td><td><strong>1.0</strong></td></tr>
+</tbody>
+</table>
+<p><strong>fp16</strong> keeps more precision but has a narrow range: gradients smaller than about \(6 \times 10^{-8}\) round to zero, and values above 65,504 overflow. Small gradients are common, so fp16 training needs <strong>loss scaling</strong>: multiply the loss by, say, 65,536 before <code>backward()</code>. A gradient of \(10^{-8}\) becomes \(6.6 \times 10^{-4}\), comfortably representable; the scaler divides the gradients by 65,536 again (in fp32) before the optimiser uses them. The scaler adjusts the factor automatically, lowering it when it sees inf and raising it after a run of clean steps.</p>
+<p><strong>bf16</strong> has the same range as fp32 and coarse precision: \(1 + 0.001\) rounds back to exactly 1.0. Nothing underflows, so no loss scaling is needed, and on GPUs that support it (NVIDIA Ampere and later) it is the default for training. The precision loss is handled by keeping a <strong>master copy of the weights in fp32</strong>: an update of \(10^{-3}\) applied to a bf16 weight of 1.0 would vanish, but applied to the fp32 copy it is kept.</p>
+<p>In code, <code>torch.autocast(device_type="cuda", dtype=torch.bfloat16)</code> around the forward pass and loss makes matrix multiplies and convolutions run in bf16 while keeping precision-sensitive operations (softmax, normalisation, losses, reductions) in fp32. You do not cast the model by hand.</p>
+</section>
+<section id="step-7-where-gpu-memory-goes">
+  <h2>10 &mdash; Step 7: where GPU memory goes</h2>
+<p>Training memory has four parts. Three scale with the parameter count \(N\); the fourth scales with batch size and sequence length.</p>
+<ul>
+<li><strong>Weights</strong>: 2 bytes per parameter in bf16, plus a 4-byte fp32 master copy.</li>
+<li><strong>Gradients</strong>: 2 bytes (bf16) per parameter.</li>
+<li><strong>Optimiser state</strong>: AdamW keeps two fp32 moments, 8 bytes per parameter.</li>
+<li><strong>Activations</strong>: every intermediate tensor the backward pass needs, for every layer, for the whole batch.</li>
+</ul>
+<p>The first three total about <strong>16 bytes per parameter</strong>. For our 99,845-parameter classifier that is 1.6 MB, irrelevant. Scale up to a 1.3-billion-parameter transformer (hidden size 2,048, 24 layers, 16 attention heads): 21 GB before a single activation.</p>
+<p>Activations are where the surprise is. A standard estimate for one transformer layer in 16-bit, for sequence length \(s\), batch \(b\), hidden size \(h\) and \(a\) heads, is \(s\,b\,h\,(34 + 5as/h)\) bytes. The 34 counts the tensors saved inside attention and the MLP; the \(5as/h\) term is the attention score matrices, which grow with the square of the sequence length. For \(s = 2{,}048\), \(b = 8\):</p>
+<table>
+<thead><tr><th>Setup</th><th>Per layer</th><th>All 24 layers</th></tr></thead>
+<tbody>
+<tr><td>Naive attention (stores score matrices)</td><td>3.8 GB</td><td>92 GB</td></tr>
+<tr><td>FlashAttention (never stores them)</td><td>1.1 GB</td><td>27 GB</td></tr>
+<tr><td>Full activation checkpointing (store only each layer's input)</td><td>0.07 GB</td><td>1.6 GB, plus about 1.1 GB for the one layer being recomputed</td></tr>
+</tbody>
+</table>
+<p>So the 1.3B model with naive attention needs about 113 GB and does not fit on an 80 GB GPU, though its weights are only 2.6 GB. The levers, in the order to try them: FlashAttention (PyTorch's <code>scaled_dot_product_attention</code> uses it automatically where supported), a smaller micro-batch with gradient accumulation to keep the effective batch, activation checkpointing, then sharding parameters, gradients and optimiser state across GPUs (FSDP or ZeRO, see <a href="../inference/gpus-scale.html">GPUs &amp; scale</a>), or switching to LoRA so gradients and optimiser state exist only for a small fraction of parameters (<a href="../adaptation/fine-tuning.html">Fine-tuning</a>).</p>
+<p>Inference is different: no gradients, no optimiser, no saved activations; memory is weights plus the KV cache (<a href="../fundamentals/tokens-context-cost.html">Tokens, context &amp; cost</a>).</p>
+</section>
+<section id="step-8-activation-checkpointing-trades-compute-for-memory">
+  <h2>11 &mdash; Step 8: activation checkpointing trades compute for memory</h2>
+<p>Checkpointing (also called gradient checkpointing or rematerialisation) wraps a block so that its forward pass runs without saving intermediate activations, keeping only the block's input. During backward, when the block's gradients are needed, the block's forward pass is run again from that saved input to regenerate what was thrown away.</p>
+<p>The cost is one extra forward pass for every checkpointed block. Since a backward pass costs about twice a forward, a training step goes from roughly 3 forward-equivalents to 4: about 33% more compute. The benefit in our example was 27 GB of activations down to under 3 GB. When memory is the binding constraint, that is a good trade, because the alternative is a smaller batch or more GPUs. Wrapping every other block, or only the most memory-hungry ones, gives intermediate points on the same curve. In PyTorch it is <code>torch.utils.checkpoint.checkpoint(block, x, use_reentrant=False)</code>; Hugging Face models expose it as <code>model.gradient_checkpointing_enable()</code>.</p>
+</section>
+<section id="step-9-torch-compile-and-profiling">
+  <h2>12 &mdash; Step 9: torch.compile and profiling</h2>
+<p>By default PyTorch runs <em>eagerly</em>: each operation launches its own GPU kernel, reading inputs from GPU memory and writing outputs back. A sequence like add-bias, GELU, dropout reads and writes the full activation tensor three times, and for these element-wise operations the memory traffic, not the arithmetic, is the cost.</p>
+<p><code>model = torch.compile(model)</code> traces the Python code into a graph on the first call, then generates <strong>fused</strong> kernels that do several operations in one pass over memory. The trade-offs: the first call is slow (compilation can take from seconds to minutes), shapes that change between calls can trigger recompilation (variable sequence lengths are the usual culprit; padding to a few fixed bucket sizes helps), and code that breaks the graph (Python-side data-dependent branching, printing tensors) falls back to eager for that part. Gains vary by model; measure on yours rather than assuming a number.</p>
+<p>Measure before optimising anything. <code>torch.profiler</code> shows time per operation and whether the GPU is waiting on the CPU or the data loader. Two traps when timing by hand: GPU work is asynchronous, so call <code>torch.cuda.synchronize()</code> before reading the clock, and discard the first few iterations (warm-up, compilation, memory allocation).</p>
+</section>
+<section id="debugging-a-run-the-order-that-saves-the-most-time">
+  <h2>13 &mdash; Debugging a run: the order that saves the most time</h2>
+<ol>
+<li><strong>Initial loss.</strong> Near \(\log C\) for \(C\) classes (1.609 here; we measured 1.607). If not, check labels, loss inputs (logits versus probabilities) and initialisation.</li>
+<li><strong>Overfit one batch.</strong> Train on a single batch of 32 for 200 steps; the loss should approach zero. If it does not, there is a bug: a detached tensor, a parameter not registered, a wrong shape broadcasting, a missing <code>zero_grad</code>.</li>
+<li><strong>Check that every parameter moves.</strong> After one step, compare each parameter with its initial value. A frozen or unregistered layer shows zero change.</li>
+<li><strong>Assert shapes</strong> at the loss: predictions and targets the same shape, or (batch, classes) logits with (batch,) labels.</li>
+<li><strong>Watch for NaN.</strong> <code>torch.autograd.set_detect_anomaly(True)</code> finds the operation that produced it (slow; debugging only). Usual suspects: learning rate, fp16 overflow, log of zero, division by a zero norm.</li>
+<li><strong>Out of memory.</strong> Read <code>torch.cuda.max_memory_allocated()</code>, then apply Step 7's levers in order. OOM only during validation usually means a missing <code>no_grad</code> (or a much larger validation batch).</li>
+<li><strong>Slow.</strong> Profile. Low or spiky GPU utilisation is usually the data loader or CPU-side Python, not the model.</li>
+</ol>
+</section>
+<section id="in-code-the-intent-classifier-complete">
+  <h2>14 &mdash; In code: the intent classifier, complete</h2>
+<pre><span class="kw">import</span> math
+<span class="kw">import</span> torch
+<span class="kw">import</span> torch.nn <span class="kw">as</span> nn
+<span class="kw">import</span> torch.nn.functional <span class="kw">as</span> F
+<span class="kw">from</span> torch.utils.data <span class="kw">import</span> TensorDataset, DataLoader
+
+torch.manual_seed(<span class="nr">0</span>)
+D, C, N = <span class="nr">384</span>, <span class="nr">5</span>, <span class="nr">4000</span> <span class="cm"># embedding size, intents, tickets</span>
+centers = torch.randn(C, D)
+y = torch.randint(<span class="nr">0</span>, C, (N,))
+X = F.normalize(centers[y] * <span class="nr">0.15</span> + torch.randn(N, D), dim=<span class="nr">1</span>)   <span class="cm"># synthetic unit-length embeddings</span>
+train_dl = DataLoader(TensorDataset(X[:<span class="nr">3200</span>], y[:<span class="nr">3200</span>]), batch_size=<span class="nr">32</span>, shuffle=<span class="nr">True</span>)
+val_dl = DataLoader(TensorDataset(X[<span class="nr">3200</span>:], y[<span class="nr">3200</span>:]), batch_size=<span class="nr">256</span>)
+
+model = nn.Sequential(nn.Linear(D, <span class="nr">256</span>), nn.GELU(), nn.Dropout(<span class="nr">0.1</span>), nn.Linear(<span class="nr">256</span>, C))
+opt = torch.optim.AdamW(model.parameters(), lr=<span class="nr">1e-3</span>, weight_decay=<span class="nr">0.01</span>)
+<span class="tp">print</span>(<span class="st">"</span><span class="st">parameters:</span><span class="st">"</span>, <span class="tp">sum</span>(p.numel() <span class="kw">for</span> p in model.parameters()))          <span class="cm"># 99845</span>
+
+xb, yb = <span class="tp">next</span>(<span class="tp">iter</span>(train_dl))
+<span class="kw">with</span> torch.no_grad():
+    <span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">initial loss </span><span class="st">{</span>F.cross_entropy(model(xb), yb)<span class="st">:</span><span class="st">.3f</span><span class="st">}</span><span class="st"> vs log(5) = </span><span class="st">{</span>math.log(C)<span class="st">:</span><span class="st">.3f</span><span class="st">}</span><span class="st">"</span>)
+
+<span class="kw">def</span> <span class="fn">evaluate</span>():
+    model.eval()                                     <span class="cm"># dropout off</span>
+    correct, total_loss = <span class="nr">0</span>, <span class="nr">0.0</span>
+<span class="kw">with</span> torch.no_grad():                            <span class="cm"># no graph, no saved activations</span>
+<span class="kw">for</span> xb, yb in val_dl:
+            logits = model(xb)
+            total_loss += F.cross_entropy(logits, yb, reduction=<span class="st">"</span><span class="st">sum</span><span class="st">"</span>).item()
+            correct += (logits.argmax(dim=<span class="nr">1</span>) == yb).sum().item()
+    model.train()                                    <span class="cm"># dropout back on</span>
+<span class="kw">return</span> total_loss / <span class="nr">800</span>, correct / <span class="nr">800</span>
+<span class="kw">for</span> epoch in <span class="tp">range</span>(<span class="nr">5</span>):
+    <span class="kw">for</span> xb, yb in train_dl:                          <span class="cm"># xb: (32, 384), yb: (32,)</span>
+        loss = F.cross_entropy(model(xb), yb)        <span class="cm"># logits (32, 5), not probabilities</span>
+        opt.zero_grad(set_to_none=<span class="nr">True</span>)
+        loss.backward()
+        opt.step()
+    val_loss, val_acc = evaluate()
+    <span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">epoch </span><span class="st">{</span>epoch + <span class="nr">1</span><span class="st">}</span><span class="st">: val loss </span><span class="st">{</span>val_loss<span class="st">:</span><span class="st">.3f</span><span class="st">}</span><span class="st">, val accuracy </span><span class="st">{</span>val_acc<span class="st">:</span><span class="st">.3f</span><span class="st">}</span><span class="st">"</span>)
+</pre>
+<p>It prints 99,845 parameters, an initial loss of 1.607 against \(\log 5 = 1.609\), and the five rows of the Step 5 table. The number-format facts from Step 6, which you can run on any machine:</p>
+<pre><span class="kw">import</span> torch
+
+<span class="kw">for</span> dt in (torch.float32, torch.float16, torch.bfloat16):
+    tiny, big = torch.tensor(<span class="nr">1e-8</span>, dtype=dt).item(), torch.tensor(<span class="nr">70000.0</span>, dtype=dt).item()
+    step = (torch.tensor(<span class="nr">1.0</span>, dtype=dt) + torch.tensor(<span class="nr">0.001</span>, dtype=dt)).item()
+    <span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">{</span><span class="tp">str</span>(dt)<span class="st">:</span><span class="st">15s</span><span class="st">}</span><span class="st"> 1e-8 -&gt; </span><span class="st">{</span>tiny<span class="st">:</span><span class="st">.3g</span><span class="st">}</span><span class="st">   70000 -&gt; </span><span class="st">{</span>big<span class="st">}</span><span class="st">   1 + 0.001 -&gt; </span><span class="st">{</span>step<span class="st">:</span><span class="st">.5f</span><span class="st">}</span><span class="st">"</span>)
+
+g = torch.tensor(<span class="nr">1e-8</span>)
+<span class="tp">print</span>(<span class="st">"</span><span class="st">fp16 gradient:</span><span class="st">"</span>, g.half().item(), <span class="st">"</span><span class="st">| scaled by 65536:</span><span class="st">"</span>, (g * <span class="nr">65536</span>).half().item())
+</pre>
+</section>
 <section id="tensors-shapes-broadcasting">
-  <h2>02 &mdash; Tensors, shapes, broadcasting</h2>
+  <h2>15 &mdash; Tensors, shapes, broadcasting</h2>
 <p>Write a training script you'd trust in production: correct shapes, mixed precision, accumulation, checkpoint and resume, and a debugging routine for when loss misbehaves.</p>
 <ul>
 <li>A tensor has a <code>shape</code>, <code>dtype</code> (float32, bfloat16, int64…) and <code>device</code> (cpu, cuda). Ops between tensors on different devices fail.</li>
@@ -58,7 +268,7 @@ h = x.view(<span class="nr">8</span>, <span class="nr">128</span>, <span class="
 scores = h @ h.transpose(-<span class="nr">2</span>, -<span class="nr">1</span>)         <span class="cm"># (B, 12, 128, 128)</span></pre>
 </section>
 <section id="autograd-in-pytorch">
-  <h2>03 &mdash; Autograd in PyTorch</h2>
+  <h2>16 &mdash; Autograd in PyTorch</h2>
 <ul>
 <li>Tensors with <code>requires_grad=True</code> (all <code>nn.Parameter</code>s) record operations into a dynamic graph.</li>
 <li><code>loss.backward()</code> fills <code>.grad</code> on leaf tensors and frees the graph.</li>
@@ -68,7 +278,7 @@ scores = h @ h.transpose(-<span class="nr">2</span>, -<span class="nr">1</span>)
 </ul>
 </section>
 <section id="nn-module-train-eval-state-dict">
-  <h2>04 &mdash; nn.Module, train/eval, state_dict</h2>
+  <h2>17 &mdash; nn.Module, train/eval, state_dict</h2>
 <pre><span class="kw">class</span> <span class="tp">MLP</span>(nn.Module):
     <span class="kw">def</span> <span class="fn">__init__</span>(<span class="tp">self</span>, d_in, d_h, d_out):
         <span class="tp">super</span>().<span class="fn">__init__</span>()
@@ -79,7 +289,7 @@ scores = h @ h.transpose(-<span class="nr">2</span>, -<span class="nr">1</span>)
 <p>Submodules and <code>nn.Parameter</code>s assigned as attributes are registered automatically, so <code>model.parameters()</code>, <code>.to(device)</code> and <code>state_dict()</code> find them. <code>model.train()</code> / <code>model.eval()</code> switch dropout and BatchNorm behavior.</p>
 </section>
 <section id="datasets-and-dataloaders">
-  <h2>05 &mdash; Datasets and DataLoaders</h2>
+  <h2>18 &mdash; Datasets and DataLoaders</h2>
 <pre><span class="kw">class</span> <span class="tp">TextDS</span>(torch.utils.data.Dataset):
     <span class="kw">def</span> <span class="fn">__init__</span>(<span class="tp">self</span>, rows, tok): <span class="tp">self</span>.rows, <span class="tp">self</span>.tok = rows, tok
     <span class="kw">def</span> <span class="fn">__len__</span>(<span class="tp">self</span>): <span class="kw">return</span> <span class="tp">len</span>(<span class="tp">self</span>.rows)
@@ -95,7 +305,7 @@ dl = DataLoader(ds, batch_size=<span class="nr">16</span>, shuffle=<span class="
 <p>Low GPU utilization is very often a starving data loader. Pre-tokenize, use workers, and pin memory.</p>
 </section>
 <section id="a-complete-trustworthy-training-loop">
-  <h2>06 &mdash; A complete, trustworthy training loop</h2>
+  <h2>19 &mdash; A complete, trustworthy training loop</h2>
 <pre>model = Model().cuda()
 opt = torch.optim.AdamW(model.parameters(), lr=<span class="nr">3e-4</span>, weight_decay=<span class="nr">0.1</span>, betas=(<span class="nr">0.9</span>, <span class="nr">0.95</span>))
 total = epochs * <span class="tp">len</span>(dl) // accum
@@ -119,7 +329,7 @@ step = <span class="nr">0</span>
 <p>Checkpoint everything needed to resume exactly: model, optimizer, scheduler, step, RNG states, data position.</p>
 </section>
 <section id="mixed-precision-fp32-fp16-bf16-fp8">
-  <h2>07 &mdash; Mixed precision: fp32, fp16, bf16, fp8</h2>
+  <h2>20 &mdash; Mixed precision: fp32, fp16, bf16, fp8</h2>
 <table>
 <tr><th>Format</th><th>Bits (exp/mantissa)</th><th>Range</th><th>Notes</th></tr>
 <tr><td>fp32</td><td>8 / 23</td><td>±3e38</td><td>Master weights, optimizer states</td></tr>
@@ -130,7 +340,7 @@ step = <span class="nr">0</span>
 <p>Autocast runs matmuls in low precision (tensor cores, ~2× faster, half the activation memory) while keeping sensitive ops like softmax and reductions in fp32.</p>
 </section>
 <section id="where-gpu-memory-goes">
-  <h2>08 &mdash; Where GPU memory goes</h2>
+  <h2>21 &mdash; Where GPU memory goes</h2>
 <pre class="formula">full training, mixed precision, AdamW, per parameter:
   bf16 weights 2 + bf16 grads 2 + fp32 master 4 + Adam m,v 8 = 16 bytes
 + activations ∝ batch × seq_len × width × layers
@@ -154,16 +364,16 @@ inference: bf16 weights 2 bytes/param (+ KV cache for LLMs)</pre>
 <p>OOM toolbox, in order of least pain: smaller micro-batch + gradient accumulation, shorter sequences, bf16, activation checkpointing, 8-bit optimizer, LoRA/QLoRA, FSDP across GPUs.</p>
 </section>
 <section id="activation-gradient-checkpointing">
-  <h2>09 &mdash; Activation (gradient) checkpointing</h2>
+  <h2>22 &mdash; Activation (gradient) checkpointing</h2>
 <p>Instead of storing every layer's activations for backward, store only the layer inputs, then recompute the inside of each layer during backward. Costs ~30% more compute, often cuts activation memory 5–10×. One flag in HF: <code>model.gradient_checkpointing_enable()</code>.</p>
 </section>
 <section id="torch-compile-and-profiling">
-  <h2>10 &mdash; torch.compile and profiling</h2>
+  <h2>23 &mdash; torch.compile and profiling</h2>
 <p><code>torch.compile(model)</code> traces the model and generates fused kernels (via TorchInductor/Triton), removing Python overhead and memory round-trips. Typical 1.3–2× speedups; first call is slow (compiling); dynamic shapes can trigger recompiles.</p>
 <p>Profile before optimizing: <code>torch.profiler</code> shows time per op and whether the GPU idles waiting on the CPU or data loader.</p>
 </section>
 <section id="debugging-a-training-run">
-  <h2>11 &mdash; Debugging a training run</h2>
+  <h2>24 &mdash; Debugging a training run</h2>
 <ol>
 <li><strong>Check initial loss.</strong> Classification over K classes should start near ln K. Far above it means bad init or a bug.</li>
 <li><strong>Overfit one batch.</strong> Loss on a single fixed batch must go to ~0. If it can't, the model or loss is broken, not the data.</li>
@@ -173,19 +383,40 @@ inference: bf16 weights 2 bytes/param (+ KV cache for LLMs)</pre>
 <li>Then scale up data and model.</li>
 </ol>
 </section>
+<p class="part-divider">In production</p>
+<section id="where-people-get-lost">
+  <h2>25 &mdash; Where people get lost</h2>
+<ul>
+<li><strong>Forgetting <code>zero_grad()</code>.</strong> Gradients accumulate (36, 72, 108 in Step 2) and the effective step size keeps growing.</li>
+<li><strong>Passing probabilities to <code>cross_entropy</code>.</strong> It expects raw logits and applies log-softmax itself. Softmax twice trains, badly.</li>
+<li><strong>Shape (N, 1) against shape (N,).</strong> Broadcasting turns an element-wise loss into an N × N comparison. Assert shapes.</li>
+<li><strong>Evaluating in training mode, or forgetting to switch back.</strong> Dropout and BatchNorm behave differently in the two modes; both mistakes are silent.</li>
+<li><strong>Evaluating without <code>no_grad()</code>.</strong> Every batch builds a graph and keeps activations: wasted memory, sometimes OOM only in validation.</li>
+<li><strong>"The model is 2.6 GB, so it fits on a 24 GB GPU for training."</strong> Training needs about 16 bytes per parameter plus activations, which can dwarf the weights.</li>
+<li><strong>fp16 without a gradient scaler.</strong> Small gradients become exactly zero and parts of the model stop learning. Use bf16 where the hardware supports it.</li>
+<li><strong>Checkpointing only the weights.</strong> Resuming without optimiser state, scheduler and step count restarts Adam's statistics and the schedule.</li>
+</ul>
+</section>
 <section id="how-this-connects">
-  <h2>12 &mdash; How this connects</h2>
-<h3>Where this shows up later</h3><ul><li><a href="../fundamentals/transformers.html">Transformers &amp; attention</a> &mdash; Embeddings, attention, multi-head and GQA, RoPE, the block, a mini-GPT, FLOPs and FlashAttention.</li><li><a href="../inference/gpus-scale.html">GPUs &amp; distributed training</a> &mdash; GPU architecture, the roofline, data/tensor/pipeline parallelism, ZeRO and FSDP, fault tolerance.</li><li><a href="../projects/portfolio-projects.html">Portfolio projects</a> &mdash; Five projects from micrograd to a shipped service, and a weekend build that makes interview answers real.</li></ul>
+  <h2>26 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="neural-networks.html">Neural networks</a> &mdash; Layers, activations, backprop, initialization, optimizers, schedules, normalization and residuals.</li></ul><h3>Where this shows up later</h3><ul><li><a href="../fundamentals/transformers.html">Transformers &amp; attention</a> &mdash; Embeddings, attention, multi-head and GQA, RoPE, the block, a mini-GPT, FLOPs and FlashAttention.</li><li><a href="../inference/gpus-scale.html">GPUs &amp; distributed training</a> &mdash; GPU architecture, the roofline, data/tensor/pipeline parallelism, ZeRO and FSDP, fault tolerance.</li><li><a href="../projects/portfolio-projects.html">Portfolio projects</a> &mdash; Five projects from micrograd to a shipped service, and a weekend build that makes interview answers real.</li></ul>
 </section>
 <section id="check-yourself">
-  <h2>13 &mdash; Check yourself</h2>
+  <h2>27 &mdash; Check yourself</h2>
+<details><summary>Logits have shape (16, 128, 50000) (batch, sequence, vocabulary) and labels have shape (16, 128). What do you pass to <code>F.cross_entropy</code>?</summary><div class="answer">Flatten both: <code>F.cross_entropy(logits.view(-1, 50000), labels.view(-1))</code>, giving (2048, 50000) logits and (2048,) labels. Alternatively move the class dimension second: <code>logits.transpose(1, 2)</code> with shape (16, 50000, 128).</div></details>
+<details><summary>You want an effective batch of 256 but only 64 fit in memory. Write the loop change.</summary><div class="answer">Accumulate over 4 micro-batches: for each, compute <code>loss = criterion(...) / 4</code> and call <code>loss.backward()</code>; after the fourth, call <code>optimizer.step()</code> then <code>optimizer.zero_grad()</code>. Dividing by 4 makes the summed gradient an average.</div></details>
+<details><summary>Estimate training memory for a 7B model with AdamW in bf16 mixed precision, excluding activations. Does it fit on one 80 GB GPU?</summary><div class="answer">About 16 bytes per parameter: \(7 \times 10^9 \times 16 = 112\) GB. No. Options: shard state across GPUs (FSDP/ZeRO), use an 8-bit optimiser, or train LoRA adapters so gradients and optimiser state cover only a small fraction of parameters.</div></details>
+<details><summary>Your fp16 run shows some layers' gradients as exactly zero while the bf16 run trains normally. Why?</summary><div class="answer">fp16's smallest representable value is about \(6 \times 10^{-8}\); smaller gradients round to zero. bf16 has fp32's range, so they survive. Use a gradient scaler with fp16 (or switch to bf16).</div></details>
+<details><summary>Activation checkpointing on every block cuts activation memory by 10 times. Roughly how much slower is each training step?</summary><div class="answer">About 33%: one extra forward pass per block, taking a step from about 3 forward-equivalents (1 forward + 2 backward) to about 4.</div></details>
+<details><summary>Validation accuracy fluctuates by several points between evaluations of the same checkpoint. What is the likely bug?</summary><div class="answer">Evaluation is running in training mode, so dropout is active and outputs are random. Call <code>model.eval()</code> before evaluating (and <code>model.train()</code> after).</div></details>
+<details><summary>Training a 1.3B model at sequence length 2,048 runs out of memory although the weights are 2.6 GB. Which two changes would you try first, and why?</summary><div class="answer">Use FlashAttention (via <code>scaled_dot_product_attention</code>), which removes the attention score matrices that grow with sequence length squared (92 GB to 27 GB in the example). Then activation checkpointing or a smaller micro-batch with gradient accumulation, both of which cut activation memory without changing the effective batch.</div></details>
 <details><summary>Batch 8, accumulation 4, 2 GPUs: effective batch?</summary><div class="answer">64.</div></details>
 <details><summary>Why divide the loss by the accumulation steps?</summary><div class="answer">Gradients sum across backward calls; dividing makes the accumulated gradient equal the average over the effective batch, so LR means the same thing.</div></details>
 <details><summary>Memory to fully fine-tune a 7B model with AdamW?</summary><div class="answer">~16 B/param → ~112 GB plus activations: needs multiple 80 GB GPUs or sharding.</div></details>
 <details><summary>Your model can't overfit a single batch. What now?</summary><div class="answer">Bug hunt: labels misaligned, loss on wrong tensor, LR zero or huge, model frozen (requires_grad False), masking everything out.</div></details>
 </section>
 <section id="build-it">
-  <h2>14 &mdash; Build it</h2>
+  <h2>28 &mdash; Build it</h2>
 <div class="callout success">Turn the loop above into a reusable script: AMP, accumulation, clipping, cosine warmup, checkpoint + exact resume, and Weights &amp; Biases logging. You'll reuse it in <a href="../fundamentals/transformers.html">Transformers &amp; attention</a>, 6 and 9.</div>
 </section>
 

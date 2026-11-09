@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
@@ -19,27 +23,40 @@
   <h2>Semantic caching</h2>
   <a href="index.html">&larr; Production &amp; evals</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-surface"><span class="num">04</span> API Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#deep-dive-threshold-tuning"><span class="num">07</span> Deep Dive: Threshold Tuning</a>
-  <a href="#deep-dive-ttl-freshness"><span class="num">08</span> Deep Dive: TTL &amp; Freshness</a>
-  <a href="#deep-dive-invalidation"><span class="num">09</span> Deep Dive: Invalidation</a>
-  <a href="#deep-dive-exact-semantic-two-tier"><span class="num">10</span> Deep Dive: Exact + Semantic Two-Tier</a>
-  <a href="#deep-dive-multi-tenant"><span class="num">11</span> Deep Dive: Multi-Tenant</a>
-  <a href="#production-ops"><span class="num">12</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">13</span> Related topics</a>
-  <a href="#where-people-get-lost"><span class="num">14</span> Where people get lost</a>
-  <a href="#how-this-connects"><span class="num">15</span> How this connects</a>
-  <a href="#check-yourself"><span class="num">16</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-surface"><span class="num">05</span> API Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#deep-dive-threshold-tuning"><span class="num">08</span> Deep Dive: Threshold Tuning</a>
+  <a href="#deep-dive-ttl-freshness"><span class="num">09</span> Deep Dive: TTL &amp; Freshness</a>
+  <a href="#deep-dive-invalidation"><span class="num">10</span> Deep Dive: Invalidation</a>
+  <a href="#deep-dive-exact-semantic-two-tier"><span class="num">11</span> Deep Dive: Exact + Semantic Two-Tier</a>
+  <a href="#deep-dive-multi-tenant"><span class="num">12</span> Deep Dive: Multi-Tenant</a>
+  <a href="#the-question"><span class="num">13</span> The question</a>
+  <a href="#step-1-why-exact-matching-misses-most-repeats"><span class="num">14</span> Step 1: why exact matching misses most repeats</a>
+  <a href="#step-2-the-mechanism"><span class="num">15</span> Step 2: the mechanism</a>
+  <a href="#step-3-the-threshold-is-a-classifier-so-measure-it-like-one"><span class="num">16</span> Step 3: the threshold is a classifier, so measure it like one</a>
+  <a href="#step-4-the-economics-of-a-false-hit"><span class="num">17</span> Step 4: the economics of a false hit</a>
+  <a href="#step-5-a-verifier-widens-the-safe-zone"><span class="num">18</span> Step 5: a verifier widens the safe zone</a>
+  <a href="#step-6-scope-everything-besides-meaning-that-must-match"><span class="num">19</span> Step 6: scope, everything besides meaning that must match</a>
+  <a href="#step-7-freshness-and-invalidation"><span class="num">20</span> Step 7: freshness and invalidation</a>
+  <a href="#step-8-what-to-admit-how-big-it-gets-and-stampedes"><span class="num">21</span> Step 8: what to admit, how big it gets, and stampedes</a>
+  <a href="#step-9-how-it-relates-to-the-other-caches"><span class="num">22</span> Step 9: how it relates to the other caches</a>
+  <a href="#rolling-it-out-safely"><span class="num">23</span> Rolling it out safely</a>
+  <a href="#in-code-the-threshold-economics-and-a-scoped-cache"><span class="num">24</span> In code: the threshold economics, and a scoped cache</a>
+  <a href="#production-ops"><span class="num">25</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">26</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">27</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">28</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">29</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Semantic caching <span>// Production &amp; evals</span></h1>
   <p>Answering repeat questions from a cache keyed on meaning, and avoiding wrong hits.</p>
-  <div class="tags"><span class="tag">3 min read</span><span class="tag">3 diagrams</span></div>
+  <div class="tags"><span class="tag">20 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -47,72 +64,299 @@
 <p>Cache LLM responses by embedding similarity, not exact string match. 40–60% hit rates on support bots — but wrong threshold causes confident wrong answers.</p>
 <div class="diagram"><img alt="Semantic Cache architecture" src="../systems/img/semantic-cache-main.png"/></div><p class="diagram-caption">Semantic cache flow: embed incoming query, ANN search cache index, if similarity &gt; threshold return cached response else call LLM and store new entry.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Exact cache</strong></td><td>A cache keyed on the exact (normalised) request text. Hits only on identical questions.</td></tr><tr><td><strong>Semantic cache</strong></td><td>A cache keyed on the meaning of a question: a new question hits if its embedding is close enough to a stored question's.</td></tr><tr><td><strong>Similarity threshold</strong></td><td>The minimum cosine similarity between the new question and the nearest stored one for the stored answer to be returned.</td></tr><tr><td><strong>Hit rate</strong></td><td>The share of requests answered from the cache.</td></tr><tr><td><strong>False hit</strong></td><td>A cache hit where the stored question meant something different, so the returned answer is wrong for this user.</td></tr><tr><td><strong>Scope</strong></td><td>Everything that must match exactly, besides meaning, for a cached answer to be valid: tenant, permissions, language, model and prompt versions.</td></tr><tr><td><strong>TTL</strong></td><td>Time to live: how long an entry may be served before it expires.</td></tr><tr><td><strong>Invalidation</strong></td><td>Removing or expiring entries because something they depend on changed, such as a cited document.</td></tr><tr><td><strong>Verifier</strong></td><td>A second, more precise check on a candidate hit (a cross-encoder or a small model) that asks "do these two questions have the same answer?".</td></tr><tr><td><strong>Admission policy</strong></td><td>The rule for which answers are allowed into the cache at all.</td></tr><tr><td><strong>Shadow mode</strong></td><td>Running the cache lookup on live traffic without serving its answers, to measure what would have happened.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card"><p>LLM inference is expensive. Many user queries are near-duplicates ('reset password' vs 'how do I reset my password'). Semantic cache cuts cost and latency.</p></div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Cache hit</td><td>Similar query found above threshold</td><td>False hit = wrong answer confidently</td></tr><tr><td>Threshold</td><td>Min cosine similarity for hit</td><td>0.92–0.97 depending on domain</td></tr><tr><td>TTL</td><td>Time-to-live before cache miss forced</td><td>Stale policy answers</td></tr></table></div>
 </section>
 <section id="api-surface">
-  <h2>04 &mdash; API Surface</h2>
+  <h2>05 &mdash; API Surface</h2>
 <div class="card"><pre>cache.lookup(query_embedding, org_id) -&gt; { hit, response, score } | miss
 cache.store(query, embedding, response, ttl=3600, metadata={sources})
 
 # GPTCache / Redis + vector extension</pre></div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card"><table><tr><th>Cache</th><th>Use When</th><th>Skip When</th></tr><tr><td>Semantic</td><td>FAQ/support high repeat</td><td>Unique analytical queries</td></tr><tr><td>Exact only</td><td>Deterministic API responses</td><td>Paraphrase-heavy support</td></tr></table></div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card"><pre>Query -&gt; Embed -&gt; Cache ANN lookup -&gt; [hit: return] [miss: LLM -&gt; store]</pre></div>
 </section>
 <section id="deep-dive-threshold-tuning">
-  <h2>07 &mdash; Deep Dive: Threshold Tuning</h2>
+  <h2>08 &mdash; Deep Dive: Threshold Tuning</h2>
 <div class="diagram"><img alt="ROC curve: false hit rate vs cache hit rate at thresholds 0.90, 0.93, 0.95, 0.97" src="../systems/img/semantic-cache-threshold-zoom.png"/></div><p class="diagram-caption">ROC curve: false hit rate vs cache hit rate at thresholds 0.90, 0.93, 0.95, 0.97</p><div class="card"><p>Start 0.95. Lower = more hits + more false hits. Evaluate on query pairs labeled same/different intent.</p></div>
 </section>
 <section id="deep-dive-ttl-freshness">
-  <h2>08 &mdash; Deep Dive: TTL &amp; Freshness</h2>
+  <h2>09 &mdash; Deep Dive: TTL &amp; Freshness</h2>
 <div class="card"><p>Policy docs: TTL 1–24h. Product FAQs: 7d. Include source content_hash in cache entry; invalidate on doc update.</p></div>
 </section>
 <section id="deep-dive-invalidation">
-  <h2>09 &mdash; Deep Dive: Invalidation</h2>
+  <h2>10 &mdash; Deep Dive: Invalidation</h2>
 <div class="diagram"><img alt="Doc update triggers purge of cache entries whose citations reference changed doc_id" src="../systems/img/semantic-cache-invalidation-zoom.png"/></div><p class="diagram-caption">Doc update triggers purge of cache entries whose citations reference changed doc_id</p><div class="card"><p>On doc delete/update: purge entries with matching source doc_ids. Bloom filter for fast candidate check.</p></div>
 </section>
 <section id="deep-dive-exact-semantic-two-tier">
-  <h2>10 &mdash; Deep Dive: Exact + Semantic Two-Tier</h2>
+  <h2>11 &mdash; Deep Dive: Exact + Semantic Two-Tier</h2>
 <div class="card"><p>L1: exact hash match (Redis). L2: semantic ANN. Exact hits ~5ms; semantic ~15ms; both beat LLM ~800ms.</p></div>
 </section>
 <section id="deep-dive-multi-tenant">
-  <h2>11 &mdash; Deep Dive: Multi-Tenant</h2>
+  <h2>12 &mdash; Deep Dive: Multi-Tenant</h2>
 <div class="card"><ul><li>Namespace every cache entry by tenant (org_id), and include the user's permission scope when answers depend on it.</li>
 <li>Never return an entry from a different tenant, however similar the question: two companies asking "what is our refund policy?" need different answers.</li>
 <li>Enforce the namespace in the lookup query itself, not as a filter after the nearest-neighbour search.</li>
 <li>Per-tenant TTLs and invalidation, so one tenant's document update purges only its own entries.</li></ul></div>
 </section>
+<p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>13 &mdash; The question</h2>
+<p>Support assistants hear the same questions all day, worded differently: "how do I reset my router", "router reset steps", "my wifi box needs a reset, how?". Each one, answered from scratch, pays for retrieval, a long prompt and a full generation, and the user waits seconds. An exact-match cache barely helps, because people rarely type the same string twice. A <strong>semantic cache</strong> matches on meaning instead: embed the new question, find the most similar question already answered, and if they are close enough, return the stored answer in milliseconds.</p>
+<p>The idea is simple. The engineering is entirely in one word, "enough". Set the bar too low and the cache returns confident answers to questions nobody asked; too high and it almost never hits. This lesson is about setting that bar with numbers, and about everything else that must match for a stored answer to be valid.</p>
+<p>The interview questions:</p>
+<ol>
+<li>How does a semantic cache work, and why is an exact cache not enough?</li>
+<li>How do you choose the similarity threshold, and what does a false hit cost?</li>
+<li>What must be part of the cache key, and how do you keep entries fresh?</li>
+<li>When is a semantic cache a bad idea?</li>
+</ol>
+<p>The running example: an internet service provider's support assistant, answering about 60,000 questions a day with RAG. An uncached answer costs about $0.01 (illustrative: retrieval, a 4,000-token prompt, a 250-token answer) and takes about 2.8 seconds. About 45% of daily questions repeat an intent that has already been answered recently, in some wording.</p>
+</section>
+<section id="step-1-why-exact-matching-misses-most-repeats">
+  <h2>14 &mdash; Step 1: why exact matching misses most repeats</h2>
+<p>An exact cache hashes the request and looks it up. Normalising first (lower-case, collapse spaces, strip punctuation) catches trivial variants, and it is worth doing because it is nearly free: an in-memory hash lookup in about a millisecond. But for free-text questions, exact repeats are a small slice of traffic. Most repetition is paraphrase: the same need, different words. "How do I reset my router?" and "router reset steps" share no normalised string, so an exact cache treats them as unrelated.</p>
+<p>Embeddings (see <a href="../rag/embeddings.html">embeddings</a>) map texts with similar meaning to nearby vectors. The two router questions might have a cosine similarity of 0.95; "how do I reset my password?" might score 0.88 against them, because it shares most words and the topic "reset" but needs an entirely different answer. That last example is the whole difficulty in one line: embedding similarity measures how alike two texts are, not whether they have the same answer.</p>
+</section>
+<section id="step-2-the-mechanism">
+  <h2>15 &mdash; Step 2: the mechanism</h2>
+<pre class="ascii-diagram">question --&gt; build scope (tenant, permissions, locale, versions)
+         --&gt; tier 1: exact lookup on normalised text      ~1 ms      hit -&gt; answer
+         --&gt; embed question                               ~10-20 ms
+         --&gt; tier 2: nearest cached question in this scope ~5-10 ms
+               similarity &gt;= threshold ?  (optional verifier)
+                 yes -&gt; return stored answer (+ its citations)
+                 no  -&gt; full RAG pipeline -&gt; answer -&gt; admission check -&gt; store</pre>
+<p>Each stored entry holds the original question, its embedding, the answer, the documents the answer cited, the scope it was produced under, and a timestamp. The nearest-neighbour search runs over stored <em>questions</em>, not documents, using any vector index (an in-memory index, Redis with vector search, or the same database as your RAG chunks in a separate collection).</p>
+<p>A hit costs the embedding call plus one small vector search, tens of milliseconds, against 2.8 seconds for the full path. The query embedding is needed for retrieval on a miss anyway, so a miss costs almost nothing extra.</p>
+</section>
+<section id="step-3-the-threshold-is-a-classifier-so-measure-it-like-one">
+  <h2>16 &mdash; Step 3: the threshold is a classifier, so measure it like one</h2>
+<p>For every incoming question, the cache's decision is a binary classification: "the nearest stored question has the same answer" or not. The threshold trades two errors: missed hits (wasted money) and false hits (wrong answers). You cannot choose it by intuition or by copying "0.95" from a blog post, because similarity distributions depend on the embedding model, the domain and the phrasing of your users.</p>
+<p>Measure it. Take a few thousand logged questions, find each one's nearest neighbour among the others, and have people label 500 of those pairs as "same answer" or "different answer". Plot the two groups' similarity distributions. In our ISP data, suppose the same-answer pairs centre around 0.94 (spread 0.03) and the different-answer nearest neighbours around 0.80 (spread 0.05). They overlap: some different-answer pairs score 0.90 or more, and those are exactly the ones that hurt.</p>
+<p>The dangerous pairs have a recognisable shape, and they belong in your labelled set on purpose:</p>
+<ul>
+<li><strong>Entity swaps</strong>: "cancel my <em>order</em>" versus "cancel my <em>subscription</em>"; "router model X100" versus "X200".</li>
+<li><strong>Negation and direction</strong>: "can I upgrade mid-contract?" versus "can I downgrade mid-contract?".</li>
+<li><strong>Numbers, dates and places</strong>: "outage in Leeds today" versus "outage in Leeds last week".</li>
+<li><strong>Personal state</strong>: "why is my bill higher this month?" has a different true answer for every customer.</li>
+</ul>
+</section>
+<section id="step-4-the-economics-of-a-false-hit">
+  <h2>17 &mdash; Step 4: the economics of a false hit</h2>
+<p>Now put a price on each outcome. Per question, the expected cost of running a cache is</p>
+\[ C = c_{\text{lookup}} + (1 - h)\, c_{\text{LLM}} + f\, c_{\text{wrong}} \]
+<p>where \(h\) is the hit rate (as a share of all questions), \(f\) the false-hit rate (also as a share of all questions), \(c_{\text{lookup}}\) the cost of embedding and searching, \(c_{\text{LLM}}\) the cost of the full RAG answer, and \(c_{\text{wrong}}\) the expected cost of serving a wrong answer. Without a cache, \(C = c_{\text{LLM}}\).</p>
+<p>\(c_{\text{wrong}}\) is the term people forget. For the ISP, a wrong answer sometimes leads to a follow-up contact with a human agent, sometimes to a wasted technician visit, sometimes to nothing. Suppose the expected cost works out to $0.20 (illustrative), twenty times an LLM call. With \(c_{\text{lookup}} = \$0.0002\), \(c_{\text{LLM}} = \$0.01\), and 45% of questions having a same-answer entry in cache, the distributions from Step 3 give:</p>
+<table>
+<thead><tr><th>Threshold</th><th>Hit rate</th><th>Hits that are false</th><th>Cost per question</th><th>vs no cache</th></tr></thead>
+<tbody>
+<tr><td>0.86</td><td>51.2%</td><td>12.4%</td><td>$0.0177</td><td>+77%</td></tr>
+<tr><td>0.88</td><td>47.0%</td><td>6.4%</td><td>$0.0115</td><td>+15%</td></tr>
+<tr><td>0.90</td><td>42.1%</td><td>3.0%</td><td>$0.0085</td><td>−15%</td></tr>
+<tr><td>0.92</td><td>34.1%</td><td>1.3%</td><td>$0.0077</td><td>−23%</td></tr>
+<tr><td>0.94</td><td>22.6%</td><td>0.6%</td><td>$0.0082</td><td>−18%</td></tr>
+</tbody>
+</table>
+<p>Read it slowly. At 0.86 the cache has the most impressive hit rate on the dashboard and costs 77% <em>more</em> than having no cache, because one hit in eight is wrong and wrong answers are expensive. The best threshold here is about 0.92, saving 23%. Raise \(c_{\text{wrong}}\) (medical or financial answers) and the optimum moves up; lower it (a recipe bot) and it moves down. The threshold is a business decision expressed as a number, and the hit rate alone is not the metric to optimise.</p>
+<p>Latency gains follow the hit rate. At 34% hits, mean response time falls from 2.8 seconds to about \(0.66 \times 2.8 + 0.34 \times 0.03 \approx 1.9\) seconds, and the hits feel instant.</p>
+</section>
+<section id="step-5-a-verifier-widens-the-safe-zone">
+  <h2>18 &mdash; Step 5: a verifier widens the safe zone</h2>
+<p>Similarity from a bi-encoder (two texts embedded separately, then compared) is fast but coarse. A <strong>verifier</strong> looks at the two questions together and asks the precise question: do they have the same answer? It can be a cross-encoder (the same kind of model as a <a href="../rag/reranking.html">reranker</a>, scoring the pair jointly) or a small LLM with a strict yes/no prompt. It runs only on candidate hits, so its cost is bounded by the hit rate.</p>
+<p>Suppose a verifier costing $0.0003 per check keeps 95% of true hits and rejects 90% of false ones. Re-running the numbers:</p>
+<table>
+<thead><tr><th>Threshold</th><th>Hit rate</th><th>Hits that are false</th><th>Cost per question</th><th>vs no cache</th></tr></thead>
+<tbody>
+<tr><td>0.86 + verifier</td><td>43.2%</td><td>1.5%</td><td>$0.0073</td><td>−27%</td></tr>
+<tr><td>0.88 + verifier</td><td>42.1%</td><td>0.7%</td><td>$0.0067</td><td>−33%</td></tr>
+<tr><td>0.90 + verifier</td><td>39.0%</td><td>0.3%</td><td>$0.0067</td><td>−33%</td></tr>
+</tbody>
+</table>
+<p>The verifier lets you lower the similarity threshold to collect more paraphrases while keeping false hits rare: savings rise from 23% to 33%. The architecture is the same as retrieval: a cheap, wide first stage, then a precise second stage. The verifier's own error rates come from the same labelled pairs.</p>
+</section>
+<section id="step-6-scope-everything-besides-meaning-that-must-match">
+  <h2>19 &mdash; Step 6: scope, everything besides meaning that must match</h2>
+<p>Two questions with identical meaning can still need different answers. Everything that changes the correct answer must be part of the cache key, matched exactly, before similarity is even computed:</p>
+<ul>
+<li><strong>Tenant.</strong> "What is the refund policy?" has a different answer for every business on a multi-tenant platform. Partition the cache by tenant in the lookup itself, never as a filter applied after the nearest-neighbour search.</li>
+<li><strong>Permissions.</strong> If the answer was built from documents only some roles may read, it may only be served to users with the same access. Key on a permission-set identifier (for example a hash of the user's groups), as in the access-control rules of <a href="../rag/rag-in-production.html">making RAG good</a>.</li>
+<li><strong>Language and locale.</strong> A cached English answer is wrong for a Spanish speaker even if a multilingual embedding says the questions match.</li>
+<li><strong>Versions.</strong> Model, system prompt and retrieval index versions. Changing the prompt to fix a bad behaviour is pointless if the cache keeps serving answers produced by the old prompt.</li>
+<li><strong>Conversation context.</strong> "What about for business accounts?" means nothing alone. Cache only standalone questions: first turns, or follow-ups after a rewrite step has turned them into self-contained questions.</li>
+</ul>
+<p>Then decide what is <strong>cacheable at all</strong>. Answers that depend on the individual user (their bill, their outage, their order) must not be shared, and usually should not be cached. A cheap classifier or a rule on which tools the answer used ("called the billing API" means personal) keeps them out.</p>
+</section>
+<section id="step-7-freshness-and-invalidation">
+  <h2>20 &mdash; Step 7: freshness and invalidation</h2>
+<p>A cached answer is a copy of a past computation. It goes stale when the documents behind it change. Three mechanisms, used together:</p>
+<ol>
+<li><strong>Event-driven invalidation.</strong> Store the ids of the documents each answer cited, and keep a reverse map from document id to cache entries. When ingestion updates or deletes document <code>kb-17</code>, expire every entry that cited it. This is the precise mechanism and it covers most staleness in a RAG system.</li>
+<li><strong>Version keys.</strong> Because the index version is part of the scope (Step 6), a full re-index naturally starts a fresh cache without any purge job.</li>
+<li><strong>TTL as a backstop.</strong> Some answers depend on things no document change signals (a temporary outage notice, prices). Set TTLs per category: hours for status-like content, days for stable how-to answers.</li>
+</ol>
+<p>Deletions for privacy are the strict case: if a document is removed for legal reasons, answers quoting it must go too, and the reverse map is what makes that possible.</p>
+</section>
+<section id="step-8-what-to-admit-how-big-it-gets-and-stampedes">
+  <h2>21 &mdash; Step 8: what to admit, how big it gets, and stampedes</h2>
+<p><strong>Admission.</strong> Caching a bad answer multiplies it. Store only answers that passed your output checks, cited sources, did not abstain, and were not marked down by the user. Some teams admit only answers whose question has been seen several times, which keeps rare one-offs from filling the cache, or pre-fill the cache with reviewed answers to the top few hundred questions.</p>
+<p><strong>Size.</strong> Each entry holds an embedding (1,536 dimensions × 4 bytes ≈ 6 KB) plus the answer and metadata (about 2 KB). A million entries is about 8 GB, comfortable for one Redis node or a vector database collection. Evict by least-recently-used or least-frequently-used; the tail of one-off questions contributes little.</p>
+<p><strong>Stampedes.</strong> When a popular question first arrives (an outage starts and thousands ask "is the internet down in Leeds?"), every request misses at once and all of them run the full pipeline. Coalesce concurrent misses for the same normalised question so one request computes and the others wait for its result, and pre-warm the cache for known spikes.</p>
+</section>
+<section id="step-9-how-it-relates-to-the-other-caches">
+  <h2>22 &mdash; Step 9: how it relates to the other caches</h2>
+<p>A semantic cache is one of several caches in an LLM application, and they are complementary:</p>
+<ul>
+<li><strong>Prompt (prefix) caching</strong> by the model provider or serving engine reuses the computed attention state for a repeated prompt prefix, such as a long system prompt. It cuts the cost and latency of every call but still generates a fresh answer. It is exact, invisible to correctness, and covered in <a href="cost-performance.html">cost and latency</a>.</li>
+<li><strong>Embedding cache</strong>: an exact cache from text to its vector, so repeated texts are never embedded twice.</li>
+<li><strong>Retrieval cache</strong>: cache the retrieved chunk ids for a question, then still generate. Safer than caching answers, smaller savings.</li>
+<li><strong>Semantic answer cache</strong>: this lesson. The largest saving and the only one that can return a wrong answer.</li>
+</ul>
+</section>
+<section id="rolling-it-out-safely">
+  <h2>23 &mdash; Rolling it out safely</h2>
+<ol>
+<li><strong>Measure the opportunity.</strong> From logs, estimate how much traffic repeats an intent within your TTL. If it is under about 10 to 15%, the cache will not repay its complexity.</li>
+<li><strong>Label pairs.</strong> 500 or more nearest-neighbour pairs, deliberately including entity swaps, negations and personal questions. Fit the threshold (and verifier) to your cost of a wrong answer, as in Steps 4 and 5.</li>
+<li><strong>Shadow mode.</strong> Run lookups on live traffic for a week without serving them. Log every would-be hit, judge a sample (an LLM judge plus human review) and measure the real false-hit rate.</li>
+<li><strong>Launch narrow.</strong> Serve hits only for scopes and categories where shadow mode looked clean, at a conservative threshold.</li>
+<li><strong>Monitor.</strong> Hit rate, false-hit rate from sampled judging, thumbs-down rate on cached versus fresh answers (if cached answers are disliked more often, the threshold is too low), savings, and cache size. Keep a switch to disable serving instantly.</li>
+</ol>
+</section>
+<section id="in-code-the-threshold-economics-and-a-scoped-cache">
+  <h2>24 &mdash; In code: the threshold economics, and a scoped cache</h2>
+<p>The cost model from Steps 4 and 5. The similarity distributions are the illustrative ones from Step 3; in practice you fit them to your labelled pairs.</p>
+<pre><span class="kw">import</span> math
+
+<span class="kw">def</span> <span class="fn">above</span>(t, mean, sd):                       <span class="cm"># P(similarity &gt; t) under a normal distribution</span>
+<span class="kw">return</span> <span class="nr">0.5</span> * (<span class="nr">1</span> - math.erf((t - mean) / (sd * math.sqrt(<span class="nr">2</span>))))
+
+SAME, DIFF, P_SAME = (<span class="nr">0.94</span>, <span class="nr">0.03</span>), (<span class="nr">0.80</span>, <span class="nr">0.05</span>), <span class="nr">0.45</span> <span class="cm"># fitted on labelled pairs (illustrative)</span>
+C_LLM, C_LOOKUP, C_WRONG, C_VERIFY = <span class="nr">0.010</span>, <span class="nr">0.0002</span>, <span class="nr">0.20</span>, <span class="nr">0.0003</span>
+<span class="kw">def</span> <span class="fn">per_query</span>(t, verify=<span class="nr">False</span>):
+    tp, fp = P_SAME * above(t, *SAME), (<span class="nr">1</span> - P_SAME) * above(t, *DIFF)
+    cost = C_LOOKUP
+    <span class="kw">if</span> verify:                                  <span class="cm"># verifier keeps 95% of true hits, 10% of false ones</span>
+        cost += (tp + fp) * C_VERIFY
+        tp, fp = <span class="nr">0.95</span> * tp, <span class="nr">0.10</span> * fp
+    hit = tp + fp
+    cost += (<span class="nr">1</span> - hit) * C_LLM + fp * C_WRONG
+    <span class="kw">return</span> hit, fp / hit, cost
+
+<span class="kw">for</span> verify in (<span class="nr">False</span>, <span class="nr">True</span>):
+    <span class="tp">print</span>(<span class="st">"</span><span class="st">with verifier</span><span class="st">"</span> <span class="kw">if</span> verify <span class="kw">else</span> <span class="st">"</span><span class="st">threshold only</span><span class="st">"</span>)
+    <span class="kw">for</span> t in (<span class="nr">0.86</span>, <span class="nr">0.88</span>, <span class="nr">0.90</span>, <span class="nr">0.92</span>, <span class="nr">0.94</span>):
+        hit, false_share, cost = per_query(t, verify)
+        <span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">  t=</span><span class="st">{</span>t<span class="st">:</span><span class="st">.2f</span><span class="st">}</span><span class="st">  hit=</span><span class="st">{</span>hit<span class="st">:</span><span class="st">5.1%</span><span class="st">}</span><span class="st">  false hits=</span><span class="st">{</span>false_share<span class="st">:</span><span class="st">5.1%</span><span class="st">}</span> <span class="st">"</span>
+<span class="st">f</span><span class="st">"</span><span class="st">$/query=</span><span class="st">{</span>cost<span class="st">:</span><span class="st">.4f</span><span class="st">}</span><span class="st"> (</span><span class="st">{</span>cost / C_LLM - <span class="nr">1</span><span class="st">:</span><span class="st">+.0%</span><span class="st">}</span><span class="st"> vs no cache)</span><span class="st">"</span>)
+</pre>
+<p>It prints both tables above. Next, a minimal cache with the two tiers, scope keys, TTL and document-based invalidation. A real one keeps entries in Redis or a vector database and uses an approximate index instead of the loop.</p>
+<pre><span class="kw">import</span> hashlib, time
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="kw">class</span> <span class="tp">SemanticCache</span>:
+    <span class="st">"""Two tiers (exact hash, then nearest neighbour), scoped keys, TTL, doc-based invalidation."""</span>
+<span class="kw">def</span> <span class="fn">__init__</span>(<span class="tp">self</span>, threshold=<span class="nr">0.92</span>, ttl_s=<span class="nr">24</span> * <span class="nr">3600</span>):
+        <span class="tp">self</span>.threshold, <span class="tp">self</span>.ttl = threshold, ttl_s
+        <span class="tp">self</span>.exact, <span class="tp">self</span>.entries, <span class="tp">self</span>.by_doc = {}, {}, {}
+
+    <span class="fn">@staticmethod</span>
+<span class="kw">def</span> <span class="fn">scope</span>(tenant, perm_set, locale, versions):          <span class="cm"># what must match exactly</span>
+<span class="kw">return</span> (tenant, perm_set, locale, versions)
+
+    <span class="kw">def</span> <span class="fn">get</span>(<span class="tp">self</span>, scope, text, vec, now=<span class="nr">None</span>):
+        now = now or time.time()
+        key = (scope, <span class="st">"</span> <span class="st">"</span>.join(text.lower().split()))       <span class="cm"># tier 1: normalised exact match</span>
+        e = <span class="tp">self</span>.exact.get(key)
+        <span class="kw">if</span> e and now - e[<span class="st">"</span><span class="st">at</span><span class="st">"</span>] &lt; <span class="tp">self</span>.ttl:
+            <span class="kw">return</span> e[<span class="st">"</span><span class="st">answer</span><span class="st">"</span>], <span class="st">"</span><span class="st">exact</span><span class="st">"</span>, <span class="nr">1.0</span>
+        best, best_sim = <span class="nr">None</span>, -<span class="nr">1.0</span> <span class="cm"># tier 2: nearest cached query</span>
+<span class="kw">for</span> e in <span class="tp">self</span>.entries.get(scope, []):                <span class="cm"># (an ANN index in production)</span>
+            sim = <span class="tp">float</span>(vec @ e[<span class="st">"</span><span class="st">vec</span><span class="st">"</span>])                      <span class="cm"># unit vectors: dot = cosine</span>
+<span class="kw">if</span> sim &gt; best_sim and now - e[<span class="st">"</span><span class="st">at</span><span class="st">"</span>] &lt; <span class="tp">self</span>.ttl:
+                best, best_sim = e, sim
+        <span class="kw">if</span> best and best_sim &gt;= <span class="tp">self</span>.threshold:
+            <span class="kw">return</span> best[<span class="st">"</span><span class="st">answer</span><span class="st">"</span>], <span class="st">"</span><span class="st">semantic</span><span class="st">"</span>, <span class="tp">round</span>(best_sim, <span class="nr">3</span>)
+        <span class="kw">return</span> <span class="nr">None</span>, <span class="st">"</span><span class="st">miss</span><span class="st">"</span>, <span class="tp">round</span>(best_sim, <span class="nr">3</span>)
+
+    <span class="kw">def</span> <span class="fn">put</span>(<span class="tp">self</span>, scope, text, vec, answer, cited_docs, now=<span class="nr">None</span>):
+        e = {<span class="st">"</span><span class="st">vec</span><span class="st">"</span>: vec, <span class="st">"</span><span class="st">answer</span><span class="st">"</span>: answer, <span class="st">"</span><span class="st">at</span><span class="st">"</span>: now or time.time(), <span class="st">"</span><span class="st">docs</span><span class="st">"</span>: <span class="tp">set</span>(cited_docs)}
+        <span class="tp">self</span>.exact[(scope, <span class="st">"</span> <span class="st">"</span>.join(text.lower().split()))] = e
+        <span class="tp">self</span>.entries.setdefault(scope, []).append(e)
+        <span class="kw">for</span> d in cited_docs:
+            <span class="tp">self</span>.by_doc.setdefault(d, []).append(e)
+
+    <span class="kw">def</span> <span class="fn">invalidate_doc</span>(<span class="tp">self</span>, doc_id):                        <span class="cm"># a cited document changed</span>
+<span class="kw">for</span> e in <span class="tp">self</span>.by_doc.pop(doc_id, []):
+            e[<span class="st">"</span><span class="st">at</span><span class="st">"</span>] = <span class="tp">float</span>(<span class="st">"</span><span class="st">-inf</span><span class="st">"</span>)                          <span class="cm"># expired everywhere it is referenced</span>
+<span class="kw">def</span> <span class="fn">unit</span>(v):
+    v = np.asarray(v, dtype=<span class="tp">float</span>); <span class="kw">return</span> v / np.linalg.norm(v)
+
+cache = SemanticCache(threshold=<span class="nr">0.92</span>)
+s = SemanticCache.scope(<span class="st">"</span><span class="st">isp-co</span><span class="st">"</span>, <span class="st">"</span><span class="st">customer</span><span class="st">"</span>, <span class="st">"</span><span class="st">en</span><span class="st">"</span>, (<span class="st">"</span><span class="st">gpt-x</span><span class="st">"</span>, <span class="st">"</span><span class="st">prompt-v7</span><span class="st">"</span>, <span class="st">"</span><span class="st">index-41</span><span class="st">"</span>))
+cache.put(s, <span class="st">"</span><span class="st">How do I reset my router?</span><span class="st">"</span>, unit([<span class="nr">1</span>, <span class="nr">0.20</span>, <span class="nr">0</span>]), <span class="st">"</span><span class="st">Hold the reset button 10 s ...</span><span class="st">"</span>, [<span class="st">"</span><span class="st">kb-17</span><span class="st">"</span>])
+
+<span class="tp">print</span>(cache.get(s, <span class="st">"</span><span class="st">how do I reset my  router?</span><span class="st">"</span>, unit([<span class="nr">1</span>, <span class="nr">0.20</span>, <span class="nr">0</span>])))       <span class="cm"># exact tier</span>
+<span class="tp">print</span>(cache.get(s, <span class="st">"</span><span class="st">Steps to reset the router</span><span class="st">"</span>, unit([<span class="nr">1</span>, <span class="nr">0.30</span>, <span class="nr">0.05</span>])))      <span class="cm"># paraphrase</span>
+<span class="tp">print</span>(cache.get(s, <span class="st">"</span><span class="st">How do I reset my password?</span><span class="st">"</span>, unit([<span class="nr">1</span>, <span class="nr">0.75</span>, <span class="nr">0.30</span>])))    <span class="cm"># similar words, other intent</span>
+other = SemanticCache.scope(<span class="st">"</span><span class="st">isp-co</span><span class="st">"</span>, <span class="st">"</span><span class="st">agent</span><span class="st">"</span>, <span class="st">"</span><span class="st">en</span><span class="st">"</span>, (<span class="st">"</span><span class="st">gpt-x</span><span class="st">"</span>, <span class="st">"</span><span class="st">prompt-v7</span><span class="st">"</span>, <span class="st">"</span><span class="st">index-41</span><span class="st">"</span>))
+<span class="tp">print</span>(cache.get(other, <span class="st">"</span><span class="st">How do I reset my router?</span><span class="st">"</span>, unit([<span class="nr">1</span>, <span class="nr">0.20</span>, <span class="nr">0</span>])))     <span class="cm"># other permission scope</span>
+cache.invalidate_doc(<span class="st">"</span><span class="st">kb-17</span><span class="st">"</span>)
+<span class="tp">print</span>(cache.get(s, <span class="st">"</span><span class="st">Steps to reset the router</span><span class="st">"</span>, unit([<span class="nr">1</span>, <span class="nr">0.30</span>, <span class="nr">0.05</span>])))      <span class="cm"># source changed</span>
+</pre>
+<p>The output shows an exact hit, a paraphrase hit at 0.994, a miss for "reset my password" at 0.877 (similar words, different intent, below the threshold), a miss for the same question under a different permission scope, and a miss after the cited document <code>kb-17</code> changed.</p>
+</section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>12 &mdash; Production &amp; Ops</h2>
+  <h2>25 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Monitor hit rate, false hit rate (thumbs down on cached)</li><li>Cache stampede on cold start — pre-warm top queries</li></ul></div>
 </section>
 <section id="related-topics">
-  <h2>13 &mdash; Related topics</h2>
+  <h2>26 &mdash; Related topics</h2>
 <div class="card"><ul><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a></li><li><a href="../rag/rag-in-production.html">Making RAG good &amp; measuring it</a></li><li><a href="../rag/embeddings.html">Embeddings</a></li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a></li></ul></div>
 </section>
 <section id="where-people-get-lost">
-  <h2>14 &mdash; Where people get lost</h2>
+  <h2>27 &mdash; Where people get lost</h2>
 <div class="card"><ul><li>Threshold too low — wrong answers cached</li><li>No invalidation on doc update</li><li>Cross-tenant cache leakage</li><li>Caching personalized responses under shared key</li></ul></div>
+<ul>
+<li><strong>"Use 0.95, that is the standard threshold."</strong> Similarity scales differ by model and domain. Fit the threshold to labelled pairs and to the cost of a wrong answer.</li>
+<li><strong>Optimising hit rate.</strong> A higher hit rate with more false hits can cost more than no cache at all. Optimise expected cost, including wrong answers.</li>
+<li><strong>"Similar embeddings mean the same answer."</strong> Embeddings capture topic and wording; "cancel order" and "cancel subscription" are close and need different answers. Add a verifier for the risky zone.</li>
+<li><strong>Leaving tenant or permissions out of the key.</strong> One user's answer, built from documents they may read, is served to someone who may not. Scope first, then search.</li>
+<li><strong>Caching personal answers.</strong> "Why is my bill higher?" is different for everyone. Mark answers that used personal data or tools as uncacheable.</li>
+<li><strong>No invalidation.</strong> The cache keeps serving last month's policy after the document changed. Store cited document ids and expire on change; use TTL only as a backstop.</li>
+<li><strong>Caching follow-up turns.</strong> "And for business accounts?" is not a standalone question. Cache only first turns or rewritten standalone questions.</li>
+</ul>
 </section>
 <section id="how-this-connects">
-  <h2>15 &mdash; How this connects</h2>
-<h3>Builds on</h3><ul><li><a href="../rag/embeddings.html">Embeddings</a> &mdash; Turning meaning into numbers: dense vectors, cosine similarity, sentence embeddings and contrastive training.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="../rag/rag-in-production.html">Making RAG good &amp; measuring it</a> &mdash; Advanced RAG, a production RAG chatbot design, retrieval and answer metrics, freshness, ACLs, latency, injection.</li></ul>
+  <h2>28 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../rag/embeddings.html">Embeddings</a> &mdash; Turning meaning into numbers: dense vectors, cosine similarity, sentence embeddings and contrastive training.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="../rag/reranking.html">Reranking</a> &mdash; Cross-encoder rerankers: retrieve wide, rescore, keep the best few.</li><li><a href="../rag/rag-in-production.html">Making RAG good &amp; measuring it</a> &mdash; Advanced RAG, a production RAG chatbot design, retrieval and answer metrics, freshness, ACLs, latency, injection.</li><li><a href="cost-performance.html">Cost &amp; latency</a> &mdash; Where the money and the milliseconds go: pricing, prefill vs decode, routing, batching and prompt caching.</li></ul><h3>Where this shows up later</h3><ul><li><a href="hybrid-patterns.html">Hybrid LLM patterns</a> &mdash; LLM extracts and code decides, routing and cascades, LLMs with classic ML, guardrails, text-to-SQL.</li><li><a href="../projects/answer-kit.html">Interview answer kit</a> &mdash; Model answers for the eval and RAG/agent questions, and the follow-ups to prepare.</li></ul>
 </section>
 <section id="check-yourself">
-  <h2>16 &mdash; Check yourself</h2>
+  <h2>29 &mdash; Check yourself</h2>
+<details><summary>Hit rate is 40%, 2% of all questions get a false hit, lookups cost $0.0002, an LLM answer $0.01, and a wrong answer $0.25. Is the cache saving money?</summary><div class="answer">\(C = 0.0002 + 0.6 \times 0.01 + 0.02 \times 0.25 = 0.0002 + 0.006 + 0.005 = 0.0112\), which is more than $0.01 without a cache. It is losing money: raise the threshold or add a verifier.</div></details>
+<details><summary>A verifier costs $0.0005 per candidate and the threshold produces candidates on 50% of questions. What does verification add per question, and when is it worth it?</summary><div class="answer">\(0.5 \times 0.0005 = \$0.00025\) per question. It pays when the false hits it removes, times the cost of a wrong answer, exceed that: for example removing 1% of questions' false hits at $0.20 each saves $0.002, eight times its cost.</div></details>
+<details><summary>Two tenants on your platform both ask "what is the return window?" with identical wording. What should the cache do?</summary><div class="answer">Treat them as unrelated: tenant is part of the scope, matched exactly before any similarity search. Each tenant gets its own answer from its own documents.</div></details>
+<details><summary>After a prompt change that fixed a tone problem, users still see the old tone on common questions. Why?</summary><div class="answer">Cached answers produced with the old prompt are still being served. Include the prompt (and model and index) version in the cache scope, so a change starts a fresh cache partition.</div></details>
+<details><summary>Your dashboard shows a 55% hit rate and the thumbs-down rate on cached answers is double that on fresh answers. What do you conclude and do?</summary><div class="answer">The threshold is too permissive: many hits are false. Sample and label the disliked cached answers, raise the threshold or add a verifier, and re-fit using the cost model. A lower hit rate with fewer false hits is the better outcome.</div></details>
+<details><summary>How much memory do 2 million entries need with 1,024-dimension embeddings and 1.5 KB of answer and metadata each?</summary><div class="answer">Embedding \(1{,}024 \times 4 = 4{,}096\) bytes plus 1,500 bytes, about 5.6 KB per entry, so about 11.2 GB, plus index overhead.</div></details>
+<details><summary>Which questions should never be served from a semantic cache?</summary><div class="answer">Questions whose answers depend on the individual (account, bill, order status), on real-time state (current outages, live prices) unless the TTL is short and invalidation is reliable, and follow-up turns that are not standalone.</div></details>
 <details><summary>Semantic vs exact cache?</summary><div class="answer">Exact: hash match only. Semantic: embedding similarity catches paraphrases. Use two-tier L1 exact + L2 semantic.</div></details>
 <details><summary>Typical hit rate?</summary><div class="answer">40–60% on support/FAQ bots. Near 0% on unique analytics. Measure before investing.</div></details>
 <details><summary>How pick threshold?</summary><div class="answer">Label 500 query pairs same/different intent. Plot hit rate vs false hit rate. Start 0.95 cosine.</div></details>

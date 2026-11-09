@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
@@ -19,28 +23,42 @@
   <h2>Choosing an embedding model</h2>
   <a href="index.html">&larr; Knowledge &amp; RAG</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#what-why"><span class="num">02</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">03</span> Core Concepts</a>
-  <a href="#api-interface-surface"><span class="num">04</span> API / Interface Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">05</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">06</span> Architecture</a>
-  <a href="#model-comparison"><span class="num">07</span> Model Comparison</a>
-  <a href="#distance-metric"><span class="num">08</span> Distance Metric</a>
-  <a href="#matryoshka-representation-learning"><span class="num">09</span> Matryoshka Representation Learning</a>
-  <a href="#open-source-self-host"><span class="num">10</span> Open Source &amp; Self-Host</a>
-  <a href="#eval-before-you-index"><span class="num">11</span> Eval Before You Index</a>
-  <a href="#full-pipeline-example"><span class="num">12</span> Full Pipeline Example</a>
-  <a href="#production-ops"><span class="num">13</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">14</span> Related topics</a>
-  <a href="#where-people-get-lost"><span class="num">15</span> Where people get lost</a>
-  <a href="#how-this-connects"><span class="num">16</span> How this connects</a>
-  <a href="#check-yourself"><span class="num">17</span> Check yourself</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
+  <a href="#api-interface-surface"><span class="num">05</span> API / Interface Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">07</span> Architecture</a>
+  <a href="#model-comparison"><span class="num">08</span> Model Comparison</a>
+  <a href="#distance-metric"><span class="num">09</span> Distance Metric</a>
+  <a href="#matryoshka-representation-learning"><span class="num">10</span> Matryoshka Representation Learning</a>
+  <a href="#open-source-self-host"><span class="num">11</span> Open Source &amp; Self-Host</a>
+  <a href="#eval-before-you-index"><span class="num">12</span> Eval Before You Index</a>
+  <a href="#full-pipeline-example"><span class="num">13</span> Full Pipeline Example</a>
+  <a href="#the-question"><span class="num">14</span> The question</a>
+  <a href="#step-1-what-actually-differs-between-models"><span class="num">15</span> Step 1: what actually differs between models</a>
+  <a href="#step-2-what-a-public-leaderboard-can-and-cannot-tell-you"><span class="num">16</span> Step 2: what a public leaderboard can and cannot tell you</a>
+  <a href="#step-3-build-a-golden-set-from-real-queries"><span class="num">17</span> Step 3: build a golden set from real queries</a>
+  <a href="#step-4-scoring-a-model-with-recall-mrr-and-ndcg"><span class="num">18</span> Step 4: scoring a model with recall, MRR and nDCG</a>
+  <a href="#step-5-how-big-a-difference-is-real"><span class="num">19</span> Step 5: how big a difference is real</a>
+  <a href="#step-6-cost-and-latency-hosted-versus-self-hosted"><span class="num">20</span> Step 6: cost and latency, hosted versus self-hosted</a>
+  <a href="#step-7-dimensions-storage-and-matryoshka-truncation"><span class="num">21</span> Step 7: dimensions, storage and Matryoshka truncation</a>
+  <a href="#step-8-compressing-stored-vectors-with-int8-and-binary"><span class="num">22</span> Step 8: compressing stored vectors with int8 and binary</a>
+  <a href="#step-9-when-fine-tuning-pays"><span class="num">23</span> Step 9: when fine-tuning pays</a>
+  <a href="#step-10-switching-models-without-breaking-search"><span class="num">24</span> Step 10: switching models without breaking search</a>
+  <a href="#a-worked-decision-for-the-support-assistant"><span class="num">25</span> A worked decision for the support assistant</a>
+  <a href="#in-code-an-evaluation-harness"><span class="num">26</span> In code: an evaluation harness</a>
+  <a href="#production-ops"><span class="num">27</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">28</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">29</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">30</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">31</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Choosing an embedding model <span>// Knowledge &amp; RAG</span></h1>
   <p>Model families, dimensions, benchmarks, cost, and when to fine-tune or switch.</p>
-  <div class="tags"><span class="tag">9 min read</span><span class="tag">3 diagrams</span></div>
+  <div class="tags"><span class="tag">29 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -48,9 +66,13 @@
 <p>Choose and deploy text embedding models for RAG: OpenAI text-embedding-3, Cohere embed-v3, open-source BGE/E5, Matryoshka dimension truncation, cosine vs dot-product metrics, and golden-set eval before you commit to an index in your vector database.</p>
 <div class="diagram"><img alt="Embedding Models architecture" src="../tech/img/embedding-models-main.png"/></div><p class="diagram-caption">Embedding pipeline: text → tokenizer → bi-encoder transformer → L2-normalized vector (384–3072 dim) → cosine similarity in <a href="vector-search.html">Vector search &amp; databases</a>. Same model at ingest and query; version tag in index namespace.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Model card</strong></td><td>The page published with a model that states its dimension, maximum input length, pooling, required prefixes, languages and licence.</td></tr><tr><td><strong>MTEB</strong></td><td>The Massive Text Embedding Benchmark: a public leaderboard that averages a model's scores over many tasks and datasets.</td></tr><tr><td><strong>Golden set</strong></td><td>Your own list of real queries, each labelled with the chunks that answer it. The only benchmark that measures your problem.</td></tr><tr><td><strong>Recall@k</strong></td><td>Of the chunks that answer a query, the fraction that appear in the top \(k\) results.</td></tr><tr><td><strong>MRR</strong></td><td>Mean reciprocal rank: average of \(1/\text{rank}\) of the first correct result (0 if none is found).</td></tr><tr><td><strong>nDCG@k</strong></td><td>A rank-aware score from 0 to 1 that gives more credit for correct results near the top of the list.</td></tr><tr><td><strong>Matryoshka embedding</strong></td><td>A vector trained so its first 256 or 512 numbers are themselves a usable, smaller embedding.</td></tr><tr><td><strong>Scalar (int8) quantization</strong></td><td>Storing each number as an 8-bit integer plus a scale: 4 times smaller than 32-bit floats.</td></tr><tr><td><strong>Binary quantization</strong></td><td>Keeping only the sign of each number, 1 bit per dimension: 32 times smaller, compared by counting matching bits.</td></tr><tr><td><strong>Rescoring</strong></td><td>Fetching a shortlist with a cheap, compressed comparison, then re-ranking only that shortlist with the full-precision vectors.</td></tr><tr><td><strong>Asymmetric model</strong></td><td>A model that must be told whether it is embedding a query or a document, through a prefix or an input-type parameter.</td></tr><tr><td><strong>Re-embedding</strong></td><td>Recomputing every stored vector with a new model. Required on any model change, because two models' vectors are incomparable.</td></tr></tbody></table>
+</section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
-  <h2>02 &mdash; What &amp; Why</h2>
+  <h2>03 &mdash; What &amp; Why</h2>
 <div class="card"><p><strong>Embedding models</strong> convert text into dense vectors so semantic similarity becomes geometry: nearby vectors = related meaning. In <a href="rag-pipeline.html">The RAG pipeline</a> pipelines, the embedding model sets the <em>recall ceiling</em> before chunking tuning, hybrid search, or <a href="reranking.html">Reranking</a> can help. Wrong model, wrong metric, or mismatched ingest/query models waste all downstream work.</p>
 <h3>Functional requirements</h3>
 <ul>
@@ -71,7 +93,7 @@
 <blockquote><strong>Prerequisite:</strong> <a href="embeddings.html">Embeddings</a> fundamentals. Vectors land in <a href="vector-search.html">Vector search &amp; databases</a> — pick model first, index second.</blockquote></div>
 </section>
 <section id="core-concepts">
-  <h2>03 &mdash; Core Concepts</h2>
+  <h2>04 &mdash; Core Concepts</h2>
 <div class="card"><table>
 <tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
 <tr><td><strong>Bi-encoder</strong></td><td>Single forward pass embeds query and doc independently</td><td>Fast ANN retrieval; not a reranker</td></tr>
@@ -85,7 +107,7 @@
 </table></div>
 </section>
 <section id="api-interface-surface">
-  <h2>04 &mdash; API / Interface Surface</h2>
+  <h2>05 &mdash; API / Interface Surface</h2>
 <div class="card"><pre># OpenAI — default SaaS choice
 from openai import OpenAI
 client = OpenAI()
@@ -119,7 +141,7 @@ vecs = model.encode(texts, normalize_embeddings=True, batch_size=64)</pre>
 </table></div>
 </section>
 <section id="when-to-use-when-not">
-  <h2>05 &mdash; When to Use / When NOT</h2>
+  <h2>06 &mdash; When to Use / When NOT</h2>
 <div class="card"><table>
 <tr><th>Model / approach</th><th>Use when</th><th>Skip when</th></tr>
 <tr><td><code>text-embedding-3-small</code></td><td>Default SaaS RAG; best $/quality hosted</td><td>Air-gapped VPC, no external API</td></tr>
@@ -130,7 +152,7 @@ vecs = model.encode(texts, normalize_embeddings=True, batch_size=64)</pre>
 </table></div>
 </section>
 <section id="architecture">
-  <h2>06 &mdash; Architecture</h2>
+  <h2>07 &mdash; Architecture</h2>
 <div class="card"><pre>                    +------------------+
                     |  Ingest worker   |
                     |  (chunk + embed) |
@@ -155,7 +177,7 @@ vecs = model.encode(texts, normalize_embeddings=True, batch_size=64)</pre>
                     +------------------+</pre><div class="flow"><div class="step" data-num="1"><span class="label">Pick model</span><div class="detail">Golden-set recall@5 on 3 candidates; lock model + dim + metric</div></div><div class="step" data-num="2"><span class="label">Ingest</span><div class="detail">Chunk docs → embed with search_document → upsert to <a href="vector-search.html">Vector search &amp; databases</a> with metadata</div></div><div class="step" data-num="3"><span class="label">Query</span><div class="detail">Embed question (search_query) → ANN top_k → optional <a href="reranking.html">Reranking</a></div></div><div class="step" data-num="4"><span class="label">Cache</span><div class="detail">TTL cache query vectors by hash(question); invalidate on model change</div></div><div class="step" data-num="5"><span class="label">Migrate</span><div class="detail">New namespace or table per model version; dual-write then cutover</div></div></div></div>
 </section>
 <section id="model-comparison">
-  <h2>07 &mdash; Model Comparison</h2>
+  <h2>08 &mdash; Model Comparison</h2>
 <div class="diagram"><img alt="Comparison: OpenAI 3-small, 3-large, Cohere embed-v3, BGE-small — dimensions, $/1M tokens, MTEB retrieval score, typical latency." src="../tech/img/embedding-models-models-zoom.png"/></div><p class="diagram-caption">Comparison: OpenAI 3-small, 3-large, Cohere embed-v3, BGE-small — dimensions, $/1M tokens, MTEB retrieval score, typical latency.</p><div class="card"><table>
 <tr><th>Model</th><th>Dim</th><th>Cost / notes</th><th>When to pick</th></tr>
 <tr><td>text-embedding-3-small</td><td>1536 (512 trunc OK)</td><td>~$0.02 / 1M tokens</td><td>Default prod RAG</td></tr>
@@ -168,7 +190,7 @@ vecs = model.encode(texts, normalize_embeddings=True, batch_size=64)</pre>
 <blockquote><strong>Rule:</strong> Never pick from MTEB alone. Run 50–100 golden queries from your corpus through recall@5 before re-indexing millions of chunks.</blockquote></div>
 </section>
 <section id="distance-metric">
-  <h2>08 &mdash; Distance Metric</h2>
+  <h2>09 &mdash; Distance Metric</h2>
 <div class="diagram"><img alt="Cosine vs L2 vs dot product: L2-normalized vectors make inner product equal to cosine; match pgvector &lt;code&gt;vector_cosine_ops&lt;/code&gt; or Pinecone metric to your pipeline." src="../tech/img/embedding-models-metric-zoom.png"/></div><p class="diagram-caption">Cosine vs L2 vs dot product: L2-normalized vectors make inner product equal to cosine; match pgvector <code>vector_cosine_ops</code> or Pinecone metric to your pipeline.</p><div class="card"><table>
 <tr><th>Metric</th><th>When</th><th>Index setting</th></tr>
 <tr><td>Cosine distance</td><td>OpenAI models; normalized OSS</td><td>pgvector <code>&lt;=&gt;</code>; Pinecone cosine</td></tr>
@@ -182,7 +204,7 @@ v = model.encode(text, normalize_embeddings=True)
 <p>Mismatch (cosine index + unnormalized vectors) silently degrades recall. Log embed pipeline hash in <a href="../production/observability.html">Observability</a> traces for debugging.</p></div>
 </section>
 <section id="matryoshka-representation-learning">
-  <h2>09 &mdash; Matryoshka Representation Learning</h2>
+  <h2>10 &mdash; Matryoshka Representation Learning</h2>
 <div class="card"><p>OpenAI <code>text-embedding-3-*</code> supports <code>dimensions</code> parameter: truncate 1536 → 512 with ~1–3% recall loss on many general tasks. Validate on <em>your</em> golden set before committing.</p>
 <pre>client.embeddings.create(
     model="text-embedding-3-small",
@@ -197,7 +219,7 @@ v = model.encode(text, normalize_embeddings=True)
 </ul></div>
 </section>
 <section id="open-source-self-host">
-  <h2>10 &mdash; Open Source &amp; Self-Host</h2>
+  <h2>11 &mdash; Open Source &amp; Self-Host</h2>
 <div class="card"><p>Deploy BGE, E5, GTE via <strong>Text Embeddings Inference (TEI)</strong> on GPU — not vLLM (LLM-only). See <a href="../inference/serving.html">Serving &amp; scaling</a> for LLM stack; TEI is the embed analogue.</p>
 <pre># TEI Docker — batch embed server
 docker run --gpus all -p 8080:80 \
@@ -213,7 +235,7 @@ curl http://localhost:8080/embed -d '{"inputs": ["hello world"]}'</pre>
 </ul></div>
 </section>
 <section id="eval-before-you-index">
-  <h2>11 &mdash; Eval Before You Index</h2>
+  <h2>12 &mdash; Eval Before You Index</h2>
 <div class="card"><p>Compare 2–3 embedding models on the same chunk set and golden queries before full re-index. Tie to <a href="../production/evals.html">Evaluating LLM features</a> CI and <a href="../production/observability.html">Observability</a>.</p>
 <pre># Pseudo-eval loop
 for model in ["text-embedding-3-small", "bge-small-en-v1.5"]:
@@ -228,7 +250,7 @@ for model in ["text-embedding-3-small", "bge-small-en-v1.5"]:
 </table></div>
 </section>
 <section id="full-pipeline-example">
-  <h2>12 &mdash; Full Pipeline Example</h2>
+  <h2>13 &mdash; Full Pipeline Example</h2>
 <div class="card highlight"><p>End-to-end embed + upsert + query against a vector store. Swap Pinecone for <a href="vector-search.html">Vector search &amp; databases</a> with the same vectors.</p></div><div class="card"><pre>from openai import OpenAI
 import hashlib
 
@@ -286,9 +308,270 @@ for q, gold_id in golden:
     print(q, gold_id in ids, ids[:3])</pre>
 <p>Log every search in <a href="../production/observability.html">Observability</a> with <code>embed_model</code>, <code>namespace</code>, and hit IDs. Run reranker on hits before LLM per <a href="reranking.html">Reranking</a> sheet.</p></div>
 </section>
+<p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>14 &mdash; The question</h2>
+<p>The embedding model sets the ceiling on retrieval quality. If it does not place the right chunk in the candidate list, no reranker, prompt or larger language model downstream can recover it. It also fixes the size of every stored vector, the per-query latency, and a migration cost you pay in full every time you change your mind. So the choice deserves a measured decision, not a leaderboard glance.</p>
+<p>The questions interviewers ask:</p>
+<ol>
+<li>How would you choose an embedding model for a new RAG system? What would you measure?</li>
+<li>Hosted API or self-hosted? What drives the cost?</li>
+<li>How do you cut vector storage by 4 to 30 times, and what does it cost in quality?</li>
+<li>When is fine-tuning an embedding model worth it, and how do you switch models without downtime?</li>
+</ol>
+<p>The running example is the course's support assistant: 30,000 chunks of about 300 tokens each (9 million tokens in all) from 1,200 help-centre documents, 2 million customer queries a month averaging 15 tokens, and 15% of customers writing in Spanish. A product manager has asked: "Which embedding model, and what will it cost?" We will answer with numbers.</p>
+</section>
+<section id="step-1-what-actually-differs-between-models">
+  <h2>15 &mdash; Step 1: what actually differs between models</h2>
+<p>Every embedding model is a transformer encoder plus pooling, trained contrastively (the mechanism is in <a href="embeddings.html">embeddings</a>). What varies, and what to read off the model card before anything else:</p>
+<table>
+<thead><tr><th>Property</th><th>Typical range</th><th>Why it matters</th></tr></thead>
+<tbody>
+<tr><td>Parameters</td><td>20 million to several billion</td><td>Query latency and serving cost grow with size. Large decoder-based embedders can be markedly better and are much slower.</td></tr>
+<tr><td>Dimension</td><td>384 to 4,096</td><td>Memory and search time grow linearly with it.</td></tr>
+<tr><td>Maximum input</td><td>512 to 8,192+ tokens</td><td>Text beyond it is truncated, usually without an error.</td></tr>
+<tr><td>Languages</td><td>English-only to 100+</td><td>An English-only model maps Spanish queries poorly; a multilingual one can match a Spanish query to an English passage.</td></tr>
+<tr><td>Query/document handling</td><td>Symmetric, prefixes, or an input-type parameter</td><td>Using the wrong prefix, or none, quietly lowers recall.</td></tr>
+<tr><td>Training domain</td><td>Web, Q&amp;A, code, scientific, legal</td><td>A model never trained on text like yours may not separate its fine distinctions.</td></tr>
+<tr><td>Licence and hosting</td><td>Hosted only, open weights, restrictive or permissive</td><td>Decides whether you can run it inside your network at all.</td></tr>
+</tbody>
+</table>
+<p>Two of these rows are hard constraints, not preferences. If documents may not leave your network, hosted APIs are out. If 15% of users write Spanish, English-only models are out. Apply constraints first; they usually shrink the field to a handful.</p>
+</section>
+<section id="step-2-what-a-public-leaderboard-can-and-cannot-tell-you">
+  <h2>16 &mdash; Step 2: what a public leaderboard can and cannot tell you</h2>
+<p>MTEB scores a model on dozens of datasets across task types (retrieval, classification, clustering, semantic similarity, reranking and more) and reports an average. It is useful for one thing: a <strong>shortlist</strong>. A model far down the retrieval column is unlikely to surprise you.</p>
+<p>It cannot pick the winner, for four reasons:</p>
+<ul>
+<li><strong>The average mixes tasks you do not run.</strong> A model can rise on clustering and classification while being middling at retrieval. Read the retrieval column only.</li>
+<li><strong>The datasets are not your domain.</strong> Public retrieval sets are Wikipedia questions, scientific claims, forum posts. Your help centre has plan names, error codes and policy clauses that differ by one number.</li>
+<li><strong>Training overlap.</strong> Popular benchmark datasets, or text very like them, may have been in a model's training data, inflating its score on exactly those sets.</li>
+<li><strong>Gaps at the top are small.</strong> Leading models are often separated by a point or two of average score, which is less than the measurement noise on your own data (Step 5).</li>
+</ul>
+<p>So: use the leaderboard to choose three or four candidates that meet your constraints, spanning sizes (one small, one large, one hosted, one open), then measure them on your data.</p>
+</section>
+<section id="step-3-build-a-golden-set-from-real-queries">
+  <h2>17 &mdash; Step 3: build a golden set from real queries</h2>
+<p>A golden set is a list of queries, each labelled with the chunk IDs that answer it. It is the most valuable artefact in a retrieval project, because every later decision (chunk size, hybrid weights, reranker depth) is tuned against it too.</p>
+<p>How to build one for the support assistant:</p>
+<ol>
+<li><strong>Sample real queries</strong> from search logs or support tickets, not ones you invent. Engineers write queries that use the documents' own words, which makes every model look good.</li>
+<li><strong>Stratify</strong> so the hard slices are present: queries with identifiers ("error E-4012"), Spanish queries, paraphrases ("money back"), questions whose answer depends on the plan, and some with no answer in the corpus.</li>
+<li><strong>Label</strong> the answering chunks. A fast method: pool the top 20 results from every candidate model plus keyword search, and have someone who knows the product mark which are relevant. Pooling across models avoids favouring the one used to find the labels.</li>
+<li><strong>Size it</strong> at 100 to 300 queries to start. A few hours of labelling; Step 5 shows why fewer is not enough.</li>
+</ol>
+<p>Freeze the chunking while comparing models. If chunk boundaries move, labels attached to chunk IDs no longer line up; label at the document or passage level if you expect to re-chunk.</p>
+</section>
+<section id="step-4-scoring-a-model-with-recall-mrr-and-ndcg">
+  <h2>18 &mdash; Step 4: scoring a model with recall, MRR and nDCG</h2>
+<p>Run each golden query through each candidate, keep the top \(k\) chunk IDs, and score the list. Three metrics, each answering a different question. Take three queries with these top-5 results (bold marks a relevant chunk):</p>
+<table>
+<thead><tr><th>Query</th><th>Relevant</th><th>Top 5 returned</th><th>Recall@5</th><th>Reciprocal rank</th><th>nDCG@5</th></tr></thead>
+<tbody>
+<tr><td>q1</td><td>c2</td><td>c7, <strong>c2</strong>, c9, c4, c1</td><td>1.0</td><td>1/2 = 0.500</td><td>0.631</td></tr>
+<tr><td>q2</td><td>c3, c6</td><td>c5, c8, <strong>c3</strong>, <strong>c6</strong>, c0</td><td>1.0</td><td>1/3 = 0.333</td><td>0.571</td></tr>
+<tr><td>q3</td><td>c11</td><td>c1, c4, c2, c8, c9</td><td>0.0</td><td>0</td><td>0.000</td></tr>
+<tr><td colspan="3"><strong>Mean</strong></td><td>0.667</td><td>0.278</td><td>0.401</td></tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Recall@k</strong> asks "did the answer make it into the candidate list?". In a RAG system with a reranker after retrieval, this is the number that matters most, because the reranker can fix the order but cannot add what is missing. Measure it at the depth you will actually pass on (for example recall@50 if you rerank 50).</li>
+<li><strong>MRR</strong> asks "how far down is the first right answer?". Useful when only one chunk is needed.</li>
+<li><strong>nDCG@k</strong> discounts each relevant hit by \(1/\log_2(\text{rank} + 1)\) and divides by the best possible score. For q1, the hit at rank 2 earns \(1/\log_2 3 = 0.631\) against an ideal of 1. For q2, hits at ranks 3 and 4 earn \(0.5 + 0.431 = 0.931\) against an ideal of \(1 + 0.631 = 1.631\), giving 0.571.</li>
+</ul>
+<p>Report recall at your candidate depth as the headline, nDCG@5 or @10 as the ordering quality, and always break both down by slice. A model that wins overall and loses badly on Spanish queries is the wrong model for this product.</p>
+</section>
+<section id="step-5-how-big-a-difference-is-real">
+  <h2>19 &mdash; Step 5: how big a difference is real</h2>
+<p>With \(n\) queries, a measured recall of \(p\) has a standard error of about \(\sqrt{p(1-p)/n}\). At \(p = 0.8\):</p>
+<table>
+<thead><tr><th>Golden-set size</th><th>Standard error</th><th>Approximate 95% interval</th></tr></thead>
+<tbody>
+<tr><td>50 queries</td><td>0.057</td><td>±11 points</td></tr>
+<tr><td>200 queries</td><td>0.028</td><td>±5.5 points</td></tr>
+<tr><td>1,000 queries</td><td>0.013</td><td>±2.5 points</td></tr>
+</tbody>
+</table>
+<p>That interval is for <em>one</em> model's score. When you compare two models by their averages, the uncertainty of the difference is about \(\sqrt{2} \approx 1.4\) times larger: roughly ±7.8 points at 200 queries. So with 50 queries, 0.80 against 0.74 tells you nothing; with 200, a 6-point gap between two averages is still inside the noise, and a 2-point gap certainly is. This is why leaderboard gaps of one or two points should not decide anything.</p>
+<p>Two habits sharpen the comparison without more labelling. Compare models <strong>paired</strong>, query by query: both models answered the same queries, so most of the noise (easy queries, hard queries) is shared and cancels. Count only the queries where they disagree: A found the answer and B did not, or the reverse. If the models were equally good, each disagreement would be a coin flip. If A wins 22 and B wins 8 of 30 disagreements, the chance of a split that lopsided from fair coins is about 0.016 (a two-sided sign test), so the gap is real even though the two averages differ by only 7 points per 100 queries. And look at the disagreements by hand: they tell you <em>why</em> one model is better, which predicts whether the advantage will hold on new queries.</p>
+</section>
+<section id="step-6-cost-and-latency-hosted-versus-self-hosted">
+  <h2>20 &mdash; Step 6: cost and latency, hosted versus self-hosted</h2>
+<p>Hosted embedding APIs charge per input token; illustrative list prices for well-known APIs have been in the range of $0.02 to $0.13 per million tokens. For the support assistant:</p>
+<table>
+<thead><tr><th>Item</th><th>Tokens</th><th>At $0.02/M</th><th>At $0.13/M</th></tr></thead>
+<tbody>
+<tr><td>Embed the corpus once</td><td>30,000 × 300 = 9 M</td><td>$0.18</td><td>$1.17</td></tr>
+<tr><td>Queries per month</td><td>2 M × 15 = 30 M</td><td>$0.60</td><td>$3.90</td></tr>
+</tbody>
+</table>
+<p>The embedding bill is negligible. That is the usual situation, and it changes how to think about the choice: <strong>API price is rarely the deciding cost</strong>. What costs money is vector storage and search (which scale with dimension, Step 7), and what costs users is latency.</p>
+<p>Self-hosting means paying for a GPU whether or not it is busy. At an illustrative $1 per hour, one always-on GPU costs about $730 a month. At $0.02 per million tokens, the API would have to process 36.5 billion tokens a month to cost the same. So self-hosting is justified by other reasons:</p>
+<ul>
+<li><strong>Data residency</strong>: documents or queries may not leave your network.</li>
+<li><strong>Very high volume</strong>: billions of tokens a month, typically from re-embedding large corpora often.</li>
+<li><strong>Latency</strong>: a small model on a GPU in the same data centre embeds a 15-token query in a few milliseconds; a hosted API adds a network round trip, often tens of milliseconds and with a long tail (order of magnitude).</li>
+<li><strong>Control</strong>: a pinned model that cannot be deprecated under you, and the option to fine-tune.</li>
+</ul>
+<p>Self-hosting has its own operational cost: a batching inference server, autoscaling, monitoring. For 2 million queries a month with no residency constraint, a hosted API is the default; the decision flips on a hard constraint, not on price.</p>
+</section>
+<section id="step-7-dimensions-storage-and-matryoshka-truncation">
+  <h2>21 &mdash; Step 7: dimensions, storage and Matryoshka truncation</h2>
+<p>Raw vector memory is \(N \times d \times \text{bytes per number}\). At our 30,000 chunks every model is small (a 3,072-dimension model needs 0.37 GB in 32-bit floats). Suppose the product grows to serve many customers' help centres, 10 million chunks:</p>
+<table>
+<thead><tr><th>Dimension</th><th>float32</th><th>float16</th><th>int8</th><th>binary</th></tr></thead>
+<tbody>
+<tr><td>384</td><td>15.4 GB</td><td>7.7 GB</td><td>3.8 GB</td><td>0.48 GB</td></tr>
+<tr><td>1,024</td><td>41.0 GB</td><td>20.5 GB</td><td>10.2 GB</td><td>1.28 GB</td></tr>
+<tr><td>1,536</td><td>61.4 GB</td><td>30.7 GB</td><td>15.4 GB</td><td>1.92 GB</td></tr>
+<tr><td>3,072</td><td>122.9 GB</td><td>61.4 GB</td><td>30.7 GB</td><td>3.84 GB</td></tr>
+</tbody>
+</table>
+<p>Approximate indexes such as HNSW want vectors in RAM, so this table is roughly your memory bill before index overhead (see <a href="vector-search.html">vector search</a>). Search time also grows linearly with \(d\).</p>
+<p><strong>Matryoshka</strong> models are trained so that the first \(m\) numbers of the vector are a good embedding on their own: during training the contrastive loss is applied to several prefixes (say the first 64, 128, 256, 512 and all dimensions) at once, which pushes the most important information to the front. You can then store, for example, 512 of 1,536 dimensions, a third of the memory, usually for a small loss in recall that you must measure on your golden set.</p>
+<div class="callout warn"><p><strong>Renormalise after truncating.</strong> A unit vector cut to its first part is no longer unit length: a random 1,024-dimension unit vector truncated to 256 dimensions has length about 0.46. If the index assumes dot product equals cosine, scores are now wrong. APIs that accept a "dimensions" parameter renormalise for you; if you truncate yourself, divide by the new length. Truncating a model that was <em>not</em> trained Matryoshka-style throws away information at random.</p></div>
+</section>
+<section id="step-8-compressing-stored-vectors-with-int8-and-binary">
+  <h2>22 &mdash; Step 8: compressing stored vectors with int8 and binary</h2>
+<p>Independently of dimension, each number can be stored in fewer bits, the same idea as weight quantization in <a href="../inference/model-compression.html">model compression</a>.</p>
+<ul>
+<li><strong>float16</strong>: half the memory, no measurable recall change for retrieval. A free default.</li>
+<li><strong>int8 scalar</strong>: map each dimension's range onto −127 to 127 with a per-dimension scale. 4 times smaller than float32.</li>
+<li><strong>Binary</strong>: keep only the sign of each number, packed 8 per byte; compare vectors by counting bits that agree (a Hamming distance, which CPUs compute in a few instructions). 32 times smaller.</li>
+</ul>
+<p>To see the quality cost, a synthetic test: 20,000 unit vectors in 384 dimensions arranged in 200 topic clusters, and 200 queries near random documents. Ground truth is the exact float32 top 10. Recall@10 against that truth:</p>
+<table>
+<thead><tr><th>Stored as</th><th>Bytes per vector</th><th>Recall@10</th></tr></thead>
+<tbody>
+<tr><td>float32 (truth)</td><td>1,536</td><td>1.000</td></tr>
+<tr><td>int8</td><td>384</td><td>0.989</td></tr>
+<tr><td>binary</td><td>48</td><td>0.390</td></tr>
+<tr><td>binary shortlist of 100, rescored in float32</td><td>48 in RAM, full vectors on disk</td><td>1.000</td></tr>
+</tbody>
+</table>
+<p>Binary alone is a poor ranker: it cannot tell apart neighbours that are all close. But as a <strong>first pass</strong> it is excellent: the true top 10 are almost always inside its top 100, and rescoring 100 candidates with full vectors is cheap: microseconds of arithmetic, plus well under a millisecond to fetch them if they live on a local SSD rather than in RAM. This "compress for the shortlist, rescore with full precision" pattern is how large indexes get 10 to 30 times cheaper. Real embeddings behave differently from this synthetic set, and some models are trained to quantize well, so measure on your golden set; the shape of the result usually holds.</p>
+</section>
+<section id="step-9-when-fine-tuning-pays">
+  <h2>23 &mdash; Step 9: when fine-tuning pays</h2>
+<p>Fine-tuning continues the model's contrastive training on your own (query, relevant chunk) pairs, usually with in-batch negatives plus hard negatives mined from your current retriever. It helps most when your domain has vocabulary the base model treats as noise: internal product names, part numbers, legal clause structure, medical abbreviations.</p>
+<p>Reach for it last, after cheaper fixes have been measured:</p>
+<ol>
+<li>Fix the obvious: correct prefixes, chunk sizes within the input limit, normalisation and index metric matching.</li>
+<li>Add keyword search and fuse (<a href="hybrid-search.html">hybrid search</a>): it covers identifiers, the most common domain gap.</li>
+<li>Add a <a href="reranking.html">reranker</a>: it fixes ordering.</li>
+<li>Then, if recall at your candidate depth is still short on specific slices, fine-tune.</li>
+</ol>
+<p>Data: a few thousand good pairs is a reasonable start; they can come from click logs, from support tickets matched to the article that resolved them, or from an LLM writing questions for each chunk (check a sample, since generated questions tend to copy the chunk's wording). Hold out part of the golden set the training data never touched. The hidden cost: a fine-tuned model is a new model, so the whole corpus must be re-embedded, and you now own a model to host and retrain.</p>
+</section>
+<section id="step-10-switching-models-without-breaking-search">
+  <h2>24 &mdash; Step 10: switching models without breaking search</h2>
+<p>Vectors from two models live in unrelated coordinate systems. A clean way to see it: rotate a set of vectors by a random orthogonal matrix. Within each set, every cosine is preserved exactly (two texts at −0.068 in set A are at −0.068 in set B), yet the same text's vector in A and in B has a cosine of −0.058: noise. Two genuinely different models are at least that unrelated. So a query embedded with the new model, searched against vectors from the old one, returns garbage, with no error.</p>
+<p>A safe migration:</p>
+<ol>
+<li>Store the model name and version on every vector, and keep each model's vectors in its own index or namespace.</li>
+<li>Re-embed the corpus into a new index while the old one serves (9 M tokens here: minutes and cents; for billions of tokens, plan the throughput and cost).</li>
+<li>Dual-write new and changed documents to both indexes during the backfill.</li>
+<li>Evaluate on the golden set, then shadow real traffic: run both, compare result overlap and downstream answer quality.</li>
+<li>Switch the query path and the index together, in one config change, and keep the old index until you are sure.</li>
+</ol>
+<p>Anything else derived from the old model must move too: a semantic cache keyed by query vectors, similarity thresholds tuned on its scores, clustering built on its space.</p>
+</section>
+<section id="a-worked-decision-for-the-support-assistant">
+  <h2>25 &mdash; A worked decision for the support assistant</h2>
+<ol>
+<li><strong>Constraints.</strong> No data-residency requirement; 15% Spanish, so multilingual is required. That removes English-only models.</li>
+<li><strong>Shortlist</strong> from the leaderboard's retrieval column: a hosted multilingual model (1,024 dimensions), a hosted large model (3,072), and an open multilingual model (768) as the self-host option.</li>
+<li><strong>Golden set</strong>: 200 real queries from tickets, including 40 Spanish, 30 with identifiers and 20 with no answer.</li>
+<li><strong>Measure</strong> recall@50 (we will rerank 50) and nDCG@10, overall and per slice. Suppose the hosted large model leads overall by 2 points: within noise at 200 queries. On the 40 Spanish queries, suppose the multilingual 1,024-dimension model finds the answer for 8 that the large model misses, and the reverse happens once. A slice of 40 is too small to trust its averages (±12 points each), but the paired count is decisive: 8 against 1 has a sign-test probability of about 0.04 under "equally good". That is a real difference on a slice that matters.</li>
+<li><strong>Cost</strong>: under $5 a month in API fees for any candidate. Memory at 30,000 chunks: under 0.4 GB for any of them. Neither decides.</li>
+<li><strong>Decision</strong>: the hosted multilingual model, float16 storage, version tag on every vector, golden set kept as a regression test for every future change. Revisit int8 or binary storage only if the corpus reaches millions of chunks.</li>
+</ol>
+</section>
+<section id="in-code-an-evaluation-harness">
+  <h2>26 &mdash; In code: an evaluation harness</h2>
+<p>The harness is model-agnostic: it takes ranked chunk IDs per query and the labelled relevant IDs. These numbers reproduce Step 4:</p>
+<pre><span class="kw">import</span> math
+
+<span class="kw">def</span> <span class="fn">recall_at_k</span>(ranked, relevant, k):
+    <span class="kw">return</span> <span class="tp">len</span>(<span class="tp">set</span>(ranked[:k]) &amp; relevant) / <span class="tp">len</span>(relevant)
+
+<span class="kw">def</span> <span class="fn">reciprocal_rank</span>(ranked, relevant):
+    <span class="kw">return</span> <span class="tp">next</span>((<span class="nr">1</span> / i <span class="kw">for</span> i, c in <span class="tp">enumerate</span>(ranked, <span class="nr">1</span>) <span class="kw">if</span> c in relevant), <span class="nr">0.0</span>)
+
+<span class="kw">def</span> <span class="fn">ndcg_at_k</span>(ranked, relevant, k):
+    dcg = <span class="tp">sum</span>(<span class="nr">1</span> / math.log2(i + <span class="nr">1</span>) <span class="kw">for</span> i, c in <span class="tp">enumerate</span>(ranked[:k], <span class="nr">1</span>) <span class="kw">if</span> c in relevant)
+    ideal = <span class="tp">sum</span>(<span class="nr">1</span> / math.log2(i + <span class="nr">1</span>) <span class="kw">for</span> i in <span class="tp">range</span>(<span class="nr">1</span>, <span class="tp">min</span>(<span class="tp">len</span>(relevant), k) + <span class="nr">1</span>))
+    <span class="kw">return</span> dcg / ideal
+
+<span class="kw">def</span> <span class="fn">evaluate</span>(results, golden, k=<span class="nr">5</span>):
+    <span class="st">"""results: {query_id: [chunk ids, best first]}; golden: {query_id: set of relevant ids}"""</span>
+    rows = [(recall_at_k(results[q], rel, k), reciprocal_rank(results[q], rel), ndcg_at_k(results[q], rel, k))
+            <span class="kw">for</span> q, rel in golden.items()]
+    n = <span class="tp">len</span>(rows)
+    <span class="kw">return</span> {name: <span class="tp">round</span>(<span class="tp">sum</span>(r[i] <span class="kw">for</span> r in rows) / n, <span class="nr">3</span>) <span class="kw">for</span> i, name in <span class="tp">enumerate</span>([<span class="st">"</span><span class="st">recall</span><span class="st">"</span>, <span class="st">"</span><span class="st">mrr</span><span class="st">"</span>, <span class="st">"</span><span class="st">ndcg</span><span class="st">"</span>])}
+
+golden = {<span class="st">"</span><span class="st">q1</span><span class="st">"</span>: {<span class="st">"</span><span class="st">c2</span><span class="st">"</span>}, <span class="st">"</span><span class="st">q2</span><span class="st">"</span>: {<span class="st">"</span><span class="st">c3</span><span class="st">"</span>, <span class="st">"</span><span class="st">c6</span><span class="st">"</span>}, <span class="st">"</span><span class="st">q3</span><span class="st">"</span>: {<span class="st">"</span><span class="st">c11</span><span class="st">"</span>}}
+model_a = {<span class="st">"</span><span class="st">q1</span><span class="st">"</span>: [<span class="st">"</span><span class="st">c7</span><span class="st">"</span>, <span class="st">"</span><span class="st">c2</span><span class="st">"</span>, <span class="st">"</span><span class="st">c9</span><span class="st">"</span>, <span class="st">"</span><span class="st">c4</span><span class="st">"</span>, <span class="st">"</span><span class="st">c1</span><span class="st">"</span>],
+           <span class="st">"</span><span class="st">q2</span><span class="st">"</span>: [<span class="st">"</span><span class="st">c5</span><span class="st">"</span>, <span class="st">"</span><span class="st">c8</span><span class="st">"</span>, <span class="st">"</span><span class="st">c3</span><span class="st">"</span>, <span class="st">"</span><span class="st">c6</span><span class="st">"</span>, <span class="st">"</span><span class="st">c0</span><span class="st">"</span>],
+           <span class="st">"</span><span class="st">q3</span><span class="st">"</span>: [<span class="st">"</span><span class="st">c1</span><span class="st">"</span>, <span class="st">"</span><span class="st">c4</span><span class="st">"</span>, <span class="st">"</span><span class="st">c2</span><span class="st">"</span>, <span class="st">"</span><span class="st">c8</span><span class="st">"</span>, <span class="st">"</span><span class="st">c9</span><span class="st">"</span>]}
+<span class="tp">print</span>(evaluate(model_a, golden))       <span class="cm"># {'recall': 0.667, 'mrr': 0.278, 'ndcg': 0.401}</span>
+<span class="cm"># paired comparison: where do two models disagree on finding the answer?</span>
+model_b = {<span class="st">"</span><span class="st">q1</span><span class="st">"</span>: [<span class="st">"</span><span class="st">c2</span><span class="st">"</span>, <span class="st">"</span><span class="st">c7</span><span class="st">"</span>, <span class="st">"</span><span class="st">c9</span><span class="st">"</span>, <span class="st">"</span><span class="st">c4</span><span class="st">"</span>, <span class="st">"</span><span class="st">c1</span><span class="st">"</span>], <span class="st">"</span><span class="st">q2</span><span class="st">"</span>: [<span class="st">"</span><span class="st">c5</span><span class="st">"</span>, <span class="st">"</span><span class="st">c8</span><span class="st">"</span>, <span class="st">"</span><span class="st">c0</span><span class="st">"</span>, <span class="st">"</span><span class="st">c1</span><span class="st">"</span>, <span class="st">"</span><span class="st">c4</span><span class="st">"</span>],
+           <span class="st">"</span><span class="st">q3</span><span class="st">"</span>: [<span class="st">"</span><span class="st">c11</span><span class="st">"</span>, <span class="st">"</span><span class="st">c4</span><span class="st">"</span>, <span class="st">"</span><span class="st">c2</span><span class="st">"</span>, <span class="st">"</span><span class="st">c8</span><span class="st">"</span>, <span class="st">"</span><span class="st">c9</span><span class="st">"</span>]}
+hit = <span class="kw">lambda</span> res, q: recall_at_k(res[q], golden[q], <span class="nr">5</span>) &gt; <span class="nr">0</span>
+<span class="tp">print</span>(<span class="st">"</span><span class="st">A only:</span><span class="st">"</span>, [q <span class="kw">for</span> q in golden <span class="kw">if</span> hit(model_a, q) and not hit(model_b, q)],
+      <span class="st">"</span><span class="st">B only:</span><span class="st">"</span>, [q <span class="kw">for</span> q in golden <span class="kw">if</span> hit(model_b, q) and not hit(model_a, q)])
+</pre>
+<p>The synthetic compression test from Step 8, and the two facts from Steps 7 and 10, in numpy:</p>
+<pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+rng = np.random.default_rng(<span class="nr">0</span>)
+N, d, k = <span class="nr">20_000</span>, <span class="nr">384</span>, <span class="nr">10</span>
+centers = rng.normal(size=(<span class="nr">200</span>, d))                              <span class="cm"># 200 topics</span>
+X = centers[rng.integers(<span class="nr">0</span>, <span class="nr">200</span>, N)] + rng.normal(size=(N, d))
+X /= np.linalg.norm(X, axis=<span class="nr">1</span>, keepdims=<span class="nr">True</span>)
+noise = rng.normal(size=(<span class="nr">200</span>, d)); noise /= np.linalg.norm(noise, axis=<span class="nr">1</span>, keepdims=<span class="nr">True</span>)
+Q = X[rng.integers(<span class="nr">0</span>, N, <span class="nr">200</span>)] + <span class="nr">0.5</span> * noise                      <span class="cm"># queries near some document</span>
+Q /= np.linalg.norm(Q, axis=<span class="nr">1</span>, keepdims=<span class="nr">True</span>)
+truth = np.argsort(-(Q @ X.T), axis=<span class="nr">1</span>)[:, :k]                    <span class="cm"># exact float32 top 10</span>
+recall = <span class="kw">lambda</span> found: np.mean([<span class="tp">len</span>(<span class="tp">set</span>(f) &amp; <span class="tp">set</span>(t)) / k <span class="kw">for</span> f, t in <span class="tp">zip</span>(found, truth)])
+
+scale = np.abs(X).max(<span class="nr">0</span>) / <span class="nr">127</span> <span class="cm"># int8, one scale per dimension</span>
+X8 = np.round(X / scale).astype(np.int8)
+<span class="tp">print</span>(<span class="st">"</span><span class="st">int8   </span><span class="st">%.3f</span><span class="st">"</span> % recall(np.argsort(-(Q @ (X8 * scale).T), axis=<span class="nr">1</span>)[:, :k]))      <span class="cm"># 0.989</span>
+
+Xb, Qb = (X &gt; <span class="nr">0</span>).astype(np.int16), (Q &gt; <span class="nr">0</span>).astype(np.int16)    <span class="cm"># sign bits</span>
+agree = Qb @ Xb.T + (<span class="nr">1</span> - Qb) @ (<span class="nr">1</span> - Xb).T                        <span class="cm"># matching bits = d - Hamming</span>
+<span class="tp">print</span>(<span class="st">"</span><span class="st">binary </span><span class="st">%.3f</span><span class="st">"</span> % recall(np.argsort(-agree, axis=<span class="nr">1</span>)[:, :k]))                     <span class="cm"># 0.390</span>
+cand = np.argsort(-agree, axis=<span class="nr">1</span>)[:, :<span class="nr">100</span>]                       <span class="cm"># shortlist 100, rescore exactly</span>
+<span class="tp">print</span>(<span class="st">"</span><span class="st">binary+rescore </span><span class="st">%.3f</span><span class="st">"</span> % recall([c[np.argsort(-(X[c] @ q))[:k]] <span class="kw">for</span> c, q in <span class="tp">zip</span>(cand, Q)]))  <span class="cm"># 1.000</span>
+
+v = np.random.default_rng(<span class="nr">1</span>).normal(size=<span class="nr">1024</span>); v /= np.linalg.norm(v)
+<span class="tp">print</span>(<span class="st">"</span><span class="st">length after truncating to 256 dims: </span><span class="st">%.2f</span><span class="st">"</span> % np.linalg.norm(v[:<span class="nr">256</span>]))        <span class="cm"># 0.46</span>
+
+R, _ = np.linalg.qr(np.random.default_rng(<span class="nr">1</span>).normal(size=(d, d)))   <span class="cm"># a "different model"</span>
+A = X[:<span class="nr">2</span>]; B = A @ R
+<span class="tp">print</span>(<span class="st">"</span><span class="st">within A </span><span class="st">%.3f</span><span class="st">, within B </span><span class="st">%.3f</span><span class="st">, same text A vs B </span><span class="st">%.3f</span><span class="st">"</span> % (A[<span class="nr">0</span>] @ A[<span class="nr">1</span>], B[<span class="nr">0</span>] @ B[<span class="nr">1</span>], A[<span class="nr">0</span>] @ B[<span class="nr">0</span>]))
+</pre>
+<p>To produce <code>results</code> from a hosted API, the call looks like this (OpenAI Python SDK, documented API; needs a network and key, so it is not run here):</p>
+<pre><span class="cm"># needs: network access and OPENAI_API_KEY (documented OpenAI SDK API, not run here)</span>
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> openai <span class="kw">import</span> OpenAI
+
+client = OpenAI()
+<span class="kw">def</span> <span class="fn">embed</span>(texts, dims=<span class="nr">None</span>):
+    kw = {<span class="st">"</span><span class="st">dimensions</span><span class="st">"</span>: dims} <span class="kw">if</span> dims <span class="kw">else</span> {}
+    resp = client.embeddings.create(model=<span class="st">"</span><span class="st">text-embedding-3-small</span><span class="st">"</span>, <span class="tp">input</span>=texts, **kw)
+    <span class="kw">return</span> np.array([d.embedding <span class="kw">for</span> d in resp.data])      <span class="cm"># returned unit-length</span>
+
+chunk_vecs = embed(chunk_texts)                                <span class="cm"># batch in groups of a few hundred</span>
+query_vecs = embed(<span class="tp">list</span>(queries.values()))
+top = np.argsort(-(query_vecs @ chunk_vecs.T), axis=<span class="nr">1</span>)[:, :<span class="nr">50</span>]
+results = {qid: [chunk_ids[j] <span class="kw">for</span> j in row] <span class="kw">for</span> qid, row in <span class="tp">zip</span>(queries, top)}
+</pre>
+</section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>13 &mdash; Production &amp; Ops</h2>
+  <h2>27 &mdash; Production &amp; Ops</h2>
 <div class="card"><table>
 <tr><th>Concern</th><th>Practice</th></tr>
 <tr><td>Versioning</td><td>Metadata <code>embed_model=text-embedding-3-small-v1</code> on every vector</td></tr>
@@ -300,7 +583,7 @@ for q, gold_id in golden:
 </table></div>
 </section>
 <section id="related-topics">
-  <h2>14 &mdash; Related topics</h2>
+  <h2>28 &mdash; Related topics</h2>
 <div class="card"><ul>
 <li><a href="vector-search.html">Vector search &amp; databases</a> — ANN index stores embed output; metric must match</li>
 <li><a href="rag-pipeline.html">The RAG pipeline</a> — ingest embed + query embed are bookends of retrieval</li>
@@ -310,7 +593,7 @@ for q, gold_id in golden:
 </ul></div>
 </section>
 <section id="where-people-get-lost">
-  <h2>15 &mdash; Where people get lost</h2>
+  <h2>29 &mdash; Where people get lost</h2>
 <div class="card"><ul>
 <li><strong>Cohere input_type mismatch</strong> — <code>search_document</code> at ingest, <code>search_query</code> at query; swapping kills recall</li>
 <li><strong>Skip normalization on OSS</strong> — upsert raw BGE vectors into cosine index</li>
@@ -320,13 +603,30 @@ for q, gold_id in golden:
 <li><strong>Trust MTEB only</strong> — legal/medical/domain jargon needs custom golden set</li>
 <li><strong>No embed_model in metadata</strong> — impossible to debug which index generation failed</li>
 </ul></div>
+<ul>
+<li><strong>"Pick the top of the leaderboard."</strong> The average mixes tasks you do not run, on domains that are not yours, with gaps smaller than your measurement noise. Shortlist from it; decide on your golden set.</li>
+<li><strong>A golden set written by the engineers.</strong> Invented queries reuse the documents' wording and flatter every model. Sample real queries.</li>
+<li><strong>Judging by the overall average only.</strong> Break results down by slice (language, identifiers, no-answer); the slice that matters to the product may reverse the ranking.</li>
+<li><strong>Optimising API price.</strong> Embedding fees are usually tiny; storage, search latency and migration effort dominate.</li>
+<li><strong>Truncating dimensions without renormalising, or truncating a non-Matryoshka model.</strong> The first breaks cosine scores; the second discards information arbitrarily.</li>
+<li><strong>Using binary quantization as the final ranking.</strong> It is a shortlist method; rescore with full-precision vectors.</li>
+<li><strong>Fine-tuning first.</strong> Prefixes, hybrid search and a reranker are cheaper, and fine-tuning commits you to re-embedding and hosting a model.</li>
+<li><strong>Swapping the model in place.</strong> Old and new vectors are incomparable; migrate with a separate index, dual writes and a single cutover.</li>
+</ul>
 </section>
 <section id="how-this-connects">
-  <h2>16 &mdash; How this connects</h2>
-<h3>Builds on</h3><ul><li><a href="../fundamentals/api.html">Calling a model</a> &mdash; The API call end to end: messages, roles, streaming, tool calls, errors and retries, across providers.</li><li><a href="embeddings.html">Embeddings</a> &mdash; Turning meaning into numbers: dense vectors, cosine similarity, sentence embeddings and contrastive training.</li></ul><h3>Where this shows up later</h3><ul><li><a href="vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="reranking.html">Reranking</a> &mdash; Cross-encoder rerankers: retrieve wide, rescore, keep the best few.</li><li><a href="../inference/serving.html">Serving &amp; scaling</a> &mdash; vLLM and Ollama, benchmarking honestly, a production serving setup and scaling it.</li><li><a href="../tech/llamaindex.html">LlamaIndex</a> &mdash; Data-first RAG framework: loaders, indexes, query engines.</li><li><a href="../tech/pgvector.html">pgvector</a> &mdash; Vector search inside Postgres: HNSW/IVFFlat, hybrid with full-text, operations.</li><li><a href="../tech/pinecone.html">Pinecone</a> &mdash; Managed serverless vector database: namespaces, metadata filters, hybrid.</li><li><a href="../tech/weaviate.html">Weaviate</a> &mdash; Open-source vector database with modules, hybrid search and multi-tenancy.</li><li><a href="../tech/chroma.html">Chroma</a> &mdash; Lightweight embedded vector store for prototypes and local RAG.</li></ul>
+  <h2>30 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../fundamentals/api.html">Calling a model</a> &mdash; The API call end to end: messages, roles, streaming, tool calls, errors and retries, across providers.</li><li><a href="embeddings.html">Embeddings</a> &mdash; Turning meaning into numbers: dense vectors, cosine similarity, sentence embeddings and contrastive training.</li></ul><h3>Where this shows up later</h3><ul><li><a href="vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="document-ingestion.html">Document ingestion</a> &mdash; Parsing PDFs and HTML, OCR, deduplication and keeping the index fresh.</li><li><a href="chunking.html">Chunking</a> &mdash; Fixed, recursive, semantic, document-aware and parent-child chunking, and how to tune it.</li><li><a href="hybrid-search.html">Hybrid search &amp; query understanding</a> &mdash; BM25 plus vectors fused with RRF, query rewriting, decomposition and HyDE.</li><li><a href="reranking.html">Reranking</a> &mdash; Cross-encoder rerankers: retrieve wide, rescore, keep the best few.</li><li><a href="rag-in-production.html">Making RAG good &amp; measuring it</a> &mdash; Advanced RAG, a production RAG chatbot design, retrieval and answer metrics, freshness, ACLs, latency, injection.</li><li><a href="../inference/serving.html">Serving &amp; scaling</a> &mdash; vLLM and Ollama, benchmarking honestly, a production serving setup and scaling it.</li><li><a href="../tech/llamaindex.html">LlamaIndex</a> &mdash; Data-first RAG framework: loaders, indexes, query engines.</li></ul>
 </section>
 <section id="check-yourself">
-  <h2>17 &mdash; Check yourself</h2>
+  <h2>31 &mdash; Check yourself</h2>
+<details><summary>A query has relevant chunks at ranks 1 and 5 of the top 5, and there are exactly two relevant chunks. What are its recall@5, reciprocal rank and nDCG@5?</summary><div class="answer">Recall@5 = 2/2 = 1.0. Reciprocal rank = 1/1 = 1.0. DCG = \(1/\log_2 2 + 1/\log_2 6 = 1 + 0.387 = 1.387\); ideal DCG = \(1 + 0.631 = 1.631\); nDCG@5 = 0.850.</div></details>
+<details><summary>Model A scores recall@50 = 0.83 and model B 0.81 on 100 golden queries. Should you switch from B to A?</summary><div class="answer">Not on that evidence. The standard error at \(n = 100\), \(p \approx 0.82\) is about 0.038, so the 95% interval on each score is roughly ±7.5 points, and on the difference between two independent averages about ±10.6. A 2-point gap is noise. Look at the paired disagreements and the slices, or label more queries; switch only for a real, product-relevant gain that justifies re-embedding.</div></details>
+<details><summary>You must store 50 million chunks with a 1,024-dimension model. How much RAM do float32, int8 and binary vectors need?</summary><div class="answer">float32: \(50{,}000{,}000 \times 1{,}024 \times 4 = 204.8\) GB. int8: 51.2 GB. Binary: \(50{,}000{,}000 \times 128\) bytes = 6.4 GB. A binary in-memory shortlist with float vectors on disk for rescoring is the usual design at this size.</div></details>
+<details><summary>Why does recall at the candidate depth matter more than nDCG@5 for the first-stage retriever in a system with a reranker?</summary><div class="answer">The reranker reorders the candidates it is given but cannot add missing ones. If the answer is not in the top 50, nothing downstream recovers it; if it is at rank 30, the reranker can move it up.</div></details>
+<details><summary>Your company forbids sending customer data to external APIs, and query volume is low. What follows?</summary><div class="answer">Self-host an open-weights model regardless of price: the constraint decides, not cost. Keep the model small enough to serve cheaply (a single GPU or even CPU for low volume), and pin its version.</div></details>
+<details><summary>A teammate truncates 1,536-dimension vectors to 512 by slicing the arrays and sees search quality collapse. Name two possible causes.</summary><div class="answer">The truncated vectors were not renormalised, so dot-product scores no longer equal cosine; or the model was not trained Matryoshka-style, so the first 512 numbers are not a meaningful embedding. Also check that queries were truncated the same way as documents.</div></details>
+<details><summary>What else must change when you migrate to a new embedding model, besides the document index?</summary><div class="answer">Everything built on the old space: the query embedding call, any semantic cache keyed by vectors, similarity thresholds tuned on old scores, and clusters or deduplication computed from old vectors. Version tags make it possible to find them.</div></details>
 <details>
 <summary>How do you pick an embedding model for production RAG?</summary>
 <div class="answer">Start with text-embedding-3-small or bge-small-en; build 50–100 golden query→doc pairs; measure recall@5 on your chunked corpus; upgrade to large or bge-large only if below target. Factor cost (API $/1M tokens vs GPU ops), latency, and air-gap requirements.</div>

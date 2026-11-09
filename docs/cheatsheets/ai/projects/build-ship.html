@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
@@ -19,29 +23,220 @@
   <h2>Complete build: prove it, serve it, afford it</h2>
   <a href="index.html">&larr; Build &amp; interview</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#the-complete-build-4-4-prove-it-serve-it-afford-it"><span class="num">02</span> The Complete Build 4/4 — prove it, serve it, afford it</a>
-  <a href="#step-1-the-eval-suite-three-tiers-run-at-three-speeds"><span class="num">03</span> Step 1 — the eval suite (three tiers, run at three speeds)</a>
-  <a href="#step-2-the-cost-worksheet-do-this-arithmetic-for-your-system"><span class="num">04</span> Step 2 — the cost worksheet (do this arithmetic for YOUR system)</a>
-  <a href="#step-3-serving-rollout-discipline"><span class="num">05</span> Step 3 — serving &amp; rollout discipline</a>
-  <a href="#step-4-close-the-flywheel"><span class="num">06</span> Step 4 — close the flywheel</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#the-question"><span class="num">03</span> The question</a>
+  <a href="#step-1-an-eval-score-is-a-measurement-with-error-bars"><span class="num">04</span> Step 1: an eval score is a measurement with error bars</a>
+  <a href="#step-2-compare-versions-on-the-same-cases"><span class="num">05</span> Step 2: compare versions on the same cases</a>
+  <a href="#step-3-the-judge-is-a-model-too-so-measure-it"><span class="num">06</span> Step 3: the judge is a model too, so measure it</a>
+  <a href="#step-4-gates-that-block-the-right-things"><span class="num">07</span> Step 4: gates that block the right things</a>
+  <a href="#step-5-shadow-first-because-a-canary-is-statistically-weak-h"><span class="num">08</span> Step 5: shadow first, because a canary is statistically weak here</a>
+  <a href="#step-6-serving-within-rate-limits-and-an-error-budget"><span class="num">09</span> Step 6: serving within rate limits and an error budget</a>
+  <a href="#step-7-cost-caching-and-the-self-hosting-question"><span class="num">10</span> Step 7: cost, caching and the self-hosting question</a>
+  <a href="#step-8-the-flywheel-turns-traces-into-tests"><span class="num">11</span> Step 8: the flywheel turns traces into tests</a>
+  <a href="#a-worked-decision-the-cheaper-answer-model"><span class="num">12</span> A worked decision: the cheaper answer model</a>
+  <a href="#in-code-the-statistics-behind-every-gate"><span class="num">13</span> In code: the statistics behind every gate</a>
+  <a href="#the-complete-build-4-4-prove-it-serve-it-afford-it"><span class="num">14</span> The Complete Build 4/4 — prove it, serve it, afford it</a>
+  <a href="#step-1-the-eval-suite-three-tiers-run-at-three-speeds"><span class="num">15</span> Step 1 — the eval suite (three tiers, run at three speeds)</a>
+  <a href="#step-2-the-cost-worksheet-do-this-arithmetic-for-your-system"><span class="num">16</span> Step 2 — the cost worksheet (do this arithmetic for YOUR system)</a>
+  <a href="#step-3-serving-rollout-discipline"><span class="num">17</span> Step 3 — serving &amp; rollout discipline</a>
+  <a href="#step-4-close-the-flywheel"><span class="num">18</span> Step 4 — close the flywheel</a>
+  <a href="#where-people-get-lost"><span class="num">19</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">20</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">21</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Complete build: prove it, serve it, afford it <span>// Build &amp; interview</span></h1>
   <p>Evals, serving, cost and operations for the build.</p>
-  <div class="tags"><span class="tag">12 min read</span><span class="tag">1 diagram</span></div>
+  <div class="tags"><span class="tag">28 min read</span><span class="tag">1 diagram</span></div>
 </div>
 
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
 <div class="diagram"><img src="../img/build-ship.png" alt="The release path for the build: evals gate every change, traffic shifts gradually, and cost and quality are watched in production."></div><p class="diagram-caption">The release path for the build: evals gate every change, traffic shifts gradually, and cost and quality are watched in production.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>End-to-end eval set</strong></td><td>A fixed list of realistic tasks with expected outcomes, run against the real system (staging data, real models) to grade a version.</td></tr><tr><td><strong>Confidence interval</strong></td><td>The range a measured rate plausibly lies in, given how many cases you measured. Narrows with the square root of the case count.</td></tr><tr><td><strong>Paired comparison</strong></td><td>Grading two versions on the same cases and looking only at cases where they disagree. Far more sensitive than comparing two totals.</td></tr><tr><td><strong>McNemar test</strong></td><td>The standard significance test for a paired pass/fail comparison, using only the disagreeing cases.</td></tr><tr><td><strong>LLM-as-judge</strong></td><td>A model grading outputs against a rubric. Cheap and scalable; admissible only after its agreement with humans is measured.</td></tr><tr><td><strong>Cohen's kappa \(\kappa\)</strong></td><td>Agreement between two graders corrected for the agreement they would reach by chance. 0 is chance, 1 is perfect.</td></tr><tr><td><strong>Shadow traffic</strong></td><td>Sending real requests to a new version without showing its answers to users, so it can be graded on real traffic.</td></tr><tr><td><strong>Canary</strong></td><td>Serving a new version to a small share of users and watching for regressions before rolling it out to everyone.</td></tr><tr><td><strong>Ship unit</strong></td><td>The versioned bundle that is deployed and rolled back together: model ids, prompts, index build, tool schemas, judge.</td></tr><tr><td><strong>SLO and error budget</strong></td><td>A reliability target (99.5% available) and the downtime it allows (here about 53 minutes a month of business hours).</td></tr><tr><td><strong>Prompt caching</strong></td><td>The provider reusing the computed state of an identical prompt prefix across calls, billed at a fraction of normal input price.</td></tr><tr><td><strong>Break-even volume</strong></td><td>The traffic at which self-hosting's fixed monthly cost equals what the API would have cost.</td></tr></tbody></table>
+</section>
+<p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>03 &mdash; The question</h2>
+<p>A system nobody measured is a demo. The first three build pages produced a working assistant; this one answers the questions that decide whether it can stay in production: does it work, does a change make it better or worse, can it be shipped without breaking, and what does it cost? Each question has a statistical or arithmetic core that most teams skip, and that is exactly what an interviewer probes when you say "we had evals".</p>
+<ol>
+<li>How do you know an eval result is real and not noise?</li>
+<li>How do you trust an LLM judge?</li>
+<li>How do you roll out a prompt or model change safely, and what can a canary actually detect?</li>
+<li>What does it cost, and at what volume would you self-host?</li>
+</ol>
+<p>The running example is one proposed change. Someone suggests replacing the answer model with a cheaper one at about a third of the price. The answer call drops from about $0.0143 to about $0.0048 per knowledge-base question, roughly <strong>$500 a month</strong> saved at 52,800 knowledge-base questions a month. We follow that change through the eval suite, the judge, the rollout and the cost model, using the build's numbers: a 120-case end-to-end set, 3,000 questions a day, a baseline resolution rate of about 84%. The suite's files, CI wiring, rollback drill and triage query are shown on this page below the lesson.</p>
+</section>
+<section id="step-1-an-eval-score-is-a-measurement-with-error-bars">
+  <h2>04 &mdash; Step 1: an eval score is a measurement with error bars</h2>
+<p>The baseline system passes 108 of the 120 end-to-end cases: 90%. That number is an estimate from a sample of possible questions, and its uncertainty is large. The 95% Wilson interval for 108/120 runs from <strong>83.3% to 94.2%</strong>: an 11-point-wide band. The width shrinks only with the square root of the case count; halving it needs four times the cases.</p>
+<p>There is a second source of noise: the system itself. At non-zero temperature, and even at temperature 0 on hosted APIs (see <a href="../fundamentals/decoding.html">decoding</a>), re-running the same suite gives slightly different scores, and an LLM judge adds its own variance. Measure this once: run the unchanged baseline three times. If it scores 108, 106 and 109, any gate tighter than about ±2 cases will fire on noise.</p>
+<p>The candidate passes 104 of 120: 86.7%, interval 79.4% to 91.6%. The intervals overlap heavily. Comparing two totals like this can say almost nothing about a 4-case difference. There is a better way.</p>
+</section>
+<section id="step-2-compare-versions-on-the-same-cases">
+  <h2>05 &mdash; Step 2: compare versions on the same cases</h2>
+<p>Both versions ran on the same 120 cases, so compare them case by case. Most cases are passed by both or failed by both; those say nothing about which version is better. All the information is in the <strong>discordant</strong> cases:</p>
+<table>
+<thead><tr><th></th><th>Candidate passes</th><th>Candidate fails</th></tr></thead>
+<tbody>
+<tr><td><strong>Baseline passes</strong></td><td>99</td><td>9 (\(b\))</td></tr>
+<tr><td><strong>Baseline fails</strong></td><td>5 (\(c\))</td><td>7</td></tr>
+</tbody>
+</table>
+<p>If the two versions were equally good, each of the \(b + c = 14\) discordant cases would be equally likely to go either way, like a fair coin. McNemar's exact test asks how surprising a 9–5 split is under that assumption: the two-sided p-value is <strong>0.42</strong>. Fourteen fair coin flips split at least this unevenly, in one direction or the other, 42% of the time, so this run cannot distinguish the versions. Had the split been 12–2, a net loss of 10 cases, p would be 0.013: a real regression.</p>
+<p>So the offline suite says "no detectable difference", which is not the same as "no difference". Two moves remain, and both are about reading, not statistics:</p>
+<ul>
+<li><strong>Read the 9 cases the candidate lost.</strong> If they are policy facts stated wrongly, that is the spec's most expensive failure (a wrong answer costs about 33 escalations, per <a href="build-spec.html">the spec's risk arithmetic</a>), and 9 of them outweigh $500 a month. If they are phrasing the judge disliked, the saving may be worth it.</li>
+<li><strong>Get more paired data</strong> from real traffic with shadow evaluation (Step 5), where hundreds of cases a day are available.</li>
+</ul>
+<p>Report per slice as well: a candidate that is equal overall but loses the whole unanswerable slice (it stops abstaining) is a regression no aggregate shows. The CI gate on this page fails on any slice dropping more than 5 points for that reason. General eval design is in <a href="../production/evals.html">evals</a> and metric choice in <a href="../production/eval-metrics.html">eval metrics</a>.</p>
+</section>
+<section id="step-3-the-judge-is-a-model-too-so-measure-it">
+  <h2>06 &mdash; Step 3: the judge is a model too, so measure it</h2>
+<p>Correctness and groundedness of free text are graded by an LLM judge. A judge you have not measured is an opinion generator. Calibration is a small, concrete procedure: take 50 real (question, sources, answer) triples, have two people label each pass or fail independently, resolve disagreements into gold labels, then run the judge and compare.</p>
+<p>Suppose the result is:</p>
+<table>
+<thead><tr><th></th><th>Judge: pass</th><th>Judge: fail</th></tr></thead>
+<tbody>
+<tr><td><strong>Human: pass (40)</strong></td><td>37</td><td>3</td></tr>
+<tr><td><strong>Human: fail (10)</strong></td><td>3</td><td>7</td></tr>
+</tbody>
+</table>
+<p>Raw agreement is \(44/50 = 88\%\). It sounds fine and it is misleading, because when 80% of answers pass, even a judge that never reads anything and always says "pass" agrees 80% of the time. Cohen's kappa corrects for this:</p>
+\[ \kappa = \frac{p_o - p_e}{1 - p_e} \]
+<p>where \(p_o\) is observed agreement and \(p_e\) is the agreement expected by chance from each grader's pass rate: here both pass 80%, so \(p_e = 0.8 \times 0.8 + 0.2 \times 0.2 = 0.68\), and \(\kappa = (0.88 - 0.68)/(1 - 0.68) = 0.625\). The always-pass judge scores \(\kappa = 0\). The build's admission bar is \(\kappa \ge 0.7\), so this judge is not yet admissible.</p>
+<p>What to do next is diagnostic, not "try a bigger judge". Read the 6 disagreements. Typically the rubric is ambiguous ("complete" meaning different things to the human and the model), or the judge is missing information the humans used. Fix the rubric, re-run, and re-calibrate whenever the judge model or rubric changes. If the two humans agreed with each other less than about 90%, fix the rubric before blaming the judge: it cannot hit a target people cannot agree on.</p>
+</section>
+<section id="step-4-gates-that-block-the-right-things">
+  <h2>07 &mdash; Step 4: gates that block the right things</h2>
+<p>A gate is a rule a change must pass. Three kinds, with different tolerances:</p>
+<ul>
+<li><strong>Must-never-fail:</strong> red-team cases (injection, over-limit refunds, cross-region access) and deterministic checks (citations point at supplied sources). Threshold 100%. One failure blocks the change.</li>
+<li><strong>Floors:</strong> knowledge-base correctness at least 90%, agent trajectory checks at least 95%. Set below the baseline by more than the measured run-to-run noise.</li>
+<li><strong>Regressions:</strong> no slice drops more than 5 points against the main branch on the same run, and no significant paired regression.</li>
+</ul>
+<p>The cheap tier runs on every commit in seconds (unit tests, retrieval recall on cached embeddings, router accuracy). The end-to-end tier costs money (real model calls plus judge calls, a few dollars a run at these sizes) and runs only on changes labelled as behaviour changes: prompts, models, index builds, tool schemas.</p>
+</section>
+<section id="step-5-shadow-first-because-a-canary-is-statistically-weak-h">
+  <h2>08 &mdash; Step 5: shadow first, because a canary is statistically weak here</h2>
+<p>The standard rollout is canary: serve the new version to 5% of users, watch, then ramp. At this build's volume, it is worth computing what a 5% canary can detect. The production quality signal is resolution rate, about 84%. With two equal arms, detecting a drop to 81% with the usual 5% false-alarm rate and 80% power needs about <strong>2,517 questions per arm</strong>. A canary's arms are not equal: the control arm is the other 95% of traffic and fills up quickly, so the binding constraint is the canary arm alone, which needs about <strong>1,290 questions</strong> (a very large control arm roughly halves the requirement, because only one of the two rates is still uncertain). A 5% canary sees 150 questions a day, so that takes about <strong>9 days</strong>. A catastrophic drop to 74% needs about 126 canary questions: <strong>under a day</strong>.</p>
+<p>So a canary at this scale catches gross failures (errors, timeouts, latency, cost per question, a collapse in resolution) and needs more than a week to see a 3-point quality regression. The sequence that fits the numbers:</p>
+<ol>
+<li><strong>Offline suite</strong> on every behaviour change: gates from Step 4.</li>
+<li><strong>Shadow</strong> for a few days: every real question also goes to the candidate, its answer is logged but not shown, and the calibrated judge grades both versions on a daily sample of a few hundred. That is paired data on real traffic, hundreds of cases a day instead of 150 unpaired ones, and it costs only the extra model calls.</li>
+<li><strong>Canary</strong> at 5% with automatic rollback on error rate, p95 latency, red-team alerts or a large resolution drop.</li>
+<li><strong>Ramp</strong> to 100%, keeping the previous ship unit warm for a one-command rollback.</li>
+</ol>
+<p>Rollback is only one command if everything that changes behaviour is versioned together: model ids, prompts, index build, tool schemas and the judge, under one <code>SHIP_VERSION</code>. If the prompt ships separately from the model id, "works in staging, broken in production" usually means two of them disagree. More on this discipline in <a href="../production/mlops-drift.html">MLOps and drift</a>.</p>
+</section>
+<section id="step-6-serving-within-rate-limits-and-an-error-budget">
+  <h2>09 &mdash; Step 6: serving within rate limits and an error budget</h2>
+<p>The spec asks for 99.5% availability during business hours. Over 22 days of 8 hours, that allows about <strong>52.8 minutes</strong> of unavailability a month. One provider incident of an hour spends the whole budget, which tells you the design needs a degraded mode rather than more nines from your own servers:</p>
+<ul>
+<li><strong>Retries with backoff and jitter</strong> on rate-limit and transient errors (wait roughly 0.5 s, 1 s, 2 s with randomness, at most three tries), so a burst does not become a synchronised retry storm.</li>
+<li><strong>A fallback model</strong> from a second provider behind the gateway, pre-tested on the eval suite so you know its quality before you need it.</li>
+<li><strong>Escalate everything</strong> if both fail: the human queue receives the question with retrieved context attached. The service is degraded, not down.</li>
+</ul>
+<p>Throughput is bounded by the provider's tokens per minute (about 780,000 input tokens a minute at the spec's peak; see the spec's Step 2). A per-user token bucket at the gateway (15 requests a minute each) stops one user's script from consuming everyone's quota, and a short queue absorbs bursts instead of turning them into 429 errors. Patterns in <a href="../production/reliability.html">reliability</a> and <a href="../inference/serving.html">serving</a>.</p>
+</section>
+<section id="step-7-cost-caching-and-the-self-hosting-question">
+  <h2>10 &mdash; Step 7: cost, caching and the self-hosting question</h2>
+<p>The model-call cost per question from the spec is about $0.0158. Two levers move it without touching quality:</p>
+<ul>
+<li><strong>Prompt caching.</strong> About 1,200 of the answer prompt's 3,500 tokens are identical on every call. Billed at about a tenth of the input price when cached, that saves \(1{,}200 \times \$3/10^6 \times 0.9 \approx \$0.0032\) per answer, about $170 a month across 52,800 knowledge-base answers. It also lowers time to first token. It requires the static part to come first and stay byte-identical: putting a timestamp at the top of the system prompt silently disables it.</li>
+<li><strong>Output length.</strong> Output tokens cost five times input here, and they dominate latency. A concise-answer instruction pays twice.</li>
+</ul>
+<p>Then the question every interviewer asks: when would you self-host? Put the fixed costs on one side. One rented GPU at an illustrative $2,500 a month, plus a quarter of an engineer's time to operate it (illustratively $3,750 a month), is $6,250 a month. At $0.0158 per question, the API costs that much at about <strong>18,000 questions a day</strong>, six times today's volume. A production deployment needs two GPUs for redundancy, which moves break-even to about <strong>25,000 a day</strong>. And that assumes an open model matches the hosted one on <em>your</em> eval suite, which must be measured, not assumed. At 3,000 a day, self-hosting costs more and adds an on-call burden. Reasons that can override the arithmetic: data that may not leave your network, or latency targets a shared API cannot meet. The full treatment is in <a href="../production/cost-performance.html">cost &amp; performance</a>.</p>
+</section>
+<section id="step-8-the-flywheel-turns-traces-into-tests">
+  <h2>11 &mdash; Step 8: the flywheel turns traces into tests</h2>
+<p>Every week the system answers about 15,000 questions. If about 6% are flagged (thumbs down, escalated, judge below perfect, heavily edited by the human), that is about 900 traces, too many to read. Sample about 50, label each with a cause from a fixed list (retrieval miss, corpus gap, wrong tool path, bad synthesis, over-abstention, policy friction), and count. The counts set next week's work.</p>
+<p>Two rules make this compound. Every fix ships with the eval case that would have caught it, so the suite grows toward the real distribution of failures. And some causes are not model problems: a corpus gap is fixed by writing the document, policy friction by changing the process. Counting them stops the team from tuning prompts against failures no prompt can fix.</p>
+<p>After a quarter, the accumulated (question, human-approved answer) pairs make fine-tuning a measured decision: a small model trained on them might match the mid-tier model on the common slice at a fraction of the price. The cheaper-model change from this lesson's example returns then, with thousands of paired examples behind it instead of 120. See <a href="../adaptation/fine-tuning.html">fine-tuning</a>.</p>
+</section>
+<section id="a-worked-decision-the-cheaper-answer-model">
+  <h2>12 &mdash; A worked decision: the cheaper answer model</h2>
+<p>Putting the steps together for the running example:</p>
+<ol>
+<li><strong>Offline:</strong> 104/120 against 108/120; paired split 9–5, p = 0.42. Not a detectable regression, not evidence of parity. The unanswerable slice held; two of the nine losses were wrong policy durations.</li>
+<li><strong>Risk check:</strong> two new wrong policy facts in 120 is an observed 1.7%, but the Wilson interval on 2/120 runs from 0.5% to 5.9%, so the true added rate could be well past the spec's 3% line for wrong answers. At $150 per wrong answer, even 1% more wrong answers on 52,800 questions a month is about $79,000 a month of exposure against $500 of saving. Not acceptable on this evidence.</li>
+<li><strong>Decision:</strong> do not ship to users. Run a week of shadow evaluation with the calibrated judge on 300 paired questions a day, specifically counting wrong policy facts. Ship only if the paired comparison shows no regression on correctness and abstention, then canary with automatic rollback.</li>
+</ol>
+<p>That answer, with its numbers, is what "we had an eval framework" should mean.</p>
+</section>
+<section id="in-code-the-statistics-behind-every-gate">
+  <h2>13 &mdash; In code: the statistics behind every gate</h2>
+<p>Pure Python, no dependencies. Every number in this lesson comes from it.</p>
+<pre><span class="kw">import</span> math
+<span class="kw">from</span> math <span class="kw">import</span> comb
+
+<span class="kw">def</span> <span class="fn">wilson</span>(k, n, z=<span class="nr">1.96</span>):
+    <span class="st">"""95% interval for a pass rate k/n; honest at small n and near 0 or 1."""</span>
+    p = k / n
+    centre = p + z * z / (<span class="nr">2</span> * n)
+    half = z * math.sqrt(p * (<span class="nr">1</span> - p) / n + z * z / (<span class="nr">4</span> * n * n))
+    <span class="kw">return</span> (centre - half) / (<span class="nr">1</span> + z * z / n), (centre + half) / (<span class="nr">1</span> + z * z / n)
+
+<span class="kw">def</span> <span class="fn">mcnemar_exact</span>(b, c):
+    <span class="st">"""Two-sided p-value using only the discordant cases:
+    b = baseline right &amp; candidate wrong, c = baseline wrong &amp; candidate right."""</span>
+    n, k = b + c, <span class="tp">min</span>(b, c)
+    <span class="kw">return</span> <span class="tp">min</span>(<span class="nr">1.0</span>, <span class="nr">2</span> * <span class="tp">sum</span>(comb(n, i) <span class="kw">for</span> i in <span class="tp">range</span>(k + <span class="nr">1</span>)) / <span class="nr">2</span> ** n)
+
+<span class="kw">def</span> <span class="fn">cohen_kappa</span>(both_pass, h_pass_j_fail, h_fail_j_pass, both_fail):
+    n = both_pass + h_pass_j_fail + h_fail_j_pass + both_fail
+    po = (both_pass + both_fail) / n
+    h_pass, j_pass = (both_pass + h_pass_j_fail) / n, (both_pass + h_fail_j_pass) / n
+    pe = h_pass * j_pass + (<span class="nr">1</span> - h_pass) * (<span class="nr">1</span> - j_pass)
+    <span class="kw">return</span> po, (po - pe) / (<span class="nr">1</span> - pe)
+
+<span class="kw">def</span> <span class="fn">n_test_arm</span>(p1, p2, k=<span class="nr">1</span>, z_a=<span class="nr">1.96</span>, z_b=<span class="nr">0.8416</span>):
+    <span class="st">"""Test-arm size to detect p1 -&gt; p2 (two-sided 5%, power 80%) when the
+    control arm gets k times as much traffic (k=1: equal arms; 5% canary: k=19)."""</span>
+    pbar = (k * p1 + p2) / (<span class="nr">1</span> + k)
+    num = (z_a * math.sqrt(pbar * (<span class="nr">1</span> - pbar) * (<span class="nr">1</span> + <span class="nr">1</span> / k))
+           + z_b * math.sqrt(p2 * (<span class="nr">1</span> - p2) + p1 * (<span class="nr">1</span> - p1) / k)) ** <span class="nr">2</span>
+<span class="kw">return</span> num / (p1 - p2) ** <span class="nr">2</span>
+
+lo, hi = wilson(<span class="nr">108</span>, <span class="nr">120</span>)
+<span class="tp">print</span>(<span class="st">"</span><span class="st">baseline 108/120: </span><span class="st">%.1f</span><span class="st">%%</span><span class="st"> to </span><span class="st">%.1f</span><span class="st">%%</span><span class="st">"</span> % (<span class="nr">100</span> * lo, <span class="nr">100</span> * hi))
+<span class="tp">print</span>(<span class="st">"</span><span class="st">candidate vs baseline, 9 vs 5 discordant: p = </span><span class="st">%.2f</span><span class="st">"</span> % mcnemar_exact(<span class="nr">9</span>, <span class="nr">5</span>))
+<span class="tp">print</span>(<span class="st">"</span><span class="st">net -10 instead, 12 vs 2 discordant:     p = </span><span class="st">%.3f</span><span class="st">"</span> % mcnemar_exact(<span class="nr">12</span>, <span class="nr">2</span>))
+
+agree, kappa = cohen_kappa(<span class="nr">37</span>, <span class="nr">3</span>, <span class="nr">3</span>, <span class="nr">7</span>)
+<span class="tp">print</span>(<span class="st">"</span><span class="st">judge: agreement </span><span class="st">%.2f</span><span class="st">, kappa </span><span class="st">%.3f</span><span class="st">"</span> % (agree, kappa))
+agree, kappa = cohen_kappa(<span class="nr">40</span>, <span class="nr">0</span>, <span class="nr">10</span>, <span class="nr">0</span>)          <span class="cm"># a judge that passes everything</span>
+<span class="tp">print</span>(<span class="st">"</span><span class="st">always-pass judge: agreement </span><span class="st">%.2f</span><span class="st">, kappa </span><span class="st">%.3f</span><span class="st">"</span> % (agree, kappa))
+
+canary_per_day = <span class="nr">3000</span> * <span class="nr">0.05</span>
+<span class="kw">for</span> drop_to in (<span class="nr">0.81</span>, <span class="nr">0.74</span>):
+    equal, canary = n_test_arm(<span class="nr">0.84</span>, drop_to), n_test_arm(<span class="nr">0.84</span>, drop_to, k=<span class="nr">19</span>)
+    <span class="tp">print</span>(<span class="st">"</span><span class="st">detect 84</span><span class="st">%%</span><span class="st"> -&gt; </span><span class="st">%d</span><span class="st">%%</span><span class="st">: </span><span class="st">%4.0f</span><span class="st"> per equal arm; canary arm </span><span class="st">%4.0f</span><span class="st"> = </span><span class="st">%.1f</span><span class="st"> days at 5</span><span class="st">%%</span><span class="st">"</span>
+          % (<span class="nr">100</span> * drop_to, equal, canary, canary / canary_per_day))
+
+<span class="tp">print</span>(<span class="st">"</span><span class="st">99.5</span><span class="st">%%</span><span class="st"> of business hours = </span><span class="st">%.1f</span><span class="st"> minutes of allowed downtime a month</span><span class="st">"</span>
+      % (<span class="nr">0.005</span> * <span class="nr">22</span> * <span class="nr">8</span> * <span class="nr">60</span>))
+
+saved = <span class="nr">1200</span> * <span class="nr">3e-6</span> * <span class="nr">0.9</span> <span class="cm"># cached prefix billed at ~10%</span>
+<span class="tp">print</span>(<span class="st">"</span><span class="st">prompt caching saves $</span><span class="st">%.5f</span><span class="st"> per answer</span><span class="st">"</span> % saved)
+
+api_cost_per_q = <span class="nr">0.0158</span>
+<span class="kw">for</span> gpus in (<span class="nr">1</span>, <span class="nr">2</span>):
+    fixed = <span class="nr">2500</span> * gpus + <span class="nr">3750</span> <span class="cm"># GPU rent + quarter of an engineer</span>
+<span class="tp">print</span>(<span class="st">"</span><span class="st">%d</span><span class="st"> GPU(s): break-even at </span><span class="st">%.0f</span><span class="st"> questions/day</span><span class="st">"</span> % (gpus, fixed / api_cost_per_q / <span class="nr">22</span>))
+</pre>
+<p>It prints the 83.3% to 94.2% interval, p = 0.42 and p = 0.013, agreement 0.88 with kappa 0.625 and the always-pass judge's 0.80 with kappa 0, 2,517 per equal arm but 1,290 canary questions and 8.6 days, versus 126 and 0.8 days for the large drop, 52.8 minutes, $0.00324, and break-even at about 18,000 and 25,200 questions a day.</p>
+</section>
 <section id="the-complete-build-4-4-prove-it-serve-it-afford-it">
-  <h2>02 &mdash; The Complete Build 4/4 — prove it, serve it, afford it</h2>
+  <h2>14 &mdash; The Complete Build 4/4 — prove it, serve it, afford it</h2>
 <p>A system nobody measured is a demo. This topic wires the eval pyramid, does the serving math with real arithmetic, and closes the improvement flywheel.</p>
 </section>
 <section id="step-1-the-eval-suite-three-tiers-run-at-three-speeds">
-  <h2>03 &mdash; Step 1 — the eval suite (three tiers, run at three speeds)</h2>
+  <h2>15 &mdash; Step 1 — the eval suite (three tiers, run at three speeds)</h2>
 <table>
 <tr><th>Tier</th><th>What</th><th>When</th></tr>
 <tr><td><b>Component (seconds)</b></td><td>retrieval Recall@5 on the 75-set · router accuracy on 60 labeled intents · schema validity · citation-verifier unit tests</td><td>every commit (CI)</td></tr>
@@ -118,7 +313,7 @@ jobs:
         <span class="cm"># aggregate may pass while one slice tanks — the slice gate catches it (2/4)</span></pre></div>
 </section>
 <section id="step-2-the-cost-worksheet-do-this-arithmetic-for-your-system">
-  <h2>04 &mdash; Step 2 — the cost worksheet (do this arithmetic for YOUR system)</h2>
+  <h2>16 &mdash; Step 2 — the cost worksheet (do this arithmetic for YOUR system)</h2>
 <pre class="ascii-diagram">assume: mid model $3/M input, $15/M output · small model $0.25/M in, $1.25/M out
         (plug in current prices — the METHOD is the point)
 
@@ -154,7 +349,7 @@ or for data-residency. This is why 1/4 chose hosted APIs. Numbers, not ideology.
 <div class="callout warn"><p><strong>Where cost worksheets lie</strong></p>Three omissions that wreck the neat table: (1) <b>retries and escalation re-asks</b> — a 5% retry rate plus escalated conversations that get re-litigated adds 8–12% to the LLM line; budget it. (2) <b>conversation growth</b> — the per-question input estimate assumes turn one; a 6-turn thread carries prior turns each call unless you summarize (<a href="../agents/index.html">Tools &amp; agents</a> context management). (3) <b>the judge at 100%</b> — someone will propose judging every response "for safety"; that alone is ≈$0.009/question, half the answer cost. Sample, don't blanket.</div>
 </section>
 <section id="step-3-serving-rollout-discipline">
-  <h2>05 &mdash; Step 3 — serving &amp; rollout discipline</h2>
+  <h2>17 &mdash; Step 3 — serving &amp; rollout discipline</h2>
 <pre class="ascii-diagram">stateless FastAPI workers (agent state in Redis) → horizontal scale; the real
 ceiling is provider rate limits → per-tenant token buckets + a queue (Production &amp; evals).
 
@@ -213,7 +408,7 @@ ship-registry record-drill --version <span class="st">"${PREV}"</span> --minutes
 <div class="callout success"><p><strong>The versioned ship unit is the whole trick</strong></p>Prompts in one repo, model ID in an env var, index rebuilt on a cron, tool schemas in another service — that's four things that can disagree, and "works in staging, broken in prod" is usually two of them disagreeing. One <code>SHIP_VERSION</code> hash naming all five (model, prompts, index build, tool schemas, judge) makes deploy, canary, and rollback each a single pointer move — which is why the rollback drill above is boring, and boring is the goal.</div>
 </section>
 <section id="step-4-close-the-flywheel">
-  <h2>06 &mdash; Step 4 — close the flywheel</h2>
+  <h2>18 &mdash; Step 4 — close the flywheel</h2>
 <pre class="ascii-diagram">weekly: pull traces where (thumbs-down OR escalated OR judge&lt;perfect OR heavily edited)
   → cluster failures:  retrieval miss? → chunking/hybrid fix (2/4 table gets a new row)
                        wrong tool path? → tool description fix, new trajectory test
@@ -289,6 +484,33 @@ DECISION: go / no-go / revisit in Q_, signed by eng + support lead.</pre></div>
 <li>Run the rollback drill against a staging deploy of anything you operate: revert to the previous version, prove health with a smoke eval, and record time-to-green. If any step required tribal knowledge not in the script, the script is incomplete — fix it and run it again.</li>
 <li>Write the Monday triage query for your own system's logs (whatever schema you have), run it over last week, and cluster 20 flagged items using the taxonomy table. Count how many are <code>corpus_gap</code> or <code>policy_friction</code> — failures no model change can fix — and notice how much roadmap that reframes.</li>
 </ol></div>
+</section>
+<p class="part-divider">In production</p>
+<section id="where-people-get-lost">
+  <h2>19 &mdash; Where people get lost</h2>
+<ul>
+<li><strong>"90% versus 87% means the new version is worse."</strong> With 120 cases each interval is about 11 points wide. Use a paired test on the same cases and read the disagreements.</li>
+<li><strong>"88% agreement means the judge is good."</strong> Not when 80% of answers pass anyway; kappa here is 0.625. Correct for chance.</li>
+<li><strong>"A 5% canary will tell us if quality drops."</strong> At 150 questions a day it needs about 9 days to see a 3-point drop. Use shadow evaluation for quality; canary for gross failures.</li>
+<li><strong>"Not significant means no difference."</strong> It means this data cannot tell. Weigh the cost of the failure type and collect more paired data.</li>
+<li><strong>"Judge every production answer for safety."</strong> A judge call reads the question, sources and answer, so it adds well over half to the model bill. Sample, and keep deterministic checks on everything.</li>
+<li><strong>"Self-hosting is cheaper per token."</strong> Only above break-even volume, with redundancy and on-call included, and only if the open model passes your suite.</li>
+<li><strong>"Version the code; prompts and indexes are config."</strong> Anything that changes behaviour belongs in the ship unit, or rollback is not atomic.</li>
+<li><strong>"Evals are done once the suite is green."</strong> The suite is a sample of last quarter's failures. The flywheel is what keeps it representative.</li>
+</ul>
+</section>
+<section id="how-this-connects">
+  <h2>20 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../fundamentals/decoding.html">Decoding &amp; sampling</a> &mdash; Greedy, temperature, top-k, top-p and the other knobs, with a live temperature lab.</li><li><a href="../adaptation/fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a> &mdash; When to fine-tune, the LoRA math, a working QLoRA recipe, data, hyperparameters, evaluation and serving.</li><li><a href="../inference/serving.html">Serving &amp; scaling</a> &mdash; vLLM and Ollama, benchmarking honestly, a production serving setup and scaling it.</li><li><a href="../production/reliability.html">Reliability engineering</a> &mdash; Surviving flaky models and APIs: retries, fallbacks, timeouts, idempotency.</li><li><a href="../production/eval-metrics.html">Evaluation metrics</a> &mdash; Perplexity, BLEU/ROUGE, benchmarks, LLM-as-judge and human evaluation: what each measures.</li><li><a href="../production/evals.html">Evaluating LLM features</a> &mdash; Golden sets, graders, LLM-as-judge done properly, statistics, an eval harness in CI, online evaluation and error analysis.</li></ul><h3>Where this shows up later</h3><ul><li><a href="answer-kit.html">Interview answer kit</a> &mdash; Model answers for the eval and RAG/agent questions, and the follow-ups to prepare.</li></ul>
+</section>
+<section id="check-yourself">
+  <h2>21 &mdash; Check yourself</h2>
+<details><summary>Two versions score 100/120 and 96/120. The discordant split is 8–4. Is the second worse?</summary><div class="answer">McNemar exact p for 8 versus 4 is about 0.39, so the data cannot tell. Read the 8 lost cases for failure type, check slices (especially unanswerable), and gather paired shadow data before deciding.</div></details>
+<details><summary>Humans pass 70% of 100 answers. The judge agrees on 85. If the judge's pass rate is also 70%, what is kappa?</summary><div class="answer">\(p_e = 0.7^2 + 0.3^2 = 0.58\), so \(\kappa = (0.85 - 0.58)/(1 - 0.58) \approx 0.64\). Below a 0.7 bar despite 85% agreement.</div></details>
+<details><summary>Traffic grows to 30,000 a day. How long does a 5% canary now need to detect 84% → 81%?</summary><div class="answer">About 1,290 canary questions at 1,500 a day: under a day. Canary becomes a useful quality signal at higher volume; at 3,000 a day it is not.</div></details>
+<details><summary>Someone adds the current date to the top of the system prompt. What happens to cost and latency?</summary><div class="answer">The prefix is no longer identical across calls, so prompt caching stops matching: about $0.0032 more per answer (about $170 a month here) and a slower time to first token. Put variable content after the static prefix.</div></details>
+<details><summary>A provider outage lasts 40 minutes on a Tuesday. How much of the month's error budget is left, and what should users have seen?</summary><div class="answer">52.8 − 40 = 12.8 minutes left. Users should have seen the fallback model answering, or escalation with context, not errors, so ideally the outage consumed little of the budget.</div></details>
+<details><summary>Out of 50 sampled flagged traces, 18 are corpus gaps. What do you do?</summary><div class="answer">Send them to the documentation owners: the right answer does not exist in the corpus, and the system correctly abstained or should have. Add those questions to the unanswerable slice until the documents land. No model or prompt change fixes them.</div></details>
 </section>
 
 <div class="sheet-pager"><a class="prev" href="build-agent.html"><span>Previous</span>Complete build: the agent</a><a class="next" href="portfolio-projects.html"><span>Next</span>Portfolio projects</a></div>

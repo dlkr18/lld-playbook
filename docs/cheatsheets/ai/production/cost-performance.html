@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
@@ -30,23 +34,36 @@
   <a href="#deep-dive-model-routing"><span class="num">10</span> Deep Dive: Model Routing</a>
   <a href="#deep-dive-caching"><span class="num">11</span> Deep Dive: Caching</a>
   <a href="#deep-dive-quantization-self-host"><span class="num">12</span> Deep Dive: Quantization &amp; Self-Host</a>
-  <a href="#cost-performance-engineering"><span class="num">13</span> Cost &amp; performance engineering</a>
-  <a href="#lever-1-prompt-caching-order-your-prompt-like-a-cache-line"><span class="num">14</span> Lever 1: prompt caching — order your prompt like a cache line</a>
-  <a href="#lever-2-response-caching-don-t-make-the-call-at-all"><span class="num">15</span> Lever 2: response caching — don&#x27;t make the call at all</a>
-  <a href="#lever-3-model-routing-with-a-verification-cascade"><span class="num">16</span> Lever 3: model routing with a verification cascade</a>
-  <a href="#levers-4-7-compaction-parallelism-streaming-caps"><span class="num">17</span> Levers 4–7: compaction, parallelism, streaming, caps</a>
-  <a href="#worked-case-study-cutting-a-support-agent-s-bill-71"><span class="num">18</span> Worked case study: cutting a support agent&#x27;s bill 71%</a>
-  <a href="#production-ops"><span class="num">19</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">20</span> Related topics</a>
-  <a href="#where-people-get-lost"><span class="num">21</span> Where people get lost</a>
-  <a href="#how-this-connects"><span class="num">22</span> How this connects</a>
-  <a href="#check-yourself"><span class="num">23</span> Check yourself</a>
+  <a href="#the-question"><span class="num">13</span> The question</a>
+  <a href="#step-1-the-cost-equation"><span class="num">14</span> Step 1: the cost equation</a>
+  <a href="#step-2-why-the-prices-look-like-this"><span class="num">15</span> Step 2: why the prices look like this</a>
+  <a href="#step-3-the-latency-equation"><span class="num">16</span> Step 3: the latency equation</a>
+  <a href="#step-4-measure-the-right-unit"><span class="num">17</span> Step 4: measure the right unit</a>
+  <a href="#step-5-shrink-what-you-send"><span class="num">18</span> Step 5: shrink what you send</a>
+  <a href="#step-6-prompt-caching-and-why-order-matters"><span class="num">19</span> Step 6: prompt caching, and why order matters</a>
+  <a href="#step-7-control-what-comes-out"><span class="num">20</span> Step 7: control what comes out</a>
+  <a href="#step-8-send-easy-work-to-a-cheaper-model"><span class="num">21</span> Step 8: send easy work to a cheaper model</a>
+  <a href="#step-9-the-cost-of-failure-decides"><span class="num">22</span> Step 9: the cost of failure decides</a>
+  <a href="#step-10-when-nobody-is-waiting"><span class="num">23</span> Step 10: when nobody is waiting</a>
+  <a href="#a-worked-example-the-help-desk-bill-lever-by-lever"><span class="num">24</span> A worked example: the help-desk bill, lever by lever</a>
+  <a href="#in-code-a-cost-model-you-can-run-before-you-build"><span class="num">25</span> In code: a cost model you can run before you build</a>
+  <a href="#cost-performance-engineering"><span class="num">26</span> Cost &amp; performance engineering</a>
+  <a href="#lever-1-prompt-caching-order-your-prompt-like-a-cache-line"><span class="num">27</span> Lever 1: prompt caching — order your prompt like a cache line</a>
+  <a href="#lever-2-response-caching-don-t-make-the-call-at-all"><span class="num">28</span> Lever 2: response caching — don&#x27;t make the call at all</a>
+  <a href="#lever-3-model-routing-with-a-verification-cascade"><span class="num">29</span> Lever 3: model routing with a verification cascade</a>
+  <a href="#levers-4-7-compaction-parallelism-streaming-caps"><span class="num">30</span> Levers 4–7: compaction, parallelism, streaming, caps</a>
+  <a href="#worked-case-study-cutting-a-support-agent-s-bill-71"><span class="num">31</span> Worked case study: cutting a support agent&#x27;s bill 71%</a>
+  <a href="#production-ops"><span class="num">32</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">33</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">34</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">35</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">36</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Cost &amp; latency <span>// Production &amp; evals</span></h1>
   <p>Where the money and the milliseconds go: pricing, prefill vs decode, routing, batching and prompt caching.</p>
-  <div class="tags"><span class="tag">13 min read</span><span class="tag">3 diagrams</span></div>
+  <div class="tags"><span class="tag">30 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -56,7 +73,7 @@
 </section>
 <section id="new-words">
   <h2>02 &mdash; New words</h2>
-<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Model routing / cascade</strong></td><td>Cheap model for easy steps, strong model for hard/verify.</td></tr></tbody></table>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Input / output tokens</strong></td><td>Tokens you send (prompt, context, history) and tokens the model generates. Priced separately; output usually costs several times more per token.</td></tr><tr><td><strong>Cached input tokens</strong></td><td>Prompt tokens whose processing the provider reuses from an earlier request with the same prefix. Billed at a steep discount.</td></tr><tr><td><strong>Unit economics</strong></td><td>Cost and revenue per unit of value delivered (per resolved question, per document processed), not per API call.</td></tr><tr><td><strong>Cost per successful task</strong></td><td>Total spend, including retries and the cost of failures, divided by tasks completed correctly.</td></tr><tr><td><strong>Latency budget</strong></td><td>A target end-to-end time split into allowances for each stage: gateway, retrieval, model, post-processing.</td></tr><tr><td><strong>TTFT / TPOT</strong></td><td>Time to first token, set by queueing and prompt processing; time per output token, set by generation speed.</td></tr><tr><td><strong>Prompt caching</strong></td><td>Reusing the processed form (KV cache) of an identical prompt prefix across requests, which saves compute, time and money.</td></tr><tr><td><strong>Model cascade</strong></td><td>Try a cheap model first and escalate to an expensive one only when a check says the cheap answer is not good enough.</td></tr><tr><td><strong>Escalation rate</strong></td><td>The fraction of requests a cascade sends on to the expensive model.</td></tr><tr><td><strong>Batch API</strong></td><td>An asynchronous endpoint that processes requests within hours at a discount, for work nobody is waiting on.</td></tr><tr><td><strong>Context budget</strong></td><td>A cap on how many tokens each part of the prompt (instructions, retrieved text, history) may use.</td></tr><tr><td><strong>Model routing / cascade</strong></td><td>Cheap model for easy steps, strong model for hard/verify.</td></tr></tbody></table>
 </section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
@@ -105,8 +122,193 @@ cost = (prompt_toks * price_in + completion_toks * price_out) / 1e6</pre></div>
 <div class="card"><p>AWQ/GPTQ INT4 fits 70B on 2×80GB. Trade ~1-3% quality for 2× throughput. See <a href="../inference/serving.html">Serving &amp; scaling</a> for serving economics break-even vs API.</p></div>
 </section>
 <p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>13 &mdash; The question</h2>
+<p>An LLM feature that works in a demo can fail in production on two numbers: the monthly bill and the seconds a user waits. Both are predictable from a few quantities you control, mainly how many tokens go in, how many come out, and which model processes them. This topic is about building that prediction, then changing the inputs on purpose.</p>
+<p>What interviewers ask:</p>
+<ol>
+<li>Where does the money go in an LLM request, and where does the time go?</li>
+<li>Your feature costs too much. What do you change first, and how do you know quality did not drop?</li>
+<li>How do prompt caching and model routing actually save money, and when do they not?</li>
+<li>How do you decide whether an optimisation was worth it?</li>
+</ol>
+<p><strong>Running example.</strong> An internal help-desk assistant answers employees' questions from a knowledge base using retrieval (see <a href="../rag/rag-pipeline.html">The RAG pipeline</a>). It handles <strong>200,000 questions a month</strong>. Each request sends a 1,200-token system prompt, <strong>8 retrieved chunks of 500 tokens</strong> and a 50-token question, and receives a <strong>300-token answer</strong>. It uses a large hosted model priced, for illustration, at <strong>$3 per million input tokens and $15 per million output tokens</strong>, with cached input at 10% of the input price. A small model is available at $0.25 and $1.25. Unresolved questions become human tickets, which cost an illustrative $4 each; 85% of questions are resolved today. All prices are illustrative and plausible, not quotes.</p>
+</section>
+<section id="step-1-the-cost-equation">
+  <h2>14 &mdash; Step 1: the cost equation</h2>
+<p>Every hosted model call is billed by token:</p>
+\[ \text{cost} = \frac{n_{\text{in}} \, p_{\text{in}} + n_{\text{cached}} \, p_{\text{cached}} + n_{\text{out}} \, p_{\text{out}}}{10^6} \]
+<p>where \(n\) are token counts and \(p\) prices per million tokens. For one help-desk request, all input is fresh: \(1{,}200 + 8 \times 500 + 50 = 5{,}250\) input tokens and 300 output tokens.</p>
+<ul>
+<li>Input: \(5{,}250 \times 3 / 10^6 = \$0.01575\)</li>
+<li>Output: \(300 \times 15 / 10^6 = \$0.0045\)</li>
+<li>Total: <strong>$0.02025 per question</strong>, or <strong>$4,050 a month</strong>.</li>
+</ul>
+<p>Output is five times more expensive per token, yet input is <strong>78% of the bill</strong>, because there are 17 times more input tokens. This pattern holds for nearly every retrieval or agent workload: the prompt carries instructions, documents, tool definitions and history, and the answer is short. Agents make it more extreme, because every step resends the whole growing conversation. So the first question about any LLM bill is "how many input tokens per request, and what are they?"</p>
+</section>
+<section id="step-2-why-the-prices-look-like-this">
+  <h2>15 &mdash; Step 2: why the prices look like this</h2>
+<p>The price structure is the GPU's cost structure showing through, as explained in <a href="../inference/inference-internals.html">Inference internals</a>:</p>
+<ul>
+<li><strong>Input tokens</strong> are processed together in one parallel pass (prefill). Compute-heavy but efficient, so each token is cheap.</li>
+<li><strong>Output tokens</strong> are produced one at a time, each step reading all the model's weights and occupying memory in the batch for the whole answer. Each token holds GPU capacity for longer, so it is priced higher.</li>
+<li><strong>Cached input</strong> skips prefill: the provider reuses the stored keys and values for a prefix it has already processed. Little compute is spent, so it is billed at a fraction of the input price, sometimes with a surcharge on the first write and a time-to-live after which the cache expires.</li>
+</ul>
+<p>Knowing the mechanism tells you which optimisations are real. Shortening the answer saves expensive tokens <em>and</em> time. Shortening the prompt saves cheaper tokens but many of them. Caching saves only on the part of the prompt that is byte-for-byte identical to an earlier request, starting from the first token.</p>
+</section>
+<section id="step-3-the-latency-equation">
+  <h2>16 &mdash; Step 3: the latency equation</h2>
+<p>Latency has its own equation, and it weighs the parts differently:</p>
+\[ T_{\text{first}} = \sum \text{(pre-model stages)} + \text{TTFT}, \qquad T_{\text{total}} = T_{\text{first}} + (n_{\text{out}} - 1) \times \text{TPOT} \]
+<p>A latency budget for the baseline request, with illustrative hosted-API timings:</p>
+<table>
+<thead><tr><th>Stage</th><th>Time</th></tr></thead>
+<tbody>
+<tr><td>Gateway, auth, logging</td><td>50 ms</td></tr>
+<tr><td>Embed the question</td><td>30 ms</td></tr>
+<tr><td>Vector search</td><td>20 ms</td></tr>
+<tr><td>Model TTFT (network, queue, prefill of 5,250 tokens)</td><td>600 ms</td></tr>
+<tr><td><strong>First token on screen</strong></td><td><strong>0.70 s</strong></td></tr>
+<tr><td>299 more tokens at 20 ms each</td><td>5.98 s</td></tr>
+<tr><td><strong>Full answer</strong></td><td><strong>6.68 s</strong></td></tr>
+</tbody>
+</table>
+<p>The contrast with Step 1 is the key insight of this topic. <strong>Input tokens dominate cost; output tokens dominate time.</strong> The 5,250-token prompt costs most of the money but only a few hundred milliseconds; the 300-token answer is a fifth of the money but 90% of the wait. Streaming helps because users judge speed by when text starts appearing (0.70 s) more than by when it ends, but anything that consumes the whole answer (a JSON parser, a second model call, a tool) waits the full 6.68 s.</p>
+<p>So when someone says "make it faster", ask which number: first token (shrink pre-model stages and prompt, use prefix caching, pick a faster-to-respond model) or full answer (generate fewer tokens, use a model with lower TPOT, run independent calls in parallel).</p>
+</section>
+<section id="step-4-measure-the-right-unit">
+  <h2>17 &mdash; Step 4: measure the right unit</h2>
+<p>Cost per call is the wrong denominator. The business pays for <em>resolved questions</em>, and pays twice for unresolved ones: once for the model call, again for whatever handles the failure.</p>
+\[ \text{cost per success} = \frac{\text{model spend} + \text{cost of failures}}{\text{successful tasks}} \]
+<p>At 85% resolution, the model cost per resolved question is \(0.02025 / 0.85 \approx \$0.024\). But the 15% failures become 30,000 human tickets a month at $4 each: <strong>$120,000</strong>, thirty times the model bill. That reframes optimisation entirely. A change that saves $1,000 of model spend but lowers resolution by even half a point (1,000 more tickets, $4,000) loses money. A change that <em>raises</em> spend but raises resolution can be the best cost optimisation available.</p>
+<p>So every cost change must be measured on two axes at once: spend per request, and task success on a representative evaluation set (see <a href="evals.html">Evaluating LLM features</a>). Without the second, cost work is guesswork that sometimes makes things worse.</p>
+</section>
+<section id="step-5-shrink-what-you-send">
+  <h2>18 &mdash; Step 5: shrink what you send</h2>
+<p>Since input is 78% of the bill, start with the prompt. The help-desk prompt is mostly retrieved chunks: 4,000 of 5,250 tokens. Are all 8 needed?</p>
+<p>The usual finding is no: the answer typically comes from one or two chunks, and the rest are padding the model has to read past (and sometimes gets distracted by). Adding a <strong>reranker</strong> that rescores the top 20 candidates and keeps the best 4 (see <a href="../rag/reranking.html">Reranking</a>) halves the retrieved text. Input falls to 3,250 tokens and cost to <strong>$0.01425</strong> per request, 30% less. The reranker adds about 100 ms and a small cost of its own, and must be checked against the eval set: if answers needed chunk 6 more often than expected, resolution falls and the saving is fake.</p>
+<p>The same thinking applies to every part of the prompt. Give each part a <strong>context budget</strong>: a system prompt that has grown to 3,000 tokens of accumulated special cases, a chat history resent in full on every turn, tool definitions for twenty tools when the request needs two. Each is a recurring input cost on every single call, and trimming it is usually free in quality.</p>
+</section>
+<section id="step-6-prompt-caching-and-why-order-matters">
+  <h2>19 &mdash; Step 6: prompt caching, and why order matters</h2>
+<p>Prompt caching works on <strong>prefixes</strong>. The provider stores the processed state of a prompt's beginning; a later request that starts with exactly the same tokens reuses it up to the first difference. Everything after the first changed token is processed fresh.</p>
+<p>In the help-desk prompt, the 1,200-token system prompt is identical on every request, but the retrieved chunks and question differ. If the prompt is laid out system prompt first, then chunks, then question, the system prompt is cached and billed at $0.30 per million instead of $3. Saving per request: \(1{,}200 \times (3 - 0.30) / 10^6 = \$0.00324\). On the trimmed prompt from Step 5, cost falls to <strong>$0.01101</strong>.</p>
+<p>Three practical consequences:</p>
+<ul>
+<li><strong>Order the prompt stable to volatile</strong>: fixed instructions and tool definitions, then slowly changing context (user profile, conversation so far), then the new message. A timestamp or request ID at the top invalidates everything after it.</li>
+<li><strong>Caching helps most where the shared prefix is large</strong>: agents with big tool schemas, multi-turn chats where the history is the prefix of the next turn, document Q&amp;A where many questions hit the same document. Here, with only 1,200 shared tokens, it saves about 16% of the original per-request cost.</li>
+<li><strong>Verify with the usage fields.</strong> Responses report how many input tokens were read from cache. A pipeline that "uses caching" but reports zero cached tokens has a volatile prefix somewhere.</li>
+</ul>
+<p>Prompt caching also cuts TTFT, because the cached part is not prefilled again. A response cache, which skips the call entirely for repeated questions, is a different tool covered in <a href="semantic-cache.html">Semantic caching</a>.</p>
+</section>
+<section id="step-7-control-what-comes-out">
+  <h2>20 &mdash; Step 7: control what comes out</h2>
+<p>Output tokens are the expensive ones and the slow ones. Two controls:</p>
+<ul>
+<li><strong>Instruction and format.</strong> "Answer in at most three sentences, then link the source" typically shortens answers more than any parameter, and users of a help desk often prefer it. Structured output (a JSON object with exactly the needed fields) removes preamble and pleasantries entirely.</li>
+<li><strong><code>max_tokens</code></strong> as a hard ceiling, set from the observed length distribution, not as the main way to shorten answers: a response cut off by the limit is a broken response. Check the finish reason and treat "length" as a failure to investigate.</li>
+</ul>
+<p>Bringing the average answer from 300 to 200 tokens saves \(100 \times 15 / 10^6 = \$0.0015\) per request (cost now <strong>$0.00951</strong>) and, more visibly, about 2 seconds of generation time: the full answer arrives in about 4.6 s instead of 6.7 s, even with the reranker's extra 100 ms.</p>
+<p>For reasoning models, the hidden "thinking" tokens are output tokens too: billed at output prices and generated at output speed. A reasoning-effort setting is a direct cost and latency control, and should be set per task, not globally.</p>
+</section>
+<section id="step-8-send-easy-work-to-a-cheaper-model">
+  <h2>21 &mdash; Step 8: send easy work to a cheaper model</h2>
+<p>Most help-desk questions ("how do I reset my VPN token?") do not need the largest model. A <strong>cascade</strong> tries the small model first and escalates only when a check fails. The check might be the small model's own confidence, agreement between two cheap samples, a validator for the output format, or whether the answer cites a retrieved source.</p>
+<p>The cost of a cascade is not simply "small price for small cases". Every request pays for the small attempt, and escalated ones pay for both:</p>
+\[ c_{\text{cascade}} = c_{\text{small}} + e \cdot c_{\text{large}} \]
+<p>where \(e\) is the escalation rate. With the trimmed, cached, shorter prompt, the small model costs about $0.00080 per request and the large about $0.00951. At \(e = 0.3\): \(0.00080 + 0.3 \times 0.00951 \approx \$0.00365\). That is 62% below the large-only cost at the same prompt, and 82% below the original baseline: about <strong>$729 a month</strong> instead of $4,050.</p>
+<p>The alternative design, a classifier that predicts difficulty up front, avoids paying twice for hard requests but decides before seeing any answer. Draft-then-check is usually easier to make safe, because the decision looks at the actual output. Either way, escalated requests are slower, and the break-even is easy to compute: the cascade only saves money while \(c_{\text{small}} &lt; (1 - e)\, c_{\text{large}}\), so a small model that escalates 92% of the time is pure overhead here. More on cascades in <a href="hybrid-patterns.html">Hybrid LLM patterns</a>.</p>
+</section>
+<section id="step-9-the-cost-of-failure-decides">
+  <h2>22 &mdash; Step 9: the cost of failure decides</h2>
+<p>Now apply Step 4 to the cascade. Suppose the eval set shows the cascade's resolution rate is unchanged at 85%. Monthly totals:</p>
+<table>
+<thead><tr><th>Setup</th><th>Model spend</th><th>Human tickets</th><th>Total</th></tr></thead>
+<tbody>
+<tr><td>Large model only (Steps 5 to 7)</td><td>$1,902</td><td>$120,000</td><td>$121,902</td></tr>
+<tr><td>Cascade, resolution held at 85%</td><td>$729</td><td>$120,000</td><td>$120,729</td></tr>
+<tr><td>Cascade, resolution slipped to 80%</td><td>$729</td><td>$160,000</td><td>$160,729</td></tr>
+</tbody>
+</table>
+<p>The cascade saves $1,173 a month if quality holds and loses $38,827 if resolution slips five points. This is why cost optimisation is an evaluation problem. The model bill is often the smallest number in the system; the decision rests on whether the change moves the success rate, and that needs a measured answer with enough examples to detect a few points of difference.</p>
+<p>The same arithmetic can justify spending <em>more</em>: if a stronger model or more retrieved context raised resolution from 85% to 88%, that would remove 6,000 tickets ($24,000) for at most a few thousand dollars of extra model spend.</p>
+</section>
+<section id="step-10-when-nobody-is-waiting">
+  <h2>23 &mdash; Step 10: when nobody is waiting</h2>
+<p>Not every call is interactive. Nightly summaries, back-filling embeddings, re-classifying a ticket archive, and running evaluation suites can tolerate hours of delay. Providers' <strong>batch APIs</strong> accept such jobs asynchronously at a substantial discount (half price is a common illustrative figure), because they can schedule the work into idle capacity. Separating interactive and offline traffic is often the easiest saving in a system, and keeps offline bursts from eating the interactive rate limit.</p>
+<p>At high, steady volume, <strong>self-hosting</strong> an open model becomes an option: you pay for GPU hours instead of tokens, so the cost per token falls as utilisation rises and rises when traffic is spiky. The break-even depends on volume, utilisation, the quality gap to hosted models, and engineering time; <a href="../inference/serving.html">Serving &amp; scaling</a> works it through.</p>
+</section>
+<section id="a-worked-example-the-help-desk-bill-lever-by-lever">
+  <h2>24 &mdash; A worked example: the help-desk bill, lever by lever</h2>
+<table>
+<thead><tr><th>Change</th><th>Per question</th><th>Per month</th><th>Saved vs baseline</th><th>Full answer</th></tr></thead>
+<tbody>
+<tr><td>Baseline: 8 chunks, 300-token answers</td><td>$0.02025</td><td>$4,050</td><td>0%</td><td>6.7 s</td></tr>
+<tr><td>Rerank to 4 chunks</td><td>$0.01425</td><td>$2,850</td><td>30%</td><td>6.7 s</td></tr>
+<tr><td>Cache the system prompt</td><td>$0.01101</td><td>$2,202</td><td>46%</td><td>6.7 s</td></tr>
+<tr><td>Answers near 200 tokens</td><td>$0.00951</td><td>$1,902</td><td>53%</td><td>4.6 s</td></tr>
+<tr><td>Small model first, 30% escalate</td><td>$0.00365</td><td>$729</td><td>82%</td><td>faster for 70%, slower for 30%</td></tr>
+</tbody>
+</table>
+<p>The order matters as much as the numbers. Each step was checked against the eval set before the next was applied, so a quality drop can be traced to one change. And the order goes from changes that rarely hurt quality (trimming padding, caching identical text) to ones that often do (a weaker model). In an interview, saying you would measure success rate at each step and stop when it moves is worth more than any single lever.</p>
+</section>
+<section id="in-code-a-cost-model-you-can-run-before-you-build">
+  <h2>25 &mdash; In code: a cost model you can run before you build</h2>
+<p>A per-request cost model that reproduces the table above. Change the constants to your own traffic and prices.</p>
+<pre>LARGE = <span class="tp">dict</span>(inp=<span class="nr">3.00</span>, out=<span class="nr">15.00</span>, cached=<span class="nr">0.30</span>)     <span class="cm"># $ per million tokens (illustrative)</span>
+SMALL = <span class="tp">dict</span>(inp=<span class="nr">0.25</span>, out=<span class="nr">1.25</span>, cached=<span class="nr">0.025</span>)
+
+<span class="kw">def</span> <span class="fn">cost</span>(price, fresh_in, out, cached_in=<span class="nr">0</span>):
+    <span class="kw">return</span> (fresh_in * price[<span class="st">"</span><span class="st">inp</span><span class="st">"</span>] + cached_in * price[<span class="st">"</span><span class="st">cached</span><span class="st">"</span>] + out * price[<span class="st">"</span><span class="st">out</span><span class="st">"</span>]) / <span class="nr">1e6</span>
+
+SYS, CHUNK, Q, MONTH = <span class="nr">1200</span>, <span class="nr">500</span>, <span class="nr">50</span>, <span class="nr">200_000</span>
+<span class="kw">def</span> <span class="fn">per_request</span>(chunks=<span class="nr">8</span>, out=<span class="nr">300</span>, cache_system=<span class="nr">False</span>, small_share=<span class="nr">0.0</span>):
+    ctx = chunks * CHUNK + Q
+    fresh, cached = (ctx, SYS) <span class="kw">if</span> cache_system <span class="kw">else</span> (ctx + SYS, <span class="nr">0</span>)
+    large = cost(LARGE, fresh, out, cached)
+    small = cost(SMALL, fresh, out, cached)
+    <span class="cm"># cascade: every request tries the small model; the rest escalate to the large one</span>
+<span class="kw">return</span> large <span class="kw">if</span> small_share == <span class="nr">0</span> <span class="kw">else</span> small + (<span class="nr">1</span> - small_share) * large
+
+steps = [
+    (<span class="st">"</span><span class="st">baseline: 8 chunks, 300-token answers</span><span class="st">"</span>, <span class="tp">dict</span>()),
+    (<span class="st">"</span><span class="st">+ rerank to 4 chunks</span><span class="st">"</span>, <span class="tp">dict</span>(chunks=<span class="nr">4</span>)),
+    (<span class="st">"</span><span class="st">+ cache the system prompt</span><span class="st">"</span>, <span class="tp">dict</span>(chunks=<span class="nr">4</span>, cache_system=<span class="nr">True</span>)),
+    (<span class="st">"</span><span class="st">+ answers capped near 200 tokens</span><span class="st">"</span>, <span class="tp">dict</span>(chunks=<span class="nr">4</span>, cache_system=<span class="nr">True</span>, out=<span class="nr">200</span>)),
+    (<span class="st">"</span><span class="st">+ small model first, 70</span><span class="st">% s</span><span class="st">tay small</span><span class="st">"</span>, <span class="tp">dict</span>(chunks=<span class="nr">4</span>, cache_system=<span class="nr">True</span>, out=<span class="nr">200</span>, small_share=<span class="nr">0.7</span>)),
+]
+base = per_request()
+<span class="kw">for</span> name, kw in steps:
+    c = per_request(**kw)
+    <span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">{</span>name<span class="st">:</span><span class="st">40s</span><span class="st">}</span><span class="st"> $</span><span class="st">{</span>c<span class="st">:</span><span class="st">.5f</span><span class="st">}</span><span class="st">/req  $</span><span class="st">{</span>c*MONTH<span class="st">:</span><span class="st">7,.0f</span><span class="st">}</span><span class="st">/month  </span><span class="st">{</span><span class="nr">1</span>-c/base<span class="st">:</span><span class="st">4.0%</span><span class="st">}</span><span class="st"> saved</span><span class="st">"</span>)
+</pre>
+<p>Then the comparison that actually decides, including what failures cost:</p>
+<pre>MONTH, HUMAN_TICKET = <span class="nr">200_000</span>, <span class="nr">4.00</span> <span class="cm"># questions per month; $ per escalated ticket (illustrative)</span>
+<span class="kw">def</span> <span class="fn">monthly</span>(cost_per_q, resolution):
+    model = cost_per_q * MONTH
+    humans = (<span class="nr">1</span> - resolution) * MONTH * HUMAN_TICKET
+    <span class="kw">return</span> model, humans, model + humans
+
+<span class="kw">for</span> name, c, r in [(<span class="st">"</span><span class="st">large model only</span><span class="st">"</span>, <span class="nr">0.00951</span>, <span class="nr">0.85</span>),
+                   (<span class="st">"</span><span class="st">cascade, quality held</span><span class="st">"</span>, <span class="nr">0.003646</span>, <span class="nr">0.85</span>),
+                   (<span class="st">"</span><span class="st">cascade, quality slipped</span><span class="st">"</span>, <span class="nr">0.003646</span>, <span class="nr">0.80</span>)]:
+    m, h, t = monthly(c, r)
+    <span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">{</span>name<span class="st">:</span><span class="st">26s</span><span class="st">}</span><span class="st"> model $</span><span class="st">{</span>m<span class="st">:</span><span class="st">6,.0f</span><span class="st">}</span><span class="st"> + human $</span><span class="st">{</span>h<span class="st">:</span><span class="st">8,.0f</span><span class="st">}</span><span class="st"> = $</span><span class="st">{</span>t<span class="st">:</span><span class="st">8,.0f</span><span class="st">}</span><span class="st">"</span>)
+</pre>
+<p>And the latency budget from Steps 3 and 7:</p>
+<pre><span class="kw">def</span> <span class="fn">latency</span>(stages, out_tokens, tpot):
+    ttft = <span class="tp">sum</span>(stages.values())
+    <span class="kw">return</span> ttft, ttft + (out_tokens - <span class="nr">1</span>) * tpot
+
+stages = {<span class="st">"</span><span class="st">gateway</span><span class="st">"</span>: <span class="nr">0.05</span>, <span class="st">"</span><span class="st">embed query</span><span class="st">"</span>: <span class="nr">0.03</span>, <span class="st">"</span><span class="st">vector search</span><span class="st">"</span>: <span class="nr">0.02</span>, <span class="st">"</span><span class="st">model TTFT</span><span class="st">"</span>: <span class="nr">0.60</span>}
+<span class="tp">print</span>(<span class="st">"</span><span class="st">baseline  first token </span><span class="st">%.2f</span><span class="st"> s, full answer </span><span class="st">%.2f</span><span class="st"> s</span><span class="st">"</span> % latency(stages, <span class="nr">300</span>, <span class="nr">0.020</span>))
+stages.update({<span class="st">"</span><span class="st">rerank</span><span class="st">"</span>: <span class="nr">0.10</span>, <span class="st">"</span><span class="st">model TTFT</span><span class="st">"</span>: <span class="nr">0.45</span>})
+<span class="tp">print</span>(<span class="st">"</span><span class="st">optimised first token </span><span class="st">%.2f</span><span class="st"> s, full answer </span><span class="st">%.2f</span><span class="st"> s</span><span class="st">"</span> % latency(stages, <span class="nr">200</span>, <span class="nr">0.020</span>))
+</pre>
+<p>The last block prints 0.70 s and 6.68 s for the baseline, 0.65 s and 4.63 s after reranking and shorter answers (the shorter prompt lowers TTFT by roughly the reranker's cost). In production, compute the same quantities from the usage fields every API response returns (input, cached and output token counts) and log them per request, per feature and per tenant (see <a href="observability.html">Observability</a>).</p>
+</section>
 <section id="cost-performance-engineering">
-  <h2>13 &mdash; Cost &amp; performance engineering</h2>
+  <h2>26 &mdash; Cost &amp; performance engineering</h2>
 <p>Agents make many model calls; costs and latency add up fast. The levers, roughly by impact:</p>
 <table>
 <tr><th>Lever</th><th>How</th><th>Win</th></tr>
@@ -122,7 +324,7 @@ cost = (prompt_toks * price_in + completion_toks * price_out) / 1e6</pre></div>
 <p>Why input tokens dominate: an agent turn re-sends the system prompt, the tool schemas, and the whole conversation so far, then generates a comparatively tiny tool call or answer. A 10-step agent run with a 6k-token prefix and ~400 tokens of output per step reads on the order of <b>80–100k input tokens</b> and writes maybe <b>4k output tokens</b>. Even with output priced ~5× input, input is still ~80% of the bill. That asymmetry is why the first three levers — all input-side — sit at the top of the table, and why the sections below give you working code for each of them.</p>
 </section>
 <section id="lever-1-prompt-caching-order-your-prompt-like-a-cache-line">
-  <h2>14 &mdash; Lever 1: prompt caching — order your prompt like a cache line</h2>
+  <h2>27 &mdash; Lever 1: prompt caching — order your prompt like a cache line</h2>
 <p>Providers cache the <i>prefix</i> of your prompt: everything before the first change. So structure requests as <b>stable → semi-stable → volatile</b>: system prompt and tool schemas first, session context next, this turn's message last. One reordered field, one timestamp, one shuffled tool list = cache miss from that point on.</p>
 <div class="code-block"><div class="code-file"><span>prompt_cache.py — cache-friendly request layout (Anthropic-style)</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> anthropic
 client = anthropic.Anthropic()
@@ -162,7 +364,7 @@ TOOLS = load_tool_schemas_sorted()             <span class="cm"># sort keys — 
 <p>Worked numbers (illustrative rates: $3/M input, $15/M output, cache reads at 10% of input, cache writes at 125%): a 10-step run over an 8k prefix costs <b>uncached</b> ≈ 10 × 8k × $3/M = $0.24 input. <b>Cached</b>: one write (8k × $3.75/M = $0.03) + 9 reads (9 × 8k × $0.30/M = $0.0216) ≈ $0.052 — a <b>78% cut</b> on that prefix, from reordering fields and adding one attribute. Always confirm with the usage fields; a "cache-enabled" integration with a volatile first line silently pays full price.</p>
 </section>
 <section id="lever-2-response-caching-don-t-make-the-call-at-all">
-  <h2>15 &mdash; Lever 2: response caching — don&#x27;t make the call at all</h2>
+  <h2>28 &mdash; Lever 2: response caching — don&#x27;t make the call at all</h2>
 <p>Prompt caching discounts a call; response caching <b>deletes</b> it. It applies to deterministic, repeated calls: classification, routing, extraction over recurring inputs, FAQ-shaped questions. It does <i>not</i> apply where freshness or per-user context changes the right answer — cache keys must include everything that legitimately changes the output.</p>
 <div class="code-block"><div class="code-file"><span>response_cache.py — exact-match cache with stampede protection</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> hashlib, json, asyncio, redis.asyncio <span class="kw">as</span> aioredis
 
@@ -215,7 +417,7 @@ TOOLS = load_tool_schemas_sorted()             <span class="cm"># sort keys — 
 <p>Coalescing matters more than it looks: when a popular page or a retried webhook fans out the same classification 50× in one second, a plain cache misses 50 times (all arrive before the first write). The in-flight map turns that into one provider call. Ten lines, and it also smooths your rate-limit consumption.</p>
 </section>
 <section id="lever-3-model-routing-with-a-verification-cascade">
-  <h2>16 &mdash; Lever 3: model routing with a verification cascade</h2>
+  <h2>29 &mdash; Lever 3: model routing with a verification cascade</h2>
 <p>Most traffic is easy; you pay flagship prices for it anyway. A router sends easy calls to a small model and escalates the rest. Two workable designs: <b>classify-then-route</b> (a tiny classifier predicts difficulty) and <b>draft-then-verify</b> (cheap model answers, checks decide whether to escalate). Draft-then-verify is simpler to get right because the escalation decision sees the actual answer, not a prediction about it.</p>
 <div class="code-block"><div class="code-file"><span>router.py — cascade with self-consistency check and fallback</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> asyncio
 
@@ -255,7 +457,7 @@ CHEAP, STRONG = <span class="st">"</span><span class="st">claude-haiku-4-5</span
 <div class="callout warn"><p><strong>Router gotcha</strong></p>Grade the cascade end-to-end on your eval suite, not per-model. The failure mode is a cheap model that is confidently wrong in ways your checks don't catch — logprob confidence is a proxy, not a guarantee. And when you swap either model version, the thresholds you tuned are stale; re-tune as part of the deploy (<a href="index.html">Production &amp; evals</a>'s eval gates apply to router config too).</div>
 </section>
 <section id="levers-4-7-compaction-parallelism-streaming-caps">
-  <h2>17 &mdash; Levers 4–7: compaction, parallelism, streaming, caps</h2>
+  <h2>30 &mdash; Levers 4–7: compaction, parallelism, streaming, caps</h2>
 <div class="tile-grid">
 <div class="tile"><h4>Context compaction</h4><p>Past a threshold (say 40k tokens), summarize the oldest turns into a compact digest and keep recent turns verbatim. Costs one cheap-model call, saves on every subsequent turn — but it flushes the prompt cache for the rewritten region, so compact <i>rarely and in big steps</i>, not every turn. Retrieval-side: tighter top-k and reranking (<a href="../adaptation/index.html">Fine-tuning &amp; alignment</a>) is compaction you don't have to undo.</p></div>
 <div class="tile"><h4>Parallelism</h4><p><code>asyncio.gather</code> over independent calls (sub-questions, per-document extraction). Cuts wall-clock, not dollars — same tokens, less waiting. Pair with a semaphore sized to your rate limit or you convert latency wins into 429 storms.</p></div>
@@ -264,7 +466,7 @@ CHEAP, STRONG = <span class="st">"</span><span class="st">claude-haiku-4-5</span
 </div>
 </section>
 <section id="worked-case-study-cutting-a-support-agent-s-bill-71">
-  <h2>18 &mdash; Worked case study: cutting a support agent&#x27;s bill 71%</h2>
+  <h2>31 &mdash; Worked case study: cutting a support agent&#x27;s bill 71%</h2>
 <p>You run a customer-support agent: <b>50,000 conversations/month</b>, average 4 agent steps each, prefix (system + tools + RAG context) 9,000 tokens, per-step delta ~700 tokens, ~350 output tokens/step. Illustrative pricing throughout: strong model $3/M input, $15/M output; cheap model $0.30/M in, $1.50/M out; cache reads 10%, writes 125%.</p>
 <p><b>Baseline arithmetic.</b> Input per conversation ≈ steps × (prefix + accumulated deltas) = 4 × 9,000 + (0+700+1,400+2,100) ≈ 40,200 tok. Output ≈ 4 × 350 = 1,400 tok. Per conversation: 40.2k × $3/M = $0.1206 input + 1.4k × $15/M = $0.021 output ≈ <b>$0.1416</b>. Monthly: 50,000 × $0.1416 ≈ <b>$7,080</b>.</p>
 <table>
@@ -293,23 +495,39 @@ CHEAP, STRONG = <span class="st">"</span><span class="st">claude-haiku-4-5</span
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>19 &mdash; Production &amp; Ops</h2>
+  <h2>32 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Dashboard: cost/request, p50/p99 TTFT, tokens/request</li><li>Budget alerts per feature flag</li><li>A/B quality on routed tiers</li><li>Batch offline workloads</li></ul></div>
 </section>
 <section id="related-topics">
-  <h2>20 &mdash; Related topics</h2>
+  <h2>33 &mdash; Related topics</h2>
 <div class="card"><ul><li><a href="../fundamentals/what-is-an-llm.html">What an LLM is</a></li><li><a href="../inference/inference-internals.html">Inference internals</a></li><li><a href="../fundamentals/tokens-context-cost.html">Tokens, context &amp; cost</a></li><li><a href="reference-architectures.html">Reference architectures</a></li><li><a href="../inference/serving.html">Serving &amp; scaling</a></li><li><a href="semantic-cache.html">Semantic caching</a></li></ul></div>
 </section>
 <section id="where-people-get-lost">
-  <h2>21 &mdash; Where people get lost</h2>
+  <h2>34 &mdash; Where people get lost</h2>
 <div class="card"><ul><li>No max_tokens cap</li><li>Frontier model for all traffic</li><li>Ignoring input token cost of RAG</li><li>Cache without invalidation on KB update</li><li>Optimizing tokens/sec but not TTFT</li></ul></div>
+<ul>
+<li><strong>"Output tokens are expensive, so the answer is the cost."</strong> Per token, yes; in total, input usually dominates retrieval and agent workloads because there is so much more of it. Count both.</li>
+<li><strong>"Prompt caching halves our bill."</strong> It discounts only the identical prefix. If the shared part is small or something volatile sits near the top, the saving is small or zero. Check cached-token counts.</li>
+<li><strong>"A cascade costs the small model's price."</strong> Every request pays for the small attempt; escalated ones pay for both. Compute \(c_{\text{small}} + e \cdot c_{\text{large}}\) with the measured escalation rate.</li>
+<li><strong>Optimising cost per call.</strong> The unit is a successful task, including what failures cost downstream. A cheaper model that resolves fewer questions can be far more expensive.</li>
+<li><strong>"Streaming makes it faster."</strong> It makes the first words appear sooner. The full answer takes as long; anything that consumes the whole output still waits.</li>
+<li><strong>Using <code>max_tokens</code> to shorten answers.</strong> It truncates; it does not summarise. Shorten with instructions and formats, and keep the limit as a safety ceiling.</li>
+<li><strong>Applying several optimisations at once.</strong> When quality drops, you cannot tell which change caused it. One change per eval run.</li>
+</ul>
 </section>
 <section id="how-this-connects">
-  <h2>22 &mdash; How this connects</h2>
-<h3>Builds on</h3><ul><li><a href="../fundamentals/what-is-an-llm.html">What an LLM is</a> &mdash; A next-token predictor, the language-modeling objective, model families and scaling laws.</li><li><a href="../fundamentals/tokens-context-cost.html">Tokens, context &amp; cost</a> &mdash; BPE tokenization, the context window, and what every token costs.</li><li><a href="../inference/inference-internals.html">Inference internals</a> &mdash; Prefill vs decode, the KV cache, PagedAttention, continuous batching and speculative decoding.</li><li><a href="../inference/serving.html">Serving &amp; scaling</a> &mdash; vLLM and Ollama, benchmarking honestly, a production serving setup and scaling it.</li><li><a href="reference-architectures.html">Reference architectures</a> &mdash; AI system design patterns, a production agent end to end, and architectures by use case.</li></ul><h3>Where this shows up later</h3><ul><li><a href="../tech/crewai.html">CrewAI</a> &mdash; Role-based multi-agent crews: agents, tasks, processes.</li></ul>
+  <h2>35 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../fundamentals/what-is-an-llm.html">What an LLM is</a> &mdash; A next-token predictor, the language-modeling objective, model families and scaling laws.</li><li><a href="../fundamentals/tokens-context-cost.html">Tokens, context &amp; cost</a> &mdash; BPE tokenization, the context window, and what every token costs.</li><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="../rag/reranking.html">Reranking</a> &mdash; Cross-encoder rerankers: retrieve wide, rescore, keep the best few.</li><li><a href="../inference/inference-internals.html">Inference internals</a> &mdash; Prefill vs decode, the KV cache, PagedAttention, continuous batching and speculative decoding.</li><li><a href="../inference/serving.html">Serving &amp; scaling</a> &mdash; vLLM and Ollama, benchmarking honestly, a production serving setup and scaling it.</li></ul><h3>Where this shows up later</h3><ul><li><a href="semantic-cache.html">Semantic caching</a> &mdash; Answering repeat questions from a cache keyed on meaning, and avoiding wrong hits.</li><li><a href="hybrid-patterns.html">Hybrid LLM patterns</a> &mdash; LLM extracts and code decides, routing and cascades, LLMs with classic ML, guardrails, text-to-SQL.</li><li><a href="../tech/langgraph.html">LangGraph</a> &mdash; Agents as explicit state graphs: nodes, edges, checkpoints, interrupts.</li><li><a href="../tech/crewai.html">CrewAI</a> &mdash; Role-based multi-agent crews: agents, tasks, processes.</li><li><a href="../projects/build-spec.html">Complete build: spec &amp; architecture</a> &mdash; The system we build end to end: requirements, architecture and decisions.</li><li><a href="../projects/build-ship.html">Complete build: prove it, serve it, afford it</a> &mdash; Evals, serving, cost and operations for the build.</li><li><a href="../projects/answer-kit.html">Interview answer kit</a> &mdash; Model answers for the eval and RAG/agent questions, and the follow-ups to prepare.</li></ul>
 </section>
 <section id="check-yourself">
-  <h2>23 &mdash; Check yourself</h2>
+  <h2>36 &mdash; Check yourself</h2>
+<details><summary>An agent step sends 12,000 input tokens and gets 400 output tokens, at $3 and $15 per million. What fraction of the cost is input?</summary><div class="answer">Input $0.036, output $0.006: input is \(0.036 / 0.042 \approx 86\%\) of the cost, even though output is five times the per-token price.</div></details>
+<details><summary>Why do providers charge more per output token than per input token?</summary><div class="answer">Input tokens are processed in one parallel prefill pass that uses the GPU efficiently. Output tokens are generated one at a time, each step reading all the weights and holding memory in the batch for the length of the answer, so each consumes more GPU time.</div></details>
+<details><summary>A prompt is: current timestamp, then a 6,000-token system prompt, then the user message. Caching shows zero cached tokens. Why, and what is the fix?</summary><div class="answer">Caching reuses only an identical prefix, and the timestamp differs on every request, so the prefix diverges at the first token. Move the timestamp (and anything else per-request) after the stable system prompt.</div></details>
+<details><summary>Small model $0.002 per request, large $0.010, escalation rate 40%. Does the cascade save money? Above what escalation rate does it stop saving?</summary><div class="answer">\(0.002 + 0.4 \times 0.010 = \$0.006\), 40% cheaper than $0.010. It breaks even when \(0.002 + e \times 0.010 = 0.010\), so \(e = 0.8\); above 80% escalation it costs more than calling the large model directly.</div></details>
+<details><summary>Users complain the assistant is slow. TTFT is 0.6 s and answers average 700 tokens at 25 ms per token. What do you change first?</summary><div class="answer">Total time is about \(0.6 + 699 \times 0.025 \approx 18\) s, almost all generation. Shorten the answers (instructions, format), consider a model with lower TPOT, and stream. Optimising retrieval or the prompt would barely move it.</div></details>
+<details><summary>A change saves $2,000 a month in model spend but lowers resolution from 85% to 84% on 200,000 questions, with $4 per unresolved ticket. Ship it?</summary><div class="answer">No. One point is 2,000 extra tickets, $8,000 a month, so the change loses $6,000 a month. (Confirm first that a one-point drop is real and not noise in the eval set.)</div></details>
+<details><summary>Which help-desk workloads should go to a batch API, and why not all of them?</summary><div class="answer">Anything with no one waiting: nightly re-indexing summaries, reclassifying old tickets, evaluation runs. Interactive questions cannot wait hours, which is the price of the batch discount.</div></details>
 <details><summary>Estimate cost for 1M requests/day?</summary><div class="answer">Count avg prompt P and completion C tokens. Cost ≈ R×(P×price_in+C×price_out)/1e6. Add 30% for retries and system overhead.</div></details>
 <details><summary>TTFT vs total latency?</summary><div class="answer">TTFT = prefill (prompt processing). Users feel TTFT &gt;500ms. Total = TTFT + (tokens/tok_per_sec). Long answers hurt total even if TTFT OK.</div></details>
 <details><summary>When self-host beats API?</summary><div class="answer">When monthly inference spend exceeds GPU+ML ops cost AND quantized model quality suffices. Often &gt;$50K/mo at 70B scale.</div></details>

@@ -1,0 +1,199 @@
+<!-- Deep lesson: How LLMs are trained. Merged into fundamentals/how-llms-are-trained by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Pretraining</td><td>Training a model from random weights to predict the next token on trillions of tokens of general text. Produces a base model.</td></tr>
+<tr><td>Data mixture</td><td>The proportions of web text, code, books, papers, maths and other sources in the pretraining data.</td></tr>
+<tr><td>Deduplication</td><td>Removing exact and near-identical copies of documents so the model does not over-learn repeated text.</td></tr>
+<tr><td>SFT (supervised fine-tuning)</td><td>Further training on example conversations (instruction and ideal response) so the model learns to answer rather than continue.</td></tr>
+<tr><td>Chat template</td><td>The exact text format, with special tokens, that marks system, user and assistant turns. A model only behaves well in the template it was trained on.</td></tr>
+<tr><td>Loss masking</td><td>Computing the training loss only on the response tokens, not the prompt tokens.</td></tr>
+<tr><td>Preference tuning</td><td>Training on pairs of responses where one is preferred (RLHF, DPO) to shape tone, helpfulness, honesty and refusals.</td></tr>
+<tr><td>RL with verifiable rewards</td><td>Reinforcement learning where the reward comes from an automatic checker (the answer matches, the tests pass) rather than human preference.</td></tr>
+<tr><td>Reasoning model</td><td>A model trained, largely with verifiable-reward RL, to produce a long chain of intermediate thinking before its final answer.</td></tr>
+<tr><td>Benchmark contamination</td><td>Test questions appearing in the training data, which inflates benchmark scores without real capability.</td></tr>
+<tr><td>Alignment tax</td><td>Capability lost on some tasks as a side effect of post-training for helpfulness and safety.</td></tr>
+<tr><td>Post-training</td><td>Everything after pretraining: SFT, preference tuning, RL. Small in compute, large in effect on behaviour.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>A chat model is built in stages, and each stage changes something different. <strong>Pretraining</strong> puts knowledge and language ability into the weights. <strong>Supervised fine-tuning</strong> teaches the format of being an assistant. <strong>Preference tuning</strong> shapes which of many acceptable answers the model prefers. <strong>Reinforcement learning on checkable tasks</strong> teaches it to work through problems step by step. Knowing which stage is responsible for which behaviour is what lets you diagnose a model's failures and choose between prompting, retrieval and fine-tuning in your own system.</p>
+<p>Interviewers ask:</p>
+<ol>
+<li>Walk me through how a chat model is trained, and what each stage contributes.</li>
+<li>Why does fine-tuning a model on your company's documents not reliably teach it the facts in them?</li>
+<li>How are reasoning models trained differently?</li>
+<li>How do you evaluate an LLM, and why are public benchmark scores hard to trust?</li>
+</ol>
+<p>The running example is one message to Acme Cloud's support assistant: <em>"I was charged twice for my March invoice. Can you fix it?"</em> We will follow what a 7-billion-parameter model would do with it after each stage, and put numbers on what each stage costs. The example outputs are illustrative, written to show the typical behaviour of each stage, not quoted from a particular model.</p>
+</section>
+
+<section data-label="Step 1: the stages and where the compute goes">
+<table>
+<thead><tr><th>Stage</th><th>Data</th><th>Learns</th><th>Compute for a 7B model</th></tr></thead>
+<tbody>
+<tr><td>Pretraining</td><td>~2 trillion tokens of web, code, books, papers</td><td>Language, facts, code, reasoning patterns</td><td>\(8.4 \times 10^{22}\) FLOPs</td></tr>
+<tr><td>SFT</td><td>~100,000 conversations, ~1,000 tokens each, 3 epochs</td><td>Answer in the assistant format; follow instructions</td><td>\(1.3 \times 10^{19}\) FLOPs (0.015%)</td></tr>
+<tr><td>Preference tuning (DPO)</td><td>~50,000 preference pairs</td><td>Tone, helpfulness, honesty, when to refuse</td><td>about \(10^{19}\) FLOPs (0.01%)</td></tr>
+<tr><td>RL with verifiable rewards</td><td>Maths, code and logic problems with checkers</td><td>Step-by-step problem solving, self-correction</td><td>Varies widely; generation-heavy</td></tr>
+</tbody>
+</table>
+<p>The figures use \(C \approx 6ND\) from <a href="@@fundamentals/what-is-an-llm@@">What an LLM is</a>. Pretraining at \(8.4 \times 10^{22}\) FLOPs is about 59,000 GPU-hours on H100s running at 40% of their roughly 989 TFLOP/s peak: about two and a half days on 1,024 GPUs, or of the order of a hundred thousand dollars at an illustrative $2 per GPU-hour. SFT and preference tuning together are a few hundredths of a percent of that. This asymmetry is the most important fact in the topic: <strong>post-training is cheap and changes behaviour; it does not add much knowledge.</strong> Knowledge comes from the huge pretraining run.</p>
+</section>
+
+<section data-label="Step 2: pretraining data is most of the work">
+<p>A pretraining set of 2 trillion tokens is about 8 TB of text at roughly 4 characters per English token. Most of it starts as web crawl, which is mostly unusable. The pipeline that turns raw crawl into training data does more for model quality than most architecture choices:</p>
+<ol>
+<li><strong>Extract text</strong> from HTML, dropping navigation, ads and boilerplate.</li>
+<li><strong>Language identification</strong>, keeping the target languages.</li>
+<li><strong>Heuristic filters</strong>: drop pages that are too short, mostly symbols, full of repeated lines, or obviously machine-generated spam.</li>
+<li><strong>Quality filtering</strong>: a small classifier trained to tell reference-quality text (for example, pages linked from encyclopaedias, or textbook-like text) from the rest scores every page, and low scorers are dropped or down-weighted.</li>
+<li><strong>Deduplication</strong>, exact and near-exact.</li>
+<li><strong>Safety and privacy filtering</strong>: remove personal data such as emails and phone numbers, and toxic content.</li>
+<li><strong>Mixing</strong>: decide the share of each source. Code and maths are often up-weighted because they improve reasoning disproportionately; high-quality sources may be repeated for a few epochs while the web is seen once.</li>
+</ol>
+<p><strong>Near-duplicate detection</strong> shows the mechanism behind a step that sounds trivial. The web contains thousands of copies of Acme's refund page, scraped, mirrored and lightly edited. Represent each page as its set of 5-word <em>shingles</em> (every run of 5 consecutive words). A 500-word page has 496 shingles; changing one word ("30 days" to "14 days") alters the 5 shingles that contain it. The two versions share 491 shingles out of 501 distinct ones, a <strong>Jaccard similarity</strong> of \(491/501 = 0.98\); an unrelated page shares none. Comparing every pair of billions of pages is impossible, so <em>MinHash</em> summarises each shingle set with a short signature whose agreement rate estimates Jaccard, and <em>locality-sensitive hashing</em> buckets signatures so only likely duplicates are compared. Pages above a threshold, say 0.8, are collapsed to one copy.</p>
+<p>Why bother: repeated text is memorised rather than generalised from, wastes compute, and is a privacy risk (a phone number on a thousand pages gets learned). It also matters for evaluation: duplicates of test questions are the main route to benchmark contamination (Step 8).</p>
+</section>
+
+<section data-label="Step 3: the pretraining run">
+<p>The objective is the next-token cross-entropy from <a href="@@fundamentals/what-is-an-llm@@">What an LLM is</a>, applied to documents packed end to end into sequences of, say, 4,096 tokens. A typical run uses batches of about 4 million tokens, so 2 trillion tokens is 500,000 optimiser steps. AdamW with a warmup and cosine-decay schedule (<a href="@@foundations/neural-networks@@">Neural networks</a>), bf16 mixed precision, and data, tensor and pipeline parallelism across hundreds or thousands of GPUs (<a href="@@inference/gpus-scale@@">GPUs &amp; scale</a>).</p>
+<p>What engineers actually spend their time on during the run:</p>
+<ul>
+<li><strong>Loss spikes.</strong> The loss suddenly jumps and sometimes does not recover. Standard responses: roll back to a checkpoint from before the spike, skip the batches that triggered it, lower the learning rate. Stabilisers such as normalising queries and keys, gradient clipping and careful initialisation reduce how often it happens.</li>
+<li><strong>Hardware failures.</strong> With thousands of GPUs, something fails every few hours. Frequent checkpointing and automatic restart are part of the design, not an afterthought.</li>
+<li><strong>Annealing.</strong> Near the end, as the learning rate decays, the mixture is often shifted toward the highest-quality data, which improves benchmarks out of proportion to the token count.</li>
+<li><strong>Context extension.</strong> Most tokens are trained at a moderate length; a final phase on long documents, with adjusted position frequencies (<a href="@@fundamentals/transformers@@">Transformers</a>, Step 6), extends the usable context.</li>
+</ul>
+<p>The result is a <strong>base model</strong>. Given Acme's message, it continues the document as the web would. Illustratively: <em>"I was charged twice for my March invoice. Can you fix it? Posted by jdoe 3 replies. Same thing happened to me in February…"</em> It knows a great deal about billing, refunds and support forums, but nothing tells it that it is the support agent.</p>
+</section>
+
+<section data-label="Step 4: supervised fine-tuning teaches the assistant format">
+<p>SFT continues training the base model on conversations written (or carefully selected and edited) to show the ideal response. Each example is rendered into the <strong>chat template</strong>, a fixed text format where special tokens mark the turns. A generic one (every model family defines its own exact tokens):</p>
+<pre class="ascii-diagram">&lt;|system|&gt;
+You are Acme Cloud's support assistant. Be concise and accurate.&lt;|end|&gt;
+&lt;|user|&gt;
+I was charged twice for my March invoice. Can you fix it?&lt;|end|&gt;
+&lt;|assistant|&gt;
+Sorry about that. I can see two charges of $49 on 3 March. I've refunded
+the duplicate; it will reach your card in 5 business days.&lt;|end|&gt;</pre>
+<p>The loss is still next-token cross-entropy, but with <strong>loss masking</strong>: only the assistant's tokens are scored. The system and user tokens are input, not targets, so their labels are set to be ignored. Measured with a standard tokenizer, this example has 51 prompt tokens and 38 response tokens; 43% of the tokens carry loss. Without masking, the model would also be trained to <em>write user messages</em>, which wastes capacity and can make it continue the conversation on the user's behalf.</p>
+<p>What SFT achieves with so little compute: the base model already "knows" what a good support reply looks like; it has read millions. SFT makes that continuation the likely one when the text has the assistant-turn shape. After SFT, the model answers Acme's message in the assistant turn, apologises, and explains the refund process. Quality and diversity of SFT data matter far more than volume: a few thousand excellent examples can beat hundreds of thousands of mediocre ones, and errors in SFT data (confident wrong answers, invented specifics) are learned as style.</p>
+<p>Notice the risk in the example response: it states "$49" and "3 March". If SFT data contains answers asserting account details the assistant could not know, the model learns to <em>invent plausible specifics</em>. Good SFT data for a support assistant shows it calling a billing tool or asking for the invoice number instead.</p>
+<div class="callout warn"><p><strong>Template mismatch is a silent bug.</strong> Serving a model with a different template than it was trained on (a missing system marker, a different end token, an extra newline) produces noticeably worse, sometimes rambling output with no error. Use the tokenizer's own <code>apply_chat_template</code> or the provider's API, never a hand-built string.</p></div>
+</section>
+
+<section data-label="Step 5: preference tuning shapes which good answer it gives">
+<p>After SFT, the model can produce many acceptable replies to Acme's message: terse or warm, ones that promise a refund and ones that check the account first, ones that admit uncertainty and ones that guess. Preference data captures which is better: for the same prompt, two responses, one marked chosen. Training on tens of thousands of such pairs, with RLHF (a reward model plus reinforcement learning) or DPO (a direct classification-style loss on the pairs), shifts probability toward the preferred kind of answer. The mechanics are in <a href="@@adaptation/rlhf@@">RLHF</a> and <a href="@@adaptation/dpo@@">DPO</a>; written principles used to generate AI feedback are in <a href="@@adaptation/constitutional-ai@@">Constitutional AI</a>.</p>
+<p>Preference tuning is where most of a model's "personality" comes from: when it refuses, how it hedges, how long it writes, whether it asks a clarifying question. For our message, a well-tuned model is more likely to say it cannot see account details, ask for the invoice number or check through a tool, and avoid inventing amounts. It also has known side effects: <strong>length bias</strong> (raters prefer longer answers, so models get wordier), <strong>sycophancy</strong> (agreeing with the user because agreement is rated well), and an <strong>alignment tax</strong> on some capabilities, which is why releases are checked against capability regression suites.</p>
+</section>
+
+<section data-label="Step 6: reasoning models and RL with verifiable rewards">
+<p>For maths, code and logic, correctness can be checked automatically: the final answer matches, the unit tests pass, the proof checker accepts. That allows reinforcement learning without human raters, at very large scale.</p>
+<p>The loop, in the form used by GRPO (group relative policy optimisation), one widely used method:</p>
+<ol>
+<li>Take a problem. Sample a group of, say, 8 complete attempts from the current model, each with its reasoning and a final answer.</li>
+<li>Score each with the checker: 1 if correct, 0 if not. Suppose attempts 1, 4 and 6 are right: rewards [1, 0, 0, 1, 0, 1, 0, 0], mean 0.375, standard deviation 0.484.</li>
+<li>Compute each attempt's <strong>advantage</strong>: its reward relative to the group, \((r - \text{mean})/\text{std}\). Correct attempts get +1.29, incorrect ones −0.77.</li>
+<li>Update the model to raise the probability of every token in the advantaged attempts and lower it in the others, with a penalty for drifting too far from the starting model.</li>
+</ol>
+<p>Comparing within the group means no separate value model is needed, and it has a useful property: if all 8 attempts are wrong (or all right), every advantage is 0 and the problem teaches nothing. The training signal comes from problems at the edge of the model's ability, which is why curating problem difficulty is a large part of the work.</p>
+<p>Run long enough, models trained this way learn to write long chains of intermediate reasoning, check their work, and backtrack, because those behaviours raise the success rate. This is the origin of <strong>reasoning models</strong> and of <strong>test-time compute</strong>: spending more generated tokens on thinking buys accuracy on hard problems. The cost lands on you as an application builder: thousands of thinking tokens per answer, billed and waited for. Use them where problems are genuinely multi-step; they are wasteful for lookups and simple extraction (<a href="@@agents/reasoning@@">Reasoning</a>).</p>
+</section>
+
+<section data-label="Step 7: the same message through every stage">
+<table>
+<thead><tr><th>Model after</th><th>Typical response to "I was charged twice for my March invoice. Can you fix it?" (illustrative)</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Pretraining</td><td>Continues as a forum thread: other users reporting the same problem.</td><td>Predicts how such text continues on the web.</td></tr>
+<tr><td>SFT</td><td>Answers as the agent, apologises, may invent an amount and a refund date.</td><td>Learned the assistant format and the style of confident support replies.</td></tr>
+<tr><td>Preference tuning</td><td>Apologises, says it cannot see account details, asks for the invoice number or uses a billing tool, explains the refund timeline policy.</td><td>Raters preferred honest, actionable answers over invented specifics.</td></tr>
+<tr><td>Your system around it</td><td>Retrieves the current refund policy, calls the billing API, cites the policy, escalates if the tool fails.</td><td>Facts and actions come from your data and tools, not the weights.</td></tr>
+</tbody>
+</table>
+<p>The last row is the point for an engineer. No training stage gives the model Acme's current policy or the customer's account. Those must come from retrieval and tools at request time.</p>
+</section>
+
+<section data-label="Step 8: evaluating a trained model">
+<p>Each stage is checked with different evaluations:</p>
+<ul>
+<li><strong>Pretraining:</strong> held-out perplexity on clean text, plus multiple-choice knowledge and reasoning benchmarks scored by which option the model gives the highest probability.</li>
+<li><strong>Post-training:</strong> instruction-following tests, pairwise comparisons judged by humans or a strong model (win rate against a baseline), safety and refusal sets, and capability regression suites.</li>
+<li><strong>Reasoning:</strong> maths and code benchmarks scored by checkers, usually as pass@1 (first attempt correct) or pass@k.</li>
+</ul>
+<p>Three reasons public benchmark scores mislead:</p>
+<ul>
+<li><strong>Contamination.</strong> If test questions or their answers are on the web, they are probably in the training data, and the model can recall rather than solve. Labs check by searching training data for long n-gram overlaps with test items; you can probe by rephrasing questions and seeing whether accuracy drops.</li>
+<li><strong>Noise.</strong> On a 500-question benchmark at 70% accuracy, the standard error is \(\sqrt{0.7 \times 0.3 / 500} = 2.0\) points. A 2-point lead between models is within noise; a 100-question benchmark's standard error is 4.6 points.</li>
+<li><strong>Mismatch.</strong> A benchmark measures its own task. Acme's assistant needs to follow the refund policy, use the billing tool correctly and escalate when unsure; no public benchmark measures that. Build your own eval set from real tickets (<a href="@@production/evals@@">Evals</a>).</li>
+</ul>
+</section>
+
+<section data-label="Prompting, RAG or fine-tuning: where your work goes">
+<p>The stage asymmetry gives a clear decision rule. Your own adaptation of a model is a small post-training run at most, so it can change <em>behaviour</em> cheaply but cannot reliably add <em>knowledge</em>.</p>
+<table>
+<thead><tr><th>Need</th><th>Use</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Facts the model lacks, or facts that change (policies, prices, account data)</td><td>RAG and tools</td><td>Supplied fresh per request, citable, updated by editing a document. Fine-tuning on documents teaches their style more reliably than their facts, and stale facts stay in the weights.</td></tr>
+<tr><td>A task the model can already do with good instructions</td><td>Prompting</td><td>Zero training cost, instant iteration. Exhaust this first.</td></tr>
+<tr><td>A consistent format, tone or narrow skill, at high volume</td><td>Fine-tuning (often LoRA)</td><td>Teaches behaviour from examples; can let a smaller, cheaper model match a larger prompted one on that task.</td></tr>
+<tr><td>Lower latency or cost on a well-defined task</td><td>Fine-tune or distil a small model</td><td>Move the behaviour into a model that costs less per token.</td></tr>
+<tr><td>Facts plus behaviour</td><td>RAG plus fine-tuning</td><td>Fine-tune how to use retrieved context and cite; retrieve the facts.</td></tr>
+</tbody>
+</table>
+<p>For Acme: prompt the model with the support policy's key rules, retrieve the relevant help-centre pages, give it a billing tool, and fine-tune only if, after that, the tone or tool-use pattern is still inconsistent across thousands of tickets. Details in <a href="@@adaptation/fine-tuning@@">Fine-tuning</a> and <a href="@@rag/rag-pipeline@@">The RAG pipeline</a>.</p>
+</section>
+
+<section data-label="In code: what SFT actually trains on">
+<pre data-lang="python">import tiktoken
+
+enc = tiktoken.get_encoding("cl100k_base")          # a real BPE tokenizer
+system = "You are Acme Cloud's support assistant. Be concise and accurate."
+user = "I was charged twice for my March invoice. Can you fix it?"
+reply = ("Sorry about that. I can see two charges of $49 on 3 March. I've refunded the "
+         "duplicate; it will reach your card in 5 business days.")
+
+# Generic chat template for illustration; real models define their own special tokens.
+prompt = f"&lt;|system|&gt;\n{system}&lt;|end|&gt;\n&lt;|user|&gt;\n{user}&lt;|end|&gt;\n&lt;|assistant|&gt;\n"
+prompt_ids = enc.encode(prompt, disallowed_special=())
+reply_ids = enc.encode(reply + "&lt;|end|&gt;", disallowed_special=())
+
+input_ids = prompt_ids + reply_ids
+labels = [-100] * len(prompt_ids) + reply_ids        # -100 = ignored by cross-entropy (loss masking)
+
+trained = sum(l != -100 for l in labels)
+print(f"prompt tokens {len(prompt_ids)}, response tokens {len(reply_ids)}, "
+      f"fraction with loss {trained / len(labels):.2f}")
+</pre>
+<p>It prints 51 prompt tokens, 38 response tokens and a fraction of 0.43. Training then shifts labels by one position and applies cross-entropy with <code>ignore_index=-100</code>, so only the reply is learned. The group-relative advantages from Step 6, in four lines:</p>
+<pre data-lang="python">import numpy as np
+
+rewards = np.array([1, 0, 0, 1, 0, 1, 0, 0], dtype=float)   # checker results for 8 attempts
+advantages = (rewards - rewards.mean()) / (rewards.std() + 1e-8)
+print(advantages.round(2))          # correct: +1.29, incorrect: -0.77
+print((np.zeros(8) - 0) / (np.zeros(8).std() + 1e-8))       # all wrong: zero signal
+</pre>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"Fine-tune on our docs so the model knows our product."</strong> Post-training is too small to install facts reliably, and facts change. Use retrieval for knowledge; fine-tune for behaviour.</li>
+<li><strong>"SFT and RLHF make the model smarter."</strong> They mostly select and shape behaviours learned in pretraining. Capability comes overwhelmingly from pretraining scale and data.</li>
+<li><strong>Training on the whole conversation.</strong> Without loss masking the model learns to write user turns too. Mask prompt tokens.</li>
+<li><strong>Hand-building the chat template.</strong> A small mismatch with the training template quietly degrades output. Use the tokenizer's template.</li>
+<li><strong>"Higher benchmark score means better for us."</strong> Benchmarks are noisy (±2 points at 500 questions), possibly contaminated, and measure a different task. Evaluate on your own data.</li>
+<li><strong>"Reasoning models are better at everything."</strong> They buy accuracy on multi-step problems with many extra tokens of latency and cost; on lookups and extraction they mostly add cost.</li>
+<li><strong>SFT data with invented specifics.</strong> If examples state account details the assistant could not know, the model learns to invent them. Show tool calls or clarifying questions instead.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>Estimate the compute to SFT a 13B model on 50,000 conversations of 800 tokens for 2 epochs, as a fraction of pretraining it on 3 trillion tokens.</summary><div class="answer">SFT: \(6 \times 13 \times 10^9 \times 50{,}000 \times 800 \times 2 = 6.2 \times 10^{18}\). Pretraining: \(6 \times 13 \times 10^9 \times 3 \times 10^{12} = 2.3 \times 10^{23}\). Ratio about \(2.7 \times 10^{-5}\), roughly 0.003%.</div></details>
+<details><summary>Two 1,000-word pages differ in exactly two words, far apart. Using 5-word shingles, what is their Jaccard similarity, and would a 0.8 threshold treat them as duplicates?</summary><div class="answer">Each page has 996 shingles; each changed word affects 5, so 10 differ on each side. Shared: 986; union: \(986 + 10 + 10 = 1{,}006\). Jaccard \(= 986/1006 \approx 0.98\). Yes, well above 0.8.</div></details>
+<details><summary>In GRPO, a problem where all 8 sampled attempts fail contributes nothing to training. Why, and what does that imply for building the problem set?</summary><div class="answer">Advantages are rewards relative to the group mean; if all rewards are equal, all advantages are 0 and there is no gradient. Problems must be at the edge of the model's ability, solved sometimes but not always, so difficulty must be curated and updated as the model improves.</div></details>
+<details><summary>A model fine-tuned on Acme's help-centre articles still gives last quarter's refund window. Explain and fix.</summary><div class="answer">Fine-tuning shaped style more than it installed facts, and the old window is still in the weights (and may have been in the fine-tuning data). Retrieve the current policy at request time, instruct the model to answer from it with a citation, and evaluate on questions whose answers changed.</div></details>
+<details><summary>Your SFT model writes "User: …" lines after its own answers. What went wrong?</summary><div class="answer">Most likely no loss masking (the model was trained to produce user turns), or the end-of-turn token is missing or wrong in training or serving, so the model does not stop. Mask prompt tokens and make sure the template's end token is trained and used as a stop sequence.</div></details>
+<details><summary>Model A scores 72% and model B 70% on a 300-question public benchmark. Is A better for your use case?</summary><div class="answer">Not established. The standard error at 300 questions is about \(\sqrt{0.71 \times 0.29/300} \approx 2.6\) points, so the gap is within noise, the benchmark may be contaminated, and it measures a different task. Run both on your own eval set, ideally comparing per-question results.</div></details>
+<details><summary>Which stage would you blame for each failure: (a) the model does not know a 2019 tax rule; (b) it answers in rambling paragraphs when asked for JSON; (c) it agrees with a customer's wrong claim about their bill?</summary><div class="answer">(a) Pretraining knowledge (fix with retrieval). (b) Instruction following from SFT, or your prompt (fix with structured output or constrained decoding, or fine-tuning). (c) Preference tuning's sycophancy (fix with system instructions, grounding the answer in billing data, and evals that test disagreement).</div></details>
+</section>

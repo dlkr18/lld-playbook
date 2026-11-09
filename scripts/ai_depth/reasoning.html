@@ -1,0 +1,246 @@
+<!-- Deep lesson: Reasoning patterns. Merged into agents/reasoning by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Chain of thought (CoT)</td><td>Having the model write out intermediate steps before its final answer, instead of answering immediately.</td></tr>
+<tr><td>Test-time compute</td><td>Computation spent while answering (more generated tokens, more samples, search) rather than during training.</td></tr>
+<tr><td>Self-consistency</td><td>Sampling several independent reasoning chains for the same question and taking the most common final answer.</td></tr>
+<tr><td>Reasoning model</td><td>A model trained (largely with reinforcement learning on checkable tasks) to produce a long internal reasoning phase before answering.</td></tr>
+<tr><td>Thinking budget</td><td>A limit you set on how many tokens a reasoning model may spend thinking; those tokens are billed like output.</td></tr>
+<tr><td>ReAct</td><td>"Reason + act": the model alternates a short reasoning step with a tool action, reads the observation, and repeats.</td></tr>
+<tr><td>Plan-and-execute</td><td>One call writes a multi-step plan up front; the steps are then carried out, with a new plan only if something fails.</td></tr>
+<tr><td>Reflection</td><td>The model (or a separate critic) reviews an attempt, writes a critique, and tries again with the critique in context.</td></tr>
+<tr><td>Verifier</td><td>Anything that can check an answer: unit tests, a schema, a calculator, a database lookup, or (weaker) another model.</td></tr>
+<tr><td>Tree of thoughts / search</td><td>Exploring several partial solutions at each step, scoring them, and expanding the most promising, instead of following one chain.</td></tr>
+<tr><td>Faithfulness</td><td>Whether a written reasoning chain actually reflects how the model reached its answer. It is not guaranteed.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>A model generates one token at a time, and every token gets the same fixed amount of computation. Some questions need more than one token's worth of thought: several facts to combine, a rule with an exception, arithmetic. Reasoning patterns are the ways we give a model more computation, more information, or a second chance, and they range from one sentence in a prompt ("work through it step by step") to agent architectures with planners and critics.</p>
+<p>The questions you will be asked:</p>
+<ol>
+<li>Why does chain of thought improve answers? What is actually going on?</li>
+<li>Explain ReAct, plan-and-execute and reflection. When would you pick each?</li>
+<li>What are reasoning models, and how do they change the way you prompt and build?</li>
+<li>What does each pattern cost, and how would you decide whether it is worth it?</li>
+</ol>
+<p><strong>The running example.</strong> A support agent must answer: "How much can order ORD-5521 be refunded?" The facts, which the agent may or may not have in its context:</p>
+<ul>
+<li>The order cost $240, is an electronics item, was opened, and was delivered 41 days ago.</li>
+<li>The customer is a Gold member.</li>
+<li>Policy: the return window is 30 days, extended to 60 for Gold members; opened electronics carry a 15% restocking fee.</li>
+</ul>
+<p>The right answer is $204: eligible (41 ≤ 60 because of Gold), minus 15% of $240. The tempting wrong answers are "not eligible" (applying the 30-day window), $240 (forgetting the fee) and $216 (a wrong fee). We will reach the right answer with each pattern and count what it costs.</p>
+</section>
+
+<section data-label="Step 1: why answering directly fails">
+<p>Ask the model "How much can ORD-5521 be refunded? Answer with a number only," with all the facts in the prompt. To answer correctly, its very first output token must already encode the result of three dependent sub-problems: which window applies (needs the tier), whether 41 days is inside it, and what 85% of 240 is. A transformer computes each token with a fixed stack of layers (see <a href="@@fundamentals/transformers@@">transformers</a>), so all of that has to happen within one forward pass, in parallel, with no chance to write anything down.</p>
+<p>That is often too much for one pass. The model falls back on the most familiar pattern in the input: "30-day return window" appears in the policy, 41 is greater than 30, so "not eligible" is a fluent and wrong answer. The failure is not missing knowledge; every fact is in the prompt. It is missing <em>computation</em>.</p>
+</section>
+
+<section data-label="Step 2: chain of thought, tokens as scratch paper">
+<p>Now ask the same question with "Work through the policy step by step, then give the amount." The model writes something like:</p>
+<pre class="ascii-diagram">Customer tier is Gold, so the return window is 60 days.
+Delivered 41 days ago: 41 &lt;= 60, so the order is eligible.
+Item is opened electronics: restocking fee 15%.
+Refund = 240 x (1 - 0.15) = 204.
+Answer: $204</pre>
+<p>Why this helps, mechanically:</p>
+<ul>
+<li><strong>More serial computation.</strong> Each written token is another full forward pass. Five lines of reasoning are dozens of passes, each able to build on the last.</li>
+<li><strong>Working memory.</strong> Each intermediate result ("window is 60 days") is now in the context, where every later token can attend to it. The model no longer has to hold it implicitly.</li>
+<li><strong>Decomposition.</strong> Each line is a sub-problem the model handles well on its own (a lookup, a comparison, a multiplication), even if the composed problem is hard in one step.</li>
+</ul>
+<p>Two forms: <strong>zero-shot CoT</strong> just asks for step-by-step reasoning; <strong>few-shot CoT</strong> includes worked examples whose reasoning shows the structure you want (check tier, check window, apply fee). Few-shot is more controllable for a fixed task.</p>
+<p>The costs are real. The reasoning is output, and output tokens are the slow and expensive ones: a 60-token answer that becomes 300 tokens of reasoning takes five times as long to generate and costs five times as much in output. For a product, separate the reasoning from what the user sees: ask for reasoning in one field and the answer in another (see <a href="@@prompting/structured-output@@">structured output</a>), and show only the answer.</p>
+<div class="callout warn"><p><strong>The chain is not a faithful explanation.</strong> Models sometimes write a plausible chain that is not how they actually reached the answer, or reach the right answer despite a wrong step. Use the chain as a performance aid and a debugging hint, not as an audit record of why a decision was made. For audits, log the inputs, tool results and policy checks your code ran.</p></div>
+</section>
+
+<section data-label="Step 3: self-consistency, voting over several chains">
+<p>With sampling at a non-zero temperature (see <a href="@@fundamentals/decoding@@">decoding</a>), each chain is a random draw. Suppose, for illustration, one CoT chain on the refund question yields $204 with probability 0.6, $240 with 0.2, "not eligible" (0) with 0.15 and $216 with 0.05. Sample \(n\) chains and return the most common final answer. Simulating that vote (200,000 trials, ties broken at random):</p>
+<table>
+<thead><tr><th>Chains \(n\)</th><th>1</th><th>3</th><th>5</th><th>9</th><th>15</th></tr></thead>
+<tbody><tr><td>P(vote = $204)</td><td>0.60</td><td>0.70</td><td>0.79</td><td>0.90</td><td>0.96</td></tr></tbody>
+</table>
+<p>Voting works because correct chains tend to agree on one answer while wrong chains scatter across several. Two limits matter:</p>
+<ul>
+<li><strong>It amplifies the most likely answer, right or wrong.</strong> If the model's single most likely answer is wrong (say $240 at 0.6 and $204 at 0.4, two answers only), voting makes things worse: 0.40 with one chain, about 0.32 with five, 0.21 with fifteen. More samples cannot fix a systematic misconception.</li>
+<li><strong>It needs answers that can be compared.</strong> Numbers, labels and short answers vote easily. Free-form essays do not; for those you need a judge or a verifier to pick among samples.</li>
+</ul>
+<p>And it costs \(n\) times the tokens. The samples can run in parallel, so latency barely grows, but the bill does. Use it where a wrong answer is expensive and the answer is short.</p>
+</section>
+
+<section data-label="Step 4: reasoning models, chain of thought built in">
+<p>Reasoning models move chain of thought from the prompt into training. They are trained, largely with reinforcement learning on tasks whose answers can be checked automatically (maths, code with tests, puzzles), to produce a long internal reasoning phase before the visible answer. The training rewards correct final answers, so the model learns reasoning behaviours that pay off: breaking problems down, checking intermediate results, backtracking when a path fails. See <a href="@@adaptation/rlhf@@">RLHF</a> and <a href="@@adaptation/dpo@@">DPO</a> for the training side.</p>
+<p>What changes for an engineer:</p>
+<ul>
+<li><strong>Do not prompt them to "think step by step".</strong> They already do; explicit step-by-step instructions can conflict with their trained behaviour. Give them the goal, the constraints, the facts and the output format.</li>
+<li><strong>You pay for thinking tokens.</strong> They are billed as output (and are often hidden or summarised in the response). A call that thinks for 4,000 tokens at an illustrative $15 per million output tokens costs $0.06 before it writes a word, and at an illustrative 100 tokens per second takes 40 seconds.</li>
+<li><strong>You control the effort.</strong> Most APIs expose a thinking budget or an effort level. Spend it on hard, high-value steps (planning, diagnosing a failure, a tricky policy decision), not on routine tool calls.</li>
+<li><strong>Self-consistency and long CoT prompts matter less</strong>, because the model already explores and checks internally. They still benefit from a verifier when one exists.</li>
+</ul>
+<p>For the refund question, a reasoning model with a modest budget will usually get $204 without any special prompt. The interesting question becomes whether the question deserves a reasoning model at all, or whether code should compute the policy (Step 9).</p>
+</section>
+
+<section data-label="Step 5: ReAct, reasoning interleaved with actions">
+<p>So far all the facts were in the prompt. In a real agent they are not: the tier is in the CRM, the delivery date and category are in the order system. Chain of thought alone would make the model <em>guess</em> them, fluently. ReAct interleaves short reasoning with tool actions so that each step is grounded in an observation:</p>
+<pre class="ascii-diagram">Thought: I need the order details: date, total, category, opened.
+Action:  get_order("ORD-5521")
+Observation: total 240, electronics, opened, delivered 41 days ago, customer C-77
+Thought: The window depends on the customer's tier.
+Action:  get_customer("C-77")
+Observation: tier gold
+Thought: Gold window is 60 days; 41 &lt;= 60, eligible. Opened electronics: 15% fee.
+         240 x 0.85 = 204.
+Answer:  $204</pre>
+<p>Each thought decides the next action using what was just observed: the agent did not know it needed the customer's tier until the order told it who the customer was. That adaptivity is ReAct's strength, and it is why the tool-calling loop in <a href="@@agents/agent-loop@@">the agent loop</a> is essentially ReAct. Modern native tool calling has absorbed the format: the "thought" is the text the model writes before a tool-use block (or its hidden thinking), the "action" is the tool call, and the "observation" is the tool result.</p>
+<p>The costs: every step is a call to the main model with the full, growing context; with the illustrative cost model below, a 7-step ReAct run costs about $0.083. And because each step looks only one move ahead, ReAct can wander: re-fetching things, chasing a side detail, or looping.</p>
+</section>
+
+<section data-label="Step 6: plan-and-execute, think once then do">
+<p>Plan-and-execute separates the two jobs. One call to a strong model writes the whole plan; execution follows it, often with code or a smaller model; the planner is called again only if a step fails or produces something unexpected.</p>
+<pre class="ascii-diagram">planner (strong model, once):
+  1. get_order(ORD-5521)
+  2. get_customer(&lt;customer id from step 1&gt;)
+  3. compute_refund(order, customer, policy)
+executor (code or small model): runs 1, 2, 3
+on failure: planner again, with the evidence so far</pre>
+<p>Cost, with illustrative prices of $3/$15 per million input/output tokens for the strong model and $0.25/$1.25 for a small one, for a task of six steps:</p>
+<table>
+<thead><tr><th>Pattern</th><th>Calls</th><th>Illustrative cost</th></tr></thead>
+<tbody>
+<tr><td>ReAct, strong model every step</td><td>7 strong calls; context grows from 2,000 by 400 tokens per step, 150 output each</td><td>$0.083</td></tr>
+<tr><td>Plan-and-execute</td><td>1 strong plan (2,000 in, 300 out) + 6 small executor calls (1,000 in, 100 out) + 1 strong synthesis (3,000 in, 300 out)</td><td>$0.026</td></tr>
+</tbody>
+</table>
+<p>About a third of the cost, and often faster, because independent steps in a plan can run in parallel. The price is adaptivity. A plan written before any observation can be wrong: in our example the planner cannot know the customer id until the order is fetched. Good plans express such dependencies ("customer id from step 1"); when they do not, the step fails and the planner must be called again with the evidence. If replanning happens on most runs, the task is too dynamic for up-front planning, and ReAct (or a hybrid: plan, then ReAct within each step) is the better fit.</p>
+</section>
+
+<section data-label="Step 7: reflection, and why the verifier decides everything">
+<p>Reflection gives the model a second attempt informed by a critique: draft, critique, revise. Its value depends almost entirely on how good the critique is. Model it with the refund question: suppose a first attempt is right with probability 0.6, and a revision after a critique is right with probability 0.6 too.</p>
+<ul>
+<li><strong>Self-critique without new information</strong>: the same model reviews its answer. Say it catches a wrong answer half the time (\(d = 0.5\)) and wrongly rejects a right answer 10% of the time (\(f = 0.1\)). Final accuracy \(= 0.6\,(0.9 + 0.1 \times 0.6) + 0.4\,(0.5 \times 0.6) = 0.696\): from 60% to about 70%, for roughly double the cost.</li>
+<li><strong>An external verifier</strong>: code recomputes the policy, a unit test runs, a database confirms a fact. It catches every wrong answer and never rejects a right one: \(0.6 + 0.4 \times 0.6 = 0.84\). With up to two retries, \(1 - 0.4^3 = 0.936\).</li>
+</ul>
+<p>The lesson generalises: reflection is powerful when the critique carries <em>new information</em> (a failing test's output, an error message, a check against the source) and weak when it is the same model rereading its own work, which tends to share the blind spot that caused the error. This is why reflection works so well for code (run the tests, feed back the failures) and modestly for open-ended writing. Cap the rounds (two or three), because each round re-sends the whole attempt and critique.</p>
+</section>
+
+<section data-label="Step 8: search over reasoning paths">
+<p>Self-consistency samples whole chains independently. <strong>Tree of thoughts</strong> and related search methods branch at intermediate steps: generate several candidate next steps, score them (with the model or a verifier), expand the best, and backtrack from dead ends. It suits problems where early choices constrain later ones and partial solutions can be judged: puzzles, multi-step planning, some proofs.</p>
+<p>Cost grows fast. Branching 3 ways for 3 levels is \(3 + 9 + 27 = 39\) node expansions, each with an evaluation, versus 3 steps for a single chain. Keeping only the best 2 nodes per level (a beam) brings it to \(3 + 6 + 6 = 15\). <strong>Best-of-\(n\) with a verifier</strong> is the simplest form: generate \(n\) complete answers and return one that passes the check, which is exactly pass@k from <a href="@@agents/agent-loop@@">the agent loop</a>, and cheap to implement when a verifier exists. Reasoning models learn some of this exploring and backtracking inside a single long chain, which is one reason explicit tree search is uncommon in production agents.</p>
+</section>
+
+<section data-label="Step 9: the cheapest reasoning is code">
+<p>Look again at the refund question. Of its three sub-problems, two (is 41 ≤ 60? what is 85% of 240?) are deterministic and one (which rule applies?) is a lookup. None needs a language model's judgement. A production design lets the model do what only it can do (understand "can I get my money back for the lamp?", choose which order, explain the result) and gives the policy to code: a <code>compute_refund(order_id)</code> tool that returns $204 with the rule it applied. That tool is right every time, costs nothing, and its reasoning is auditable.</p>
+<p>This is the same principle as in <a href="@@agents/what-is-an-agent@@">what an agent is</a>: move decisions that do not need judgement out of the model. Reasoning patterns are for the parts that genuinely do: ambiguous requests, diagnosis, planning in open-ended environments, synthesis across sources.</p>
+</section>
+
+<section data-label="Choosing a pattern">
+<table>
+<thead><tr><th>Situation</th><th>Pattern</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Rule-based computation (policies, prices, dates)</td><td>Code as a tool</td><td>Exact, free, auditable</td></tr>
+<tr><td>A multi-step question with all facts in context</td><td>CoT, or a reasoning model at low effort</td><td>Needs computation, not information</td></tr>
+<tr><td>Short answer, high cost of error, no verifier</td><td>Self-consistency (5 to 9 samples)</td><td>Voting suppresses scattered errors; parallel, so little added latency</td></tr>
+<tr><td>Facts must be fetched and the next step depends on what is found</td><td>ReAct (the default tool loop)</td><td>Adapts to each observation</td></tr>
+<tr><td>Long task with a predictable structure; cost matters</td><td>Plan-and-execute, replan on failure</td><td>Expensive thinking once; cheap execution; parallel steps</td></tr>
+<tr><td>Output can be checked (tests, schema, recomputation)</td><td>Reflection with the verifier's feedback, or best-of-\(n\)</td><td>Each retry gets new information</td></tr>
+<tr><td>Hard planning or diagnosis inside an agent</td><td>Reasoning model for that step only</td><td>Spend thinking budget where it pays</td></tr>
+</tbody>
+</table>
+<p>Whatever you choose, measure it: run the task set with and without the pattern, several times each, and compare accuracy, cost and latency (see <a href="@@production/evals@@">evals</a>). Patterns that help on benchmarks often help less on a specific product, and every one of them multiplies tokens.</p>
+</section>
+
+<section data-label="In code: voting, reflection and plan-and-execute">
+<p>The first block reproduces the numbers in Steps 3 and 7 (numpy only):</p>
+<pre data-lang="python">import numpy as np
+
+def vote_accuracy(dist, n, trials=200_000, seed=0):
+    """dist[0] = P(right answer); dist[1:] = P(each distinct wrong answer). Plurality vote, random tie-break."""
+    rng = np.random.default_rng(seed)
+    counts = rng.multinomial(n, dist, size=trials)
+    top = counts.max(axis=1, keepdims=True)
+    tied = (counts == top)
+    return float((tied[:, 0] / tied.sum(axis=1)).mean())   # chance the tie-break picks the right one
+
+refund = [0.6, 0.2, 0.15, 0.05]        # $204 (right), $240, "not eligible", $216
+print("refund vote:", [round(vote_accuracy(refund, n), 2) for n in (1, 3, 5, 9, 15)])
+print("wrong answer most likely:", [round(vote_accuracy([0.4, 0.6], n), 2) for n in (1, 5, 15)])
+
+def after_reflection(p, detect, false_reject, p_revise):
+    """One critique round: right answers survive unless falsely rejected; wrong ones are caught with prob detect."""
+    return p * ((1 - false_reject) + false_reject * p_revise) + (1 - p) * detect * p_revise
+
+print("self-critique:", round(after_reflection(0.6, 0.5, 0.1, 0.6), 3))
+print("external verifier:", round(after_reflection(0.6, 1.0, 0.0, 0.6), 3))
+</pre>
+<p>It prints <code>[0.6, 0.7, 0.79, 0.9, 0.96]</code> for the refund vote, <code>[0.4, 0.32, 0.21]</code> when the wrong answer is most likely, then 0.696 and 0.84 for the two kinds of reflection.</p>
+<p>The second is a plan-and-execute skeleton with replanning. <code>plan()</code> stands in for one strong-model call; the first plan guesses the customer lookup before it has the id, the step fails, and the planner is called again with the evidence:</p>
+<pre data-lang="python">DB = {"customer": {"C-77": {"tier": "gold"}},
+      "order": {"ORD-5521": {"customer": "C-77", "total": 240.0, "delivered_day": 0,
+                             "category": "electronics", "opened": True}}}
+POLICY = {"window_days": {"standard": 30, "gold": 60}, "restock_fee": {"electronics": 0.15}}
+TODAY = 41
+
+def plan(goal, evidence):                      # strong-model call in a real system
+    if "order" not in evidence:
+        return [("get_order", "ORD-5521"), ("get_customer", None), ("compute_refund", None)]
+    return [("get_customer", evidence["order"]["customer"]), ("compute_refund", None)]
+
+def execute(step, arg, evidence):              # code / cheap model; returns (ok, value)
+    if step == "get_order":
+        evidence["order"] = DB["order"][arg]; return True, evidence["order"]
+    if step == "get_customer":
+        if arg is None:                        # the first plan guessed; it lacked the id
+            return False, "customer id unknown: read it from the order"
+        evidence["customer"] = DB["customer"][arg]; return True, evidence["customer"]
+    if step == "compute_refund":               # policy in code: exact and auditable
+        o, c = evidence["order"], evidence["customer"]
+        age = TODAY - o["delivered_day"]
+        if age &gt; POLICY["window_days"][c["tier"]]:
+            return True, 0.0
+        fee = POLICY["restock_fee"].get(o["category"], 0) if o["opened"] else 0
+        return True, round(o["total"] * (1 - fee), 2)
+
+def plan_and_execute(goal, max_replans=2):
+    evidence, steps = {}, plan(goal, {})
+    replans = 0
+    while steps:
+        step, arg = steps.pop(0)
+        ok, value = execute(step, arg, evidence)
+        print(f"{step:15s} {'ok ' if ok else 'ERR'} {value}")
+        if not ok:
+            if replans == max_replans:
+                return "escalate: could not complete plan"
+            replans += 1
+            steps = plan(goal, evidence)         # replan with what we know now
+    return value
+
+print("refund:", plan_and_execute("How much can ORD-5521 be refunded?"))
+</pre>
+<p>The trace shows <code>get_order ok</code>, <code>get_customer ERR</code>, then after replanning <code>get_customer ok {'tier': 'gold'}</code>, <code>compute_refund ok 204.0</code>, and <code>refund: 204.0</code>. Note that the policy arithmetic lives in <code>execute</code>, in code, as Step 9 recommends.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"Chain of thought makes the model smarter."</strong> It gives the model more computation and a place to keep intermediate results. It cannot supply facts the model does not have; for those, use tools (ReAct).</li>
+<li><strong>Treating the written chain as the real reason.</strong> Chains are not guaranteed to be faithful. Audit with logged inputs and code-side checks, not with the model's narrative.</li>
+<li><strong>"More samples always help."</strong> Voting amplifies the most likely answer. If that answer is wrong, accuracy falls as \(n\) grows.</li>
+<li><strong>Prompting reasoning models to think step by step.</strong> They already reason; give goals, constraints and format, and set the effort or budget instead.</li>
+<li><strong>Self-critique as a reliability fix.</strong> The same model rereading its work shares its blind spots. Reflection pays when a verifier supplies new information.</li>
+<li><strong>Plan-and-execute for highly dynamic tasks.</strong> If most runs need replanning, the up-front plan is wasted work; use ReAct or plan per phase.</li>
+<li><strong>Using a model to do arithmetic or apply fixed rules.</strong> Code is exact, free and auditable. Reserve reasoning for judgement.</li>
+<li><strong>Forgetting the bill.</strong> Every pattern multiplies tokens: thinking budgets, \(n\) samples, critique rounds, tree expansions. Measure the gain against the cost on your own tasks.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>All the policy facts are in the prompt, yet the model answers "not eligible" when asked for a number only. Why, and what is the cheapest fix that keeps a model in the loop?</summary><div class="answer">Answering immediately requires three dependent sub-problems to be solved within the first output token's fixed computation, so the model falls back on the familiar 30-day pattern. Asking for step-by-step reasoning (in a separate field) gives it serial computation and working memory. Cheaper still is a <code>compute_refund</code> tool so the model only explains the result.</div></details>
+<details><summary>A classifier is right 70% of the time with one sample, and its errors are all the same wrong label. Does majority voting over 5 samples help? Compute it.</summary><div class="answer">Yes, because the right label is the more likely one. \(P(\ge 3 \text{ of } 5) = \sum_{k=3}^{5}\binom{5}{k}0.7^k0.3^{5-k} \approx 0.837\). If it were right only 40% of the time with a single competing label, voting would lower accuracy (about 0.32 with 5 samples).</div></details>
+<details><summary>When would you choose plan-and-execute over ReAct, and what failure would make you switch back?</summary><div class="answer">Choose it for longer tasks with a predictable structure where cost or latency matters: one strong planning call, cheap execution, parallel steps. Switch back (or plan per phase) if steps frequently fail or reveal information that invalidates the plan, so most runs replan anyway.</div></details>
+<details><summary>Reflection improves your code-generation agent a lot but your marketing-copy agent barely. Explain.</summary><div class="answer">For code, the critique includes new information from an external verifier (test failures, error messages), so each retry is better informed. For copy, the critique is the same model's opinion of its own text, which shares the blind spots that produced it; detection is weak and revisions are not much better than the first draft.</div></details>
+<details><summary>A reasoning model spends about 6,000 thinking tokens per call. At an illustrative $15 per million output tokens and 120 tokens per second, what does thinking add per call, and on which agent steps would you allow it?</summary><div class="answer">\(6000 \times 15/10^6 = \$0.09\) and \(6000/120 = 50\) seconds per call. Allow it on the few high-value steps (initial planning, diagnosing a failure, an ambiguous policy judgement) and use low effort or a non-reasoning model for routine tool calls.</div></details>
+<details><summary>Tree search with branching 4 and depth 3, versus a beam of width 2. How many node expansions does each need?</summary><div class="answer">Full tree: \(4 + 16 + 64 = 84\). Beam of 2: \(4 + 8 + 8 = 20\) (4 children of the root, then 4 children for each of 2 kept nodes at each later level). A single chain needs 3.</div></details>
+<details><summary>An auditor asks why the agent refused a refund, and you show them the model's chain of thought. What is wrong with that, and what should you show?</summary><div class="answer">The chain may not reflect how the decision was actually reached. Show the logged inputs, tool calls and results, and the deterministic policy check (window, tier, fee) that your code applied; that is the authoritative record.</div></details>
+</section>

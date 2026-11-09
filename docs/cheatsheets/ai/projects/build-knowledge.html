@@ -23,29 +23,240 @@
   <h2>Complete build: the knowledge layer</h2>
   <a href="index.html">&larr; Build &amp; interview</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#the-complete-build-2-4-the-knowledge-layer"><span class="num">02</span> The Complete Build 2/4 — the knowledge layer</a>
-  <a href="#step-1-ingestion-with-provenance-the-unglamorous-60"><span class="num">03</span> Step 1 — ingestion with provenance (the unglamorous 60%)</a>
-  <a href="#step-2-build-the-eval-set-before-tuning-anything"><span class="num">04</span> Step 2 — build the eval set BEFORE tuning anything</a>
-  <a href="#step-3-retrieve-wide-fuse-rerank-and-measure-each-stage"><span class="num">05</span> Step 3 — retrieve wide, fuse, rerank — and measure each stage</a>
-  <a href="#step-4-grounded-generation-with-mandatory-abstention"><span class="num">06</span> Step 4 — grounded generation with mandatory abstention</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#the-question"><span class="num">03</span> The question</a>
+  <a href="#step-1-the-prompt-budget-decides-the-chunk-size"><span class="num">04</span> Step 1: the prompt budget decides the chunk size</a>
+  <a href="#step-2-cut-along-the-document-s-structure"><span class="num">05</span> Step 2: cut along the document&#x27;s structure</a>
+  <a href="#step-3-indexing-is-a-cheap-idempotent-batch-job"><span class="num">06</span> Step 3: indexing is a cheap, idempotent batch job</a>
+  <a href="#step-4-why-dense-search-misses-the-invoice-code"><span class="num">07</span> Step 4: why dense search misses the invoice code</a>
+  <a href="#step-5-lexical-search-weights-the-rare-token"><span class="num">08</span> Step 5: lexical search weights the rare token</a>
+  <a href="#step-6-fusing-two-rankings-with-rrf"><span class="num">09</span> Step 6: fusing two rankings with RRF</a>
+  <a href="#step-7-reranking-the-pool-and-its-hard-ceiling"><span class="num">10</span> Step 7: reranking the pool, and its hard ceiling</a>
+  <a href="#step-8-permissions-belong-inside-the-search"><span class="num">11</span> Step 8: permissions belong inside the search</a>
+  <a href="#step-9-measuring-retrieval-and-how-far-to-trust-it"><span class="num">12</span> Step 9: measuring retrieval, and how far to trust it</a>
+  <a href="#choosing-settings"><span class="num">13</span> Choosing settings</a>
+  <a href="#in-code-the-metrics-rrf-and-the-filter-trap"><span class="num">14</span> In code: the metrics, RRF and the filter trap</a>
+  <a href="#the-complete-build-2-4-the-knowledge-layer"><span class="num">15</span> The Complete Build 2/4 — the knowledge layer</a>
+  <a href="#step-1-ingestion-with-provenance-the-unglamorous-60"><span class="num">16</span> Step 1 — ingestion with provenance (the unglamorous 60%)</a>
+  <a href="#step-2-build-the-eval-set-before-tuning-anything"><span class="num">17</span> Step 2 — build the eval set BEFORE tuning anything</a>
+  <a href="#step-3-retrieve-wide-fuse-rerank-and-measure-each-stage"><span class="num">18</span> Step 3 — retrieve wide, fuse, rerank — and measure each stage</a>
+  <a href="#step-4-grounded-generation-with-mandatory-abstention"><span class="num">19</span> Step 4 — grounded generation with mandatory abstention</a>
+  <a href="#where-people-get-lost"><span class="num">20</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">21</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">22</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Complete build: the knowledge layer <span>// Build &amp; interview</span></h1>
   <p>Ingestion, chunking, indexing and retrieval for the build.</p>
-  <div class="tags"><span class="tag">11 min read</span><span class="tag">1 diagram</span></div>
+  <div class="tags"><span class="tag">28 min read</span><span class="tag">1 diagram</span></div>
 </div>
 
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
 <div class="diagram"><img src="../img/build-knowledge.png" alt="Policy documents are parsed, chunked with their heading path, embedded and indexed in Postgres for hybrid search; queries are rewritten, fused and reranked."></div><p class="diagram-caption">Policy documents are parsed, chunked with their heading path, embedded and indexed in Postgres for hybrid search; queries are rewritten, fused and reranked.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Chunk</strong></td><td>A passage cut from a document, small enough to embed and to paste into a prompt. The unit retrieval returns.</td></tr><tr><td><strong>Heading trail</strong></td><td>The chain of headings above a chunk, such as "Billing › Invoices › Codes", stored with it and prepended when embedding.</td></tr><tr><td><strong>Content hash</strong></td><td>A fingerprint (SHA-256) of a chunk's text. Unchanged hash means unchanged chunk, so re-indexing can skip it.</td></tr><tr><td><strong>Dense retrieval</strong></td><td>Finding chunks whose embedding vectors point in a similar direction to the query's (cosine similarity). Good at meaning, weak at exact strings.</td></tr><tr><td><strong>Lexical retrieval (BM25, full-text)</strong></td><td>Finding chunks that contain the query's words, weighting rare words more. Good at codes and names, blind to paraphrase.</td></tr><tr><td><strong>IDF</strong></td><td>Inverse document frequency: a word's weight grows as fewer chunks contain it.</td></tr><tr><td><strong>HNSW</strong></td><td>The graph index most vector stores use for approximate nearest-neighbour search: fast, slightly lossy.</td></tr><tr><td><strong>Reciprocal rank fusion (RRF)</strong></td><td>Merging ranked lists by summing \(1/(c + \text{rank})\) for each item across lists. Uses ranks only, so incompatible scores do not matter.</td></tr><tr><td><strong>Cross-encoder reranker</strong></td><td>A model that reads the query and one chunk together and outputs a relevance score. Slower than vector search, much more precise.</td></tr><tr><td><strong>Recall@k</strong></td><td>The fraction of the chunks needed to answer that appear in the top \(k\) results.</td></tr><tr><td><strong>MRR</strong></td><td>Mean reciprocal rank: the average of \(1/\text{rank}\) of the first correct chunk. Rewards putting it near the top.</td></tr><tr><td><strong>ACL filter</strong></td><td>Restricting retrieval to chunks the requesting user is allowed to read, applied inside the search query.</td></tr></tbody></table>
+</section>
+<p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>03 &mdash; The question</h2>
+<p>The support assistant must answer policy questions from about 1,200 internal documents, cite where each fact came from, never show a tier-1 agent a tier-2 contract, and say "I don't know" rather than invent a policy. The language model can do none of that by itself. Everything it knows about this company arrives through the few thousand tokens of evidence the knowledge layer puts in its prompt. If the right passage is not in those tokens, no prompt and no model can produce a grounded answer. That is why this build measures retrieval before it writes a single generation prompt.</p>
+<p>The interview questions about this layer:</p>
+<ol>
+<li>How do you chunk the documents, and how would you know the chunking is good?</li>
+<li>Why hybrid search, and how exactly are two rankings combined?</li>
+<li>Where do permissions get enforced, and what goes wrong if you filter after searching?</li>
+<li>How do you measure retrieval separately from generation, and how much should you trust the numbers?</li>
+</ol>
+<p>The running example is one real-shaped question from the build's evaluation set: <em>"What does invoice code INV-ADJ-CR mean?"</em> The answer lives in one chunk, <code>billing-invoices#codes~2</code>. We follow it from the document to the prompt, with the build's spec numbers (3,500-token answer prompt, p95 6 s, about $0.015 per answer) as constraints. The code and tables on this page (below this lesson) show the full ingestion module and the measured ablation; this lesson explains why each piece is shaped the way it is.</p>
+</section>
+<section id="step-1-the-prompt-budget-decides-the-chunk-size">
+  <h2>04 &mdash; Step 1: the prompt budget decides the chunk size</h2>
+<p>Chunk size is usually presented as folklore ("use 512 tokens"). In a real system it falls out of the budget. The answer prompt in <a href="build-spec.html">the spec</a> is about 3,500 tokens: roughly 1,200 for the fixed instructions and output format, 300 for the question and conversation, leaving about <strong>2,000 tokens of evidence</strong>. The build passes the top 5 chunks, so each chunk can average about 400 tokens including its heading trail.</p>
+<p>Why five and not twenty smaller ones? Two forces pull against each other:</p>
+<ul>
+<li><strong>Smaller chunks</strong> embed more precisely (one topic per vector) but lose context: a 100-token fragment saying "this does not apply to annual plans" without the heading that says which policy "this" is will be retrieved and then misread.</li>
+<li><strong>Larger chunks</strong> carry context but blur the embedding (one vector averaging three topics sits near none of them) and spend the evidence budget on irrelevant sentences.</li>
+</ul>
+<p>The corpus is about 12 million tokens (1,200 documents averaging 10,000 tokens). The chunker on this page keeps a section whole when it is under 700 tokens and splits longer ones at paragraph boundaries with an 80-token overlap; because most sections are short, chunks average about 300 tokens of new text, or about 350 tokens once the overlap and heading trail are counted. \(12{,}000{,}000 / 300\) gives about <strong>40,000 chunks</strong>, the number the spec sized storage on, and five average chunks use about 1,750 of the 2,000 evidence tokens. The occasional 700-token chunk is why the prompt assembler trims to the budget instead of trusting the average. The right size for your corpus is not argued; it is the row in the ablation table with the best Recall@5 that still fits the budget. The general trade-offs are in <a href="../rag/chunking.html">chunking</a>.</p>
+</section>
+<section id="step-2-cut-along-the-document-s-structure">
+  <h2>05 &mdash; Step 2: cut along the document&#x27;s structure</h2>
+<p>Fixed-size windows cut wherever the token count says, often mid-table or mid-list. The build instead walks the Markdown structure: a new section starts at every heading, long sections split at paragraph boundaries, and every chunk carries its <strong>heading trail</strong>. The chunk for our example is embedded as:</p>
+<pre class="ascii-diagram">Billing › Invoices › Codes
+INV-ADJ-CR: credit adjustment raised when a refund is issued against a
+paid invoice. Appears as a negative line on the next statement. ...</pre>
+<p>The trail costs about 6 tokens and does two jobs. It gives the embedding the topic the paragraph never states ("Codes" under "Invoices"), and it tells the answer model where the passage sits when it is pasted into the prompt. In the page's ablation, moving from fixed 300-token windows to structure-aware chunks with trails raised Recall@5 from 0.64 to 0.74, more than any later change. Cheap changes to the data usually beat expensive changes to the model.</p>
+<p>Each chunk also carries what the rest of the system needs: a stable anchor for citations, the document's access-control groups, a SHA-256 content hash, and the name of the embedding model that produced its vector. Document parsing for PDFs and HTML is covered in <a href="../rag/document-ingestion.html">document ingestion</a>.</p>
+</section>
+<section id="step-3-indexing-is-a-cheap-idempotent-batch-job">
+  <h2>06 &mdash; Step 3: indexing is a cheap, idempotent batch job</h2>
+<p>Embedding the whole corpus is about 40,000 chunks × 350 tokens = 14 million tokens. At an illustrative $0.02 to $0.13 per million tokens for hosted embedding models, a full re-index costs between about $0.28 and $1.82. Money is not the constraint; correctness is. Two rules make re-indexing safe to run every night:</p>
+<ol>
+<li><strong>Upsert by content hash.</strong> A chunk whose hash already exists is skipped. If about 2% of documents change a day, about 800 chunks are re-embedded, a minute of work. Running the job twice changes nothing, which is what "idempotent" means and why a crashed run can simply be restarted.</li>
+<li><strong>Pin the embedding model on every row.</strong> Vectors from two different embedding models live in unrelated spaces; a cosine similarity between them is a meaningless number that still looks like a similarity. If a model upgrade re-embeds only part of the index, recall drops silently. Storing <code>embed_model</code> and filtering on it turns that silent failure into a visible re-index task.</li>
+</ol>
+<p>Deletions are the third rule people forget: a policy document that was withdrawn but whose chunks remain will be cited confidently. Ingestion must delete chunks for documents that no longer exist.</p>
+</section>
+<section id="step-4-why-dense-search-misses-the-invoice-code">
+  <h2>07 &mdash; Step 4: why dense search misses the invoice code</h2>
+<p>Dense retrieval embeds the query and returns the chunks whose vectors have the highest cosine similarity. It is excellent for paraphrase: "the customer wants their money back because it never arrived" finds the refund policy for lost shipments without sharing its words. (How embedding models produce these vectors is in <a href="../rag/embeddings.html">embeddings</a>; how HNSW finds neighbours quickly is in <a href="../rag/vector-search.html">vector search</a>.)</p>
+<p>Now look at our query through the tokenizer. "INV-ADJ-CR" becomes six fragments: <code>INV</code>, <code>-</code>, <code>AD</code>, <code>J</code>, <code>-C</code>, <code>R</code>. The embedding model sees a vague invoice-related question with some letter noise. Its vector lands near every chunk about invoices and adjustments. In the build's run (illustrative, like all ranks on this page), the gold chunk comes back at <strong>rank 14</strong> in the dense list: outside the top 5 the prompt receives, so Recall@5 for this query is 0.</p>
+<p>The model did nothing wrong. An embedding represents meaning, and an invoice code's meaning is its identity: a string that must match exactly. Product names, error codes, SKUs and clause numbers all behave this way, and support corpora are full of them.</p>
+</section>
+<section id="step-5-lexical-search-weights-the-rare-token">
+  <h2>08 &mdash; Step 5: lexical search weights the rare token</h2>
+<p>Lexical search (BM25, or Postgres full-text ranking, which follows the same idea) scores chunks by the query words they contain, weighting each word by how rare it is. The BM25 inverse document frequency for a word that appears in \(n\) of \(N\) chunks is</p>
+\[ \text{idf} = \ln\!\left(\frac{N - n + 0.5}{n + 0.5} + 1\right) \]
+<p>With \(N = 40{,}000\): "refund" appears in perhaps 4,000 chunks, idf ≈ 2.3; "INV-ADJ-CR" appears in 3, idf ≈ 9.3. One occurrence of the code outweighs four occurrences of "refund". The gold chunk comes back at <strong>rank 1</strong>.</p>
+<p>Lexical search has the mirror-image weakness: the lost-shipment paraphrase shares almost no words with the policy it needs. Neither method dominates, which is the whole argument for running both. The page's ablation shows the effect by slice: hybrid search lifted the exact-term slice from 0.4 to 0.9 while leaving the paraphrase slice where dense search had it. More on combining them in <a href="../rag/hybrid-search.html">hybrid search</a>.</p>
+</section>
+<section id="step-6-fusing-two-rankings-with-rrf">
+  <h2>09 &mdash; Step 6: fusing two rankings with RRF</h2>
+<p>The two searches return scores on incompatible scales: cosine similarity between −1 and 1, and a full-text rank with no fixed range. Adding or averaging them needs normalisation that drifts as the corpus changes. Reciprocal rank fusion sidesteps the problem by using only ranks:</p>
+\[ \text{RRF}(d) = \sum_{\text{lists}} \frac{1}{c + \text{rank}(d)} \]
+<p>where \(c\) is a damping constant, conventionally 60. A large \(c\) flattens the difference between rank 1 and rank 10, so one list cannot dominate on the strength of a single top hit. For our query, retrieving 30 from each list:</p>
+<table>
+<thead><tr><th>Chunk</th><th>Dense rank</th><th>Lexical rank</th><th>RRF score</th></tr></thead>
+<tbody>
+<tr><td>invoices overview</td><td>1</td><td>9</td><td>\(1/61 + 1/69 = 0.03089\)</td></tr>
+<tr><td><strong>codes~2 (gold)</strong></td><td>14</td><td>1</td><td>\(1/74 + 1/61 = 0.02991\)</td></tr>
+<tr><td>credit notes</td><td>2</td><td>20</td><td>\(1/62 + 1/80 = 0.02863\)</td></tr>
+<tr><td>changelog</td><td>absent</td><td>2</td><td>\(1/62 = 0.01613\)</td></tr>
+</tbody>
+</table>
+<p>The gold chunk moves from rank 14 (dense) to rank 2 (fused): Recall@5 goes from 0 to 1 for this query. It is not first; the overview chunk, decent in both lists, edges it out. That is RRF's character: it rewards agreement between retrievers. Putting the single best chunk first is the next stage's job.</p>
+</section>
+<section id="step-7-reranking-the-pool-and-its-hard-ceiling">
+  <h2>10 &mdash; Step 7: reranking the pool, and its hard ceiling</h2>
+<p>Vector and lexical search score the query and each chunk independently: the chunk's vector was computed months ago without knowing the question. A <strong>cross-encoder</strong> reads the query and a candidate chunk together in one forward pass, so it can notice that the overview chunk mentions invoice codes in general while codes~2 defines this exact one. It scores each of the 30 fused candidates and keeps the best 5. On our query, the gold chunk goes to rank 1.</p>
+<p>The cost is bounded and worth computing: 30 pairs of about 370 tokens (a 350-token chunk plus the question) is about 11,000 tokens through a small model per query, around 200 ms in the latency budget from the spec. Reranking 300 candidates instead would cost ten times as much for little gain, because of a ceiling worth saying out loud in interviews:</p>
+<div class="callout"><p><strong>A reranker can only reorder what it is given.</strong> Final Recall@5 can never exceed the recall of the candidate pool (Recall@30 of the fused list). If the gold chunk is not in the 30, no reranker recovers it. Measure pool recall separately; when it is low, fix retrieval (chunking, hybrid, query rewriting), not the reranker.</p></div>
+<p>This is exactly the diagnosis in the page's multi-hop walkthrough: the downgrade chunk never entered the pool, so the fix was splitting the query into two searches. Details of reranker models in <a href="../rag/reranking.html">reranking</a>.</p>
+</section>
+<section id="step-8-permissions-belong-inside-the-search">
+  <h2>11 &mdash; Step 8: permissions belong inside the search</h2>
+<p>Every chunk carries the access groups of its source document. The user's groups come from their login token, set by the gateway, never from anything the client or the model says. The question is where to apply the filter.</p>
+<p>The tempting way is to search the whole index for the top 30, then drop chunks the user may not read. Simulate it: 40,000 random unit vectors, a user who may read 10% of them, 200 random queries, exact search. Searching first and filtering afterwards leaves on average <strong>3.0 results instead of 5</strong>, and only <strong>60%</strong> of the user's true top 5 among them. The other 40% were ranked below position 30 in the global list because nine-tenths of the index belonged to other people. The same trap exists inside an approximate index even when you write the filter in SQL: an HNSW scan collects a fixed number of candidates (<code>hnsw.ef_search</code>, 40 by default in pgvector) and the filter is applied to those, so a selective filter can return fewer rows than the <code>LIMIT</code> asks for.</p>
+<p>The correct approaches, in order of preference for this build:</p>
+<ul>
+<li><strong>Filter inside the query</strong> (<code>WHERE acl_groups &amp;&amp; :user_groups</code>) and let the store keep searching until it has enough matching rows. Recent pgvector versions support iterative index scans for exactly this; check your version. See <a href="../tech/pgvector.html">pgvector</a>.</li>
+<li><strong>Partition by access group</strong> when groups are few and large (here: tier-1 and tier-2), so each search runs over an index containing only readable chunks.</li>
+</ul>
+<p>Never filter in the prompt ("only use sources the user may see"). A model cannot leak a chunk it never received, and it can leak anything it did. <a href="../production/security.html">Security</a> covers this boundary in general.</p>
+</section>
+<section id="step-9-measuring-retrieval-and-how-far-to-trust-it">
+  <h2>12 &mdash; Step 9: measuring retrieval, and how far to trust it</h2>
+<p>The eval set is 75 questions, each labelled with the anchor of the chunk (or chunks) that answers it, in five slices: common, exact-term, paraphrase, multi-hop, unanswerable. Two metrics per question:</p>
+<ul>
+<li><strong>Recall@5</strong>: fraction of gold chunks in the top 5. For our query: dense 0.0, lexical 1.0, fused 1.0.</li>
+<li><strong>MRR</strong>: \(1/\text{rank}\) of the first gold chunk. Dense \(1/14 = 0.071\), lexical 1.0, fused 0.5, reranked 1.0. MRR separates "found it at rank 5" from "found it at rank 1", which matters because models use evidence at the top of a long context more reliably than evidence buried in the middle.</li>
+</ul>
+<p>Report every metric per slice, not only in aggregate. An aggregate of 0.90 hid a multi-hop slice at 0.40 in this build. Then be honest about resolution: the multi-hop slice has 5 questions, so one question moves it by 20 points; the exact-term slice has 10, so one question is 10 points. Slice numbers tell you where to look; they are too coarse to prove a 3-point improvement. Grow the slices that matter from production failures (the weekly triage on <a href="build-ship.html">the ship page</a> feeds them).</p>
+<p>The unanswerable slice is graded differently: the correct outcome is that generation abstains. A retrieval layer always returns <em>something</em>, so abstention is decided downstream by the answer prompt ("INSUFFICIENT_EVIDENCE") and checked by the deterministic citation verifier. Track both failure directions: answering the unanswerable, and abstaining on answerable questions after a prompt is tightened.</p>
+</section>
+<section id="choosing-settings">
+  <h2>13 &mdash; Choosing settings</h2>
+<table>
+<thead><tr><th>Knob</th><th>Build's value</th><th>How it was chosen</th><th>Revisit when</th></tr></thead>
+<tbody>
+<tr><td>Chunk size</td><td>~300 tokens average (700 cap), structure-aware, plus trail</td><td>evidence budget ÷ 5, then ablation</td><td>prompt budget or document style changes</td></tr>
+<tr><td>Candidates per retriever</td><td>30</td><td>pool Recall@30 near its plateau</td><td>pool recall drops on a slice</td></tr>
+<tr><td>RRF constant \(c\)</td><td>60</td><td>convention; insensitive in practice</td><td>rarely</td></tr>
+<tr><td>Rerank to</td><td>top 5</td><td>evidence budget</td><td>prompt budget changes</td></tr>
+<tr><td>Query rewrite</td><td>only multi-part questions (heuristic gate)</td><td>fixed multi-hop slice without touching common slice</td><td>a new slice fails on pool recall</td></tr>
+<tr><td>ACL enforcement</td><td>in SQL, from the token</td><td>never negotiable</td><td>never</td></tr>
+</tbody>
+</table>
+</section>
+<section id="in-code-the-metrics-rrf-and-the-filter-trap">
+  <h2>14 &mdash; In code: the metrics, RRF and the filter trap</h2>
+<p>The first block runs as is (numpy only) and reproduces every number in this lesson. The second is the production query shape for Postgres with pgvector, written against its documented operators.</p>
+<pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="kw">def</span> <span class="fn">recall_at_k</span>(retrieved, gold, k):
+    <span class="kw">return</span> <span class="tp">len</span>(<span class="tp">set</span>(retrieved[:k]) &amp; <span class="tp">set</span>(gold)) / <span class="tp">len</span>(gold)
+
+<span class="kw">def</span> <span class="fn">mrr</span>(retrieved, gold):
+    <span class="kw">for</span> i, c in <span class="tp">enumerate</span>(retrieved, <span class="nr">1</span>):
+        <span class="kw">if</span> c in gold:
+            <span class="kw">return</span> <span class="nr">1</span> / i
+    <span class="kw">return</span> <span class="nr">0.0</span>
+<span class="kw">def</span> <span class="fn">rrf</span>(*rankings, c=<span class="nr">60</span>):
+    score = {}
+    <span class="kw">for</span> ranking in rankings:
+        <span class="kw">for</span> r, doc in <span class="tp">enumerate</span>(ranking, <span class="nr">1</span>):
+            score[doc] = score.get(doc, <span class="nr">0</span>) + <span class="nr">1</span> / (c + r)
+    <span class="kw">return</span> <span class="tp">sorted</span>(score, key=score.get, reverse=<span class="nr">True</span>), score
+
+<span class="cm"># the running query: "What does invoice code INV-ADJ-CR mean?"</span>
+dense = [<span class="st">"</span><span class="st">overview</span><span class="st">"</span>, <span class="st">"</span><span class="st">credit-notes</span><span class="st">"</span>, <span class="st">"</span><span class="st">refund-adjust</span><span class="st">"</span>, <span class="st">"</span><span class="st">tax-lines</span><span class="st">"</span>, <span class="st">"</span><span class="st">late-fees</span><span class="st">"</span>,
+         <span class="st">"</span><span class="st">dunning</span><span class="st">"</span>, <span class="st">"</span><span class="st">currency</span><span class="st">"</span>, <span class="st">"</span><span class="st">proration</span><span class="st">"</span>, <span class="st">"</span><span class="st">disputes</span><span class="st">"</span>, <span class="st">"</span><span class="st">receipts</span><span class="st">"</span>,
+         <span class="st">"</span><span class="st">po-numbers</span><span class="st">"</span>, <span class="st">"</span><span class="st">vat</span><span class="st">"</span>, <span class="st">"</span><span class="st">statements</span><span class="st">"</span>, <span class="st">"</span><span class="st">codes~2</span><span class="st">"</span>]          <span class="cm"># gold at 14</span>
+lexical = [<span class="st">"</span><span class="st">codes~2</span><span class="st">"</span>, <span class="st">"</span><span class="st">changelog</span><span class="st">"</span>, <span class="st">"</span><span class="st">codes~1</span><span class="st">"</span>, <span class="st">"</span><span class="st">exports</span><span class="st">"</span>, <span class="st">"</span><span class="st">api-errors</span><span class="st">"</span>,
+           <span class="st">"</span><span class="st">audit</span><span class="st">"</span>, <span class="st">"</span><span class="st">ledger</span><span class="st">"</span>, <span class="st">"</span><span class="st">reports</span><span class="st">"</span>, <span class="st">"</span><span class="st">overview</span><span class="st">"</span>]             <span class="cm"># gold at 1, overview at 9</span>
+lexical += [<span class="st">"</span><span class="st">lex</span><span class="st">%d</span><span class="st">"</span> % i <span class="kw">for</span> i in <span class="tp">range</span>(<span class="nr">10</span>, <span class="nr">20</span>)] + [<span class="st">"</span><span class="st">credit-notes</span><span class="st">"</span>]  <span class="cm"># credit-notes at 20</span>
+fused, s = rrf(dense, lexical)
+gold = [<span class="st">"</span><span class="st">codes~2</span><span class="st">"</span>]
+<span class="tp">print</span>(<span class="st">"</span><span class="st">dense   R@5 </span><span class="st">%.1f</span><span class="st">  MRR </span><span class="st">%.3f</span><span class="st">"</span> % (recall_at_k(dense, gold, <span class="nr">5</span>), mrr(dense, gold)))
+<span class="tp">print</span>(<span class="st">"</span><span class="st">lexical R@5 </span><span class="st">%.1f</span><span class="st">  MRR </span><span class="st">%.3f</span><span class="st">"</span> % (recall_at_k(lexical, gold, <span class="nr">5</span>), mrr(lexical, gold)))
+<span class="tp">print</span>(<span class="st">"</span><span class="st">fused   R@5 </span><span class="st">%.1f</span><span class="st">  MRR </span><span class="st">%.3f</span><span class="st">"</span> % (recall_at_k(fused, gold, <span class="nr">5</span>), mrr(fused, gold)))
+<span class="tp">print</span>(<span class="st">"</span><span class="st">fused top 4:</span><span class="st">"</span>, [(d, <span class="tp">round</span>(s[d], <span class="nr">5</span>)) <span class="kw">for</span> d in fused[:<span class="nr">4</span>]])
+
+<span class="cm"># ACL filtering: post-filter vs filter-aware search, exact search on random vectors</span>
+rng = np.random.default_rng(<span class="nr">0</span>)
+N, D = <span class="nr">40_000</span>, <span class="nr">64</span>
+X = rng.standard_normal((N, D)).astype(np.float32)
+X /= np.linalg.norm(X, axis=<span class="nr">1</span>, keepdims=<span class="nr">True</span>)
+visible = rng.random(N) &lt; <span class="nr">0.10</span> <span class="cm"># this user may read 10% of chunks</span>
+post, filled = [], []
+<span class="kw">for</span> _ in <span class="tp">range</span>(<span class="nr">200</span>):
+    q = rng.standard_normal(D).astype(np.float32); q /= np.linalg.norm(q)
+    sim = X @ q
+    true5 = <span class="tp">set</span>(np.argsort(-np.where(visible, sim, -<span class="nr">9</span>))[:<span class="nr">5</span>])   <span class="cm"># filter inside the search</span>
+    top30 = np.argsort(-sim)[:<span class="nr">30</span>]                                <span class="cm"># search, then filter</span>
+    kept = [i <span class="kw">for</span> i in top30 <span class="kw">if</span> visible[i]][:<span class="nr">5</span>]
+    post.append(<span class="tp">len</span>(true5 &amp; <span class="tp">set</span>(kept)) / <span class="nr">5</span>)
+    filled.append(<span class="tp">len</span>(kept))
+<span class="tp">print</span>(<span class="st">"</span><span class="st">post-filter: avg results </span><span class="st">%.1f</span><span class="st"> of 5, recall@5 vs filtered truth </span><span class="st">%.2f</span><span class="st">"</span>
+      % (np.mean(filled), np.mean(post)))
+</pre>
+<p>Output: dense R@5 0.0 and MRR 0.071; lexical 1.0 and 1.000; fused 1.0 and 0.500; fused top four overview 0.03089, codes~2 0.02991, credit-notes 0.02863, changelog 0.01613; post-filter 3.0 results and recall 0.60.</p>
+<pre>-- Hybrid retrieval with the ACL filter inside both searches (Postgres + pgvector).
+-- $1 = query embedding, $2 = query text, $3 = user's groups (from the auth token).
+WITH dense AS (
+  SELECT chunk_id, row_number() OVER (ORDER BY dist) AS r
+  FROM (SELECT chunk_id, embedding &lt;=&gt; $1 AS dist
+        FROM chunks
+        WHERE acl_groups &amp;&amp; $3 AND embed_model = 'embed-v3'
+        ORDER BY embedding &lt;=&gt; $1
+        LIMIT 30) d
+),
+lex AS (
+  SELECT chunk_id, row_number() OVER (ORDER BY rank DESC) AS r
+  FROM (SELECT chunk_id, ts_rank_cd(tsv, q) AS rank
+        FROM chunks, websearch_to_tsquery('english', $2) AS q
+        WHERE tsv @@ q AND acl_groups &amp;&amp; $3
+        ORDER BY rank DESC
+        LIMIT 30) l
+)
+SELECT chunk_id, sum(1.0 / (60 + r)) AS rrf
+FROM (SELECT * FROM dense UNION ALL SELECT * FROM lex) u
+GROUP BY chunk_id
+ORDER BY rrf DESC
+LIMIT 30;          -- these 30 go to the cross-encoder, which keeps 5
+</pre>
+<p>The ordering inside each subquery is what lets Postgres use the HNSW and GIN indexes; the window function numbers the rows only after the limit. With a selective <code>acl_groups</code> filter, confirm with <code>EXPLAIN</code> that the vector search still returns 30 rows, which is the trap from Step 8.</p>
+</section>
 <section id="the-complete-build-2-4-the-knowledge-layer">
-  <h2>02 &mdash; The Complete Build 2/4 — the knowledge layer</h2>
+  <h2>15 &mdash; The Complete Build 2/4 — the knowledge layer</h2>
 <p>Rule from <a href="../rag/index.html">Knowledge &amp; RAG</a>: most RAG failures are retrieval failures, so we build and <b>measure retrieval before generation exists</b>. No prompt is written until Recall@5 is known.</p>
 </section>
 <section id="step-1-ingestion-with-provenance-the-unglamorous-60">
-  <h2>03 &mdash; Step 1 — ingestion with provenance (the unglamorous 60%)</h2>
+  <h2>16 &mdash; Step 1 — ingestion with provenance (the unglamorous 60%)</h2>
 <p>The corpus: ~1,200 internal docs (Markdown in a wiki export, some HTML), covering billing policy, product FAQs, plan matrices, troubleshooting runbooks. Ingestion is where most of the engineering time actually goes, so here it is as a real module rather than a sketch. The design decisions, in order of impact: <b>preserve heading structure</b> (it's the context embeddings need), <b>content-hash everything</b> (dedupe + cheap incremental re-index), <b>carry ACLs on every chunk</b> (security lives here, not in prompts), and <b>batch the embedding calls with retry</b> (the embedding API will flake at least once per full index).</p>
 <div class="code-block"><div class="code-file"><span>ingest.py — parse, chunk by structure, hash, embed, upsert (complete module)</span><span class="code-lang">python</span></div><pre><span class="cm"># ingest.py — run nightly + on doc-save webhook. Idempotent by content hash.</span>
 import hashlib, time, itertools, logging
@@ -167,7 +378,7 @@ class Section:
 <div class="callout warn"><p><strong>The ACL rule that prevents an incident</strong></p>Every chunk carries its source document's access-control list, and retrieval filters by the <b>requesting user's</b> permissions <i>in the SQL query itself</i> — not in the prompt, not after generation. An LLM cannot leak a chunk it never received. (<a href="../production/index.html">Production &amp; evals</a> security: enforce authorization at the data boundary.) Two sibling gotchas from real ingestions: <b>embedding-version skew</b> — a partial re-embed leaves v2 and v3 vectors in one index and cosine distances between them are meaningless; the <code>embed_model</code> column plus a <code>WHERE embed_model = current</code> filter turns silent recall loss into an explicit re-index task. And <b>tombstoning</b> — a deleted policy doc that stays in the index is a compliance answer from the grave; the final <code>DELETE</code> above is not optional.</div>
 </section>
 <section id="step-2-build-the-eval-set-before-tuning-anything">
-  <h2>04 &mdash; Step 2 — build the eval set BEFORE tuning anything</h2>
+  <h2>17 &mdash; Step 2 — build the eval set BEFORE tuning anything</h2>
 <p>75 questions, hand-labeled with the chunk(s) that answer them: 40 common, 10 exact-term (invoice codes, plan names — lexical territory), 10 paraphrase (semantic territory), 5 multi-hop, 10 <b>unanswerable</b> (the system must abstain). One afternoon of work; it converts every future argument into a measurement. The format is deliberately boring — one JSON object per line, checked into the repo next to the code it judges:</p>
 <div class="code-block"><div class="code-file"><span>evalset/retrieval.jsonl — 5 of the 75 (one per slice)</span><span class="code-lang">json</span></div><pre>{<span class="tp">"qid"</span>:<span class="st">"q007"</span>,<span class="tp">"slice"</span>:<span class="st">"common"</span>,<span class="tp">"question"</span>:<span class="st">"How long does a customer have to request a refund on a monthly plan?"</span>,<span class="tp">"gold_chunks"</span>:[<span class="st">"billing-refunds#standard~0"</span>],<span class="tp">"answerable"</span>:<span class="nr">true</span>}
 {<span class="tp">"qid"</span>:<span class="st">"q041"</span>,<span class="tp">"slice"</span>:<span class="st">"exact_term"</span>,<span class="tp">"question"</span>:<span class="st">"What does invoice code INV-ADJ-CR mean?"</span>,<span class="tp">"gold_chunks"</span>:[<span class="st">"billing-invoices#codes~2"</span>],<span class="tp">"answerable"</span>:<span class="nr">true</span>}
@@ -177,7 +388,7 @@ class Section:
 <p>Three details that make this set earn its keep: <b>gold chunks are anchors, not text</b> — they survive re-chunking as long as anchors are stable; the <b>slice label</b> is what turns an aggregate score into a diagnosis (see the walkthrough below); and the <b>unanswerable ten</b> are graded on abstention — a retrieval system that always returns <i>something</i> plausible for them is manufacturing hallucination fuel for Step 4.</p>
 </section>
 <section id="step-3-retrieve-wide-fuse-rerank-and-measure-each-stage">
-  <h2>05 &mdash; Step 3 — retrieve wide, fuse, rerank — and measure each stage</h2>
+  <h2>18 &mdash; Step 3 — retrieve wide, fuse, rerank — and measure each stage</h2>
 <div class="code-block"><div class="code-file"><span>retrieve.py — hybrid + RRF + cross-encoder</span><span class="code-lang">python</span></div><pre><span class="kw">def</span> <span class="fn">retrieve</span>(query, user, k=<span class="nr">5</span>):
     dense = pg.vector_search(embed([query])[<span class="nr">0</span>], limit=<span class="nr">30</span>, acl=user.acl)   <span class="cm"># semantic</span>
     lex   = pg.fts_search(query, limit=<span class="nr">30</span>, acl=user.acl)                  <span class="cm"># BM25-ish: exact terms</span>
@@ -227,7 +438,7 @@ If the question needs only one fact, return exactly one query."""</span>
 <div class="callout"><p><strong>Why not parent-chunk expansion instead?</strong></p>The other standard multi-hop fix — retrieve small chunks, hand the generator their parent sections — was tried and helped less here (0.40 → 0.60, illustrative) because the two gold facts lived in <i>different documents</i>, not different parts of one document. Expansion fixes "the answer was split across neighboring chunks"; decomposition fixes "the question needs two searches." Match the fix to the failing traces, not to the blog post you read last week. Both can coexist; each must earn its row in the table.</div>
 </section>
 <section id="step-4-grounded-generation-with-mandatory-abstention">
-  <h2>06 &mdash; Step 4 — grounded generation with mandatory abstention</h2>
+  <h2>19 &mdash; Step 4 — grounded generation with mandatory abstention</h2>
 <div class="code-block"><div class="code-file"><span>answer.py</span><span class="code-lang">python</span></div><pre>SYSTEM = <span class="st">"""Answer ONLY from the numbered sources. Cite every claim like [2].
 If the sources don't contain the answer, say exactly: INSUFFICIENT_EVIDENCE.
 Never use knowledge outside the sources for policy/billing facts."""</span>
@@ -263,6 +474,34 @@ Never use knowledge outside the sources for policy/billing facts."""</span>
 <li>Take three multi-hop questions from your set and trace them: log the top-30 candidate pool before reranking. Determine for each whether the failure is candidate-pool (needs decomposition) or ordering (needs reranker) — and check the fix you'd pick against what the trace says.</li>
 <li>Write five adversarial citations tests for <code>verify_citations</code>: cites [7] with 5 sources, policy number with no citation, valid citation next to an unsupported claim, empty answer, answer that is one giant citation. All five must fail closed (reject or escalate).</li>
 </ol></div>
+</section>
+<p class="part-divider">In production</p>
+<section id="where-people-get-lost">
+  <h2>20 &mdash; Where people get lost</h2>
+<ul>
+<li><strong>"Pick the chunk size from a blog post."</strong> It follows from the evidence budget and is confirmed by the ablation table; the right number is corpus-specific.</li>
+<li><strong>"Dense embeddings understand everything, so hybrid is legacy."</strong> Exact identifiers fragment into meaningless tokens; lexical search is how codes, SKUs and names get found.</li>
+<li><strong>"Average the two scores."</strong> Cosine similarity and full-text rank live on different, shifting scales. Fuse ranks (RRF) unless you have calibrated scores.</li>
+<li><strong>"The reranker will fix bad retrieval."</strong> It cannot surface a chunk that is not in the candidate pool. Measure pool recall separately.</li>
+<li><strong>"Filter the results by permission afterwards."</strong> It returns too few results and drops chunks the user is entitled to (60% recall in the simulation). Filter inside the search.</li>
+<li><strong>"One aggregate Recall@5 tells you how retrieval is doing."</strong> It hides failing slices, and small slices move in big jumps. Report per slice with the slice size.</li>
+<li><strong>"Re-embedding part of the index after a model upgrade is fine."</strong> Vectors from two models are not comparable. Pin the model per row and re-embed everything.</li>
+<li><strong>"Retrieval decides when to abstain."</strong> Retrieval always returns something; abstention is a generation behaviour that you measure on the unanswerable slice.</li>
+</ul>
+</section>
+<section id="how-this-connects">
+  <h2>21 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../rag/embeddings.html">Embeddings</a> &mdash; Turning meaning into numbers: dense vectors, cosine similarity, sentence embeddings and contrastive training.</li><li><a href="../rag/vector-search.html">Vector search &amp; databases</a> &mdash; Exact and approximate nearest neighbours, HNSW and IVF, and choosing a vector database.</li><li><a href="../rag/document-ingestion.html">Document ingestion</a> &mdash; Parsing PDFs and HTML, OCR, deduplication and keeping the index fresh.</li><li><a href="../rag/chunking.html">Chunking</a> &mdash; Fixed, recursive, semantic, document-aware and parent-child chunking, and how to tune it.</li><li><a href="../rag/hybrid-search.html">Hybrid search &amp; query understanding</a> &mdash; BM25 plus vectors fused with RRF, query rewriting, decomposition and HyDE.</li><li><a href="../rag/reranking.html">Reranking</a> &mdash; Cross-encoder rerankers: retrieve wide, rescore, keep the best few.</li></ul><h3>Where this shows up later</h3><ul><li><a href="portfolio-projects.html">Portfolio projects</a> &mdash; Five projects from micrograd to a shipped service, and a weekend build that makes interview answers real.</li><li><a href="answer-kit.html">Interview answer kit</a> &mdash; Model answers for the eval and RAG/agent questions, and the follow-ups to prepare.</li></ul>
+</section>
+<section id="check-yourself">
+  <h2>22 &mdash; Check yourself</h2>
+<details><summary>The answer prompt grows to 5,000 tokens, of which 1,200 are fixed instructions and 300 conversation. You keep top-5. What average chunk size can you afford?</summary><div class="answer">Evidence budget is \(5{,}000 - 1{,}200 - 300 = 3{,}500\) tokens, so about 700 tokens per chunk including its trail. Whether to use larger chunks or pass more of them is then an ablation question.</div></details>
+<details><summary>A chunk is rank 3 in dense and rank 40 in lexical (each list holds 50). Another is rank 25 in dense and rank 2 in lexical. Which wins under RRF with \(c = 60\)?</summary><div class="answer">First: \(1/63 + 1/100 = 0.02587\). Second: \(1/85 + 1/62 = 0.02789\). The second wins: strong in one list and present in the other beats strong in one and weak in the other.</div></details>
+<details><summary>Final Recall@5 is 0.70 and Recall@30 of the fused pool is 0.72. Should you upgrade the reranker?</summary><div class="answer">No. The reranker is already recovering nearly everything the pool contains; the ceiling is the pool. Work on retrieval: chunking, query rewriting, or more candidates if Recall@50 is much higher than Recall@30.</div></details>
+<details><summary>Why does a rare code get a high BM25 weight, and what does that mean for invoice-code questions?</summary><div class="answer">IDF grows as fewer chunks contain the term: with 40,000 chunks a term in 3 chunks has idf ≈ 9.3 versus ≈ 2.3 for a term in 4,000. One exact match on the code dominates the score, so lexical search ranks the defining chunk first even when dense search does not.</div></details>
+<details><summary>Users in a small team can read 2% of the corpus. What happens to "top-30 then filter", and what do you do?</summary><div class="answer">On average about 0.6 of the 30 global results are readable, so most queries return zero or one chunk. Put the ACL filter inside the vector query with an index scan that continues until enough matching rows are found, or give small groups their own partition or index.</div></details>
+<details><summary>The multi-hop slice went from 2/5 to 4/5 after a change. How much do you trust that?</summary><div class="answer">Little on its own: each question is 20 points, and two questions flipping can be noise. Read the traces to confirm the change fixed the cause (both facts now in the pool), check the other slices did not regress, and add more multi-hop questions from production.</div></details>
+<details><summary>An embedding-model upgrade finished on 70% of chunks before a deploy froze. What breaks, and what prevents it?</summary><div class="answer">Queries embedded with the new model are compared against 30% of vectors from the old model, whose similarities are meaningless, so those chunks effectively vanish or appear at random. Storing <code>embed_model</code> per row and filtering on the current model makes the gap visible; finish the re-embed before switching query embedding.</div></details>
 </section>
 
 <div class="sheet-pager"><a class="prev" href="build-spec.html"><span>Previous</span>Complete build: spec &amp; architecture</a><a class="next" href="build-agent.html"><span>Next</span>Complete build: the agent</a></div>

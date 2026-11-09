@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
@@ -19,33 +23,357 @@
   <h2>Structured output</h2>
   <a href="index.html">&larr; Prompting</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
-  <a href="#getting-machine-readable-output"><span class="num">02</span> Getting machine-readable output</a>
-  <a href="#the-scenario"><span class="num">03</span> The scenario</a>
-  <a href="#three-levels-of-reliability"><span class="num">04</span> Three levels of reliability</a>
-  <a href="#validate-anyway-pydantic-retry"><span class="num">05</span> Validate anyway: pydantic + retry</a>
-  <a href="#streaming-structured-output"><span class="num">06</span> Streaming structured output</a>
+  <a href="#new-words"><span class="num">02</span> New words</a>
+  <a href="#the-question"><span class="num">03</span> The question</a>
+  <a href="#step-1-how-free-text-breaks-a-parser"><span class="num">04</span> Step 1: how free text breaks a parser</a>
+  <a href="#step-2-instructions-parse-retry-and-the-arithmetic-of-retrie"><span class="num">05</span> Step 2: instructions, parse, retry, and the arithmetic of retries</a>
+  <a href="#step-3-json-mode-guarantees-syntax-not-shape"><span class="num">06</span> Step 3: JSON mode guarantees syntax, not shape</a>
+  <a href="#step-4-constrained-decoding-one-mask-at-a-time"><span class="num">07</span> Step 4: constrained decoding, one mask at a time</a>
+  <a href="#step-5-from-a-schema-to-a-mask-fast"><span class="num">08</span> Step 5: from a schema to a mask, fast</a>
+  <a href="#step-6-what-constraints-do-to-answer-quality"><span class="num">09</span> Step 6: what constraints do to answer quality</a>
+  <a href="#step-7-tool-calling-and-strict-modes"><span class="num">10</span> Step 7: tool calling and strict modes</a>
+  <a href="#step-8-designing-the-schema"><span class="num">11</span> Step 8: designing the schema</a>
+  <a href="#step-9-validate-meaning-repair-and-give-up-gracefully"><span class="num">12</span> Step 9: validate meaning, repair, and give up gracefully</a>
+  <a href="#step-10-streaming-structured-output"><span class="num">13</span> Step 10: streaming structured output</a>
+  <a href="#choosing-a-level"><span class="num">14</span> Choosing a level</a>
+  <a href="#in-code-a-constrained-decoder-then-validation-and-repair"><span class="num">15</span> In code: a constrained decoder, then validation and repair</a>
+  <a href="#getting-machine-readable-output"><span class="num">16</span> Getting machine-readable output</a>
+  <a href="#the-scenario"><span class="num">17</span> The scenario</a>
+  <a href="#three-levels-of-reliability"><span class="num">18</span> Three levels of reliability</a>
+  <a href="#validate-anyway-pydantic-retry"><span class="num">19</span> Validate anyway: pydantic + retry</a>
+  <a href="#streaming-structured-output"><span class="num">20</span> Streaming structured output</a>
+  <a href="#where-people-get-lost"><span class="num">21</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">22</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">23</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>Structured output <span>// Prompting</span></h1>
   <p>JSON mode, schemas, constrained decoding, validation and repair.</p>
-  <div class="tags"><span class="tag">8 min read</span><span class="tag">1 diagram</span></div>
+  <div class="tags"><span class="tag">29 min read</span><span class="tag">1 diagram</span></div>
 </div>
 
 <section id="at-a-glance">
   <h2>01 &mdash; At a glance</h2>
 <div class="diagram"><img src="../img/structured-output.png" alt="Constrain generation with a schema, validate everything, repair or retry on failure, and escalate when repairs run out."></div><p class="diagram-caption">Constrain generation with a schema, validate everything, repair or retry on failure, and escalate when repairs run out.</p>
 </section>
+<section id="new-words">
+  <h2>02 &mdash; New words</h2>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Structured output</strong></td><td>Model output in a machine-readable shape (usually JSON matching a schema) that a program consumes directly.</td></tr><tr><td><strong>JSON Schema</strong></td><td>A standard JSON vocabulary for describing a JSON document's shape: types, required keys, enums, nesting.</td></tr><tr><td><strong>JSON mode</strong></td><td>A provider setting that guarantees syntactically valid JSON, but not any particular keys or types.</td></tr><tr><td><strong>Constrained decoding</strong></td><td>At each generation step, allowing only the tokens that keep the output valid under a grammar or schema, by masking all others.</td></tr><tr><td><strong>Logit mask</strong></td><td>Setting disallowed tokens' scores to \(-\infty\) before softmax, so their probability becomes exactly zero.</td></tr><tr><td><strong>Finite-state machine (FSM)</strong></td><td>A set of states and transitions that recognises a pattern one character at a time. A regular expression compiles to one.</td></tr><tr><td><strong>Context-free grammar (CFG)</strong></td><td>A grammar that can describe nesting (objects inside arrays inside objects); recognised with a stack, not just a finite set of states.</td></tr><tr><td><strong>Strict mode</strong></td><td>A provider option that enforces a supplied schema with constrained decoding, usually for a supported subset of JSON Schema.</td></tr><tr><td><strong>Semantic validation</strong></td><td>Checks on meaning that a schema cannot express: line items sum to the total, the date is not in the future.</td></tr><tr><td><strong>Repair loop</strong></td><td>Sending a validation error back to the model and asking for a corrected output, a bounded number of times.</td></tr><tr><td><strong>Escape value</strong></td><td>An allowed value for "unknown" or "none of these" (<code>null</code>, <code>"other"</code>), so the model is never forced to invent.</td></tr><tr><td><strong>Partial JSON parsing</strong></td><td>Parsing an incomplete JSON stream as it arrives, to show or use fields before the object is finished.</td></tr></tbody></table>
+</section>
+<p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>03 &mdash; The question</h2>
+<p>Most LLM features inside real systems are not chat. They are functions: text in, data out. A program then routes on the data, stores it, or calls another service with it. For that, "usually returns JSON" is not good enough: at a million calls a day, a 1% failure rate is ten thousand broken records. Structured output is the set of techniques that turn "the model usually gets the format right" into "the format is guaranteed, and the content is checked".</p>
+<p>The interview questions:</p>
+<ol>
+<li>What is the difference between asking for JSON, JSON mode, and schema-constrained output?</li>
+<li>How does constrained decoding work? What does it guarantee, and what does it not?</li>
+<li>How do you design a schema the model fills in well?</li>
+<li>The JSON is valid but the values are wrong. Now what?</li>
+</ol>
+<p><strong>The running example.</strong> Ledgerly lets customers forward supplier invoices by email; an extraction service turns each one into a record for the accounts-payable ledger. One invoice from a design studio reads, in part:</p>
+<pre class="ascii-diagram">Brightline Studio                        Invoice BL-0417
+                                          Date: 30 May 2025
+Design work      12 h  x  $85.00        $1,020.00
+Hosting           1    x $220.00          $220.00
+                                  TOTAL   $1,240.00</pre>
+<p>The target record has a vendor, invoice number, ISO date, currency, line items and total. We will follow this invoice through every level of reliability.</p>
+</section>
+<section id="step-1-how-free-text-breaks-a-parser">
+  <h2>04 &mdash; Step 1: how free text breaks a parser</h2>
+<p>Ask a model, in plain instructions, to "return the invoice as JSON" and most replies will parse. The ones that do not fail in a small number of recurring ways:</p>
+<table>
+<thead><tr><th>Failure</th><th>Example</th><th>Caught by</th></tr></thead>
+<tbody>
+<tr><td>Wrapper text</td><td>"Here is the extracted invoice:" before the JSON, or a Markdown code fence around it</td><td>Parser</td></tr>
+<tr><td>Invalid syntax</td><td>Trailing comma, single quotes, an unescaped quote inside a description</td><td>Parser</td></tr>
+<tr><td>Truncation</td><td>Output hit <code>max_tokens</code> mid-object</td><td>Parser, and the finish reason</td></tr>
+<tr><td>Wrong shape</td><td><code>"date"</code> instead of <code>"issue_date"</code>; total as <code>"$1,240.00"</code> instead of a number</td><td>Schema validation</td></tr>
+<tr><td>Missing or extra fields</td><td>No <code>currency</code> key; an invented <code>"tax"</code> key</td><td>Schema validation</td></tr>
+<tr><td>Wrong values</td><td>Total 1,204.00 (digits transposed); currency USD for a Canadian-dollar invoice</td><td>Only semantic checks</td></tr>
+</tbody>
+</table>
+<p>The table is ordered by how hard each failure is to catch. The rest of the lesson pushes failures down it: syntax and shape become impossible by construction, leaving only wrong values, which need checks of meaning.</p>
+</section>
+<section id="step-2-instructions-parse-retry-and-the-arithmetic-of-retrie">
+  <h2>05 &mdash; Step 2: instructions, parse, retry, and the arithmetic of retries</h2>
+<p>The baseline is: describe the JSON in the prompt, parse the reply, validate it against a schema in code, and retry on failure. It works with any model and any API.</p>
+<p>Retries look cheap. If 3% of replies fail and each retry is an <em>independent</em> draw, two attempts fail together with probability \(0.03^2 = 0.0009\): at a million invoices a day, failures fall from 30,000 to 900. But independence is the key assumption, and it is often false. If the failures come from the input (a scanned invoice the model cannot read, a 40-page statement that pushes the output past <code>max_tokens</code>), the retry fails the same way, and you have paid twice for nothing. Two habits follow: log <em>why</em> each attempt failed, and include the error in the retry prompt so the second attempt is not a blind re-roll (Step 9).</p>
+</section>
+<section id="step-3-json-mode-guarantees-syntax-not-shape">
+  <h2>06 &mdash; Step 3: JSON mode guarantees syntax, not shape</h2>
+<p>JSON mode, offered by most providers, guarantees that the reply parses as JSON. That removes the first two rows of the table: no wrapper text, no trailing commas. Truncation can still happen, because the cap on output tokens is outside the grammar, but a check on the finish reason catches it. It does not know your schema. <code>{"invoice": "Brightline, $1,240"}</code> is valid JSON. So is <code>{}</code>.</p>
+<p>JSON mode is the right tool when the shape is loose or varies by request, and you validate in code anyway. For a fixed record like Ledgerly's, it is a stepping stone: you still need shape guarantees, which means constraining the generation to the schema itself.</p>
+</section>
+<section id="step-4-constrained-decoding-one-mask-at-a-time">
+  <h2>07 &mdash; Step 4: constrained decoding, one mask at a time</h2>
+<p>Recall from <a href="../fundamentals/decoding.html">Decoding &amp; sampling</a> that each generation step produces a score (logit) for every token in the vocabulary, softmax turns scores into probabilities, and one token is chosen. Constrained decoding inserts one operation before softmax: compute which tokens could continue the output without breaking the schema, and set every other token's logit to \(-\infty\). Their probability becomes exactly zero, and the remaining probabilities are renormalised.</p>
+<p>Watch it at the currency field. The output so far is <code>{"currency": "</code> and the schema allows only <code>"USD"</code>, <code>"EUR"</code> or <code>"INR"</code> here. The invoice shows dollar signs, so the raw model's favourite next token is <code>$</code>. In the toy decoder from the code section, with a 25-token vocabulary:</p>
+<table>
+<thead><tr><th></th><th><code>$</code></th><th><code>US</code></th><th><code>currency</code></th><th><code>EUR</code></th><th><code>USD</code></th><th><code>INR</code></th></tr></thead>
+<tbody>
+<tr><td>Raw probability</td><td>0.206</td><td>0.104</td><td>0.079</td><td>0.061</td><td>0.041</td><td>0.028</td></tr>
+<tr><td>Allowed?</td><td>no</td><td>yes (prefix of USD)</td><td>no</td><td>yes</td><td>yes</td><td>yes</td></tr>
+<tr><td>After mask and renormalising</td><td>0</td><td>0.447</td><td>0</td><td>0.259</td><td>0.176</td><td>0.118</td></tr>
+</tbody>
+</table>
+<p>Three things to see. First, validity is now guaranteed: whatever is sampled, the output stays inside the schema, all the way to the closing brace. Second, <code>US</code> is allowed even though it is not a valid value, because it is a <em>prefix</em> of one; the next step will then allow only <code>D</code>. Tokens and schema values do not line up, so the mask works on "can this still become valid", not "is this valid". Third, the 0.206 the model put on <code>$</code> did not disappear into a sensible place by design; it was spread over the allowed tokens in proportion to their scores. Here that happens to favour USD. Step 6 shows when that redistribution produces a confidently wrong value.</p>
+</section>
+<section id="step-5-from-a-schema-to-a-mask-fast">
+  <h2>08 &mdash; Step 5: from a schema to a mask, fast</h2>
+<p>The decoder must answer "which of 100,000 tokens keep the output valid?" at every step, without adding noticeable latency. The standard approach, described for regular expressions and JSON Schema by <a href="https://arxiv.org/abs/2307.09702">Willard &amp; Louf (2023)</a> and used in open-source libraries such as Outlines, XGrammar and llama.cpp grammars:</p>
+<ol>
+<li><strong>Compile the schema to a grammar.</strong> A fixed-shape JSON object with enums, numbers and strings becomes a regular expression, and a regular expression becomes a finite-state machine over characters: state 0 expects <code>{</code>, a later state is "inside the currency string, having read <code>US</code>", and so on.</li>
+<li><strong>Index the vocabulary against the machine.</strong> For each state, precompute which tokens can be consumed character by character without falling off the machine, and which state each leads to. This is done once per schema and cached, so generation-time work is a table lookup per step.</li>
+<li><strong>Prune dead ends.</strong> A token can be character-valid yet lead to a state that no token in the vocabulary can continue from. The toy decoder hit exactly this: it allowed <code>":</code> (valid so far, because <code>": </code> with a space comes next), but its vocabulary had no token for the lone space that was needed, so generation was stuck. A correct index keeps only tokens from which a complete output is still reachable.</li>
+<li><strong>Use a stack for recursion.</strong> Nesting of a fixed depth is still regular: a list of line items, each an object of fixed shape, is just the object's pattern repeated, so a finite-state machine handles it. Recursive schemas are different. A comment whose <code>replies</code> are themselves comments can nest to any depth, and matching each closing bracket to its opener needs memory that grows with depth. That needs a context-free grammar, recognised with a pushdown automaton (a state machine plus a stack). Engines such as XGrammar handle this efficiently, though some providers still limit nesting depth or forbid recursion.</li>
+</ol>
+<p>Two practical consequences. The first request with a new schema can be slower, because the grammar is compiled and indexed; later requests reuse it. And schemas with huge enums or very permissive patterns produce large grammars, so keep schemas as simple as the data allows.</p>
+</section>
+<section id="step-6-what-constraints-do-to-answer-quality">
+  <h2>09 &mdash; Step 6: what constraints do to answer quality</h2>
+<p>Constrained decoding guarantees the shape. It also takes away the model's ability to say something outside the shape, and that has costs.</p>
+<p><strong>Forced choices become confident errors.</strong> Suppose the invoice was from a Toronto studio, priced in Canadian dollars, and still shows <code>$</code>. The schema allows USD, EUR or INR. The model's honest output ("CAD", or "unclear") is masked away, and the probability flows to the allowed value most similar to what it wanted: USD. The output is valid, the value is wrong, and nothing signals it. The fix is an <strong>escape value</strong>: include <code>"other"</code> in every closed enum, and make fields that may be absent nullable. A schema should never require the model to produce something the document does not contain.</p>
+<p><strong>Order of fields is order of thought.</strong> The model generates fields in schema order and cannot revise earlier ones. If <code>total</code> comes first, the model commits to a total before it has written out the line items that justify it. Put evidence before conclusions: line items before the total, a short <code>reasoning</code> or <code>evidence</code> field before a classification. This is chain of thought (see <a href="prompt-techniques.html">Prompting techniques</a>) expressed as a schema.</p>
+<p><strong>Too tight a format can hurt.</strong> Forcing a terse format (a bare number, a single enum) on a task that benefits from reasoning removes the room to reason. If you need both, let the model reason in a field, or in a first call, and extract the structured answer from it.</p>
+<p><strong>The mask cannot fix the model's knowledge.</strong> If the model misreads 1,240 as 1,204, constrained decoding will faithfully produce <code>"total": 1204.00</code>. That is Step 9's problem.</p>
+</section>
+<section id="step-7-tool-calling-and-strict-modes">
+  <h2>10 &mdash; Step 7: tool calling and strict modes</h2>
+<p>Function or tool calling is structured output with a different purpose: the model returns arguments that match the tool's parameter schema. Many teams use a forced tool call ("you must call <code>record_invoice</code>") as their structured-output mechanism, especially on APIs where it predates schema-constrained responses. The mechanics are the same; see <a href="../agents/tool-calling.html">Tool calling</a>.</p>
+<p>Providers' strict or structured-output modes apply constrained decoding to your schema, but usually to a <em>subset</em> of JSON Schema, and the restrictions shape how you write it. Common ones (check the current documentation for your provider):</p>
+<ul>
+<li>Every property must be listed in <code>required</code>, and <code>additionalProperties</code> must be <code>false</code>. Optional fields are expressed as required-but-nullable: <code>"type": ["string", "null"]</code>.</li>
+<li>Some keywords are unsupported or ignored: string length limits, some <code>format</code> values, complex <code>oneOf</code> combinations.</li>
+<li>Limits on nesting depth, number of properties and total enum size.</li>
+</ul>
+<p>Libraries such as Pydantic (Python) and Zod (TypeScript) generate the schema from a type definition, so the schema sent to the model and the validator run on the result come from one source. That is the pattern in the code below.</p>
+</section>
+<section id="step-8-designing-the-schema">
+  <h2>11 &mdash; Step 8: designing the schema</h2>
+<p>Ledgerly's invoice schema, as the provider sees it (abridged):</p>
+<pre>{
+  <span class="tp">"type"</span>: <span class="st">"object"</span>,
+  <span class="tp">"properties"</span>: {
+    <span class="tp">"vendor"</span>:         {<span class="tp">"type"</span>: <span class="st">"string"</span>},
+    <span class="tp">"invoice_number"</span>: {<span class="tp">"type"</span>: [<span class="st">"string"</span>, <span class="st">"null"</span>]},
+    <span class="tp">"issue_date"</span>:     {<span class="tp">"type"</span>: <span class="st">"string"</span>, <span class="tp">"format"</span>: <span class="st">"date"</span>, <span class="tp">"description"</span>: <span class="st">"ISO 8601, YYYY-MM-DD"</span>},
+    <span class="tp">"currency"</span>:       {<span class="tp">"enum"</span>: [<span class="st">"USD"</span>, <span class="st">"EUR"</span>, <span class="st">"GBP"</span>, <span class="st">"INR"</span>, <span class="st">"other"</span>]},
+    <span class="tp">"line_items"</span>: {<span class="tp">"type"</span>: <span class="st">"array"</span>, <span class="tp">"items"</span>: {
+        <span class="tp">"type"</span>: <span class="st">"object"</span>,
+        <span class="tp">"properties"</span>: {<span class="tp">"description"</span>: {<span class="tp">"type"</span>: <span class="st">"string"</span>},
+                       <span class="tp">"quantity"</span>: {<span class="tp">"type"</span>: <span class="st">"number"</span>},
+                       <span class="tp">"unit_price"</span>: {<span class="tp">"type"</span>: <span class="st">"string"</span>, <span class="tp">"description"</span>: <span class="st">"decimal, no symbol"</span>},
+                       <span class="tp">"amount"</span>: {<span class="tp">"type"</span>: <span class="st">"string"</span>, <span class="tp">"description"</span>: <span class="st">"decimal, no symbol"</span>}},
+        <span class="tp">"required"</span>: [<span class="st">"description"</span>, <span class="st">"quantity"</span>, <span class="st">"unit_price"</span>, <span class="st">"amount"</span>],
+        <span class="tp">"additionalProperties"</span>: <span class="nr">false</span>}},
+    <span class="tp">"total"</span>: {<span class="tp">"type"</span>: <span class="st">"string"</span>, <span class="tp">"description"</span>: <span class="st">"decimal, no symbol or thousands separator"</span>}
+  },
+  <span class="tp">"required"</span>: [<span class="st">"vendor"</span>, <span class="st">"invoice_number"</span>, <span class="st">"issue_date"</span>, <span class="st">"currency"</span>, <span class="st">"line_items"</span>, <span class="st">"total"</span>],
+  <span class="tp">"additionalProperties"</span>: <span class="nr">false</span>
+}</pre>
+<p>Each choice has a reason:</p>
+<table>
+<thead><tr><th>Choice</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Money as a decimal string, no symbol</td><td>Binary floats cannot represent 0.10 exactly, and summing them drifts; a decimal string parsed into a decimal type (or integer cents) is exact. The symbol belongs in <code>currency</code>.</td></tr>
+<tr><td>Dates as ISO strings with a stated format</td><td>"05/06/2025" is ambiguous between countries. One format, stated in the description, removes the ambiguity.</td></tr>
+<tr><td><code>invoice_number</code> nullable but required</td><td>The key is always present (simple code downstream), and <code>null</code> is the honest value when absent.</td></tr>
+<tr><td><code>"other"</code> in the currency enum</td><td>The escape value from Step 6.</td></tr>
+<tr><td>Line items before total</td><td>Evidence before conclusion.</td></tr>
+<tr><td>Descriptions on ambiguous fields</td><td>The model reads them. "No thousands separator" prevents <code>"1,240.00"</code>.</td></tr>
+<tr><td>Flat where possible, meaningful names</td><td><code>issue_date</code> beats <code>d1</code>; names are instructions too.</td></tr>
+</tbody>
+</table>
+</section>
+<section id="step-9-validate-meaning-repair-and-give-up-gracefully">
+  <h2>12 &mdash; Step 9: validate meaning, repair, and give up gracefully</h2>
+<p>With strict mode, every reply parses and matches the schema. Now the remaining failures are values, and they need checks a schema cannot express. For invoices the checks are natural: each line's quantity times unit price equals its amount; the amounts sum to the total; the date is not in the future; the currency is consistent with any currency code in the text.</p>
+<p>Ledgerly's first extraction of the Brightline invoice passes the schema and fails the sum check: the model wrote a total of 1204.00 while the line items, 1020.00 and 220.00, sum to 1240.00. The repair loop sends the specific error back:</p>
+<div class="callout"><p><em>"That failed validation: line items sum to 1240.00 but total is 1204.00. Re-read the document and return corrected JSON only."</em></p></div>
+<p>The second attempt returns 1240.00 and passes. This is self-critique in its useful form: the critique comes from an external check, not from the model reviewing itself (compare Step 7 of <a href="prompt-techniques.html">Prompting techniques</a>).</p>
+<p>Two design rules make the loop safe:</p>
+<ul>
+<li><strong>Bound it.</strong> One or two repairs, then route the document to a human review queue with the errors attached. An unbounded loop on an unreadable scan burns money forever.</li>
+<li><strong>Do not let the check be gamed.</strong> If the sum check fails, the model may "fix" it by changing a line item to match the wrong total. Where possible, check against something independent (the document's own stated total, extracted separately, or a second extraction), and sample repaired records for human review.</li>
+</ul>
+<p>The numbers that tell you the pipeline is healthy: first-pass validity rate, repair success rate, human-queue rate, and, from audited samples, the error rate among records that passed every check. That last one is the only one that measures wrong values that look right; evaluation set design is in <a href="../production/evals.html">Evaluating LLM features</a>.</p>
+</section>
+<section id="step-10-streaming-structured-output">
+  <h2>13 &mdash; Step 10: streaming structured output</h2>
+<p>Streaming JSON is awkward: <code>json.loads</code> fails until the closing brace arrives. When a person is watching (a form filling in, a list of extracted items appearing), use a partial JSON parser that closes open strings and brackets on a copy of the buffer and parses that, and render fields once they are complete. Do not act on a field until its value is closed, and do not run semantic validation until the whole object is in. For back-end extraction like Ledgerly's, nobody watches, so skip streaming.</p>
+</section>
+<section id="choosing-a-level">
+  <h2>14 &mdash; Choosing a level</h2>
+<table>
+<thead><tr><th>Situation</th><th>Use</th></tr></thead>
+<tbody>
+<tr><td>Fixed record consumed by code, provider supports strict schemas</td><td>Strict structured output (or forced tool call) plus semantic validation and a bounded repair loop</td></tr>
+<tr><td>Self-hosted open model</td><td>A constrained-decoding library (Outlines, XGrammar, llama.cpp grammars, or the serving engine's built-in guided decoding) plus the same validation</td></tr>
+<tr><td>Loose or per-request shapes</td><td>JSON mode plus validation in code</td></tr>
+<tr><td>Provider or model with no JSON features</td><td>Instructions, prefill <code>{</code> if possible, parse, validate, retry with the error</td></tr>
+<tr><td>Task needs reasoning before the structured answer</td><td>A reasoning field first in the schema, or reason in one call and extract in a second</td></tr>
+<tr><td>Values must be exactly right (money, IDs)</td><td>All of the above plus independent cross-checks and audited sampling</td></tr>
+</tbody>
+</table>
+</section>
+<section id="in-code-a-constrained-decoder-then-validation-and-repair">
+  <h2>15 &mdash; In code: a constrained decoder, then validation and repair</h2>
+<p>First, a complete constrained decoder in miniature. The "model" is random scores over a 25-token vocabulary (biased toward <code>$</code> and <code>unknown</code> at the currency field); the mask guarantees the result is valid JSON of the required shape.</p>
+<pre><span class="kw">import</span> json
+<span class="kw">from</span> functools <span class="kw">import</span> lru_cache
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="cm"># The "grammar": a fixed JSON shape with an enum and a number, as a list of pieces.</span>
+PIECES = [<span class="st">'</span><span class="st">{</span><span class="st">"</span><span class="st">currency</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">'</span>, (<span class="st">"</span><span class="st">USD</span><span class="st">"</span>, <span class="st">"</span><span class="st">EUR</span><span class="st">"</span>, <span class="st">"</span><span class="st">INR</span><span class="st">"</span>), <span class="st">'</span><span class="st">"</span><span class="st">, </span><span class="st">"</span><span class="st">total</span><span class="st">"</span><span class="st">: </span><span class="st">'</span>, <span class="st">"</span><span class="st">NUMBER</span><span class="st">"</span>, <span class="st">"</span><span class="st">}</span><span class="st">"</span>]
+
+<span class="kw">def</span> <span class="fn">number_prefix_ok</span>(s, complete):
+    <span class="st">"""Is s a (prefix of a) number like 1240 or 1240.5 or 1240.50?"""</span>
+<span class="kw">if</span> s == <span class="st">"</span><span class="st">"</span>:
+        <span class="kw">return</span> not complete
+    whole, dot, frac = s.partition(<span class="st">"</span><span class="st">.</span><span class="st">"</span>)
+    <span class="kw">if</span> not whole.isdigit() or <span class="tp">len</span>(whole) &gt; <span class="nr">7</span> or (frac and not frac.isdigit()) or <span class="tp">len</span>(frac) &gt; <span class="nr">2</span>:
+        <span class="kw">return</span> <span class="nr">False</span>
+<span class="kw">return</span> not complete or not dot or <span class="tp">len</span>(frac) &gt; <span class="nr">0</span>
+<span class="kw">def</span> <span class="fn">viable</span>(text, i=<span class="nr">0</span>, complete=<span class="nr">False</span>):
+    <span class="st">"""Can `text` be extended to (or, if complete, does it equal) a valid output from piece i?"""</span>
+<span class="kw">if</span> i == <span class="tp">len</span>(PIECES):
+        <span class="kw">return</span> text == <span class="st">"</span><span class="st">"</span>
+    p = PIECES[i]
+    <span class="kw">if</span> <span class="tp">isinstance</span>(p, <span class="tp">str</span>) and p != <span class="st">"</span><span class="st">NUMBER</span><span class="st">"</span>:                   <span class="cm"># a literal</span>
+<span class="kw">if</span> <span class="tp">len</span>(text) &lt; <span class="tp">len</span>(p):
+            <span class="kw">return</span> not complete and p.startswith(text)
+        <span class="kw">return</span> text.startswith(p) and viable(text[<span class="tp">len</span>(p):], i + <span class="nr">1</span>, complete)
+    options = p <span class="kw">if</span> <span class="tp">isinstance</span>(p, <span class="tp">tuple</span>) <span class="kw">else</span> <span class="nr">None</span>
+<span class="kw">for</span> cut in <span class="tp">range</span>(<span class="tp">len</span>(text) + <span class="nr">1</span>):                           <span class="cm"># where does this piece end?</span>
+        head, rest = text[:cut], text[cut:]
+        <span class="kw">if</span> options:
+            ok_whole = head in options
+            ok_part = cut == <span class="tp">len</span>(text) and not complete and <span class="tp">any</span>(o.startswith(head) <span class="kw">for</span> o in options)
+        <span class="kw">else</span>:
+            ok_whole = number_prefix_ok(head, complete=<span class="nr">True</span>)
+            ok_part = cut == <span class="tp">len</span>(text) and not complete and number_prefix_ok(head, complete=<span class="nr">False</span>)
+        <span class="kw">if</span> ok_part or (ok_whole and viable(rest, i + <span class="nr">1</span>, complete)):
+            <span class="kw">return</span> <span class="nr">True</span>
+<span class="kw">return</span> <span class="nr">False</span>
+
+VOCAB = [<span class="st">'</span><span class="st">{</span><span class="st">"</span><span class="st">'</span>, <span class="st">'</span><span class="st">currency</span><span class="st">'</span>, <span class="st">'</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">'</span>, <span class="st">'</span><span class="st">"</span><span class="st">:</span><span class="st">'</span>, <span class="st">'</span> <span class="st">"</span><span class="st">'</span>, <span class="st">'</span><span class="st">US</span><span class="st">'</span>, <span class="st">'</span><span class="st">USD</span><span class="st">'</span>, <span class="st">'</span><span class="st">D</span><span class="st">'</span>, <span class="st">'</span><span class="st">EUR</span><span class="st">'</span>, <span class="st">'</span><span class="st">INR</span><span class="st">'</span>, <span class="st">'</span><span class="st">$</span><span class="st">'</span>, <span class="st">'</span><span class="st">Dollar</span><span class="st">'</span>,
+         <span class="st">'</span><span class="st">unknown</span><span class="st">'</span>, <span class="st">'</span><span class="st">"</span><span class="st">,</span><span class="st">'</span>, <span class="st">'</span> <span class="st">"</span><span class="st">total</span><span class="st">'</span>, <span class="st">'</span><span class="st">"</span><span class="st">: </span><span class="st">'</span>, <span class="st">'</span><span class="st">12</span><span class="st">'</span>, <span class="st">'</span><span class="st">124</span><span class="st">'</span>, <span class="st">'</span><span class="st">0</span><span class="st">'</span>, <span class="st">'</span><span class="st">.</span><span class="st">'</span>, <span class="st">'</span><span class="st">50</span><span class="st">'</span>, <span class="st">'</span><span class="st">5</span><span class="st">'</span>, <span class="st">'</span><span class="st">}</span><span class="st">'</span>, <span class="st">'</span><span class="st">"</span><span class="st">}</span><span class="st">'</span>, <span class="st">'</span><span class="st">&lt;eos&gt;</span><span class="st">'</span>]
+
+<span class="fn">@lru_cache</span>(maxsize=<span class="nr">None</span>)
+<span class="kw">def</span> <span class="fn">can_finish</span>(text, depth=<span class="nr">12</span>):
+    <span class="st">"""Character-level viability is not enough: some token must lead on to a full output."""</span>
+<span class="kw">if</span> viable(text, complete=<span class="nr">True</span>):
+        <span class="kw">return</span> <span class="nr">True</span>
+<span class="kw">return</span> depth &gt; <span class="nr">0</span> and <span class="tp">any</span>(viable(text + t) and can_finish(text + t, depth - <span class="nr">1</span>)
+                             <span class="kw">for</span> t in VOCAB <span class="kw">if</span> t != <span class="st">"</span><span class="st">&lt;eos&gt;</span><span class="st">"</span>)
+
+<span class="kw">def</span> <span class="fn">step_mask</span>(text):
+    <span class="kw">return</span> np.array([viable(text, complete=<span class="nr">True</span>) <span class="kw">if</span> t == <span class="st">"</span><span class="st">&lt;eos&gt;</span><span class="st">"</span>
+<span class="kw">else</span> viable(text + t) and can_finish(text + t) <span class="kw">for</span> t in VOCAB])
+
+<span class="kw">def</span> <span class="fn">softmax</span>(z):
+    e = np.exp(z - z.max()); <span class="kw">return</span> e / e.sum()
+
+rng = np.random.default_rng(<span class="nr">3</span>)
+text = <span class="st">"</span><span class="st">"</span>
+<span class="kw">while</span> <span class="nr">True</span>:
+    logits = rng.normal(<span class="nr">0</span>, <span class="nr">1</span>, <span class="tp">len</span>(VOCAB))               <span class="cm"># stand-in for the model's scores</span>
+    at_currency = text == <span class="st">'</span><span class="st">{</span><span class="st">"</span><span class="st">currency</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">'</span>
+<span class="kw">if</span> at_currency:                                     <span class="cm"># the model "wants" a symbol or "unknown"</span>
+        logits[VOCAB.index(<span class="st">"</span><span class="st">$</span><span class="st">"</span>)] += <span class="nr">3.0</span>
+        logits[VOCAB.index(<span class="st">"</span><span class="st">unknown</span><span class="st">"</span>)] += <span class="nr">2.0</span>
+    allowed = step_mask(text)
+    p = softmax(np.where(allowed, logits, -np.inf))     <span class="cm"># mask, then renormalise</span>
+<span class="kw">if</span> at_currency:
+        raw = softmax(logits)
+        <span class="tp">print</span>(<span class="st">"</span><span class="st">raw top-3:</span><span class="st">"</span>, [(VOCAB[i], <span class="tp">round</span>(<span class="tp">float</span>(raw[i]), <span class="nr">3</span>)) <span class="kw">for</span> i in np.argsort(-raw)[:<span class="nr">3</span>]])
+        <span class="tp">print</span>(<span class="st">"</span><span class="st">after mask:</span><span class="st">"</span>, [(t, <span class="tp">round</span>(<span class="tp">float</span>(q), <span class="nr">3</span>)) <span class="kw">for</span> t, q in <span class="tp">zip</span>(VOCAB, p) <span class="kw">if</span> q &gt; <span class="nr">0</span>])
+    tok = VOCAB[<span class="tp">int</span>(np.argmax(p))]                      <span class="cm"># greedy, so the demo is reproducible</span>
+<span class="kw">if</span> tok == <span class="st">"</span><span class="st">&lt;eos&gt;</span><span class="st">"</span>:
+        <span class="kw">break</span>
+    text += tok
+<span class="tp">print</span>(text)
+<span class="kw">assert</span> json.loads(text)                                <span class="cm"># valid by construction</span></pre>
+<p>It prints the raw and masked distributions from Step 4 and an output that always parses: <code>{"currency": "USD", "total": 12}</code>. (The total is nonsense because the "model" is random; the mask guarantees shape, never sense.) Remove <code>can_finish</code> from <code>step_mask</code> and the decoder walks into the <code>":</code> dead end from Step 5.</p>
+<p>Second, the production pattern with Pydantic: one type definition produces both the schema to send and the validator, with a semantic check and a bounded repair loop against a fake model.</p>
+<pre><span class="kw">import</span> json, re
+<span class="kw">from</span> datetime <span class="kw">import</span> date
+<span class="kw">from</span> decimal <span class="kw">import</span> Decimal
+<span class="kw">from</span> typing <span class="kw">import</span> List, Literal, Optional
+<span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel, Field, ValidationError, model_validator
+
+<span class="kw">class</span> <span class="tp">LineItem</span>(BaseModel):
+    description: <span class="tp">str</span>
+    quantity: Decimal = Field(gt=<span class="nr">0</span>)
+    unit_price: Decimal
+    amount: Decimal
+
+<span class="kw">class</span> <span class="tp">Invoice</span>(BaseModel):
+    vendor: <span class="tp">str</span>
+    invoice_number: Optional[<span class="tp">str</span>]                  <span class="cm"># required key, value may be null</span>
+    issue_date: date                               <span class="cm"># ISO 8601 string in the JSON</span>
+    currency: Literal[<span class="st">"</span><span class="st">USD</span><span class="st">"</span>, <span class="st">"</span><span class="st">EUR</span><span class="st">"</span>, <span class="st">"</span><span class="st">GBP</span><span class="st">"</span>, <span class="st">"</span><span class="st">INR</span><span class="st">"</span>, <span class="st">"</span><span class="st">other</span><span class="st">"</span>]
+    line_items: List[LineItem]
+    total: Decimal
+
+    <span class="fn">@model_validator</span>(mode=<span class="st">"</span><span class="st">after</span><span class="st">"</span>)
+    <span class="kw">def</span> <span class="fn">amounts_add_up</span>(<span class="tp">self</span>):                      <span class="cm"># a semantic check no schema can express</span>
+<span class="kw">for</span> li in <span class="tp">self</span>.line_items:
+            <span class="kw">if</span> li.quantity * li.unit_price != li.amount:
+                <span class="kw">raise</span> ValueError(<span class="st">f</span><span class="st">"</span><span class="st">{</span>li.description<span class="st">}</span><span class="st">: </span><span class="st">{</span>li.quantity<span class="st">}</span><span class="st"> x </span><span class="st">{</span>li.unit_price<span class="st">}</span><span class="st"> != </span><span class="st">{</span>li.amount<span class="st">}</span><span class="st">"</span>)
+        items = <span class="tp">sum</span>(li.amount <span class="kw">for</span> li in <span class="tp">self</span>.line_items)
+        <span class="kw">if</span> items != <span class="tp">self</span>.total:
+            <span class="kw">raise</span> ValueError(<span class="st">f</span><span class="st">"</span><span class="st">line items sum to </span><span class="st">{</span>items<span class="st">}</span><span class="st"> but total is </span><span class="st">{</span><span class="tp">self</span>.total<span class="st">}</span><span class="st">"</span>)
+        <span class="kw">return</span> <span class="tp">self</span>
+
+schema = Invoice.model_json_schema()               <span class="cm"># what you send as the response schema</span>
+<span class="tp">print</span>(schema[<span class="st">"</span><span class="st">required</span><span class="st">"</span>])
+
+<span class="kw">def</span> <span class="fn">parse</span>(raw):
+    raw = re.sub(<span class="st">r</span><span class="st">"</span><span class="st">^```(?:json)?</span><span class="st">\</span><span class="st">s*|</span><span class="st">\</span><span class="st">s*```</span><span class="st">\</span><span class="st">s*$</span><span class="st">"</span>, <span class="st">"</span><span class="st">"</span>, raw.strip())   <span class="cm"># tolerate code fences</span>
+<span class="kw">return</span> Invoice.model_validate(json.loads(raw))
+
+<span class="cm"># Two replies from a fake model: the first transposes digits in the total.</span>
+replies = <span class="tp">iter</span>([
+    <span class="st">'</span><span class="st">```json</span><span class="st">\n</span><span class="st">{</span><span class="st">"</span><span class="st">vendor</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">Brightline Studio</span><span class="st">"</span><span class="st">, </span><span class="st">"</span><span class="st">invoice_number</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">BL-0417</span><span class="st">"</span><span class="st">, </span><span class="st">"</span><span class="st">issue_date</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">2025-05-30</span><span class="st">"</span><span class="st">,</span><span class="st">'</span>
+<span class="st">'</span> <span class="st">"</span><span class="st">currency</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">USD</span><span class="st">"</span><span class="st">, </span><span class="st">"</span><span class="st">line_items</span><span class="st">"</span><span class="st">: [</span><span class="st">{</span><span class="st">"</span><span class="st">description</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">Design work</span><span class="st">"</span><span class="st">, </span><span class="st">"</span><span class="st">quantity</span><span class="st">"</span><span class="st">: 12,</span><span class="st">'</span>
+<span class="st">'</span> <span class="st">"</span><span class="st">unit_price</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">85.00</span><span class="st">"</span><span class="st">, </span><span class="st">"</span><span class="st">amount</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">1020.00</span><span class="st">"</span><span class="st">}, </span><span class="st">{</span><span class="st">"</span><span class="st">description</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">Hosting</span><span class="st">"</span><span class="st">, </span><span class="st">"</span><span class="st">quantity</span><span class="st">"</span><span class="st">: 1,</span><span class="st">'</span>
+<span class="st">'</span> <span class="st">"</span><span class="st">unit_price</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">220.00</span><span class="st">"</span><span class="st">, </span><span class="st">"</span><span class="st">amount</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">220.00</span><span class="st">"</span><span class="st">}], </span><span class="st">"</span><span class="st">total</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">1204.00</span><span class="st">"</span><span class="st">}</span><span class="st">\n</span><span class="st">```</span><span class="st">'</span>,
+    <span class="st">'</span><span class="st">{</span><span class="st">"</span><span class="st">vendor</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">Brightline Studio</span><span class="st">"</span><span class="st">, </span><span class="st">"</span><span class="st">invoice_number</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">BL-0417</span><span class="st">"</span><span class="st">, </span><span class="st">"</span><span class="st">issue_date</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">2025-05-30</span><span class="st">"</span><span class="st">,</span><span class="st">'</span>
+<span class="st">'</span> <span class="st">"</span><span class="st">currency</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">USD</span><span class="st">"</span><span class="st">, </span><span class="st">"</span><span class="st">line_items</span><span class="st">"</span><span class="st">: [</span><span class="st">{</span><span class="st">"</span><span class="st">description</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">Design work</span><span class="st">"</span><span class="st">, </span><span class="st">"</span><span class="st">quantity</span><span class="st">"</span><span class="st">: 12,</span><span class="st">'</span>
+<span class="st">'</span> <span class="st">"</span><span class="st">unit_price</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">85.00</span><span class="st">"</span><span class="st">, </span><span class="st">"</span><span class="st">amount</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">1020.00</span><span class="st">"</span><span class="st">}, </span><span class="st">{</span><span class="st">"</span><span class="st">description</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">Hosting</span><span class="st">"</span><span class="st">, </span><span class="st">"</span><span class="st">quantity</span><span class="st">"</span><span class="st">: 1,</span><span class="st">'</span>
+<span class="st">'</span> <span class="st">"</span><span class="st">unit_price</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">220.00</span><span class="st">"</span><span class="st">, </span><span class="st">"</span><span class="st">amount</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">220.00</span><span class="st">"</span><span class="st">}], </span><span class="st">"</span><span class="st">total</span><span class="st">"</span><span class="st">: </span><span class="st">"</span><span class="st">1240.00</span><span class="st">"</span><span class="st">}</span><span class="st">'</span>])
+
+<span class="kw">def</span> <span class="fn">extract</span>(document, max_attempts=<span class="nr">2</span>):
+    messages = [{<span class="st">"</span><span class="st">role</span><span class="st">"</span>: <span class="st">"</span><span class="st">user</span><span class="st">"</span>, <span class="st">"</span><span class="st">content</span><span class="st">"</span>: <span class="st">f</span><span class="st">"</span><span class="st">Extract the invoice.</span><span class="st">\n</span><span class="st">&lt;doc&gt;</span><span class="st">{</span>document<span class="st">}</span><span class="st">&lt;/doc&gt;</span><span class="st">"</span>}]
+    <span class="kw">for</span> attempt in <span class="tp">range</span>(<span class="nr">1</span>, max_attempts + <span class="nr">1</span>):
+        raw = <span class="tp">next</span>(replies)                        <span class="cm"># stands in for the model call</span>
+<span class="kw">try</span>:
+            <span class="kw">return</span> parse(raw), attempt
+        <span class="kw">except</span> (json.JSONDecodeError, ValidationError) <span class="kw">as</span> e:
+            error = <span class="tp">str</span>(e).splitlines()[-<span class="nr">1</span>] <span class="kw">if</span> <span class="tp">isinstance</span>(e, json.JSONDecodeError) <span class="kw">else</span> e.errors()[<span class="nr">0</span>][<span class="st">"</span><span class="st">msg</span><span class="st">"</span>]
+            <span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">attempt </span><span class="st">{</span>attempt<span class="st">}</span><span class="st"> rejected: </span><span class="st">{</span>error<span class="st">}</span><span class="st">"</span>)
+            messages += [{<span class="st">"</span><span class="st">role</span><span class="st">"</span>: <span class="st">"</span><span class="st">assistant</span><span class="st">"</span>, <span class="st">"</span><span class="st">content</span><span class="st">"</span>: raw},
+                         {<span class="st">"</span><span class="st">role</span><span class="st">"</span>: <span class="st">"</span><span class="st">user</span><span class="st">"</span>, <span class="st">"</span><span class="st">content</span><span class="st">"</span>: <span class="st">f</span><span class="st">"</span><span class="st">That failed validation: </span><span class="st">{</span>error<span class="st">}</span><span class="st">. </span><span class="st">"</span>
+<span class="st">"</span><span class="st">Re-read the document and return corrected JSON only.</span><span class="st">"</span>}]
+    <span class="kw">return</span> <span class="nr">None</span>, max_attempts                      <span class="cm"># caller routes to a human queue</span>
+
+invoice, attempts = extract(<span class="st">"</span><span class="st">...invoice text...</span><span class="st">"</span>)
+<span class="tp">print</span>(attempts, invoice.total, invoice.currency, <span class="tp">len</span>(invoice.line_items))</pre>
+<p>It prints the required keys, the first attempt's rejection ("line items sum to 1240.00 but total is 1204.00"), and the accepted second attempt with total 1240.00.</p>
+</section>
 <section id="getting-machine-readable-output">
-  <h2>02 &mdash; Getting machine-readable output</h2>
+  <h2>16 &mdash; Getting machine-readable output</h2>
 <p>If a program will consume the model's output, you need reliable structure — not prose you have to parse with regex. This topic is the bridge between "the model writes text" and "the model returns data my code can branch on."</p>
 </section>
 <section id="the-scenario">
-  <h2>03 &mdash; The scenario</h2>
+  <h2>17 &mdash; The scenario</h2>
 <p>You're building a support-ticket triage service. Every inbound ticket must become a row: <code>category</code> (one of <code>hw</code>/<code>sw</code>/<code>billing</code>), <code>urgent</code> (boolean), <code>summary</code> (string). Downstream code routes on <code>category</code> and pages someone on <code>urgent=true</code>. A single malformed output doesn't degrade gracefully — it throws in the parser, lands in a dead-letter queue, and a human fishes it out. At 50,000 tickets/day, a 2% malformation rate is 1,000 manual interventions daily. The difference between the three levels below is exactly that number.</p>
 </section>
 <section id="three-levels-of-reliability">
-  <h2>04 &mdash; Three levels of reliability</h2>
+  <h2>18 &mdash; Three levels of reliability</h2>
 <ol>
 <li><b>Ask for JSON</b> in the prompt — works, but the model occasionally adds prose or breaks the schema.</li>
 <li><b>JSON mode</b> — many APIs force syntactically valid JSON output.</li>
@@ -114,7 +442,7 @@ data = resp.content[<span class="nr">0</span>].input   <span class="cm"># → {"
 </table>
 </section>
 <section id="validate-anyway-pydantic-retry">
-  <h2>05 &mdash; Validate anyway: pydantic + retry</h2>
+  <h2>19 &mdash; Validate anyway: pydantic + retry</h2>
 <p>Even at level 3, validate in your own code. Reasons: you may switch providers (and level-3 semantics differ), schema constraints like <code>pattern</code> aren't uniformly enforced everywhere, and <i>semantic</i> checks (a summary that just repeats the ticket verbatim, a date in the past) are beyond any JSON schema. The pattern that covers all of it is: parse into a pydantic model, and on failure send the validation errors <i>back to the model</i> for one or two repair rounds.</p>
 <div class="code-block"><div class="code-file"><span>validate_retry.py — pydantic gate + repair loop</span><span class="code-lang">python</span></div><pre><span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel, Field, field_validator, ValidationError
 <span class="kw">from</span> typing <span class="kw">import</span> Literal
@@ -161,7 +489,7 @@ client = anthropic.Anthropic()
 <p>Worked reliability math (illustrative): if one attempt yields a valid object 97% of the time and repair fixes 90% of the failures, the loop's overall failure rate is 3% × 10% × (again for attempt 3) ≈ 0.03% — from 1,500 dead-lettered tickets/day down to ~15, for an average cost of 1.03 calls per ticket. Cap attempts and dead-letter the rest; infinite retry loops on a systematically-broken prompt are a great way to spend a weekend's budget overnight.</p>
 </section>
 <section id="streaming-structured-output">
-  <h2>06 &mdash; Streaming structured output</h2>
+  <h2>20 &mdash; Streaming structured output</h2>
 <p>Structured output and streaming coexist awkwardly: a partial JSON object is not valid JSON, so you can't <code>json.loads</code> a stream mid-flight. Your options, in order of preference: (1) <b>don't stream</b> — extraction payloads are small and nobody watches a triage row render; (2) stream for <i>display</i> but parse only the final accumulated string (APIs emit tool-argument deltas as <code>input_json_delta</code> partial-JSON chunks you concatenate); (3) if you truly need incremental fields — e.g. rendering a long report object section by section — use an incremental parser (streaming JSON libraries, or the SDK helpers that surface "best-effort partial objects"). Never act on a partial object: <code>urgent</code> may simply not have streamed yet, and a missing field is indistinguishable from a false one.</p>
 <div class="callout warn"><p><strong>Failure modes that survive contact with production</strong></p><ul>
 <li><b>Markdown fences at level 1:</b> models love <code>```json … ```</code>. Say "no fences", prime with <code>{"</code>, or strip fences defensively before parsing — pick two.</li>
@@ -180,6 +508,33 @@ client = anthropic.Anthropic()
 <li>Break the repair loop deliberately: set <code>max_attempts=1</code>, make the schema require an impossible field (e.g. <code>minLength: 500</code> on summary with <code>maxLength: 200</code> in the prompt), and confirm the dead-letter path fires instead of looping.</li>
 <li>Stream a forced-tool response, log each <code>input_json_delta</code> chunk, and write a 10-line accumulator that yields the parsed object only once the stream ends. Note the earliest point at which each field became readable.</li>
 </ol></div>
+</section>
+<p class="part-divider">In production</p>
+<section id="where-people-get-lost">
+  <h2>21 &mdash; Where people get lost</h2>
+<ul>
+<li><strong>"JSON mode means my schema is enforced."</strong> JSON mode guarantees parseable JSON only. Schema enforcement needs strict mode, a forced tool call or a constrained-decoding library.</li>
+<li><strong>"Valid JSON means correct data."</strong> Constrained decoding guarantees shape. Values can still be wrong; only semantic checks and audits catch that.</li>
+<li><strong>Enums with no escape value.</strong> The model is forced to pick an allowed value even when none fits, producing confident errors.</li>
+<li><strong>Conclusion fields first.</strong> The model commits to a total or label before writing the evidence. Order fields as you would want someone to think.</li>
+<li><strong>Money as floats.</strong> Use decimal strings or integer minor units.</li>
+<li><strong>Blind retries.</strong> Retrying without the error message repeats input-driven failures. Include the error, bound the loop, and route to a human after that.</li>
+<li><strong>Ignoring truncation.</strong> Even in strict mode, hitting <code>max_tokens</code> ends the output mid-object. Check the finish reason.</li>
+<li><strong>Assuming full JSON Schema support.</strong> Strict modes support a subset; design for it, and keep the validator as the source of truth.</li>
+</ul>
+</section>
+<section id="how-this-connects">
+  <h2>22 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../fundamentals/decoding.html">Decoding &amp; sampling</a> &mdash; Greedy, temperature, top-k, top-p and the other knobs, with a live temperature lab.</li><li><a href="prompt-techniques.html">Prompting techniques</a> &mdash; Zero- and few-shot, chain of thought, decomposition, self-critique, injection defence.</li></ul><h3>Where this shows up later</h3><ul><li><a href="../rag/rag-pipeline.html">The RAG pipeline</a> &mdash; Retrieve, augment, generate: every stage from a question to a grounded, cited answer.</li><li><a href="../rag/graphrag.html">Agentic RAG &amp; GraphRAG</a> &mdash; Retrieval as a tool the agent drives, and knowledge graphs for multi-hop questions.</li><li><a href="../agents/tool-calling.html">Tool calling</a> &mdash; Why tools, what goes over the wire, and designing schemas the model uses well.</li><li><a href="../agents/reasoning.html">Reasoning patterns</a> &mdash; ReAct, plan-and-execute, reflection and the other ways agents think.</li><li><a href="../agents/multi-agent.html">Multi-agent systems</a> &mdash; When to go multi-agent, topologies, handoffs and state, orchestration, and the production debate.</li><li><a href="../production/reference-architectures.html">Reference architectures</a> &mdash; AI system design patterns, a production agent end to end, and architectures by use case.</li><li><a href="../production/reliability.html">Reliability engineering</a> &mdash; Surviving flaky models and APIs: retries, fallbacks, timeouts, idempotency.</li><li><a href="../production/hybrid-patterns.html">Hybrid LLM patterns</a> &mdash; LLM extracts and code decides, routing and cascades, LLMs with classic ML, guardrails, text-to-SQL.</li></ul>
+</section>
+<section id="check-yourself">
+  <h2>23 &mdash; Check yourself</h2>
+<details><summary>Under JSON mode, which rows of Step 1's failure table can still happen?</summary><div class="answer">Wrong shape, missing or extra fields, and wrong values. JSON mode only removes wrapper text and invalid syntax (and truncation still happens if you ignore the finish reason).</div></details>
+<details><summary>For a different invoice, the raw probabilities of the allowed tokens at the currency position are US 0.12, EUR 0.03, USD 0.09 and INR 0.01; everything else (0.75 in total) is masked. What are the probabilities after renormalising? What does the 0.75 tell you?</summary><div class="answer">The allowed mass is 0.25, so US 0.48, EUR 0.12, USD 0.36, INR 0.04 (US and USD together give USD 0.84). The 0.75 means the model mostly wanted to write something the schema forbids, a strong hint that none of the allowed values fits; an <code>"other"</code> escape value would have caught it.</div></details>
+<details><summary>4% of extractions fail validation. Retrying once fixes half of the failures; the other half fail again for the same input-driven reason. At 500,000 documents a day, how many reach the human queue after one retry, and how many would if failures were independent?</summary><div class="answer">Observed: \(500{,}000 \times 0.04 \times 0.5 = 10{,}000\) a day. If independent, \(500{,}000 \times 0.04^2 = 800\). The gap is the signature of input-driven failures; fix those inputs (OCR, length limits) rather than retrying more.</div></details>
+<details><summary>A classifier schema is <code>{"label": enum, "reasoning": string}</code>. What would you change, and why?</summary><div class="answer">Put <code>reasoning</code> before <code>label</code>, so the model writes its evidence before committing; and add an <code>"other"</code> or <code>"unclear"</code> label as an escape value.</div></details>
+<details><summary>Why does a token-level constrained decoder need more than "is the text so far a valid prefix?"</summary><div class="answer">Because tokens span several characters and the vocabulary is fixed. A token can keep the text a valid prefix yet lead to a state from which no vocabulary token can continue (the <code>":</code> dead end). The index must keep only tokens from which a complete valid output is still reachable.</div></details>
+<details><summary>The sum check fails and the repaired output now passes, but an auditor finds the model changed a line item to match the wrong total. How do you prevent this?</summary><div class="answer">Validate against an independent source instead of only internal consistency: extract the document's stated total separately (or run a second extraction) and require agreement; flag records whose line items changed during repair for human review; and track the post-check error rate with audited samples.</div></details>
 </section>
 
 <div class="sheet-pager"><a class="prev" href="prompt-techniques.html"><span>Previous</span>Prompting techniques</a><a class="next" href="prompt-pitfalls.html"><span>Next</span>Pitfalls &amp; pro habits</a></div>

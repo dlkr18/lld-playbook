@@ -1,0 +1,343 @@
+<!-- Deep lesson: Structured output. Merged into prompting/structured-output by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Structured output</td><td>Model output in a machine-readable shape (usually JSON matching a schema) that a program consumes directly.</td></tr>
+<tr><td>JSON Schema</td><td>A standard JSON vocabulary for describing a JSON document's shape: types, required keys, enums, nesting.</td></tr>
+<tr><td>JSON mode</td><td>A provider setting that guarantees syntactically valid JSON, but not any particular keys or types.</td></tr>
+<tr><td>Constrained decoding</td><td>At each generation step, allowing only the tokens that keep the output valid under a grammar or schema, by masking all others.</td></tr>
+<tr><td>Logit mask</td><td>Setting disallowed tokens' scores to \(-\infty\) before softmax, so their probability becomes exactly zero.</td></tr>
+<tr><td>Finite-state machine (FSM)</td><td>A set of states and transitions that recognises a pattern one character at a time. A regular expression compiles to one.</td></tr>
+<tr><td>Context-free grammar (CFG)</td><td>A grammar that can describe nesting (objects inside arrays inside objects); recognised with a stack, not just a finite set of states.</td></tr>
+<tr><td>Strict mode</td><td>A provider option that enforces a supplied schema with constrained decoding, usually for a supported subset of JSON Schema.</td></tr>
+<tr><td>Semantic validation</td><td>Checks on meaning that a schema cannot express: line items sum to the total, the date is not in the future.</td></tr>
+<tr><td>Repair loop</td><td>Sending a validation error back to the model and asking for a corrected output, a bounded number of times.</td></tr>
+<tr><td>Escape value</td><td>An allowed value for "unknown" or "none of these" (<code>null</code>, <code>"other"</code>), so the model is never forced to invent.</td></tr>
+<tr><td>Partial JSON parsing</td><td>Parsing an incomplete JSON stream as it arrives, to show or use fields before the object is finished.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>Most LLM features inside real systems are not chat. They are functions: text in, data out. A program then routes on the data, stores it, or calls another service with it. For that, "usually returns JSON" is not good enough: at a million calls a day, a 1% failure rate is ten thousand broken records. Structured output is the set of techniques that turn "the model usually gets the format right" into "the format is guaranteed, and the content is checked".</p>
+<p>The interview questions:</p>
+<ol>
+<li>What is the difference between asking for JSON, JSON mode, and schema-constrained output?</li>
+<li>How does constrained decoding work? What does it guarantee, and what does it not?</li>
+<li>How do you design a schema the model fills in well?</li>
+<li>The JSON is valid but the values are wrong. Now what?</li>
+</ol>
+<p><strong>The running example.</strong> Ledgerly lets customers forward supplier invoices by email; an extraction service turns each one into a record for the accounts-payable ledger. One invoice from a design studio reads, in part:</p>
+<pre class="ascii-diagram">Brightline Studio                        Invoice BL-0417
+                                          Date: 30 May 2025
+Design work      12 h  x  $85.00        $1,020.00
+Hosting           1    x $220.00          $220.00
+                                  TOTAL   $1,240.00</pre>
+<p>The target record has a vendor, invoice number, ISO date, currency, line items and total. We will follow this invoice through every level of reliability.</p>
+</section>
+
+<section data-label="Step 1: how free text breaks a parser">
+<p>Ask a model, in plain instructions, to "return the invoice as JSON" and most replies will parse. The ones that do not fail in a small number of recurring ways:</p>
+<table>
+<thead><tr><th>Failure</th><th>Example</th><th>Caught by</th></tr></thead>
+<tbody>
+<tr><td>Wrapper text</td><td>"Here is the extracted invoice:" before the JSON, or a Markdown code fence around it</td><td>Parser</td></tr>
+<tr><td>Invalid syntax</td><td>Trailing comma, single quotes, an unescaped quote inside a description</td><td>Parser</td></tr>
+<tr><td>Truncation</td><td>Output hit <code>max_tokens</code> mid-object</td><td>Parser, and the finish reason</td></tr>
+<tr><td>Wrong shape</td><td><code>"date"</code> instead of <code>"issue_date"</code>; total as <code>"$1,240.00"</code> instead of a number</td><td>Schema validation</td></tr>
+<tr><td>Missing or extra fields</td><td>No <code>currency</code> key; an invented <code>"tax"</code> key</td><td>Schema validation</td></tr>
+<tr><td>Wrong values</td><td>Total 1,204.00 (digits transposed); currency USD for a Canadian-dollar invoice</td><td>Only semantic checks</td></tr>
+</tbody>
+</table>
+<p>The table is ordered by how hard each failure is to catch. The rest of the lesson pushes failures down it: syntax and shape become impossible by construction, leaving only wrong values, which need checks of meaning.</p>
+</section>
+
+<section data-label="Step 2: instructions, parse, retry, and the arithmetic of retries">
+<p>The baseline is: describe the JSON in the prompt, parse the reply, validate it against a schema in code, and retry on failure. It works with any model and any API.</p>
+<p>Retries look cheap. If 3% of replies fail and each retry is an <em>independent</em> draw, two attempts fail together with probability \(0.03^2 = 0.0009\): at a million invoices a day, failures fall from 30,000 to 900. But independence is the key assumption, and it is often false. If the failures come from the input (a scanned invoice the model cannot read, a 40-page statement that pushes the output past <code>max_tokens</code>), the retry fails the same way, and you have paid twice for nothing. Two habits follow: log <em>why</em> each attempt failed, and include the error in the retry prompt so the second attempt is not a blind re-roll (Step 9).</p>
+</section>
+
+<section data-label="Step 3: JSON mode guarantees syntax, not shape">
+<p>JSON mode, offered by most providers, guarantees that the reply parses as JSON. That removes the first two rows of the table: no wrapper text, no trailing commas. Truncation can still happen, because the cap on output tokens is outside the grammar, but a check on the finish reason catches it. It does not know your schema. <code>{"invoice": "Brightline, $1,240"}</code> is valid JSON. So is <code>{}</code>.</p>
+<p>JSON mode is the right tool when the shape is loose or varies by request, and you validate in code anyway. For a fixed record like Ledgerly's, it is a stepping stone: you still need shape guarantees, which means constraining the generation to the schema itself.</p>
+</section>
+
+<section data-label="Step 4: constrained decoding, one mask at a time">
+<p>Recall from <a href="@@fundamentals/decoding@@">Decoding &amp; sampling</a> that each generation step produces a score (logit) for every token in the vocabulary, softmax turns scores into probabilities, and one token is chosen. Constrained decoding inserts one operation before softmax: compute which tokens could continue the output without breaking the schema, and set every other token's logit to \(-\infty\). Their probability becomes exactly zero, and the remaining probabilities are renormalised.</p>
+<p>Watch it at the currency field. The output so far is <code>{"currency": "</code> and the schema allows only <code>"USD"</code>, <code>"EUR"</code> or <code>"INR"</code> here. The invoice shows dollar signs, so the raw model's favourite next token is <code>$</code>. In the toy decoder from the code section, with a 25-token vocabulary:</p>
+<table>
+<thead><tr><th></th><th><code>$</code></th><th><code>US</code></th><th><code>currency</code></th><th><code>EUR</code></th><th><code>USD</code></th><th><code>INR</code></th></tr></thead>
+<tbody>
+<tr><td>Raw probability</td><td>0.206</td><td>0.104</td><td>0.079</td><td>0.061</td><td>0.041</td><td>0.028</td></tr>
+<tr><td>Allowed?</td><td>no</td><td>yes (prefix of USD)</td><td>no</td><td>yes</td><td>yes</td><td>yes</td></tr>
+<tr><td>After mask and renormalising</td><td>0</td><td>0.447</td><td>0</td><td>0.259</td><td>0.176</td><td>0.118</td></tr>
+</tbody>
+</table>
+<p>Three things to see. First, validity is now guaranteed: whatever is sampled, the output stays inside the schema, all the way to the closing brace. Second, <code>US</code> is allowed even though it is not a valid value, because it is a <em>prefix</em> of one; the next step will then allow only <code>D</code>. Tokens and schema values do not line up, so the mask works on "can this still become valid", not "is this valid". Third, the 0.206 the model put on <code>$</code> did not disappear into a sensible place by design; it was spread over the allowed tokens in proportion to their scores. Here that happens to favour USD. Step 6 shows when that redistribution produces a confidently wrong value.</p>
+</section>
+
+<section data-label="Step 5: from a schema to a mask, fast">
+<p>The decoder must answer "which of 100,000 tokens keep the output valid?" at every step, without adding noticeable latency. The standard approach, described for regular expressions and JSON Schema by <a href="https://arxiv.org/abs/2307.09702">Willard &amp; Louf (2023)</a> and used in open-source libraries such as Outlines, XGrammar and llama.cpp grammars:</p>
+<ol>
+<li><strong>Compile the schema to a grammar.</strong> A fixed-shape JSON object with enums, numbers and strings becomes a regular expression, and a regular expression becomes a finite-state machine over characters: state 0 expects <code>{</code>, a later state is "inside the currency string, having read <code>US</code>", and so on.</li>
+<li><strong>Index the vocabulary against the machine.</strong> For each state, precompute which tokens can be consumed character by character without falling off the machine, and which state each leads to. This is done once per schema and cached, so generation-time work is a table lookup per step.</li>
+<li><strong>Prune dead ends.</strong> A token can be character-valid yet lead to a state that no token in the vocabulary can continue from. The toy decoder hit exactly this: it allowed <code>":</code> (valid so far, because <code>": </code> with a space comes next), but its vocabulary had no token for the lone space that was needed, so generation was stuck. A correct index keeps only tokens from which a complete output is still reachable.</li>
+<li><strong>Use a stack for recursion.</strong> Nesting of a fixed depth is still regular: a list of line items, each an object of fixed shape, is just the object's pattern repeated, so a finite-state machine handles it. Recursive schemas are different. A comment whose <code>replies</code> are themselves comments can nest to any depth, and matching each closing bracket to its opener needs memory that grows with depth. That needs a context-free grammar, recognised with a pushdown automaton (a state machine plus a stack). Engines such as XGrammar handle this efficiently, though some providers still limit nesting depth or forbid recursion.</li>
+</ol>
+<p>Two practical consequences. The first request with a new schema can be slower, because the grammar is compiled and indexed; later requests reuse it. And schemas with huge enums or very permissive patterns produce large grammars, so keep schemas as simple as the data allows.</p>
+</section>
+
+<section data-label="Step 6: what constraints do to answer quality">
+<p>Constrained decoding guarantees the shape. It also takes away the model's ability to say something outside the shape, and that has costs.</p>
+<p><strong>Forced choices become confident errors.</strong> Suppose the invoice was from a Toronto studio, priced in Canadian dollars, and still shows <code>$</code>. The schema allows USD, EUR or INR. The model's honest output ("CAD", or "unclear") is masked away, and the probability flows to the allowed value most similar to what it wanted: USD. The output is valid, the value is wrong, and nothing signals it. The fix is an <strong>escape value</strong>: include <code>"other"</code> in every closed enum, and make fields that may be absent nullable. A schema should never require the model to produce something the document does not contain.</p>
+<p><strong>Order of fields is order of thought.</strong> The model generates fields in schema order and cannot revise earlier ones. If <code>total</code> comes first, the model commits to a total before it has written out the line items that justify it. Put evidence before conclusions: line items before the total, a short <code>reasoning</code> or <code>evidence</code> field before a classification. This is chain of thought (see <a href="@@prompting/prompt-techniques@@">Prompting techniques</a>) expressed as a schema.</p>
+<p><strong>Too tight a format can hurt.</strong> Forcing a terse format (a bare number, a single enum) on a task that benefits from reasoning removes the room to reason. If you need both, let the model reason in a field, or in a first call, and extract the structured answer from it.</p>
+<p><strong>The mask cannot fix the model's knowledge.</strong> If the model misreads 1,240 as 1,204, constrained decoding will faithfully produce <code>"total": 1204.00</code>. That is Step 9's problem.</p>
+</section>
+
+<section data-label="Step 7: tool calling and strict modes">
+<p>Function or tool calling is structured output with a different purpose: the model returns arguments that match the tool's parameter schema. Many teams use a forced tool call ("you must call <code>record_invoice</code>") as their structured-output mechanism, especially on APIs where it predates schema-constrained responses. The mechanics are the same; see <a href="@@agents/tool-calling@@">Tool calling</a>.</p>
+<p>Providers' strict or structured-output modes apply constrained decoding to your schema, but usually to a <em>subset</em> of JSON Schema, and the restrictions shape how you write it. Common ones (check the current documentation for your provider):</p>
+<ul>
+<li>Every property must be listed in <code>required</code>, and <code>additionalProperties</code> must be <code>false</code>. Optional fields are expressed as required-but-nullable: <code>"type": ["string", "null"]</code>.</li>
+<li>Some keywords are unsupported or ignored: string length limits, some <code>format</code> values, complex <code>oneOf</code> combinations.</li>
+<li>Limits on nesting depth, number of properties and total enum size.</li>
+</ul>
+<p>Libraries such as Pydantic (Python) and Zod (TypeScript) generate the schema from a type definition, so the schema sent to the model and the validator run on the result come from one source. That is the pattern in the code below.</p>
+</section>
+
+<section data-label="Step 8: designing the schema">
+<p>Ledgerly's invoice schema, as the provider sees it (abridged):</p>
+<pre data-lang="json">{
+  "type": "object",
+  "properties": {
+    "vendor":         {"type": "string"},
+    "invoice_number": {"type": ["string", "null"]},
+    "issue_date":     {"type": "string", "format": "date", "description": "ISO 8601, YYYY-MM-DD"},
+    "currency":       {"enum": ["USD", "EUR", "GBP", "INR", "other"]},
+    "line_items": {"type": "array", "items": {
+        "type": "object",
+        "properties": {"description": {"type": "string"},
+                       "quantity": {"type": "number"},
+                       "unit_price": {"type": "string", "description": "decimal, no symbol"},
+                       "amount": {"type": "string", "description": "decimal, no symbol"}},
+        "required": ["description", "quantity", "unit_price", "amount"],
+        "additionalProperties": false}},
+    "total": {"type": "string", "description": "decimal, no symbol or thousands separator"}
+  },
+  "required": ["vendor", "invoice_number", "issue_date", "currency", "line_items", "total"],
+  "additionalProperties": false
+}</pre>
+<p>Each choice has a reason:</p>
+<table>
+<thead><tr><th>Choice</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Money as a decimal string, no symbol</td><td>Binary floats cannot represent 0.10 exactly, and summing them drifts; a decimal string parsed into a decimal type (or integer cents) is exact. The symbol belongs in <code>currency</code>.</td></tr>
+<tr><td>Dates as ISO strings with a stated format</td><td>"05/06/2025" is ambiguous between countries. One format, stated in the description, removes the ambiguity.</td></tr>
+<tr><td><code>invoice_number</code> nullable but required</td><td>The key is always present (simple code downstream), and <code>null</code> is the honest value when absent.</td></tr>
+<tr><td><code>"other"</code> in the currency enum</td><td>The escape value from Step 6.</td></tr>
+<tr><td>Line items before total</td><td>Evidence before conclusion.</td></tr>
+<tr><td>Descriptions on ambiguous fields</td><td>The model reads them. "No thousands separator" prevents <code>"1,240.00"</code>.</td></tr>
+<tr><td>Flat where possible, meaningful names</td><td><code>issue_date</code> beats <code>d1</code>; names are instructions too.</td></tr>
+</tbody>
+</table>
+</section>
+
+<section data-label="Step 9: validate meaning, repair, and give up gracefully">
+<p>With strict mode, every reply parses and matches the schema. Now the remaining failures are values, and they need checks a schema cannot express. For invoices the checks are natural: each line's quantity times unit price equals its amount; the amounts sum to the total; the date is not in the future; the currency is consistent with any currency code in the text.</p>
+<p>Ledgerly's first extraction of the Brightline invoice passes the schema and fails the sum check: the model wrote a total of 1204.00 while the line items, 1020.00 and 220.00, sum to 1240.00. The repair loop sends the specific error back:</p>
+<div class="callout"><p><em>"That failed validation: line items sum to 1240.00 but total is 1204.00. Re-read the document and return corrected JSON only."</em></p></div>
+<p>The second attempt returns 1240.00 and passes. This is self-critique in its useful form: the critique comes from an external check, not from the model reviewing itself (compare Step 7 of <a href="@@prompting/prompt-techniques@@">Prompting techniques</a>).</p>
+<p>Two design rules make the loop safe:</p>
+<ul>
+<li><strong>Bound it.</strong> One or two repairs, then route the document to a human review queue with the errors attached. An unbounded loop on an unreadable scan burns money forever.</li>
+<li><strong>Do not let the check be gamed.</strong> If the sum check fails, the model may "fix" it by changing a line item to match the wrong total. Where possible, check against something independent (the document's own stated total, extracted separately, or a second extraction), and sample repaired records for human review.</li>
+</ul>
+<p>The numbers that tell you the pipeline is healthy: first-pass validity rate, repair success rate, human-queue rate, and, from audited samples, the error rate among records that passed every check. That last one is the only one that measures wrong values that look right; evaluation set design is in <a href="@@production/evals@@">Evaluating LLM features</a>.</p>
+</section>
+
+<section data-label="Step 10: streaming structured output">
+<p>Streaming JSON is awkward: <code>json.loads</code> fails until the closing brace arrives. When a person is watching (a form filling in, a list of extracted items appearing), use a partial JSON parser that closes open strings and brackets on a copy of the buffer and parses that, and render fields once they are complete. Do not act on a field until its value is closed, and do not run semantic validation until the whole object is in. For back-end extraction like Ledgerly's, nobody watches, so skip streaming.</p>
+</section>
+
+<section data-label="Choosing a level">
+<table>
+<thead><tr><th>Situation</th><th>Use</th></tr></thead>
+<tbody>
+<tr><td>Fixed record consumed by code, provider supports strict schemas</td><td>Strict structured output (or forced tool call) plus semantic validation and a bounded repair loop</td></tr>
+<tr><td>Self-hosted open model</td><td>A constrained-decoding library (Outlines, XGrammar, llama.cpp grammars, or the serving engine's built-in guided decoding) plus the same validation</td></tr>
+<tr><td>Loose or per-request shapes</td><td>JSON mode plus validation in code</td></tr>
+<tr><td>Provider or model with no JSON features</td><td>Instructions, prefill <code>{</code> if possible, parse, validate, retry with the error</td></tr>
+<tr><td>Task needs reasoning before the structured answer</td><td>A reasoning field first in the schema, or reason in one call and extract in a second</td></tr>
+<tr><td>Values must be exactly right (money, IDs)</td><td>All of the above plus independent cross-checks and audited sampling</td></tr>
+</tbody>
+</table>
+</section>
+
+<section data-label="In code: a constrained decoder, then validation and repair">
+<p>First, a complete constrained decoder in miniature. The "model" is random scores over a 25-token vocabulary (biased toward <code>$</code> and <code>unknown</code> at the currency field); the mask guarantees the result is valid JSON of the required shape.</p>
+<pre data-lang="python">import json
+from functools import lru_cache
+import numpy as np
+
+# The "grammar": a fixed JSON shape with an enum and a number, as a list of pieces.
+PIECES = ['{"currency": "', ("USD", "EUR", "INR"), '", "total": ', "NUMBER", "}"]
+
+def number_prefix_ok(s, complete):
+    """Is s a (prefix of a) number like 1240 or 1240.5 or 1240.50?"""
+    if s == "":
+        return not complete
+    whole, dot, frac = s.partition(".")
+    if not whole.isdigit() or len(whole) &gt; 7 or (frac and not frac.isdigit()) or len(frac) &gt; 2:
+        return False
+    return not complete or not dot or len(frac) &gt; 0
+
+def viable(text, i=0, complete=False):
+    """Can `text` be extended to (or, if complete, does it equal) a valid output from piece i?"""
+    if i == len(PIECES):
+        return text == ""
+    p = PIECES[i]
+    if isinstance(p, str) and p != "NUMBER":                   # a literal
+        if len(text) &lt; len(p):
+            return not complete and p.startswith(text)
+        return text.startswith(p) and viable(text[len(p):], i + 1, complete)
+    options = p if isinstance(p, tuple) else None
+    for cut in range(len(text) + 1):                           # where does this piece end?
+        head, rest = text[:cut], text[cut:]
+        if options:
+            ok_whole = head in options
+            ok_part = cut == len(text) and not complete and any(o.startswith(head) for o in options)
+        else:
+            ok_whole = number_prefix_ok(head, complete=True)
+            ok_part = cut == len(text) and not complete and number_prefix_ok(head, complete=False)
+        if ok_part or (ok_whole and viable(rest, i + 1, complete)):
+            return True
+    return False
+
+VOCAB = ['{"', 'currency', '": "', '":', ' "', 'US', 'USD', 'D', 'EUR', 'INR', '$', 'Dollar',
+         'unknown', '",', ' "total', '": ', '12', '124', '0', '.', '50', '5', '}', '"}', '&lt;eos&gt;']
+
+@lru_cache(maxsize=None)
+def can_finish(text, depth=12):
+    """Character-level viability is not enough: some token must lead on to a full output."""
+    if viable(text, complete=True):
+        return True
+    return depth &gt; 0 and any(viable(text + t) and can_finish(text + t, depth - 1)
+                             for t in VOCAB if t != "&lt;eos&gt;")
+
+def step_mask(text):
+    return np.array([viable(text, complete=True) if t == "&lt;eos&gt;"
+                     else viable(text + t) and can_finish(text + t) for t in VOCAB])
+
+def softmax(z):
+    e = np.exp(z - z.max()); return e / e.sum()
+
+rng = np.random.default_rng(3)
+text = ""
+while True:
+    logits = rng.normal(0, 1, len(VOCAB))               # stand-in for the model's scores
+    at_currency = text == '{"currency": "'
+    if at_currency:                                     # the model "wants" a symbol or "unknown"
+        logits[VOCAB.index("$")] += 3.0
+        logits[VOCAB.index("unknown")] += 2.0
+    allowed = step_mask(text)
+    p = softmax(np.where(allowed, logits, -np.inf))     # mask, then renormalise
+    if at_currency:
+        raw = softmax(logits)
+        print("raw top-3:", [(VOCAB[i], round(float(raw[i]), 3)) for i in np.argsort(-raw)[:3]])
+        print("after mask:", [(t, round(float(q), 3)) for t, q in zip(VOCAB, p) if q &gt; 0])
+    tok = VOCAB[int(np.argmax(p))]                      # greedy, so the demo is reproducible
+    if tok == "&lt;eos&gt;":
+        break
+    text += tok
+print(text)
+assert json.loads(text)                                # valid by construction</pre>
+<p>It prints the raw and masked distributions from Step 4 and an output that always parses: <code>{"currency": "USD", "total": 12}</code>. (The total is nonsense because the "model" is random; the mask guarantees shape, never sense.) Remove <code>can_finish</code> from <code>step_mask</code> and the decoder walks into the <code>":</code> dead end from Step 5.</p>
+<p>Second, the production pattern with Pydantic: one type definition produces both the schema to send and the validator, with a semantic check and a bounded repair loop against a fake model.</p>
+<pre data-lang="python">import json, re
+from datetime import date
+from decimal import Decimal
+from typing import List, Literal, Optional
+from pydantic import BaseModel, Field, ValidationError, model_validator
+
+class LineItem(BaseModel):
+    description: str
+    quantity: Decimal = Field(gt=0)
+    unit_price: Decimal
+    amount: Decimal
+
+class Invoice(BaseModel):
+    vendor: str
+    invoice_number: Optional[str]                  # required key, value may be null
+    issue_date: date                               # ISO 8601 string in the JSON
+    currency: Literal["USD", "EUR", "GBP", "INR", "other"]
+    line_items: List[LineItem]
+    total: Decimal
+
+    @model_validator(mode="after")
+    def amounts_add_up(self):                      # a semantic check no schema can express
+        for li in self.line_items:
+            if li.quantity * li.unit_price != li.amount:
+                raise ValueError(f"{li.description}: {li.quantity} x {li.unit_price} != {li.amount}")
+        items = sum(li.amount for li in self.line_items)
+        if items != self.total:
+            raise ValueError(f"line items sum to {items} but total is {self.total}")
+        return self
+
+schema = Invoice.model_json_schema()               # what you send as the response schema
+print(schema["required"])
+
+def parse(raw):
+    raw = re.sub(r"^```(?:json)?\s*|\s*```\s*$", "", raw.strip())   # tolerate code fences
+    return Invoice.model_validate(json.loads(raw))
+
+# Two replies from a fake model: the first transposes digits in the total.
+replies = iter([
+    '```json\n{"vendor": "Brightline Studio", "invoice_number": "BL-0417", "issue_date": "2025-05-30",'
+    ' "currency": "USD", "line_items": [{"description": "Design work", "quantity": 12,'
+    ' "unit_price": "85.00", "amount": "1020.00"}, {"description": "Hosting", "quantity": 1,'
+    ' "unit_price": "220.00", "amount": "220.00"}], "total": "1204.00"}\n```',
+    '{"vendor": "Brightline Studio", "invoice_number": "BL-0417", "issue_date": "2025-05-30",'
+    ' "currency": "USD", "line_items": [{"description": "Design work", "quantity": 12,'
+    ' "unit_price": "85.00", "amount": "1020.00"}, {"description": "Hosting", "quantity": 1,'
+    ' "unit_price": "220.00", "amount": "220.00"}], "total": "1240.00"}'])
+
+def extract(document, max_attempts=2):
+    messages = [{"role": "user", "content": f"Extract the invoice.\n&lt;doc&gt;{document}&lt;/doc&gt;"}]
+    for attempt in range(1, max_attempts + 1):
+        raw = next(replies)                        # stands in for the model call
+        try:
+            return parse(raw), attempt
+        except (json.JSONDecodeError, ValidationError) as e:
+            error = str(e).splitlines()[-1] if isinstance(e, json.JSONDecodeError) else e.errors()[0]["msg"]
+            print(f"attempt {attempt} rejected: {error}")
+            messages += [{"role": "assistant", "content": raw},
+                         {"role": "user", "content": f"That failed validation: {error}. "
+                          "Re-read the document and return corrected JSON only."}]
+    return None, max_attempts                      # caller routes to a human queue
+
+invoice, attempts = extract("...invoice text...")
+print(attempts, invoice.total, invoice.currency, len(invoice.line_items))</pre>
+<p>It prints the required keys, the first attempt's rejection ("line items sum to 1240.00 but total is 1204.00"), and the accepted second attempt with total 1240.00.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"JSON mode means my schema is enforced."</strong> JSON mode guarantees parseable JSON only. Schema enforcement needs strict mode, a forced tool call or a constrained-decoding library.</li>
+<li><strong>"Valid JSON means correct data."</strong> Constrained decoding guarantees shape. Values can still be wrong; only semantic checks and audits catch that.</li>
+<li><strong>Enums with no escape value.</strong> The model is forced to pick an allowed value even when none fits, producing confident errors.</li>
+<li><strong>Conclusion fields first.</strong> The model commits to a total or label before writing the evidence. Order fields as you would want someone to think.</li>
+<li><strong>Money as floats.</strong> Use decimal strings or integer minor units.</li>
+<li><strong>Blind retries.</strong> Retrying without the error message repeats input-driven failures. Include the error, bound the loop, and route to a human after that.</li>
+<li><strong>Ignoring truncation.</strong> Even in strict mode, hitting <code>max_tokens</code> ends the output mid-object. Check the finish reason.</li>
+<li><strong>Assuming full JSON Schema support.</strong> Strict modes support a subset; design for it, and keep the validator as the source of truth.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>Under JSON mode, which rows of Step 1's failure table can still happen?</summary><div class="answer">Wrong shape, missing or extra fields, and wrong values. JSON mode only removes wrapper text and invalid syntax (and truncation still happens if you ignore the finish reason).</div></details>
+<details><summary>For a different invoice, the raw probabilities of the allowed tokens at the currency position are US 0.12, EUR 0.03, USD 0.09 and INR 0.01; everything else (0.75 in total) is masked. What are the probabilities after renormalising? What does the 0.75 tell you?</summary><div class="answer">The allowed mass is 0.25, so US 0.48, EUR 0.12, USD 0.36, INR 0.04 (US and USD together give USD 0.84). The 0.75 means the model mostly wanted to write something the schema forbids, a strong hint that none of the allowed values fits; an <code>"other"</code> escape value would have caught it.</div></details>
+<details><summary>4% of extractions fail validation. Retrying once fixes half of the failures; the other half fail again for the same input-driven reason. At 500,000 documents a day, how many reach the human queue after one retry, and how many would if failures were independent?</summary><div class="answer">Observed: \(500{,}000 \times 0.04 \times 0.5 = 10{,}000\) a day. If independent, \(500{,}000 \times 0.04^2 = 800\). The gap is the signature of input-driven failures; fix those inputs (OCR, length limits) rather than retrying more.</div></details>
+<details><summary>A classifier schema is <code>{"label": enum, "reasoning": string}</code>. What would you change, and why?</summary><div class="answer">Put <code>reasoning</code> before <code>label</code>, so the model writes its evidence before committing; and add an <code>"other"</code> or <code>"unclear"</code> label as an escape value.</div></details>
+<details><summary>Why does a token-level constrained decoder need more than "is the text so far a valid prefix?"</summary><div class="answer">Because tokens span several characters and the vocabulary is fixed. A token can keep the text a valid prefix yet lead to a state from which no vocabulary token can continue (the <code>":</code> dead end). The index must keep only tokens from which a complete valid output is still reachable.</div></details>
+<details><summary>The sum check fails and the repaired output now passes, but an auditor finds the model changed a line item to match the wrong total. How do you prevent this?</summary><div class="answer">Validate against an independent source instead of only internal consistency: extract the document's stated total separately (or run a second extraction) and require agreement; flag records whose line items changed during repair for human review; and track the post-check error rate with audited samples.</div></details>
+</section>

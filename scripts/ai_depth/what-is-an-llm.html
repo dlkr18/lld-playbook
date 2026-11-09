@@ -1,0 +1,221 @@
+<!-- Deep lesson: What an LLM is. Merged into fundamentals/what-is-an-llm by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Token</td><td>The unit a model reads and writes: a word, part of a word, a number or a punctuation mark. Text is split into tokens before the model sees it.</td></tr>
+<tr><td>Vocabulary</td><td>The fixed list of all tokens a model knows, typically 30,000 to 250,000 entries.</td></tr>
+<tr><td>Language model</td><td>A model that assigns a probability to the next token given the tokens before it.</td></tr>
+<tr><td>Autoregressive generation</td><td>Producing text one token at a time, feeding each chosen token back in as input for the next step.</td></tr>
+<tr><td>Context (window)</td><td>The tokens the model can see when predicting the next one. Its maximum length is the context window.</td></tr>
+<tr><td>Parameters (weights)</td><td>The learned numbers inside the model. "7B" means about 7 billion of them.</td></tr>
+<tr><td>Pretraining</td><td>The first, largest training stage: predicting the next token on trillions of tokens of general text.</td></tr>
+<tr><td>Base model / instruct model</td><td>The raw pretrained model, which continues documents, versus a version further trained to follow instructions and hold a conversation.</td></tr>
+<tr><td>Perplexity</td><td>\(e\) raised to the average next-token loss: roughly how many tokens the model is choosing between at each step. Lower is better.</td></tr>
+<tr><td>Decoder-only / encoder-only</td><td>A transformer that predicts left to right and can generate (GPT, Llama, Mistral), versus one that reads the whole input at once to produce representations (BERT).</td></tr>
+<tr><td>Scaling law</td><td>An empirical formula predicting a model's loss from its parameter count, training tokens and compute.</td></tr>
+<tr><td>Compute-optimal</td><td>The split of a fixed training budget between model size and data that gives the lowest loss.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>"Large language model" is used loosely to mean a chatbot, a product, or a kind of intelligence. For an engineer it should mean something precise: <strong>a function that takes a sequence of tokens and returns a probability for every possible next token</strong>, learned from a very large amount of text by one objective, predicting the next token. Everything an LLM appears to do (answer questions, write code, summarise, call tools) is built by running that function in a loop.</p>
+<p>Holding on to that definition explains most of an LLM's behaviour in production: why it can state false things fluently, why it knows nothing after its training cutoff, why it has no memory between calls, why the same prompt can give different answers, and why cost is counted in tokens. The questions interviewers ask:</p>
+<ol>
+<li>What exactly is an LLM, and what is it trained to do?</li>
+<li>Why does "just predicting the next token" produce something that looks capable of reasoning?</li>
+<li>What is the difference between a base model and a chat model, and between decoder-only and encoder models?</li>
+<li>What do scaling laws say, and why are small models now trained on far more data than "compute-optimal"?</li>
+</ol>
+<p>The running example is a support assistant for a cloud company, "Acme Cloud", whose help pages say things like <em>"refunds are available within 30 days of purchase"</em>. We will first build the smallest possible language model, a word-counting model trained on eight sentences of those help pages, and see the whole idea working, including its failure. Then we scale the same idea up to a 7-billion-parameter model and see what changes and what does not.</p>
+</section>
+
+<section data-label="Step 1: a function from context to a next-token distribution">
+<p>Train a <strong>bigram</strong> model on eight short sentences from Acme's help pages (72 words, 35 distinct). A bigram model predicts the next word from only the previous word, by counting: of all the times word \(a\) appeared, what fraction were followed by word \(b\)?</p>
+<p>After "within", the help pages continue with "30" twice, "5" twice and "14" once. So the model's prediction is:</p>
+\[ P(\text{30} \mid \text{within}) = 0.4,\quad P(\text{5} \mid \text{within}) = 0.4,\quad P(\text{14} \mid \text{within}) = 0.2 \]
+<p>That is a language model: context in, probability distribution over the vocabulary out. An LLM has exactly this interface. The differences are scale, and what "context" means:</p>
+<ul>
+<li>The vocabulary is about 100,000 tokens, not 35 words, so the output is 100,000 probabilities (computed from 100,000 logits by softmax, as in <a href="@@foundations/math@@">The math you need</a>).</li>
+<li>The context is not the last word but the entire preceding text, up to the context window: thousands to hundreds of thousands of tokens.</li>
+<li>The prediction is computed by a neural network with billions of parameters, not looked up in a table of counts.</li>
+</ul>
+<p>Tokens are usually pieces of words; how text is split and what that costs is covered in <a href="@@fundamentals/tokens-context-cost@@">Tokens, context &amp; cost</a>. In this lesson, "token" and "word" can be read as the same thing.</p>
+</section>
+
+<section data-label="Step 2: generation is a loop around that function">
+<p>The model predicts one token. To produce text, run it in a loop: predict a distribution, pick one token from it, append that token to the context, predict again, and stop at an end marker or a length limit. This is <strong>autoregressive generation</strong>.</p>
+<p>Starting from "refunds" and always picking the most likely next word (greedy decoding), our bigram model writes: <em>"refunds are available within 30 days ."</em> Correct and fluent. Sampling at random in proportion to the probabilities instead, three runs gave:</p>
+<ul>
+<li><em>"refunds are not available within 5 business days of the billing dashboard ."</em></li>
+<li><em>"refunds for annual plans are available 24 hours a day ."</em></li>
+<li><em>"refunds for annual plans renew within 30 days ."</em></li>
+</ul>
+<p>Every adjacent pair of words in those sentences appeared in the training text. The sentences are fluent, and they are false or meaningless: no help page says any of them. The model only ever asked "what usually comes next?", and "available" is sometimes followed by "24" (in "support is available 24 hours a day"). This is the mechanism of <strong>hallucination</strong> in miniature. An LLM conditions on vastly more context, so its continuations are far more often right, but the operation is the same: produce a plausible continuation, with no separate step that checks it against the world. Grounding answers in retrieved text is the main defence (<a href="@@fundamentals/limits@@">Limits &amp; hallucination</a>).</p>
+<p>How you pick from the distribution (greedy, temperature, top-p) is a separate choice from the model itself, covered in <a href="@@fundamentals/decoding@@">Decoding</a>.</p>
+<p>The loop also sets the cost structure. A forward pass of a model with \(N\) parameters costs about \(2N\) floating-point operations per token: 14 billion for a 7B model. Reading the prompt (<strong>prefill</strong>) processes all its tokens in one parallel pass, which is fast per token; generating the answer (<strong>decode</strong>) needs one sequential pass per output token, which is why output tokens are slower and usually priced several times higher than input tokens.</p>
+</section>
+
+<section data-label="Step 3: the objective is next-token prediction, scored by cross-entropy">
+<p>Training sets the model's parameters so that the real next token gets high probability, everywhere in the training text. The loss at each position is the cross-entropy, \(-\log P(\text{actual next token} \mid \text{context})\), averaged over every position of every document. A trillion-token training set is a trillion small prediction exercises, each giving a gradient.</p>
+<p>Measure our bigram model on a held-out sentence, <em>"refunds are processed within 30 days ."</em>. With a small correction so unseen pairs do not get probability zero (add-one smoothing), the seven next-word probabilities are between 0.07 and 0.11, the average loss is 2.41, and the <strong>perplexity</strong> is \(e^{2.41} = 11.1\): at each step the model is about as unsure as if choosing uniformly among 11 words. Guessing uniformly over the 36 possible next tokens (35 words plus an unknown marker) would give perplexity 36. Lower perplexity on held-out text is the purest measure of how good a language model is at its own task.</p>
+<p>Why does this one objective produce general capability? Because predicting real text well requires whatever knowledge and skill produced the text. To give high probability to "14" after <em>"refunds for annual plans are available within"</em>, a model must have stored Acme's annual-plan policy. To predict the next line of a proof, it helps to follow the proof. To predict the next move described in a chess game, it helps to model the board. The objective never mentions facts, grammar or reasoning, but each of them lowers the loss, so gradient descent builds whatever internal machinery approximates them, to the extent the model's size and data allow. That is the honest version of "it is just autocomplete": it is autocomplete under extreme pressure to be right, and being right on diverse text demands a great deal.</p>
+<p>The same view explains the limits. The model learns what text tends to say, which is not always what is true. It learns from the text it saw, so anything after its training cutoff, or inside your company's private documents, is unknown to it unless you put it in the context.</p>
+</section>
+
+<section data-label="Step 4: why counting fails and a neural network does not">
+<p>Why not make the counting model better by using longer contexts? Three problems appear immediately in our tiny corpus, and they are the reason LLMs are neural networks.</p>
+<ul>
+<li><strong>Sparsity.</strong> After "processed within", the trigram model (two words of context) has only ever seen "5", so it gives "30" probability zero. Longer contexts are seen fewer times, and with 100,000 tokens there are \(10^{50}\) possible 10-token contexts: almost every real context has never appeared in any training set.</li>
+<li><strong>No similarity.</strong> "Credits" never appears in the help pages, so the model knows nothing about "credits are available within", even though it is plainly similar to "refunds are available within". To a count table, every word is unrelated to every other.</li>
+<li><strong>Size.</strong> Storing counts for long contexts is impossible.</li>
+</ul>
+<p>A neural language model solves all three with one move: it turns the context into a <strong>vector</strong> (a list of a few thousand numbers) and computes the prediction from that vector. Similar contexts produce similar vectors, so what the model learned from "refunds are available within" transfers to "credits are available within" without ever seeing the second. Words become vectors too (<em>embeddings</em>), placed so that words used in similar ways sit near each other. The model never stores a table of contexts; it stores a few billion parameters that compute a good vector for any context, including ones never seen before. Generalising from seen contexts to unseen ones is the whole point.</p>
+</section>
+
+<section data-label="Step 5: what is inside, and where the parameters are">
+<p>Almost every current generative LLM is a <strong>decoder-only transformer</strong> (a few use other designs, such as state-space or hybrid models, and frontier labs do not always publish their architectures). The input tokens are looked up in an embedding table to get one vector per token. Those vectors pass through a stack of identical <strong>blocks</strong>; each block lets every position gather information from earlier positions (<em>attention</em>) and then transforms each position independently (a feed-forward <em>MLP</em>). The final vector at the last position is multiplied by an output matrix to give one logit per vocabulary token. How attention works is the subject of <a href="@@fundamentals/transformers@@">Transformers</a>; here we only need to know where the parameters live.</p>
+<p>For a Llama-2-7B-style configuration (hidden size 4,096, 32 blocks, MLP width 11,008, vocabulary 32,000):</p>
+<table>
+<thead><tr><th>Component</th><th>Calculation</th><th>Parameters</th></tr></thead>
+<tbody>
+<tr><td>Attention, per block</td><td>4 matrices of \(4096 \times 4096\)</td><td>67.1M</td></tr>
+<tr><td>MLP, per block</td><td>3 matrices of \(4096 \times 11008\)</td><td>135.3M</td></tr>
+<tr><td>All 32 blocks</td><td>\(32 \times 202.4\)M</td><td>6.48B</td></tr>
+<tr><td>Input embeddings + output matrix</td><td>\(2 \times 32000 \times 4096\)</td><td>0.26B</td></tr>
+<tr><td><strong>Total</strong></td><td></td><td><strong>6.74B</strong></td></tr>
+</tbody>
+</table>
+<p>96% of the parameters are in the blocks, and two thirds of each block is the MLP. A rough rule follows: parameters \(\approx 12 \times \text{layers} \times \text{hidden}^2\) (the ratio is approximate because MLP widths vary). At 2 bytes per parameter in bf16, this model is 13.5 GB of weights, which sets the minimum GPU memory to serve it before any context is stored.</p>
+</section>
+
+<section data-label="Step 6: base model, instruct model, chat model">
+<p>Pretraining produces a <strong>base model</strong>: an excellent continuer of documents. Give it <em>"What is Acme's refund window?"</em> and it may well continue with <em>"What is Acme's cancellation policy? How do I export my data?"</em>, because on the web a question is often followed by more questions, as in an FAQ list. It is not being unhelpful; it is predicting.</p>
+<p>An <strong>instruct</strong> or <strong>chat</strong> model is the same network, same architecture, further trained on examples of instructions followed by good responses (supervised fine-tuning), then on human or AI preferences between responses (RLHF or DPO). Conversations are written into a fixed text format with special tokens marking who is speaking, the <strong>chat template</strong>, so the model learns that after the assistant marker comes a helpful answer. Underneath, the chat model is still predicting the next token; the training has changed which continuations are likely. The stages, data and costs are in <a href="@@fundamentals/how-llms-are-trained@@">How LLMs are trained</a>.</p>
+<p>For an engineer the practical rule is: use instruct or chat models for applications; use base models only when you will fine-tune them yourself or need raw continuation (some completion and scoring tasks). And always send a chat model its own template, which API providers do for you and open-model libraries do through the tokenizer's chat template.</p>
+</section>
+
+<section data-label="Step 7: model families">
+<table>
+<thead><tr><th>Family</th><th>How it reads text</th><th>Trained to</th><th>Examples</th><th>Use it for</th></tr></thead>
+<tbody>
+<tr><td>Decoder-only</td><td>Left to right; each position sees only earlier ones</td><td>Predict the next token</td><td>GPT, Llama, Mistral, Qwen (and most frontier chat models, as far as published)</td><td>Generation, chat, tools, almost everything</td></tr>
+<tr><td>Encoder-only</td><td>Whole input at once, both directions</td><td>Fill in masked-out tokens</td><td>BERT and its descendants</td><td>Embeddings, classification, rerankers</td></tr>
+<tr><td>Encoder–decoder</td><td>Encoder reads input bidirectionally; decoder generates</td><td>Map input text to output text</td><td>T5, original transformer</td><td>Translation, some summarisation; less common now</td></tr>
+</tbody>
+</table>
+<p>Decoder-only won for general-purpose models for three reasons. Every token in every document is a training target, so no data is wasted. Generation is built in, so one model does every task phrased as text. And the design is simple, which made it the easiest to scale. Encoder models remain the workhorses inside RAG systems: most embedding models and rerankers are encoder-style (<a href="@@rag/embedding-models@@">Choosing an embedding model</a>).</p>
+<p>Two other distinctions you will be asked about. <strong>Dense versus mixture-of-experts (MoE)</strong>: in an MoE model each token is routed to a few of many MLP "experts", so the total parameter count is large but the compute per token is that of a much smaller dense model (<a href="@@inference/moe@@">Mixture of experts</a>). <strong>Open-weight versus API</strong>: open weights can be self-hosted, fine-tuned and inspected; API models are usually stronger at the frontier and need no infrastructure, but you send data to a provider and accept their versioning.</p>
+</section>
+
+<section data-label="Step 8: scaling laws">
+<p>The most consequential empirical finding behind LLMs is that the next-token loss falls smoothly and predictably as you add parameters, data and compute: roughly a <strong>power law</strong>, a straight line on a log-log plot, over many orders of magnitude. That predictability is what justified spending tens of millions of dollars on a single training run: you can fit the curve on small models and extrapolate.</p>
+<p>Training compute is approximately \(C \approx 6ND\) floating-point operations for \(N\) parameters and \(D\) training tokens (2 per parameter per token forward, 4 backward). A 7B model on 2 trillion tokens costs \(6 \times 7 \times 10^9 \times 2 \times 10^{12} = 8.4 \times 10^{22}\) FLOPs.</p>
+<p>Given a fixed budget \(C\), how should it be split between model size and data? The Chinchilla study (Hoffmann et al., 2022) found that both should grow together, at roughly <strong>20 training tokens per parameter</strong>. Earlier large models had been too big for their data. With \(C = 10^{23}\) FLOPs, setting \(D = 20N\) in \(C = 6ND\) gives \(N = \sqrt{C/120} \approx 29\) billion parameters and \(D \approx 580\) billion tokens.</p>
+<p>But compute-optimal for <em>training</em> is not optimal for a product, because a model is trained once and then serves billions of tokens, and serving cost scales with \(N\). So recent models deliberately <strong>over-train</strong> small models: a 7B model on 2 to 15 trillion tokens is roughly 300 to 2,100 tokens per parameter. Using the loss formula fitted in the Chinchilla paper as an illustration (its absolute numbers are specific to that paper's data):</p>
+<table>
+<thead><tr><th>Model</th><th>Tokens</th><th>Tokens per parameter</th><th>Predicted loss</th><th>Serving cost per token</th></tr></thead>
+<tbody>
+<tr><td>7B</td><td>140B</td><td>20</td><td>2.18</td><td>1×</td></tr>
+<tr><td>7B</td><td>2T</td><td>286</td><td>2.02</td><td>1×</td></tr>
+<tr><td>7B</td><td>15T</td><td>2,143</td><td>1.96</td><td>1×</td></tr>
+<tr><td>70B</td><td>1.4T</td><td>20</td><td>1.94</td><td>10×</td></tr>
+</tbody>
+</table>
+<p>The 7B model trained on 15T tokens gets most of the way to the compute-optimal 70B model's loss at a tenth of the serving cost per token. That trade is why small, heavily trained open models are so capable, and why "how many parameters" alone says little about quality. Two cautions: loss is not the same as capability on a given task (on some task metrics, abilities appear fairly abruptly as loss falls smoothly), and data is now a binding constraint, since high-quality text is finite.</p>
+</section>
+
+<section data-label="Step 9: what the definition means for the systems you build">
+<p>Translate "a next-token function, run in a loop" into engineering facts:</p>
+<ul>
+<li><strong>It is stateless.</strong> Each API call is independent. "Memory" in a chat app is the application re-sending the conversation every turn; the cost of turn 20 includes turns 1 to 19 (<a href="@@agents/memory-context@@">Memory &amp; context</a>).</li>
+<li><strong>Its knowledge is frozen and incomplete.</strong> It knows what was in its training data up to a cutoff. Acme's current refund policy, changed last week, must be supplied in the context: that is retrieval-augmented generation (<a href="@@rag/rag-pipeline@@">The RAG pipeline</a>).</li>
+<li><strong>Outputs are samples.</strong> The same input can give different outputs, and a fluent output is not a verified one. Design for checking: structured output, validation, citations, evals.</li>
+<li><strong>Everything is tokens.</strong> Latency is roughly prefill time plus output tokens times time per token; price is input tokens times one rate plus output tokens times a higher one.</li>
+<li><strong>Instructions are just more context.</strong> The model has no hard separation between your instructions and text it reads, which is the root of prompt injection (<a href="@@production/security@@">Security</a>).</li>
+</ul>
+</section>
+
+<section data-label="In code: a language model in thirty lines">
+<pre data-lang="python">import math
+import random
+from collections import Counter, defaultdict
+
+help_pages = """refunds are available within 30 days of purchase .
+refunds are processed within 5 business days .
+refunds are not available after 30 days .
+invoices are available in the billing dashboard .
+support is available 24 hours a day .
+annual plans renew within 30 days of the end of the term .
+password resets are processed within 5 minutes .
+refunds for annual plans are available within 14 days .""".split("\n")
+
+counts = defaultdict(Counter)                         # counts[prev][next]
+for line in help_pages:
+    words = ["&lt;s&gt;"] + line.split()
+    for prev, nxt in zip(words, words[1:]):
+        counts[prev][nxt] += 1
+vocab = {w for c in counts.values() for w in c}
+
+def next_token_distribution(prev):                    # the "model": context -&gt; probabilities
+    total = sum(counts[prev].values())
+    return {w: n / total for w, n in counts[prev].most_common()}
+
+print("P(next | within):", next_token_distribution("within"))
+
+def generate(word, greedy, rng):                      # the loop around the model
+    out = [word]
+    while word != "." and len(out) &lt; 15:
+        dist = next_token_distribution(word)
+        word = max(dist, key=dist.get) if greedy else rng.choices(list(dist), weights=list(dist.values()))[0]
+        out.append(word)
+    return " ".join(out)
+
+rng = random.Random(1)
+print("greedy :", generate("refunds", True, rng))
+for _ in range(3):
+    print("sampled:", generate("refunds", False, rng))
+
+V = len(vocab) + 1                                    # +1 for unseen words
+test = ["&lt;s&gt;"] + "refunds are processed within 30 days .".split()
+nll = [-math.log((counts[a][b] + 1) / (sum(counts[a].values()) + V)) for a, b in zip(test, test[1:])]
+print(f"held-out loss {sum(nll) / len(nll):.2f}, perplexity {math.exp(sum(nll) / len(nll)):.1f}")
+</pre>
+<p>It prints the 0.4 / 0.4 / 0.2 distribution after "within", the greedy sentence, the three sampled sentences above, and a held-out perplexity of 11.1. The same interface on a real (small) LLM, using Hugging Face Transformers:</p>
+<pre data-lang="python"># Written against the documented Hugging Face Transformers API; downloads GPT-2 weights (needs network).
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+tok = AutoTokenizer.from_pretrained("gpt2")
+model = AutoModelForCausalLM.from_pretrained("gpt2").eval()
+
+ids = tok("Refunds are available within", return_tensors="pt").input_ids    # (1, n_tokens)
+with torch.no_grad():
+    logits = model(ids).logits[0, -1]               # one logit per vocabulary token (50,257)
+probs = torch.softmax(logits, dim=-1)
+top = torch.topk(probs, 5)
+for p, i in zip(top.values, top.indices):
+    print(f"{tok.decode(int(i))!r:12} {p.item():.3f}")                  # the next-token distribution
+</pre>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"The model looks things up."</strong> It computes a distribution from parameters. Facts are stored diffusely in weights and can be wrong, outdated or blended; nothing is retrieved unless you build retrieval.</li>
+<li><strong>"It remembers our earlier conversation."</strong> The model is stateless. The application re-sends history, and pays for it in tokens every turn.</li>
+<li><strong>"Just autocomplete, so it cannot reason."</strong> Predicting diverse text well rewards internal computation that tracks facts and steps. Whether that counts as reasoning is a philosophical question; that it solves many multi-step problems is measurable.</li>
+<li><strong>"It is intelligent, so it knows when it is wrong."</strong> Generation has no built-in verification step. Fluency and correctness are separate; check outputs.</li>
+<li><strong>Treating parameter count as quality.</strong> Training data volume and quality, and post-training, matter as much. A heavily trained 7B model can beat an under-trained larger one.</li>
+<li><strong>Confusing base and chat models.</strong> A base model continues documents and ignores the "instruction" framing; a chat model needs its chat template.</li>
+<li><strong>"Temperature 0 gives the model's true answer."</strong> It gives the single most likely continuation under some numerical noise, which can still be wrong.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>State precisely what an LLM computes in one forward pass.</summary><div class="answer">Given a sequence of tokens, a vector of logits (one per vocabulary token) for the next position, which softmax turns into a probability distribution over the next token. Generation repeats this, appending a chosen token each time.</div></details>
+<details><summary>A model has 32 layers and hidden size 5,120. Estimate its parameter count, and the bf16 weight memory.</summary><div class="answer">\(12 \times 32 \times 5120^2 \approx 10.1\) billion parameters in the blocks, plus embeddings. About \(10 \times 2 = 20\) GB of bf16 weights, before any KV cache.</div></details>
+<details><summary>You have a training budget of \(6 \times 10^{22}\) FLOPs. What model size and token count does the 20-tokens-per-parameter rule suggest?</summary><div class="answer">\(C = 6ND\) with \(D = 20N\) gives \(C = 120N^2\), so \(N = \sqrt{6 \times 10^{22}/120} = \sqrt{5 \times 10^{20}} \approx 22\) billion parameters and \(D \approx 450\) billion tokens.</div></details>
+<details><summary>Why would a company train a 7B model on 15 trillion tokens instead of a compute-optimal 70B model?</summary><div class="answer">Serving cost scales with parameters and is paid on every token for the model's lifetime. Over-training the small model reaches a loss close to the larger model's while costing about a tenth as much per generated token, which dominates total cost for a widely used model.</div></details>
+<details><summary>A base model, asked "Summarise this email:", produces another email. Why, and what would you use instead?</summary><div class="answer">A base model continues documents; on the web, text like that is often followed by more email text. Use an instruction-tuned or chat model with its chat template, or few-shot examples that make "summary" the likely continuation.</div></details>
+<details><summary>Our bigram model wrote "refunds for annual plans are available 24 hours a day." Explain the mechanism, and the two things an Acme assistant would do to prevent the LLM-scale version.</summary><div class="answer">Each step picked a likely next word given only local context; every pair was seen in training, but the sentence as a whole is false. An LLM does the same with far richer context. Prevent it by retrieving the actual refund policy into the context (RAG) and instructing the model to answer only from it, with citations and an evaluation that checks answers against sources.</div></details>
+<details><summary>Which family would you use for (a) an embedding model for semantic search, (b) a chat assistant, (c) a classifier that must run in 5 ms on CPU?</summary><div class="answer">(a) Encoder-style embedding model. (b) Decoder-only instruct model. (c) A small encoder (or a logistic regression on precomputed embeddings); a generative decoder model is far too slow for that budget.</div></details>
+</section>

@@ -1,0 +1,240 @@
+<!-- Deep lesson: Serving & scaling. Merged into inference/serving by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Inference engine</td><td>The process that holds the model on a GPU and runs the scheduling loop: vLLM, SGLang, TensorRT-LLM, TGI, llama.cpp.</td></tr>
+<tr><td>Replica</td><td>One complete copy of the model serving traffic, on one GPU or a group of GPUs. Throughput scales by adding replicas.</td></tr>
+<tr><td>SLO</td><td>Service-level objective: a latency or availability target stated as a percentile, for example "p95 TTFT under 1 s".</td></tr>
+<tr><td>Goodput</td><td>Requests per second that finish <em>within</em> the SLO. Throughput that misses the SLO does not count.</td></tr>
+<tr><td>Little's law</td><td>Average items in a system = arrival rate × average time each spends in it. Turns traffic into concurrency.</td></tr>
+<tr><td>Utilisation \(\rho\)</td><td>The fraction of time a resource is busy. Queueing delay grows sharply as \(\rho\) approaches 1.</td></tr>
+<tr><td>Tensor parallelism (TP)</td><td>Splitting every layer's weight matrices across several GPUs that work on each token together.</td></tr>
+<tr><td>Open-loop / closed-loop load</td><td>Open-loop sends requests on a schedule regardless of responses (like real users); closed-loop waits for each response before sending the next.</td></tr>
+<tr><td>Prefix-aware routing</td><td>Sending requests that share a prompt prefix to the replica that already holds that prefix's KV cache.</td></tr>
+<tr><td>Cold start</td><td>The time from "scale up" to a new replica serving traffic: machine, container, weight download, engine warm-up.</td></tr>
+<tr><td>Disaggregated serving</td><td>Running prefill and decode on separate GPU pools and shipping the KV cache between them.</td></tr>
+<tr><td>Multi-LoRA serving</td><td>Serving many small fine-tuned adapters on top of one shared base model in the same batch.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p><a href="@@inference/inference-internals@@">Inference internals</a> explains what one GPU does with one batch. Serving is the next layer up: turning a traffic forecast and a latency target into a number of GPUs, a way to spread requests across them, a rule for adding and removing them, and a benchmark you can trust. It is classic capacity planning, with two twists: the unit of work is the token rather than the request, and each request occupies memory for its whole lifetime.</p>
+<p>The questions interviewers ask:</p>
+<ol>
+<li>Given a traffic forecast and a latency target, how many GPUs do you need, and how do you justify the number?</li>
+<li>When do you add replicas and when do you split one model across GPUs?</li>
+<li>How do you route and autoscale LLM traffic, and why is CPU or GPU utilisation the wrong signal?</li>
+<li>How do you benchmark a serving setup so the numbers mean something?</li>
+</ol>
+<p><strong>Running example.</strong> An internal assistant runs the 8B model from Inference internals (16 GB of BF16 weights, 128 KiB of KV cache per token) on H100 80 GB GPUs. At the daily peak it receives <strong>12 requests per second</strong>; an average request has a <strong>1,500-token prompt</strong> and a <strong>250-token answer</strong>. The SLO is <strong>p95 TTFT under 1 s</strong> and <strong>p95 TPOT under 40 ms</strong>. Off-peak traffic averages 4 requests per second. As before, hardware figures are datasheet values (989 TFLOP/s BF16, 3.35 TB/s) and every result is a napkin estimate to be confirmed by load testing.</p>
+</section>
+
+<section data-label="Step 1: the parts of a serving system">
+<p>A request passes through four layers, each with one job:</p>
+<pre class="ascii-diagram">client ──► gateway ──────► router ──────────► engine replica (GPU)
+           auth, quotas,   picks a replica:   scheduler: who runs this step
+           rate limits,    load, prefix,      KV manager: blocks per sequence
+           request logs    model / adapter    model runner: the forward pass
+                                              └─ streams tokens back (SSE)</pre>
+<ul>
+<li>The <strong>gateway</strong> handles everything that is about the caller: authentication, per-tenant token quotas, request size limits, logging.</li>
+<li>The <strong>router</strong> picks which replica serves the request. For LLMs this is not a plain round-robin balancer, for reasons in Step 6.</li>
+<li>The <strong>engine</strong> runs the continuous-batching loop: each iteration the scheduler decides which sequences decode and which prefills (or prefill chunks) run, the KV manager allocates blocks, and the runner executes one forward pass.</li>
+</ul>
+<p>The engine is where performance is won or lost, but the layers around it decide whether the system survives real traffic. Treat the engine as a stateful service: in-flight generations die with the process, so deploys must drain replicas before restarting them.</p>
+</section>
+
+<section data-label="Step 2: from requests to tokens and concurrency">
+<p>Requests per second is the wrong unit, because two requests can differ in cost by a factor of a hundred. Convert to tokens:</p>
+<ul>
+<li>Prefill load: 12 × 1,500 = <strong>18,000 prompt tokens/s</strong>, which costs compute.</li>
+<li>Decode load: 12 × 250 = <strong>3,000 output tokens/s</strong>, which costs bandwidth and KV memory.</li>
+</ul>
+<p>Then convert to concurrency with <strong>Little's law</strong>: the average number of requests in the system \(L\) equals the arrival rate \(\lambda\) times the average time each spends inside, \(W\):</p>
+\[ L = \lambda W \]
+<p>If TTFT is about 0.2 s and TPOT about 20 ms, one request lives for \(W \approx 0.2 + 249 \times 0.02 \approx 5.2\) s, so at 12 requests per second about \(12 \times 5.2 \approx 62\) requests are in flight at any moment. That is the batch the GPUs must hold, and it is why memory, not request rate, is often the binding constraint: 62 sequences each need their own KV cache for five seconds.</p>
+<p>Little's law also shows a feedback loop. If the server slows down, \(W\) grows, so more requests are in flight, so the batch is bigger, so each step is slower. Overloaded LLM servers do not degrade gently; they spiral until memory runs out and the scheduler starts preempting.</p>
+</section>
+
+<section data-label="Step 3: what one replica can carry">
+<p>One replica has a fixed budget of GPU time per second, shared by two kinds of work:</p>
+<ul>
+<li><strong>Prefill</strong> costs \(2 \times 8.03\times10^{9} \times 1{,}500\) FLOPs per request; at half of peak compute, about <strong>48.7 ms</strong> of GPU time. At \(\lambda\) requests per second it occupies a fraction \(\rho_{\text{pre}} = \lambda \times 0.0487\) of the GPU.</li>
+<li><strong>Decode</strong> gets the rest. A decode step at batch \(B\) takes about \((W + B \times \text{KV}_{\text{seq}}) / \text{bandwidth}\), and since prefill chunks are interleaved with decode steps, the time between a user's tokens is stretched to roughly \(\text{step} / (1 - \rho_{\text{pre}})\).</li>
+</ul>
+<p>Combine that with Little's law (the batch \(B\) equals \(\lambda\) times time in system, which itself depends on TPOT) and solve for the steady state. The code at the end does it; the results for our 12 requests per second split across \(n\) replicas:</p>
+<table>
+<thead><tr><th>Replicas</th><th>Req/s each</th><th>GPU time on prefill</th><th>In flight per replica</th><th>TPOT</th><th>Memory used</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>12</td><td>58%</td><td>~65</td><td>21.5 ms</td><td>31 GB</td></tr>
+<tr><td>2</td><td>6</td><td>29%</td><td>~12</td><td>7.9 ms</td><td>19 GB</td></tr>
+<tr><td>3</td><td>4</td><td>19%</td><td>~7</td><td>6.5 ms</td><td>18 GB</td></tr>
+</tbody>
+</table>
+<p>Three things to read off. First, with a 1,500-token prompt, <strong>prefill is the larger consumer</strong>: one replica spends 58% of its time on prompts. Long-prompt workloads (RAG, agents with big tool schemas) are compute-heavy even though people think of LLM serving as bandwidth-bound. Second, a single replica technically meets the TPOT target at peak, at 21.5 ms against 40. Third, memory is nowhere near full, so this workload is limited by compute, not KV capacity. A workload with 30,000-token prompts or long answers would flip that.</p>
+<p>The model is optimistic (real kernels rarely sustain 50% of peak, and it ignores queueing), which is exactly why the next step matters.</p>
+</section>
+
+<section data-label="Step 4: the latency curve and the operating point">
+<p>Averages hide queues. Requests do not arrive evenly; they arrive in random bursts, and a burst that lands while the GPU is busy waits. Queueing theory gives the shape: for a single busy resource, the expected wait grows like</p>
+\[ \text{wait} \propto \frac{\rho}{1 - \rho} \]
+<p>At \(\rho = 0.5\) the factor is 1; at 0.9 it is 9; at 0.95 it is 19. Simulating random (Poisson) arrivals into the prefill queue of one replica, assuming waiting prefills run ahead of decode steps (decode absorbs whatever time is left, as Step 3 modelled), gives p95 TTFT of:</p>
+<table>
+<thead><tr><th>Load</th><th>Prefill busy</th><th>p95 TTFT</th></tr></thead>
+<tbody>
+<tr><td>6 req/s</td><td>29%</td><td>100 ms</td></tr>
+<tr><td>12 req/s</td><td>58%</td><td>180 ms</td></tr>
+<tr><td>16 req/s</td><td>78%</td><td>335 ms</td></tr>
+<tr><td>18 req/s</td><td>88%</td><td>595 ms</td></tr>
+<tr><td>19.5 req/s</td><td>95%</td><td>1,505 ms</td></tr>
+</tbody>
+</table>
+<p>Latency is nearly flat up to about 60% busy, then climbs steeply: the "knee". The last 10% of capacity is bought with a tenfold rise in tail latency. This is the reason capacity plans target 60 to 70% utilisation at peak instead of 100%, and why the number that matters is <strong>goodput</strong>, the rate the system sustains <em>while meeting the SLO</em>, not its maximum throughput. A benchmark that reports "9,000 tokens/s" without the latency at which it was measured is reporting the far side of the knee.</p>
+</section>
+
+<section data-label="Step 5: scaling out, replicas versus tensor parallelism">
+<p>There are two ways to add GPUs, and they buy different things.</p>
+<p><strong>More replicas</strong> (data parallelism for serving) multiply throughput. Each replica is independent, so there is no communication cost, failures are isolated, and capacity grows linearly. They do nothing for single-request latency: a replica serving one user is as fast as it was.</p>
+<p><strong>Tensor parallelism</strong> splits each layer across \(t\) GPUs. Each GPU holds and reads \(1/t\) of the weights per step, so decode steps get faster, and the combined memory can hold a model too big for one GPU. The price is two all-reduce operations per layer per step, which is fast over NVLink inside one server and slow across servers, so TP normally stays within a node.</p>
+<p>For a model that does not fit, TP is mandatory. A 70B model in BF16 is 140 GB, and its KV cache (80 layers, 8 KV heads, head dimension 128) is 320 KiB per token:</p>
+<ul>
+<li><strong>TP = 2</strong> on two 80 GB GPUs: 70 GB of weights each, leaving about 12 GB of KV room in total, roughly 22 of our requests. It fits, but barely serves anyone.</li>
+<li><strong>TP = 4</strong>: 35 GB of weights each, about 164 GB of KV room, roughly 308 requests. This is the practical minimum for real traffic in BF16.</li>
+<li><strong>FP8 weights on TP = 2</strong>: 70 GB of weights, 35 GB per GPU as with BF16 on TP = 4, leaving about 82 GB of KV room, roughly 154 requests, on half the GPUs. Quantization (<a href="@@inference/model-compression@@">Quantization &amp; compression</a>) and TP are alternative ways to buy memory.</li>
+</ul>
+<p>The rule: use the <em>smallest</em> TP degree that fits the model with healthy KV room and meets the TPOT target, then scale throughput with replicas of that unit. For our 8B model the unit is one GPU. Spreading it over two GPUs would cut TPOT a little but waste a second GPU's worth of capacity on communication.</p>
+</section>
+
+<section data-label="Step 6: routing">
+<p>A plain load balancer distributes requests evenly by count. For LLMs that is a poor proxy for load: one request may carry a 20,000-token prompt and ask for 2,000 tokens, the next 200 and 20. Two routing signals work better:</p>
+<ul>
+<li><strong>Least outstanding work.</strong> Route to the replica with the fewest queued plus running tokens (or the lowest KV-cache usage), read from each engine's metrics. This keeps one replica from collecting all the heavy requests by chance.</li>
+<li><strong>Prefix affinity.</strong> A multi-turn conversation resends its whole history each turn. If turn 5 lands on the replica that served turn 4, prefix caching can reuse the history's KV blocks; on any other replica it is recomputed. With three replicas and random routing, a conversation's next turn finds its cache only one time in three. Routing by a hash of the conversation or of the shared prefix sends it home nearly every time, which saves both prefill compute and TTFT.</li>
+</ul>
+<p>The two signals conflict: affinity concentrates load, balancing spreads it. Production routers use affinity until the preferred replica is noticeably busier than the others, then spill over. The router is also where model and adapter selection happen when one fleet serves several models.</p>
+</section>
+
+<section data-label="Step 7: autoscaling and cold starts">
+<p>Traffic for our assistant swings from 4 requests per second off-peak to 12 at peak. Sizing for peak all day leaves two-thirds of the fleet idle whenever traffic is at its off-peak level, so the fleet should scale. Two problems make LLM autoscaling different from scaling a web service.</p>
+<p><strong>The signal.</strong> CPU utilisation is meaningless (the work is on the GPU), and GPU compute utilisation is misleading (decode is memory-bound, so it looks low even under heavy load). Scale on the quantities that predict SLO violations: the number of <em>waiting</em> requests in each engine's queue, KV-cache usage, and measured p95 TTFT. A replica with requests waiting and KV usage near 90% is full regardless of what the utilisation gauge says.</p>
+<p><strong>The delay.</strong> A new replica must start a machine, pull a container, load 16 GB of weights (at an illustrative 1 GB/s from network storage, 16 s; a 140 GB model takes minutes), allocate the KV pool and warm up kernels. A minute or more from decision to serving is common. Traffic that doubles in thirty seconds outruns that. The consequences:</p>
+<ul>
+<li>Keep a <strong>minimum fleet</strong> that absorbs normal bursts: here, two replicas, which also gives N+1 redundancy, since one replica alone still meets the TPOT target at peak (Step 3).</li>
+<li>Scale up early, on a leading signal such as queue growth, and scale down slowly, to avoid oscillation.</li>
+<li>Make cold starts shorter where it is cheap: weights cached on local disk, pre-built images, snapshots of an initialised engine.</li>
+<li>Shed load deliberately when scaling cannot keep up: reject or queue low-priority traffic at the gateway rather than letting every request miss the SLO.</li>
+</ul>
+</section>
+
+<section data-label="Step 8: benchmarking honestly">
+<p>Most published serving numbers cannot be compared with each other, because the benchmark decided the answer. The rules that make a benchmark mean something:</p>
+<ol>
+<li><strong>Use open-loop load for capacity questions.</strong> A closed-loop tester with 32 virtual users sends a new request only when one finishes. If the server slows down, the tester slows down with it, so queues never build and tail latency looks fine. Real users do not wait for each other. An open-loop tester sends requests at a set rate (ideally random, Poisson-distributed gaps) and so reproduces the knee from Step 4. Closed-loop numbers are useful for "how fast is one request" and misleading for "how many users can we serve".</li>
+<li><strong>Use the real length distribution.</strong> Fixed 512-in/128-out prompts hide the long-prompt stalls and long-answer memory pressure that dominate real tails. Sample prompt and output lengths from production logs, including the long tail.</li>
+<li><strong>Match cache behaviour.</strong> Random prompts get no prefix-cache hits and understate a chat workload; replaying one prompt gets 100% and overstates it.</li>
+<li><strong>Pin everything else:</strong> model build, precision, engine version, max batch, sampling parameters (temperature changes answer length), and warm the server up before measuring.</li>
+<li><strong>Report the curve, not a point:</strong> p50, p95 and p99 of TTFT and TPOT at several request rates, and the goodput at your SLO.</li>
+</ol>
+</section>
+
+<section data-label="Step 9: disaggregation, adapters, and choosing an engine">
+<p><strong>Disaggregated prefill and decode.</strong> Step 3 showed prefill and decode competing for the same GPU, and chunked prefill only softens that. Disaggregated serving runs them on separate pools: prefill GPUs process prompts and hand the KV cache to decode GPUs, which only generate. Each pool can be sized and tuned for its own bottleneck, and long prompts never stall anyone's stream. The cost is moving the cache: 1,500 tokens × 128 KiB ≈ 197 MB per request, about 2.4 GB/s at our peak, which needs a fast interconnect. It pays off at large scale with strict TPOT targets, not for a two-GPU fleet.</p>
+<p><strong>Multi-LoRA serving.</strong> If ten teams each fine-tune the model with LoRA, ten separate deployments would need ten sets of 16 GB weights. A rank-16 adapter on the attention projections of this model is about 13.6 million parameters, roughly 27 MB. Engines that support multi-LoRA keep one base model and many adapters in memory and batch requests for different adapters together, so ten fine-tunes cost little more than one deployment. See <a href="@@adaptation/fine-tuning@@">Fine-tuning, LoRA &amp; QLoRA</a> for the adapter maths.</p>
+<p><strong>Engines.</strong> vLLM and SGLang are the general-purpose open-source choices (paged KV cache, continuous batching, prefix caching, an OpenAI-compatible API); TensorRT-LLM trades setup effort for peak performance on NVIDIA hardware; llama.cpp and Ollama target laptops and single users. Pick on the features your workload needs and on your own benchmark, run as in Step 8, not on someone else's chart.</p>
+</section>
+
+<section data-label="A worked plan you can defend">
+<p><strong>"Serve the internal assistant: 12 req/s at peak, 1,500 in / 250 out, p95 TTFT &lt; 1 s, p95 TPOT &lt; 40 ms."</strong></p>
+<ol>
+<li><strong>Load in tokens:</strong> 18,000 prompt and 3,000 output tokens per second at peak; about 62 requests in flight by Little's law.</li>
+<li><strong>Unit:</strong> one H100 per replica. The 8B model fits with over 60 GB of KV room; TP would waste capacity.</li>
+<li><strong>Per-replica capacity (napkin):</strong> about 12 req/s with 58% of time on prefill and TPOT around 21 ms. Discount by half for real-kernel efficiency and keep peak utilisation near 60%: plan on about 5 to 6 req/s per replica until a load test says otherwise.</li>
+<li><strong>Fleet:</strong> 2 replicas minimum (off-peak plus redundancy), autoscaling to 3 or 4 at peak on queue depth and KV usage.</li>
+<li><strong>Routing:</strong> least outstanding tokens, with conversation affinity for prefix-cache hits; prefix caching on, since every request starts with the same system prompt.</li>
+<li><strong>Verification:</strong> open-loop load test with production length distributions at 4, 8, 12 and 16 req/s; confirm goodput at the SLO and find the knee.</li>
+<li><strong>Cost check (illustrative prices):</strong> three GPUs around the clock at $2.50 per hour is about $5,500 a month. If the day averages about 6 requests per second (4 off-peak, 12 at peak), the month is about 15.6 million requests; through an API priced at $0.25 per million input and $1.25 per million output tokens that is about $10,700. Self-hosting is roughly half the bill at this volume, but the gap is about one engineer's part-time attention, so operations effort, quality and data-handling rules decide it; at a third of the traffic the API (about $3,560) already costs less than even the two-GPU minimum fleet (about $3,650). See <a href="@@production/cost-performance@@">Cost &amp; latency</a> for the full method.</li>
+</ol>
+</section>
+
+<section data-label="In code: a capacity model, a queue, and a launch">
+<p>The steady-state model behind Step 3. It solves the loop "batch depends on TPOT, TPOT depends on batch" by iteration.</p>
+<pre data-lang="python">P, W = 8.03e9, 16.06e9            # params, weight bytes (BF16)
+KV_TOK = 131_072                   # bytes per token (32 layers, 8 KV heads, dim 128, BF16)
+FLOPS, MFU, BW = 989e12, 0.5, 3.35e12
+PROMPT, OUT = 1500, 250
+
+def replica(lam):
+    """Steady state of one replica at lam requests/s (continuous batching)."""
+    t_prefill = 2 * P * PROMPT / (FLOPS * MFU)          # GPU-seconds of prefill per request
+    rho_pre = lam * t_prefill                            # share of GPU time spent in prefill
+    if rho_pre &gt;= 1:
+        return None
+    kv_seq = KV_TOK * (PROMPT + OUT / 2)                 # average cache per running sequence
+    B = 1.0
+    for _ in range(200):                                 # fixed point: B = lam * time-in-system
+        step = max((W + B * kv_seq) / BW, 2 * P * B / FLOPS)
+        tpot = step / (1 - rho_pre)                      # decode only gets the time prefill leaves
+        B = lam * (t_prefill + OUT * tpot)
+    mem = (W + B * KV_TOK * (PROMPT + OUT)) / 1e9
+    return rho_pre, B, tpot, mem
+
+for n in (1, 2, 3, 4):
+    r = replica(12 / n)
+    if r is None:
+        print(f"{n} replica(s): prefill alone saturates the GPU")
+        continue
+    rho, B, tpot, mem = r
+    print(f"{n} replica(s): {12/n:4.1f} req/s each | prefill {rho:4.0%} of GPU | "
+          f"~{B:3.0f} in flight | TPOT {tpot*1e3:4.1f} ms | KV+weights {mem:4.1f} GB")
+</pre>
+<p>The queueing simulation behind Step 4: Poisson arrivals into one replica's prefill queue, using Lindley's recursion (each request waits for whatever work is still ahead of it).</p>
+<pre data-lang="python">import random
+
+def p95_ttft(rate, service=0.0487, n=200_000, seed=0):
+    """Open-loop arrivals (Poisson) into a prefill queue; Lindley's recursion for the wait."""
+    rng = random.Random(seed)
+    wait, ttfts = 0.0, []
+    for _ in range(n):
+        ttfts.append(wait + service)
+        gap = rng.expovariate(rate)                  # time until the next arrival
+        wait = max(0.0, wait + service - gap)        # next request's queueing delay
+    ttfts.sort()
+    return ttfts[int(0.95 * n)]
+
+for rate in (6, 12, 16, 18, 19.5):
+    rho = rate * 0.0487
+    print(f"{rate:5.1f} req/s  prefill busy {rho:4.0%}  p95 TTFT {p95_ttft(rate)*1e3:6.0f} ms")
+</pre>
+<p>A launch command in the shape of the plan (vLLM's CLI; flag names as documented in 2025, check your version):</p>
+<pre data-lang="bash"># one replica: one GPU, prefix caching on, batch capped so TPOT stays inside the SLO
+vllm serve meta-llama/Llama-3.1-8B-Instruct \
+  --max-model-len 8192 \
+  --gpu-memory-utilization 0.90 \
+  --max-num-seqs 128 \
+  --enable-prefix-caching \
+  --enable-chunked-prefill
+# the engine exposes Prometheus metrics at /metrics: waiting requests,
+# KV-cache usage and TTFT/TPOT histograms are the autoscaling and alerting inputs</pre>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"Plan capacity in requests per second."</strong> Requests differ in cost by orders of magnitude. Plan in prompt tokens and output tokens per second, and in concurrent sequences.</li>
+<li><strong>"Run the GPUs at 95% to save money."</strong> Tail latency explodes past the knee (Step 4). Plan for 60 to 70% at peak and buy the rest with autoscaling.</li>
+<li><strong>"Tensor parallelism is how you scale."</strong> TP is how you fit a model and lower per-token latency. Throughput scales with replicas; use the smallest TP degree that works.</li>
+<li><strong>"Autoscale on GPU utilisation."</strong> Decode looks underutilised even when full. Scale on waiting requests, KV-cache usage and measured TTFT.</li>
+<li><strong>"Our benchmark shows 32 users are fine."</strong> A closed-loop benchmark hides queueing. Test open-loop at target arrival rates with real length distributions.</li>
+<li><strong>"Round-robin is good enough."</strong> It ignores request size and throws away prefix-cache hits. Route on outstanding tokens with affinity.</li>
+<li><strong>"Restarting a replica is harmless."</strong> In-flight generations die with it. Drain before restart, and have clients retry idempotently.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>Traffic is 30 req/s with an average time in system of 8 s. How many sequences are in flight, and why does that number matter more than the request rate?</summary><div class="answer">Little's law: \(30 \times 8 = 240\). Each in-flight sequence holds its own KV cache, so this concurrency sets the memory requirement and the batch size, and through them TPOT.</div></details>
+<details><summary>Why does p95 TTFT go from 335 ms to 1.5 s when load rises from 78% to 95% busy, even though throughput rose only 22%?</summary><div class="answer">Queueing delay grows roughly like \(\rho/(1-\rho)\): 3.5 at 78%, 19 at 95%. Random bursts that arrive while the GPU is busy wait for all the work ahead of them, and near saturation that backlog rarely clears.</div></details>
+<details><summary>A 70B model in BF16 must serve about 200 concurrent 1,600-token conversations. TP=2 or TP=4 on 80 GB GPUs?</summary><div class="answer">KV per conversation is about \(327{,}680 \times 1{,}600 \approx 0.52\) GB, so 200 need about 105 GB. TP=2 leaves only about 12 GB after 140 GB of weights and overhead; TP=4 leaves about 164 GB. TP=4 (or quantized weights on fewer GPUs).</div></details>
+<details><summary>Your load test with 64 virtual users shows p95 TTFT of 300 ms, yet production at the same average throughput sees 2 s. What is the likely cause?</summary><div class="answer">The test was closed-loop: users waited for responses before sending more, so bursts never formed. Production arrivals are open-loop and bursty. Re-test with open-loop Poisson arrivals and production length distributions.</div></details>
+<details><summary>Should an 8B model that fits on one GPU be served with TP=2 to handle more traffic?</summary><div class="answer">No. TP=2 adds per-layer communication and halves the number of independent replicas you get from the same GPUs. Two TP=1 replicas give more throughput and isolation; use TP only to fit a model or to meet a TPOT target one GPU cannot.</div></details>
+<details><summary>Name three signals you would autoscale on and one you would not, with reasons.</summary><div class="answer">Scale on waiting-request count, KV-cache usage and p95 TTFT, because each directly predicts SLO misses. Not on GPU compute utilisation, because memory-bound decode keeps it low even when the replica is full.</div></details>
+<details><summary>Three replicas serve multi-turn chats behind a round-robin balancer. What does switching to conversation-affinity routing change, in numbers?</summary><div class="answer">With round-robin, a follow-up turn lands on the replica holding its history about one time in three, so roughly two-thirds of follow-ups recompute the whole history in prefill. With affinity nearly all of them reuse the cached prefix, cutting prefill work and TTFT for follow-ups. Watch for hot replicas and spill over when one gets much busier.</div></details>
+</section>

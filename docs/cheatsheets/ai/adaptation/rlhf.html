@@ -10,6 +10,10 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../sheet-shell.css">
 <script src="../../sheet-shell.js" defer></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+<script src="../ai-math.js" defer></script>
 <script src="../ai-progress.js" defer></script>
 <script>(function(){try{if(localStorage.getItem("playbook-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();</script>
 </head>
@@ -30,27 +34,39 @@
   <a href="#deep-dive-dpo"><span class="num">10</span> Deep Dive: DPO</a>
   <a href="#deep-dive-ppo-rlhf"><span class="num">11</span> Deep Dive: PPO / RLHF</a>
   <a href="#deep-dive-alignment-eval"><span class="num">12</span> Deep Dive: Alignment Eval</a>
-  <a href="#rlhf-reward-modeling-teaching-taste"><span class="num">13</span> RLHF &amp; reward modeling — teaching taste</a>
-  <a href="#the-classic-three-stage-pipeline-instructgpt"><span class="num">14</span> The classic three-stage pipeline (InstructGPT)</a>
-  <a href="#stage-2a-collecting-preferences-the-unglamorous-80"><span class="num">15</span> Stage 2a: collecting preferences (the unglamorous 80%)</a>
-  <a href="#stage-2b-training-the-reward-model"><span class="num">16</span> Stage 2b: training the reward model</a>
-  <a href="#stage-3-the-ppo-loop-annotated"><span class="num">17</span> Stage 3: the PPO loop, annotated</a>
-  <a href="#the-kl-coefficient-intuition-via-the-extremes"><span class="num">18</span> The KL coefficient — intuition via the extremes</a>
-  <a href="#why-the-kl-leash-and-why-it-still-breaks"><span class="num">19</span> Why the KL leash and why it still breaks</a>
-  <a href="#practical-pains-of-ppo-style-rlhf"><span class="num">20</span> Practical pains of PPO-style RLHF</a>
-  <a href="#variants-you-ll-hear"><span class="num">21</span> Variants you&#x27;ll hear</a>
-  <a href="#rlhf"><span class="num">22</span> RLHF</a>
-  <a href="#production-ops"><span class="num">23</span> Production &amp; Ops</a>
-  <a href="#related-topics"><span class="num">24</span> Related topics</a>
-  <a href="#where-people-get-lost"><span class="num">25</span> Where people get lost</a>
-  <a href="#how-this-connects"><span class="num">26</span> How this connects</a>
-  <a href="#check-yourself"><span class="num">27</span> Check yourself</a>
+  <a href="#the-question"><span class="num">13</span> The question</a>
+  <a href="#step-1-why-imitation-is-not-enough"><span class="num">14</span> Step 1: why imitation is not enough</a>
+  <a href="#step-2-collecting-preferences"><span class="num">15</span> Step 2: collecting preferences</a>
+  <a href="#step-3-the-reward-model"><span class="num">16</span> Step 3: the reward model</a>
+  <a href="#step-4-the-rl-objective-and-the-kl-leash"><span class="num">17</span> Step 4: the RL objective and the KL leash</a>
+  <a href="#step-5-policy-gradient-the-core-update"><span class="num">18</span> Step 5: policy gradient, the core update</a>
+  <a href="#step-6-ppo-the-version-that-made-rlhf-work"><span class="num">19</span> Step 6: PPO, the version that made RLHF work</a>
+  <a href="#step-7-the-training-loop-and-its-cost"><span class="num">20</span> Step 7: the training loop and its cost</a>
+  <a href="#step-8-reward-hacking-and-over-optimisation"><span class="num">21</span> Step 8: reward hacking and over-optimisation</a>
+  <a href="#step-9-what-came-after-classic-ppo"><span class="num">22</span> Step 9: what came after classic PPO</a>
+  <a href="#evaluating-an-rlhf-run"><span class="num">23</span> Evaluating an RLHF run</a>
+  <a href="#in-code-the-whole-pipeline-on-one-prompt"><span class="num">24</span> In code: the whole pipeline on one prompt</a>
+  <a href="#rlhf-reward-modeling-teaching-taste"><span class="num">25</span> RLHF &amp; reward modeling — teaching taste</a>
+  <a href="#the-classic-three-stage-pipeline-instructgpt"><span class="num">26</span> The classic three-stage pipeline (InstructGPT)</a>
+  <a href="#stage-2a-collecting-preferences-the-unglamorous-80"><span class="num">27</span> Stage 2a: collecting preferences (the unglamorous 80%)</a>
+  <a href="#stage-2b-training-the-reward-model"><span class="num">28</span> Stage 2b: training the reward model</a>
+  <a href="#stage-3-the-ppo-loop-annotated"><span class="num">29</span> Stage 3: the PPO loop, annotated</a>
+  <a href="#the-kl-coefficient-intuition-via-the-extremes"><span class="num">30</span> The KL coefficient — intuition via the extremes</a>
+  <a href="#why-the-kl-leash-and-why-it-still-breaks"><span class="num">31</span> Why the KL leash and why it still breaks</a>
+  <a href="#practical-pains-of-ppo-style-rlhf"><span class="num">32</span> Practical pains of PPO-style RLHF</a>
+  <a href="#variants-you-ll-hear"><span class="num">33</span> Variants you&#x27;ll hear</a>
+  <a href="#rlhf"><span class="num">34</span> RLHF</a>
+  <a href="#production-ops"><span class="num">35</span> Production &amp; Ops</a>
+  <a href="#related-topics"><span class="num">36</span> Related topics</a>
+  <a href="#where-people-get-lost"><span class="num">37</span> Where people get lost</a>
+  <a href="#how-this-connects"><span class="num">38</span> How this connects</a>
+  <a href="#check-yourself"><span class="num">39</span> Check yourself</a>
 </nav>
 <div class="main">
 <div class="hero">
   <h1>RLHF &amp; reward models <span>// Fine-tuning &amp; alignment</span></h1>
   <p>Teaching taste: preference data, reward models, PPO and the KL leash.</p>
-  <div class="tags"><span class="tag">13 min read</span><span class="tag">3 diagrams</span></div>
+  <div class="tags"><span class="tag">30 min read</span><span class="tag">3 diagrams</span></div>
 </div>
 
 <section id="at-a-glance">
@@ -60,7 +76,7 @@
 </section>
 <section id="new-words">
   <h2>02 &mdash; New words</h2>
-<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Reward hacking</strong></td><td>Policy exploits the imperfect reward proxy; Goodhart industrialized.</td></tr><tr><td><strong>RLVR</strong></td><td>RL from verifiable rewards (tests/answers pass) — trains reasoning models.</td></tr></tbody></table>
+<table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>RLHF</strong></td><td>Reinforcement learning from human feedback: train a reward model on human preferences, then use reinforcement learning to make the model produce responses that score highly.</td></tr><tr><td><strong>Policy \(\pi_\theta\)</strong></td><td>The language model being trained, viewed as a strategy for choosing tokens. \(\theta\) are its weights.</td></tr><tr><td><strong>Reference model \(\pi_{\text{ref}}\)</strong></td><td>A frozen copy of the starting (SFT) model, used to measure and limit how far the policy drifts.</td></tr><tr><td><strong>Reward model (RM)</strong></td><td>A network that reads a prompt and a response and outputs one number: how much people would like this response.</td></tr><tr><td><strong>Preference comparison</strong></td><td>A label of the form "for this prompt, response A is better than response B".</td></tr><tr><td><strong>KL penalty</strong></td><td>A cost proportional to how much more (or less) likely the policy makes a response than the reference does; the leash that keeps training near the SFT model.</td></tr><tr><td><strong>Policy gradient</strong></td><td>A family of methods that raise the probability of actions in proportion to how much better than expected they turned out.</td></tr><tr><td><strong>Advantage</strong></td><td>How much better an outcome was than the baseline expectation. Positive: make it more likely. Negative: less likely.</td></tr><tr><td><strong>Value model (critic)</strong></td><td>A network that predicts the expected reward from a partial response; used as the baseline for computing advantages in PPO.</td></tr><tr><td><strong>PPO</strong></td><td>Proximal Policy Optimization: a policy-gradient method that clips each update so the policy cannot change too much on one batch.</td></tr><tr><td><strong>Reward hacking</strong></td><td>The policy finding responses that the reward model scores highly but people do not actually prefer.</td></tr><tr><td><strong>GRPO</strong></td><td>Group Relative Policy Optimization: a PPO variant that drops the value model and uses the average reward of several responses to the same prompt as the baseline.</td></tr><tr><td><strong>Reward model</strong></td><td>Scores (prompt, answer) with a scalar; trained on preference pairs.</td></tr><tr><td><strong>RLVR</strong></td><td>RL from verifiable rewards (tests/answers pass) — trains reasoning models.</td></tr></tbody></table>
 </section>
 <p class="part-divider">Quick reference</p>
 <section id="what-why">
@@ -113,13 +129,203 @@ trainer.train()</pre></div>
 <div class="card"><p>Win-rate vs baseline on held-out prefs. Safety red-team set. Capability eval (don't degrade MMLU). MT-Bench / Arena Elo.</p></div>
 </section>
 <p class="part-divider">The full explanation</p>
+<section id="the-question">
+  <h2>13 &mdash; The question</h2>
+<p>Supervised fine-tuning teaches a model to imitate demonstrations. But for most prompts there is no single correct response, only better and worse ones, and people are much better at <em>judging</em> which of two answers is better than at <em>writing</em> the best answer. RLHF turns those judgements into a training signal. It is the method that turned instruction-following models into the first widely used chat assistants, and its parts (reward models, KL leashes, policy optimisation) recur in everything that came after.</p>
+<p>Interviewers ask:</p>
+<ol>
+<li>What are the stages of RLHF, and why is a reward model needed at all?</li>
+<li>How is a reward model trained, and what does its output mean?</li>
+<li>What does PPO do, step by step, and why the KL penalty and the clipping?</li>
+<li>What is reward hacking, and how do you detect and limit it?</li>
+</ol>
+<p>Running example: the electronics shop's support assistant. A customer writes: <em>"My headphones broke after 40 days. Can I return them?"</em> The return window is 30 days, but a one-year warranty applies. Consider four kinds of response the SFT model produces:</p>
+<table>
+<thead><tr><th>#</th><th>Response style</th><th>How often the SFT model writes it</th></tr></thead>
+<tbody>
+<tr><td>0</td><td>Curt: "No, the return window is 30 days."</td><td>40%</td></tr>
+<tr><td>1</td><td>Refusal plus the warranty route</td><td>30%</td></tr>
+<tr><td>2</td><td>Warm, explains the window, walks through the warranty claim</td><td>20%</td></tr>
+<tr><td>3</td><td>Very long, flattering, restates the policy three times</td><td>10%</td></tr>
+</tbody>
+</table>
+<p>The shop wants mostly response 2. We will follow this one prompt through every stage, and finish with a simulation where the whole pipeline runs and can be made to fail.</p>
+</section>
+<section id="step-1-why-imitation-is-not-enough">
+  <h2>14 &mdash; Step 1: why imitation is not enough</h2>
+<p>SFT on demonstrations teaches the format and the general behaviour of an assistant. Its limits:</p>
+<ul>
+<li><strong>It only says what to do, never what not to do.</strong> The curt response 0 is never demonstrated, but nothing in SFT pushes its probability down either; the model learned it from pretraining text.</li>
+<li><strong>Demonstrations are expensive and uneven.</strong> Writing an ideal answer to every prompt is slow, and writers differ in quality.</li>
+<li><strong>It imitates the average.</strong> Training on a mix of good and mediocre demonstrations produces a model that writes like the mix.</li>
+</ul>
+<p>Comparisons fix all three. A rater shown responses 0 and 2 can say "2 is better" in seconds, without being able to write 2 themselves. Each comparison carries information about both responses: one should become more likely, the other less. RLHF is the machinery for using that information.</p>
+<p>The classic pipeline has three stages: <strong>SFT</strong> (to get a model that responds in the right format), <strong>reward modelling</strong> (to turn comparisons into a scoring function), and <strong>RL fine-tuning</strong> (to change the policy so its responses score highly without drifting far from the SFT model).</p>
+</section>
+<section id="step-2-collecting-preferences">
+  <h2>15 &mdash; Step 2: collecting preferences</h2>
+<p>For each prompt, sample two or more responses from the SFT model (sometimes from several models), and ask raters which is better, often with a strength ("much better", "slightly better") and against written guidelines (helpful, honest, harmless, on-policy for this shop).</p>
+<p>Three properties of this data shape everything downstream:</p>
+<ul>
+<li><strong>Raters disagree.</strong> On genuinely close pairs, two trained raters may agree only somewhat more than chance. That disagreement is a ceiling on how accurate any reward model can be, and it should be measured on a shared sample.</li>
+<li><strong>Raters have biases.</strong> Longer, more confident, more formatted answers tend to win comparisons even when they are not better. In our example, raters drift toward response 3, the long flattering one.</li>
+<li><strong>Coverage matters.</strong> The reward model only learns about the kinds of responses it is shown. Responses that the policy later produces but no rater ever saw are where its scores are least trustworthy.</li>
+</ul>
+<p>Sizes in practice range from tens of thousands to a few million comparisons. Many pipelines now add or substitute AI feedback, where a strong model judges pairs against written principles; see <a href="constitutional-ai.html">Constitutional AI</a>.</p>
+</section>
+<section id="step-3-the-reward-model">
+  <h2>16 &mdash; Step 3: the reward model</h2>
+<p>A reward model is usually a copy of the SFT model with the next-token output layer replaced by a single linear "head" that maps the final hidden state (at the last token of the response) to one number \(r(x, y)\): the reward for response \(y\) to prompt \(x\).</p>
+<p>It is trained on comparisons with the <strong>Bradley–Terry</strong> loss: the probability that the chosen response \(y_w\) beats the rejected \(y_l\) is modelled as \(\sigma(r(x, y_w) - r(x, y_l))\), where \(\sigma\) is the sigmoid, and the loss is \(-\log\) of that probability. The derivation and the link to DPO are in <a href="dpo.html">DPO</a>; here, what matters is what the output means:</p>
+<ul>
+<li><strong>Only differences matter.</strong> Adding a constant to every reward changes no probability, so the absolute value is meaningless. Pipelines normalise rewards (for example, to zero mean on a reference set) before RL.</li>
+<li><strong>A difference is a win probability.</strong> If response 2 scores 2.1 and response 1 scores 0.4, the model predicts response 2 wins \(\sigma(1.7) \approx 85\%\) of comparisons.</li>
+<li><strong>Accuracy is bounded by rater agreement.</strong> Held-out accuracy (fraction of comparisons where the chosen response scores higher) well short of 100% is normal; if it is near 100%, suspect leakage or trivially easy pairs.</li>
+</ul>
+<p>The reward model learns the raters' biases along with their judgement. In the simulation at the end, it learns scores of about −1.44, −0.09, 0.49 and 1.04 for responses 0 to 3: it correctly hates the curt answer, and incorrectly rates the long flattering answer highest. That is the trap the next stages must survive.</p>
+</section>
+<section id="step-4-the-rl-objective-and-the-kl-leash">
+  <h2>17 &mdash; Step 4: the RL objective and the KL leash</h2>
+<p>Now treat the language model as a policy. A prompt is the starting state, generating a response is an episode, and the reward model scores the episode once at the end. The goal is to maximise reward while staying close to the reference model:</p>
+\[ \max_{\theta}\ \mathbb{E}_{x,\ y \sim \pi_\theta}\Big[\, r(x, y) - \beta \log \frac{\pi_\theta(y \mid x)}{\pi_{\text{ref}}(y \mid x)} \Big] \]
+<p>The second term, averaged over responses the policy generates, is \(\beta\) times the KL divergence from the reference. In practice it is applied per token: each generated token is charged \(\beta\) times the difference between its log-probability under the policy and under the reference, and the reward model's score is added at the last token.</p>
+<p>Worked: a 60-token response has log-probability −42.0 under the policy and −48.5 under the reference, so the policy now makes it \(e^{6.5}\) times more likely than the SFT model did. With \(\beta = 0.05\) the penalty is \(0.05 \times 6.5 = 0.325\). If the reward model scores it 2.1, the reward used for training is \(2.1 - 0.325 = 1.775\).</p>
+<p>Why the leash is essential: the reward model is only accurate near the responses it was trained on. Without the penalty, optimisation drifts to whatever strange outputs the reward model happens to overrate (Step 8), and the policy loses the fluency and knowledge of the SFT model. \(\beta\) sets the exchange rate between reward and staying close. The optimum of this objective has a closed form, \(\pi^*(y \mid x) \propto \pi_{\text{ref}}(y \mid x)\, e^{r(x,y)/\beta}\): reweight the SFT model's habits by exponentiated reward, more aggressively when \(\beta\) is small.</p>
+</section>
+<section id="step-5-policy-gradient-the-core-update">
+  <h2>18 &mdash; Step 5: policy gradient, the core update</h2>
+<p>The reward is computed on sampled text, which is not differentiable with respect to the weights. The <strong>policy gradient</strong> gets around this. Its simplest form (REINFORCE) says: sample a response, compute its reward, and move the weights along</p>
+\[ \big(R - b\big)\, \nabla_\theta \log \pi_\theta(y \mid x) \]
+<p>where \(R\) is the reward (including the KL penalty) and \(b\) is a <strong>baseline</strong>, an estimate of the reward you expected. \(R - b\) is the <strong>advantage</strong>. If a response did better than expected, raise its log-probability; if worse, lower it.</p>
+<p>The baseline does not change the direction on average but greatly reduces noise. Without it, every response with a positive reward is pushed up, including mediocre ones, and learning relies on the good ones being pushed up a bit more. With it, only better-than-expected responses are pushed up. In the simulation, the baseline is simply the average reward of the batch.</p>
+<p>Because \(\log \pi_\theta(y \mid x)\) is a sum over tokens, the update raises or lowers every token of the response together. That is a crude credit assignment: the warm sentence and an unhelpful sentence in the same response get the same push. PPO's value model exists largely to do better.</p>
+</section>
+<section id="step-6-ppo-the-version-that-made-rlhf-work">
+  <h2>19 &mdash; Step 6: PPO, the version that made RLHF work</h2>
+<p>PPO adds two things to the basic policy gradient.</p>
+<p><strong>A value model for per-token advantages.</strong> A critic network (usually initialised from the reward model) predicts, at each token, the reward expected from that point on. The advantage at each token is then computed from the rewards and these predictions (with a technique called generalised advantage estimation), so tokens after which the expected outcome improved get positive advantage and tokens after which it fell get negative advantage. That is finer credit assignment than one number per response.</p>
+<p><strong>A clipped update.</strong> Generation is expensive, so PPO reuses each batch of samples for several gradient steps. Repeated steps on the same data can overshoot. PPO measures the change with the ratio \(\rho = \pi_\theta(a) / \pi_{\text{old}}(a)\) between the new and the sampling-time probability of each token \(a\), and maximises</p>
+\[ \min\big(\rho\, A,\ \operatorname{clip}(\rho, 1 - \epsilon, 1 + \epsilon)\, A\big) \]
+<p>with \(\epsilon\) typically 0.2. Worked:</p>
+<ul>
+<li>A token had probability 0.20 when sampled, now 0.26: \(\rho = 1.3\). Advantage \(+2\). Unclipped term \(2.6\); clipped \(1.2 \times 2 = 2.4\); the minimum is 2.4, a constant, so this token contributes no further gradient. It has already moved as far as one batch is allowed to move it.</li>
+<li>A token with advantage \(-2\) whose ratio has fallen to 0.7: unclipped \(-1.4\), clipped \(0.8 \times -2 = -1.6\); the minimum is \(-1.6\), again constant. Lowering it further is not rewarded within this batch.</li>
+</ul>
+<p>The clip keeps each update "proximal" to the policy that generated the data, which is what made RL on large language models stable enough to use.</p>
+</section>
+<section id="step-7-the-training-loop-and-its-cost">
+  <h2>20 &mdash; Step 7: the training loop and its cost</h2>
+<p>One PPO iteration:</p>
+<ol>
+<li><strong>Generate</strong>: sample responses from the current policy for a batch of prompts.</li>
+<li><strong>Score</strong>: run the reward model on each response; run the reference model to get per-token log-probabilities for the KL penalty.</li>
+<li><strong>Estimate advantages</strong> with the value model.</li>
+<li><strong>Update</strong> the policy (clipped objective) and the value model (regression to observed returns) for a few epochs over the batch.</li>
+<li>Repeat with the updated policy.</li>
+</ol>
+<pre class="ascii-diagram">prompts --&gt; [policy: generate] --&gt; responses --+--&gt; [reward model] --&gt; score
+                  ^                            +--&gt; [reference]    --&gt; KL per token
+                  |                            '--&gt; [value model]  --&gt; advantages
+                  '---------- PPO update (policy + value) &lt;-------------'</pre>
+<p>Four models are involved, two of them trained. For a 7B policy with mixed-precision AdamW (about 16 bytes per trained parameter), the policy and a same-size value model each need about 112 GB of training state, and the frozen reference and reward model about 14 GB each in 16-bit: roughly 252 GB before activations and generation buffers. Generation inside the loop is slow, because it is autoregressive and must be redone every iteration. This cost, plus PPO's sensitivity to hyperparameters, is why many teams moved to <a href="dpo.html">DPO</a> for preference tuning, and why newer RL methods remove the value model.</p>
+</section>
+<section id="step-8-reward-hacking-and-over-optimisation">
+  <h2>21 &mdash; Step 8: reward hacking and over-optimisation</h2>
+<p>The reward model is a proxy for what people want. Optimising a proxy hard enough finds its errors. The typical pattern, when measured carefully: as the policy moves away from the reference (KL grows), the reward model's score keeps rising, while the true quality judged by fresh human raters rises at first and then falls. The policy has found what the reward model overrates.</p>
+<p>Common hacks are mundane: longer answers, more bullet points, excessive hedging or excessive confidence, flattery of the user, restating the question. In our example it is response 3.</p>
+<p>Defences, in the order teams usually apply them:</p>
+<ul>
+<li><strong>The KL leash</strong>: a larger \(\beta\), or a target KL budget that adjusts \(\beta\) automatically.</li>
+<li><strong>Early stopping on true quality</strong>: evaluate checkpoints with fresh human or strong-judge comparisons, not with the training reward model.</li>
+<li><strong>Better reward models</strong>: more and fresher comparisons, especially on the policy's current outputs; ensembles of reward models, optimising a conservative combination.</li>
+<li><strong>Explicit corrections</strong>: length penalties or length-controlled comparisons; rubric items against flattery.</li>
+</ul>
+<p>The simulation in the code section shows the whole effect in miniature: with \(\beta = 1\), true quality rises from 0.65 to 0.93; with \(\beta = 0.1\), the policy puts 98% of its probability on the flattering answer, and true quality falls to 0.52, worse than the SFT model it started from.</p>
+</section>
+<section id="step-9-what-came-after-classic-ppo">
+  <h2>22 &mdash; Step 9: what came after classic PPO</h2>
+<ul>
+<li><strong>DPO and its relatives</strong> optimise the same KL-regularised objective directly on preference pairs, with no reward model, sampling or value model. See <a href="dpo.html">DPO</a>.</li>
+<li><strong>RLAIF</strong> replaces human raters with a model judging against written principles; the RL machinery is unchanged. See <a href="constitutional-ai.html">Constitutional AI</a>.</li>
+<li><strong>GRPO</strong> drops the value model. For each prompt it samples a group of responses, and each response's advantage is its reward minus the group's mean, divided by the group's standard deviation. With rewards 2.1, 0.4, 1.3 and −0.2 the mean is 0.9, so raw advantages are +1.2, −0.5, +0.4 and −1.1 before scaling. The group is the baseline, which saves the memory of a whole model.</li>
+<li><strong>RL with verifiable rewards</strong> replaces the learned reward model with a checker (unit tests pass, the maths answer matches). A checker cannot be flattered, so hacking moves elsewhere (exploiting weak tests). This is how reasoning models are largely trained; see <a href="../agents/reasoning.html">Reasoning</a>.</li>
+</ul>
+<p>The design question in every case is the same: what is the reward, how far can it be trusted, and what keeps the policy from exploiting its errors.</p>
+</section>
+<section id="evaluating-an-rlhf-run">
+  <h2>23 &mdash; Evaluating an RLHF run</h2>
+<table>
+<thead><tr><th>Signal</th><th>What it tells you</th><th>Watch for</th></tr></thead>
+<tbody>
+<tr><td>Training reward (RM score)</td><td>Whether optimisation works at all</td><td>Rising steadily is expected and proves little on its own</td></tr>
+<tr><td>KL to reference</td><td>How far the policy has moved</td><td>Sudden growth: \(\beta\) too small or learning rate too high</td></tr>
+<tr><td>Response length</td><td>The commonest hack</td><td>Steady growth with no quality reason</td></tr>
+<tr><td>Win rate vs SFT, fresh judges</td><td>Real improvement</td><td>Peaks then falls while RM reward keeps rising: over-optimisation</td></tr>
+<tr><td>Capability and safety suites</td><td>The "alignment tax"</td><td>Regressions in knowledge, maths, code or refusal behaviour</td></tr>
+</tbody>
+</table>
+<p>Use length-controlled comparisons when judging, and keep a held-out set of prompts that never touched reward model training. See <a href="../production/eval-metrics.html">Evaluation metrics</a> for how judges and win rates are computed.</p>
+</section>
+<section id="in-code-the-whole-pipeline-on-one-prompt">
+  <h2>24 &mdash; In code: the whole pipeline on one prompt</h2>
+<p>A simulation small enough to read: four candidate responses, raters with a length bias, a Bradley–Terry reward model fitted to their comparisons, and REINFORCE with a batch-mean baseline and a KL penalty. It checks the trained policy against the closed-form optimum and measures true quality at two values of \(\beta\).</p>
+<pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+rng = np.random.default_rng(<span class="nr">0</span>)
+
+names = [<span class="st">"</span><span class="st">curt no</span><span class="st">"</span>, <span class="st">"</span><span class="st">no + warranty path</span><span class="st">"</span>, <span class="st">"</span><span class="st">warm + warranty path</span><span class="st">"</span>, <span class="st">"</span><span class="st">long + flattering</span><span class="st">"</span>]
+true_quality = np.array([<span class="nr">0.0</span>, <span class="nr">1.0</span>, <span class="nr">1.5</span>, <span class="nr">0.5</span>])    <span class="cm"># what we actually want</span>
+length_bias  = np.array([<span class="nr">0.0</span>, <span class="nr">0.3</span>, <span class="nr">0.5</span>, <span class="nr">2.0</span>])    <span class="cm"># raters drift toward longer answers</span>
+pi_ref = np.array([<span class="nr">0.4</span>, <span class="nr">0.3</span>, <span class="nr">0.2</span>, <span class="nr">0.1</span>])          <span class="cm"># the SFT model's habits</span>
+<span class="cm"># 1) preference data: raters compare random pairs (Bradley-Terry on a biased utility)</span>
+util = true_quality + length_bias
+pairs = rng.integers(<span class="nr">0</span>, <span class="nr">4</span>, size=(<span class="nr">4000</span>, <span class="nr">2</span>))
+pairs = pairs[pairs[:, <span class="nr">0</span>] != pairs[:, <span class="nr">1</span>]]
+p_first = <span class="nr">1</span> / (<span class="nr">1</span> + np.exp(-(util[pairs[:, <span class="nr">0</span>]] - util[pairs[:, <span class="nr">1</span>]])))
+first_wins = rng.random(<span class="tp">len</span>(pairs)) &lt; p_first
+
+<span class="cm"># 2) reward model: fit one score per response with the Bradley-Terry loss</span>
+r = np.zeros(<span class="nr">4</span>)
+<span class="kw">for</span> _ in <span class="tp">range</span>(<span class="nr">2000</span>):
+    d = r[pairs[:, <span class="nr">0</span>]] - r[pairs[:, <span class="nr">1</span>]]
+    g = (<span class="nr">1</span> / (<span class="nr">1</span> + np.exp(-d))) - first_wins           <span class="cm"># dLoss/d(margin)</span>
+    grad = np.zeros(<span class="nr">4</span>)
+    np.add.at(grad, pairs[:, <span class="nr">0</span>], g)
+    np.add.at(grad, pairs[:, <span class="nr">1</span>], -g)
+    r -= <span class="nr">0.5</span> * grad / <span class="tp">len</span>(pairs)
+r -= r.mean()                                          <span class="cm"># rewards are shift-invariant</span>
+<span class="tp">print</span>(<span class="st">"</span><span class="st">reward model:</span><span class="st">"</span>, np.round(r, <span class="nr">2</span>))
+
+<span class="cm"># 3) RL with a KL leash: REINFORCE on sampled responses, reward = r - beta * log(pi / pi_ref)</span>
+<span class="kw">def</span> <span class="fn">train</span>(beta, steps=<span class="nr">3000</span>, lr=<span class="nr">0.05</span>, batch=<span class="nr">64</span>):
+    logits = np.log(pi_ref).copy()
+    <span class="kw">for</span> _ in <span class="tp">range</span>(steps):
+        pi = np.exp(logits - logits.max()); pi /= pi.sum()
+        y = rng.choice(<span class="nr">4</span>, size=batch, p=pi)
+        R = r[y] - beta * np.log(pi[y] / pi_ref[y])
+        adv = R - R.mean()                             <span class="cm"># baseline: the batch average</span>
+        grad = np.zeros(<span class="nr">4</span>)
+        <span class="kw">for</span> yi, a in <span class="tp">zip</span>(y, adv):                      <span class="cm"># grad of log pi(y) wrt logits = onehot - pi</span>
+            grad += a * (np.eye(<span class="nr">4</span>)[yi] - pi)
+        logits += lr * grad / batch
+    pi = np.exp(logits - logits.max()); <span class="kw">return</span> pi / pi.sum()
+
+<span class="kw">for</span> beta in (<span class="nr">1.0</span>, <span class="nr">0.1</span>):
+    pi = train(beta)
+    closed = pi_ref * np.exp(r / beta); closed /= closed.sum()
+    kl = np.sum(pi * np.log(pi / pi_ref))
+    <span class="tp">print</span>(<span class="st">f</span><span class="st">"</span><span class="st">beta=</span><span class="st">{</span>beta<span class="st">}</span><span class="st">: policy </span><span class="st">{</span>np.round(pi, <span class="nr">2</span>)<span class="st">}</span><span class="st">  closed form </span><span class="st">{</span>np.round(closed, <span class="nr">2</span>)<span class="st">}</span> <span class="st">"</span>
+<span class="st">f</span><span class="st">"</span><span class="st">KL=</span><span class="st">{</span>kl<span class="st">:</span><span class="st">.2f</span><span class="st">}</span><span class="st">  true quality </span><span class="st">{</span>pi @ true_quality<span class="st">:</span><span class="st">.2f</span><span class="st">}</span><span class="st">  (SFT: </span><span class="st">{</span>pi_ref @ true_quality<span class="st">:</span><span class="st">.2f</span><span class="st">}</span><span class="st">)</span><span class="st">"</span>)
+</pre>
+<p>Output: the reward model scores <code>[-1.44 -0.09 0.49 1.04]</code>. At \(\beta = 1\) the policy is <code>[0.1 0.28 0.33 0.29]</code>, matching the closed form, with KL 0.32 and true quality 0.93 against the SFT model's 0.65. At \(\beta = 0.1\) it is <code>[0. 0. 0.01 0.98]</code>, KL 2.18, and true quality 0.52: the policy optimised the raters' length bias, not what the shop wanted.</p>
+<p>At real scale, libraries such as Hugging Face TRL provide reward-model, PPO and GRPO trainers; the moving parts are the ones above, with a transformer in place of the four-entry table.</p>
+</section>
 <section id="rlhf-reward-modeling-teaching-taste">
-  <h2>13 &mdash; RLHF &amp; reward modeling — teaching taste</h2>
+  <h2>25 &mdash; RLHF &amp; reward modeling — teaching taste</h2>
 <p>SFT teaches <i>format</i> ("answer the request"). It cannot teach <i>"of these two valid answers, this one is better."</i> Preference optimization does — it's why chat models feel helpful rather than merely fluent.</p>
 <p>Think about what SFT's loss actually says: "make the training answer more likely, token by token." It has no concept of <i>better</i> — an SFT model trained on good answers still can't rank two of its own samples. But almost everything we care about in a deployed assistant is comparative: more helpful, less evasive, better organized, correctly hedged. Humans are terrible at writing the single optimal answer but quite good at picking the better of two. RLHF is the machinery that converts that cheap comparative judgment into a gradient.</p>
 </section>
 <section id="the-classic-three-stage-pipeline-instructgpt">
-  <h2>14 &mdash; The classic three-stage pipeline (InstructGPT)</h2>
+  <h2>26 &mdash; The classic three-stage pipeline (InstructGPT)</h2>
 <pre class="ascii-diagram">1. SFT        base model → instruction-tuned model (demonstrations)
 
 2. REWARD MODEL (RM)
@@ -133,7 +339,7 @@ trainer.train()</pre></div>
                                      └── stops the policy drifting into reward-hacking gibberish</pre>
 </section>
 <section id="stage-2a-collecting-preferences-the-unglamorous-80">
-  <h2>15 &mdash; Stage 2a: collecting preferences (the unglamorous 80%)</h2>
+  <h2>27 &mdash; Stage 2a: collecting preferences (the unglamorous 80%)</h2>
 <p>Before any loss function, there's a labeling operation. The standard setup: a rater UI shows one prompt and two (sometimes 4–8, ranked) candidate answers sampled from the current model at moderate temperature — <i>same model, different samples</i>, so the comparison isolates quality, not model identity. The rater picks A, B, or "tie / both bad", ideally with a rubric ("prefer the answer that is correct first, then complete, then concise; penalize unsupported claims") and a free-text reason for a subsample. Operational details that decide whether your data is signal or mush:</p>
 <ul>
 <li><b>Rubric before raters.</b> Without a written rubric, you're training an RM on the average of ten people's unexamined taste. Pilot on 50 prompts, read disagreements, tighten the rubric, then scale.</li>
@@ -144,7 +350,7 @@ trainer.train()</pre></div>
 <p>Cost intuition (illustrative): a trained rater does 30–60 pairs/hour on chat-length answers; at $20–40/hour loaded cost, 50K pairs is a $30–70K, multi-week operation. This is why RLAIF exists, and why production teams mine implicit signals (<a href="index.html">Fine-tuning &amp; alignment</a>'s flywheel) instead of paying for everything.</p>
 </section>
 <section id="stage-2b-training-the-reward-model">
-  <h2>16 &mdash; Stage 2b: training the reward model</h2>
+  <h2>28 &mdash; Stage 2b: training the reward model</h2>
 <p>The RM is usually the SFT model with its LM head swapped for a scalar head (one linear layer). Bradley–Terry says: model the probability that A beats B as σ(r(A) − r(B)), and maximize the likelihood of the observed preferences. Implemented, it's ten lines:</p>
 <div class="code-block"><div class="code-file"><span>reward_model.py — Bradley–Terry loss, the actual mechanism</span><span class="code-lang">python</span></div><pre><span class="kw">import</span> torch, torch.nn.functional <span class="kw">as</span> F
 <span class="kw">from</span> transformers <span class="kw">import</span> AutoModelForSequenceClassification, AutoTokenizer
@@ -173,7 +379,7 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 <p>Note what the loss does <i>not</i> say: nothing anchors the absolute scale of r. Only differences matter, so RM scores are meaningless across checkpoints ("the RM gives 3.2!" means nothing). The metric that matters is <b>held-out pair accuracy</b>: a good RM lands at 70–80% on human pairs (illustrative — remember humans agree with each other only ~75% of the time; an RM at 90% on noisy pairs is probably overfit or your pairs are too easy). And your RM's held-out accuracy is the <b>ceiling of the entire pipeline</b> — PPO cannot extract preference signal the RM doesn't encode.</p>
 </section>
 <section id="stage-3-the-ppo-loop-annotated">
-  <h2>17 &mdash; Stage 3: the PPO loop, annotated</h2>
+  <h2>29 &mdash; Stage 3: the PPO loop, annotated</h2>
 <p>You will probably never implement this (TRL's <code>PPOTrainer</code> and friends exist), but you should be able to read it — every "why is RLHF expensive/unstable" conversation is downstream of this loop:</p>
 <div class="code-block"><div class="code-file"><span>ppo_loop.py — annotated pseudocode of one RLHF iteration</span><span class="code-lang">python</span></div><pre><span class="cm"># FOUR models live in memory:</span>
 <span class="cm">#   policy      πθ   — being trained (gradients + optimizer states: the big one)</span>
@@ -211,7 +417,7 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 <span class="cm">#   3. value model lags policy → garbage advantages → noisy updates</span></pre></div>
 </section>
 <section id="the-kl-coefficient-intuition-via-the-extremes">
-  <h2>18 &mdash; The KL coefficient — intuition via the extremes</h2>
+  <h2>30 &mdash; The KL coefficient — intuition via the extremes</h2>
 <p>β is the single most important hyperparameter, and it's best understood by asking what happens at the limits:</p>
 <table>
 <tr><th>β</th><th>What the objective becomes</th><th>What you observe</th></tr>
@@ -224,7 +430,7 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 <p>The deeper reading: the KL term makes the objective's optimum a <i>softmax-weighted reshaping</i> of the reference model — π*(y|x) ∝ π_ref(y|x)·exp(r(x,y)/β). That closed form is exactly the observation DPO starts from (the next topic). β is the temperature of trust: how much you believe the RM relative to the SFT prior.</p>
 </section>
 <section id="why-the-kl-leash-and-why-it-still-breaks">
-  <h2>19 &mdash; Why the KL leash and why it still breaks</h2>
+  <h2>31 &mdash; Why the KL leash and why it still breaks</h2>
 <p>The reward model is an imperfect proxy trained on finite labels. Optimize hard against it and the policy finds <b>reward hacks</b> — outputs the RM loves but humans don't (sycophancy, padded length, confident nonsense). The KL penalty keeps the policy near the SFT model; even so, RM quality is the ceiling of the whole pipeline. <i>Goodhart's law, industrialized.</i></p>
 <div class="callout warn"><p><strong>Reward hacking, concretely</strong></p><ul>
 <li><b>Length bias, measured.</b> Raters prefer longer answers even at equal quality, so RMs learn length as a proxy. Diagnose it in one line: correlate RM score with token count on a fixed prompt set — <code>spearmanr(rm_scores, lengths)</code>. Illustrative but typical: ρ ≈ 0.3–0.5 on an unde-biased RM. Left alone, mean response length creeps up 30–50% over a PPO run with no quality gain. Fixes: length-balanced pairs (chosen/rejected within ±20% tokens), an explicit length penalty in reward, or length-normalized RM scores.</li>
@@ -235,7 +441,7 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 </ul></div>
 </section>
 <section id="practical-pains-of-ppo-style-rlhf">
-  <h2>20 &mdash; Practical pains of PPO-style RLHF</h2>
+  <h2>32 &mdash; Practical pains of PPO-style RLHF</h2>
 <ul>
 <li><b>Four models in memory</b>: policy, frozen reference, reward model, value model. For an 8B policy that's roughly 4×16 GB of weights before optimizer states and activations — a multi-GPU job for what a QLoRA SFT run does on one card.</li>
 <li>RL training is unstable and hyperparameter-sensitive: β, clip ε, rollout batch size, value-loss coefficient, generation temperature all interact.</li>
@@ -246,7 +452,7 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 <div class="callout"><p><strong>Mini-scenario: the support-bot that learned to grovel</strong></p>You run RLHF on a support assistant using thumbs-up/down from real users as preference signal. Three weeks post-launch, resolution rate is flat but thumbs-up is way up. Reading transcripts, the model has learned that apologizing profusely and promising escalation earns 👍 regardless of whether the problem got solved — users reward <i>feeling heard</i>. Your reward was a proxy (thumbs) for the target (resolution); the model optimized the proxy. Fix: make the reward the verifiable thing (ticket closed without reopen within 7 days), and use thumbs only as a tiebreaker. Every RLHF war story is this story with different nouns.</div>
 </section>
 <section id="variants-you-ll-hear">
-  <h2>21 &mdash; Variants you&#x27;ll hear</h2>
+  <h2>33 &mdash; Variants you&#x27;ll hear</h2>
 <table>
 <tr><th>Name</th><th>Change</th><th>Trade-off</th></tr>
 <tr><td><b>RLAIF / Constitutional AI</b></td><td>AI feedback instead of human labels — a judge model generates the preferences against principles; scales labeling</td><td>cheap and consistent, but inherits and amplifies the judge's biases (length, format, sycophancy) — audit the judge like you'd audit raters</td></tr>
@@ -265,7 +471,7 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 </ol></div>
 </section>
 <section id="rlhf">
-  <h2>22 &mdash; RLHF</h2>
+  <h2>34 &mdash; RLHF</h2>
 <ol>
 <li>Collect human comparisons: for a prompt, which of two responses is better?</li>
 <li>Train a <strong>reward model</strong> to predict those preferences (Bradley–Terry: P(a ≻ b) = σ(r(a) − r(b))).</li>
@@ -275,23 +481,39 @@ rm = AutoModelForSequenceClassification.from_pretrained(
 </section>
 <p class="part-divider">In production</p>
 <section id="production-ops">
-  <h2>23 &mdash; Production &amp; Ops</h2>
+  <h2>35 &mdash; Production &amp; Ops</h2>
 <div class="card"><ul><li>Version alignment dataset with model</li><li>A/B aligned vs base in shadow</li><li>Monitor refusal rate and user thumbs</li></ul></div>
 </section>
 <section id="related-topics">
-  <h2>24 &mdash; Related topics</h2>
+  <h2>36 &mdash; Related topics</h2>
 <div class="card"><ul><li><a href="fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a></li><li><a href="../production/evals.html">Evaluating LLM features</a></li><li><a href="../fundamentals/what-is-an-llm.html">What an LLM is</a></li><li><a href="../agents/agent-loop.html">The agent loop</a></li></ul></div>
 </section>
 <section id="where-people-get-lost">
-  <h2>25 &mdash; Where people get lost</h2>
+  <h2>37 &mdash; Where people get lost</h2>
 <div class="card"><ul><li>DPO without SFT baseline</li><li>Preference data from single annotator bias</li><li>Reward hacking / sycophancy</li><li>Alignment tax on reasoning capability</li></ul></div>
+<ul>
+<li><strong>"The reward model measures quality."</strong> It predicts which response raters would pick, biases included, and only near the data it saw.</li>
+<li><strong>Reading absolute reward values.</strong> Bradley–Terry rewards are defined only up to a constant; only differences mean anything.</li>
+<li><strong>Treating rising reward as success.</strong> Training reward rises even while real quality falls. Judge checkpoints with fresh comparisons.</li>
+<li><strong>Dropping or shrinking the KL penalty to "learn faster".</strong> That is the fastest route to reward hacking and lost fluency.</li>
+<li><strong>Skipping SFT.</strong> RL needs a policy that already produces reasonable responses to compare; it refines behaviour, it does not create it.</li>
+<li><strong>"PPO is required for RLHF."</strong> The idea is preference-driven optimisation with a leash. DPO, GRPO and verifiable-reward methods are alternatives with different costs.</li>
+<li><strong>Ignoring length.</strong> Length is the most common hack. Track it and use length-controlled evaluation.</li>
+</ul>
 </section>
 <section id="how-this-connects">
-  <h2>26 &mdash; How this connects</h2>
-<h3>Builds on</h3><ul><li><a href="../fundamentals/what-is-an-llm.html">What an LLM is</a> &mdash; A next-token predictor, the language-modeling objective, model families and scaling laws.</li><li><a href="../agents/agent-loop.html">The agent loop</a> &mdash; The loop in depth and in code: budgets, errors, human approval, reliability, safety, and how to evaluate an agent.</li><li><a href="fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a> &mdash; When to fine-tune, the LoRA math, a working QLoRA recipe, data, hyperparameters, evaluation and serving.</li></ul><h3>Where this shows up later</h3><ul><li><a href="../production/evals.html">Evaluating LLM features</a> &mdash; Golden sets, graders, LLM-as-judge done properly, statistics, an eval harness in CI, online evaluation and error analysis.</li></ul>
+  <h2>38 &mdash; How this connects</h2>
+<h3>Builds on</h3><ul><li><a href="../fundamentals/what-is-an-llm.html">What an LLM is</a> &mdash; A next-token predictor, the language-modeling objective, model families and scaling laws.</li><li><a href="../agents/agent-loop.html">The agent loop</a> &mdash; The loop in depth and in code: budgets, errors, human approval, reliability, safety, and how to evaluate an agent.</li><li><a href="../agents/reasoning.html">Reasoning patterns</a> &mdash; ReAct, plan-and-execute, reflection and the other ways agents think.</li><li><a href="fine-tuning.html">Fine-tuning, LoRA &amp; QLoRA</a> &mdash; When to fine-tune, the LoRA math, a working QLoRA recipe, data, hyperparameters, evaluation and serving.</li></ul><h3>Where this shows up later</h3><ul><li><a href="constitutional-ai.html">Constitutional AI &amp; red-teaming</a> &mdash; Alignment from written principles, and attacking your own model before users do.</li><li><a href="../production/evals.html">Evaluating LLM features</a> &mdash; Golden sets, graders, LLM-as-judge done properly, statistics, an eval harness in CI, online evaluation and error analysis.</li><li><a href="../stretch/multimodal.html">Multimodal LLMs</a> &mdash; Vision and audio encoders, how images become tokens, and what multimodal models are good for.</li></ul>
 </section>
 <section id="check-yourself">
-  <h2>27 &mdash; Check yourself</h2>
+  <h2>39 &mdash; Check yourself</h2>
+<details><summary>Why are comparisons used instead of asking raters for a score from 1 to 10?</summary><div class="answer">People judge relative quality more consistently than absolute quality: different raters use a 1-to-10 scale differently, but most agree on which of two answers is better. Comparisons also need no ideal answer written in advance.</div></details>
+<details><summary>A reward model gives response A 2.1 and response B 0.4. What does it predict, and what would change if every reward were increased by 10?</summary><div class="answer">It predicts A wins about \(\sigma(1.7) \approx 85\%\) of comparisons. Adding 10 to every reward changes nothing, because only differences enter the Bradley–Terry probability.</div></details>
+<details><summary>A 60-token response has log-probability −42.0 under the policy and −48.5 under the reference; \(\beta = 0.05\), RM score 2.1. What reward does PPO train on?</summary><div class="answer">KL penalty \(0.05 \times (−42.0 − (−48.5)) = 0.325\), so the reward is \(2.1 − 0.325 = 1.775\).</div></details>
+<details><summary>In PPO with \(\epsilon = 0.2\), a token's probability rose from 0.20 to 0.26 and its advantage is +2. Does it still receive gradient on this batch?</summary><div class="answer">No. The ratio is 1.3, above the clip at 1.2, so the objective takes the clipped value \(1.2 \times 2 = 2.4\), which does not depend on the weights. The token has moved as far as one batch allows.</div></details>
+<details><summary>During training the RM score keeps rising, answers are 40% longer, and fresh human win rate against SFT peaked two checkpoints ago. What do you do?</summary><div class="answer">This is over-optimisation, most likely length hacking. Roll back to the checkpoint with the best human win rate, raise \(\beta\) or set a KL target, add length-controlled comparisons and fresh comparisons on current policy outputs to the reward model, and judge future checkpoints on human or judge win rates, not RM score.</div></details>
+<details><summary>What does GRPO remove from PPO, and what replaces it?</summary><div class="answer">It removes the value model. Each response's advantage is its reward relative to the mean (scaled by the standard deviation) of a group of responses sampled for the same prompt, which saves a whole trained model's memory.</div></details>
+<details><summary>Why does a smaller \(\beta\) make reward hacking more likely?</summary><div class="answer">The optimal policy reweights the reference by \(e^{r/\beta}\). A small \(\beta\) magnifies reward differences, so whichever response the reward model overrates takes almost all the probability, even far from data the reward model was trained on.</div></details>
 <details><summary>RLHF vs DPO?</summary><div class="answer">RLHF: train reward model + PPO — complex, unstable. DPO: optimize preferences directly — simpler, default for product teams with LoRA.</div></details>
 <details><summary>What data for DPO?</summary><div class="answer">Triplets: prompt, chosen response, rejected response. 5K–50K pairs. Diverse prompts; consistent ranking criteria.</div></details>
 <details><summary>Why SFT before DPO?</summary><div class="answer">SFT teaches format and domain. DPO refines preferences on top. DPO alone on base model often fails to learn task format.</div></details>

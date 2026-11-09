@@ -1,0 +1,302 @@
+<!-- Deep lesson: Choosing an embedding model. Merged into rag/embedding-models by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Model card</td><td>The page published with a model that states its dimension, maximum input length, pooling, required prefixes, languages and licence.</td></tr>
+<tr><td>MTEB</td><td>The Massive Text Embedding Benchmark: a public leaderboard that averages a model's scores over many tasks and datasets.</td></tr>
+<tr><td>Golden set</td><td>Your own list of real queries, each labelled with the chunks that answer it. The only benchmark that measures your problem.</td></tr>
+<tr><td>Recall@k</td><td>Of the chunks that answer a query, the fraction that appear in the top \(k\) results.</td></tr>
+<tr><td>MRR</td><td>Mean reciprocal rank: average of \(1/\text{rank}\) of the first correct result (0 if none is found).</td></tr>
+<tr><td>nDCG@k</td><td>A rank-aware score from 0 to 1 that gives more credit for correct results near the top of the list.</td></tr>
+<tr><td>Matryoshka embedding</td><td>A vector trained so its first 256 or 512 numbers are themselves a usable, smaller embedding.</td></tr>
+<tr><td>Scalar (int8) quantization</td><td>Storing each number as an 8-bit integer plus a scale: 4 times smaller than 32-bit floats.</td></tr>
+<tr><td>Binary quantization</td><td>Keeping only the sign of each number, 1 bit per dimension: 32 times smaller, compared by counting matching bits.</td></tr>
+<tr><td>Rescoring</td><td>Fetching a shortlist with a cheap, compressed comparison, then re-ranking only that shortlist with the full-precision vectors.</td></tr>
+<tr><td>Asymmetric model</td><td>A model that must be told whether it is embedding a query or a document, through a prefix or an input-type parameter.</td></tr>
+<tr><td>Re-embedding</td><td>Recomputing every stored vector with a new model. Required on any model change, because two models' vectors are incomparable.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>The embedding model sets the ceiling on retrieval quality. If it does not place the right chunk in the candidate list, no reranker, prompt or larger language model downstream can recover it. It also fixes the size of every stored vector, the per-query latency, and a migration cost you pay in full every time you change your mind. So the choice deserves a measured decision, not a leaderboard glance.</p>
+<p>The questions interviewers ask:</p>
+<ol>
+<li>How would you choose an embedding model for a new RAG system? What would you measure?</li>
+<li>Hosted API or self-hosted? What drives the cost?</li>
+<li>How do you cut vector storage by 4 to 30 times, and what does it cost in quality?</li>
+<li>When is fine-tuning an embedding model worth it, and how do you switch models without downtime?</li>
+</ol>
+<p>The running example is the course's support assistant: 30,000 chunks of about 300 tokens each (9 million tokens in all) from 1,200 help-centre documents, 2 million customer queries a month averaging 15 tokens, and 15% of customers writing in Spanish. A product manager has asked: "Which embedding model, and what will it cost?" We will answer with numbers.</p>
+</section>
+
+<section data-label="Step 1: what actually differs between models">
+<p>Every embedding model is a transformer encoder plus pooling, trained contrastively (the mechanism is in <a href="@@rag/embeddings@@">embeddings</a>). What varies, and what to read off the model card before anything else:</p>
+<table>
+<thead><tr><th>Property</th><th>Typical range</th><th>Why it matters</th></tr></thead>
+<tbody>
+<tr><td>Parameters</td><td>20 million to several billion</td><td>Query latency and serving cost grow with size. Large decoder-based embedders can be markedly better and are much slower.</td></tr>
+<tr><td>Dimension</td><td>384 to 4,096</td><td>Memory and search time grow linearly with it.</td></tr>
+<tr><td>Maximum input</td><td>512 to 8,192+ tokens</td><td>Text beyond it is truncated, usually without an error.</td></tr>
+<tr><td>Languages</td><td>English-only to 100+</td><td>An English-only model maps Spanish queries poorly; a multilingual one can match a Spanish query to an English passage.</td></tr>
+<tr><td>Query/document handling</td><td>Symmetric, prefixes, or an input-type parameter</td><td>Using the wrong prefix, or none, quietly lowers recall.</td></tr>
+<tr><td>Training domain</td><td>Web, Q&amp;A, code, scientific, legal</td><td>A model never trained on text like yours may not separate its fine distinctions.</td></tr>
+<tr><td>Licence and hosting</td><td>Hosted only, open weights, restrictive or permissive</td><td>Decides whether you can run it inside your network at all.</td></tr>
+</tbody>
+</table>
+<p>Two of these rows are hard constraints, not preferences. If documents may not leave your network, hosted APIs are out. If 15% of users write Spanish, English-only models are out. Apply constraints first; they usually shrink the field to a handful.</p>
+</section>
+
+<section data-label="Step 2: what a public leaderboard can and cannot tell you">
+<p>MTEB scores a model on dozens of datasets across task types (retrieval, classification, clustering, semantic similarity, reranking and more) and reports an average. It is useful for one thing: a <strong>shortlist</strong>. A model far down the retrieval column is unlikely to surprise you.</p>
+<p>It cannot pick the winner, for four reasons:</p>
+<ul>
+<li><strong>The average mixes tasks you do not run.</strong> A model can rise on clustering and classification while being middling at retrieval. Read the retrieval column only.</li>
+<li><strong>The datasets are not your domain.</strong> Public retrieval sets are Wikipedia questions, scientific claims, forum posts. Your help centre has plan names, error codes and policy clauses that differ by one number.</li>
+<li><strong>Training overlap.</strong> Popular benchmark datasets, or text very like them, may have been in a model's training data, inflating its score on exactly those sets.</li>
+<li><strong>Gaps at the top are small.</strong> Leading models are often separated by a point or two of average score, which is less than the measurement noise on your own data (Step 5).</li>
+</ul>
+<p>So: use the leaderboard to choose three or four candidates that meet your constraints, spanning sizes (one small, one large, one hosted, one open), then measure them on your data.</p>
+</section>
+
+<section data-label="Step 3: build a golden set from real queries">
+<p>A golden set is a list of queries, each labelled with the chunk IDs that answer it. It is the most valuable artefact in a retrieval project, because every later decision (chunk size, hybrid weights, reranker depth) is tuned against it too.</p>
+<p>How to build one for the support assistant:</p>
+<ol>
+<li><strong>Sample real queries</strong> from search logs or support tickets, not ones you invent. Engineers write queries that use the documents' own words, which makes every model look good.</li>
+<li><strong>Stratify</strong> so the hard slices are present: queries with identifiers ("error E-4012"), Spanish queries, paraphrases ("money back"), questions whose answer depends on the plan, and some with no answer in the corpus.</li>
+<li><strong>Label</strong> the answering chunks. A fast method: pool the top 20 results from every candidate model plus keyword search, and have someone who knows the product mark which are relevant. Pooling across models avoids favouring the one used to find the labels.</li>
+<li><strong>Size it</strong> at 100 to 300 queries to start. A few hours of labelling; Step 5 shows why fewer is not enough.</li>
+</ol>
+<p>Freeze the chunking while comparing models. If chunk boundaries move, labels attached to chunk IDs no longer line up; label at the document or passage level if you expect to re-chunk.</p>
+</section>
+
+<section data-label="Step 4: scoring a model with recall, MRR and nDCG">
+<p>Run each golden query through each candidate, keep the top \(k\) chunk IDs, and score the list. Three metrics, each answering a different question. Take three queries with these top-5 results (bold marks a relevant chunk):</p>
+<table>
+<thead><tr><th>Query</th><th>Relevant</th><th>Top 5 returned</th><th>Recall@5</th><th>Reciprocal rank</th><th>nDCG@5</th></tr></thead>
+<tbody>
+<tr><td>q1</td><td>c2</td><td>c7, <strong>c2</strong>, c9, c4, c1</td><td>1.0</td><td>1/2 = 0.500</td><td>0.631</td></tr>
+<tr><td>q2</td><td>c3, c6</td><td>c5, c8, <strong>c3</strong>, <strong>c6</strong>, c0</td><td>1.0</td><td>1/3 = 0.333</td><td>0.571</td></tr>
+<tr><td>q3</td><td>c11</td><td>c1, c4, c2, c8, c9</td><td>0.0</td><td>0</td><td>0.000</td></tr>
+<tr><td colspan="3"><strong>Mean</strong></td><td>0.667</td><td>0.278</td><td>0.401</td></tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Recall@k</strong> asks "did the answer make it into the candidate list?". In a RAG system with a reranker after retrieval, this is the number that matters most, because the reranker can fix the order but cannot add what is missing. Measure it at the depth you will actually pass on (for example recall@50 if you rerank 50).</li>
+<li><strong>MRR</strong> asks "how far down is the first right answer?". Useful when only one chunk is needed.</li>
+<li><strong>nDCG@k</strong> discounts each relevant hit by \(1/\log_2(\text{rank} + 1)\) and divides by the best possible score. For q1, the hit at rank 2 earns \(1/\log_2 3 = 0.631\) against an ideal of 1. For q2, hits at ranks 3 and 4 earn \(0.5 + 0.431 = 0.931\) against an ideal of \(1 + 0.631 = 1.631\), giving 0.571.</li>
+</ul>
+<p>Report recall at your candidate depth as the headline, nDCG@5 or @10 as the ordering quality, and always break both down by slice. A model that wins overall and loses badly on Spanish queries is the wrong model for this product.</p>
+</section>
+
+<section data-label="Step 5: how big a difference is real">
+<p>With \(n\) queries, a measured recall of \(p\) has a standard error of about \(\sqrt{p(1-p)/n}\). At \(p = 0.8\):</p>
+<table>
+<thead><tr><th>Golden-set size</th><th>Standard error</th><th>Approximate 95% interval</th></tr></thead>
+<tbody>
+<tr><td>50 queries</td><td>0.057</td><td>±11 points</td></tr>
+<tr><td>200 queries</td><td>0.028</td><td>±5.5 points</td></tr>
+<tr><td>1,000 queries</td><td>0.013</td><td>±2.5 points</td></tr>
+</tbody>
+</table>
+<p>That interval is for <em>one</em> model's score. When you compare two models by their averages, the uncertainty of the difference is about \(\sqrt{2} \approx 1.4\) times larger: roughly ±7.8 points at 200 queries. So with 50 queries, 0.80 against 0.74 tells you nothing; with 200, a 6-point gap between two averages is still inside the noise, and a 2-point gap certainly is. This is why leaderboard gaps of one or two points should not decide anything.</p>
+<p>Two habits sharpen the comparison without more labelling. Compare models <strong>paired</strong>, query by query: both models answered the same queries, so most of the noise (easy queries, hard queries) is shared and cancels. Count only the queries where they disagree: A found the answer and B did not, or the reverse. If the models were equally good, each disagreement would be a coin flip. If A wins 22 and B wins 8 of 30 disagreements, the chance of a split that lopsided from fair coins is about 0.016 (a two-sided sign test), so the gap is real even though the two averages differ by only 7 points per 100 queries. And look at the disagreements by hand: they tell you <em>why</em> one model is better, which predicts whether the advantage will hold on new queries.</p>
+</section>
+
+<section data-label="Step 6: cost and latency, hosted versus self-hosted">
+<p>Hosted embedding APIs charge per input token; illustrative list prices for well-known APIs have been in the range of $0.02 to $0.13 per million tokens. For the support assistant:</p>
+<table>
+<thead><tr><th>Item</th><th>Tokens</th><th>At $0.02/M</th><th>At $0.13/M</th></tr></thead>
+<tbody>
+<tr><td>Embed the corpus once</td><td>30,000 × 300 = 9 M</td><td>$0.18</td><td>$1.17</td></tr>
+<tr><td>Queries per month</td><td>2 M × 15 = 30 M</td><td>$0.60</td><td>$3.90</td></tr>
+</tbody>
+</table>
+<p>The embedding bill is negligible. That is the usual situation, and it changes how to think about the choice: <strong>API price is rarely the deciding cost</strong>. What costs money is vector storage and search (which scale with dimension, Step 7), and what costs users is latency.</p>
+<p>Self-hosting means paying for a GPU whether or not it is busy. At an illustrative $1 per hour, one always-on GPU costs about $730 a month. At $0.02 per million tokens, the API would have to process 36.5 billion tokens a month to cost the same. So self-hosting is justified by other reasons:</p>
+<ul>
+<li><strong>Data residency</strong>: documents or queries may not leave your network.</li>
+<li><strong>Very high volume</strong>: billions of tokens a month, typically from re-embedding large corpora often.</li>
+<li><strong>Latency</strong>: a small model on a GPU in the same data centre embeds a 15-token query in a few milliseconds; a hosted API adds a network round trip, often tens of milliseconds and with a long tail (order of magnitude).</li>
+<li><strong>Control</strong>: a pinned model that cannot be deprecated under you, and the option to fine-tune.</li>
+</ul>
+<p>Self-hosting has its own operational cost: a batching inference server, autoscaling, monitoring. For 2 million queries a month with no residency constraint, a hosted API is the default; the decision flips on a hard constraint, not on price.</p>
+</section>
+
+<section data-label="Step 7: dimensions, storage and Matryoshka truncation">
+<p>Raw vector memory is \(N \times d \times \text{bytes per number}\). At our 30,000 chunks every model is small (a 3,072-dimension model needs 0.37 GB in 32-bit floats). Suppose the product grows to serve many customers' help centres, 10 million chunks:</p>
+<table>
+<thead><tr><th>Dimension</th><th>float32</th><th>float16</th><th>int8</th><th>binary</th></tr></thead>
+<tbody>
+<tr><td>384</td><td>15.4 GB</td><td>7.7 GB</td><td>3.8 GB</td><td>0.48 GB</td></tr>
+<tr><td>1,024</td><td>41.0 GB</td><td>20.5 GB</td><td>10.2 GB</td><td>1.28 GB</td></tr>
+<tr><td>1,536</td><td>61.4 GB</td><td>30.7 GB</td><td>15.4 GB</td><td>1.92 GB</td></tr>
+<tr><td>3,072</td><td>122.9 GB</td><td>61.4 GB</td><td>30.7 GB</td><td>3.84 GB</td></tr>
+</tbody>
+</table>
+<p>Approximate indexes such as HNSW want vectors in RAM, so this table is roughly your memory bill before index overhead (see <a href="@@rag/vector-search@@">vector search</a>). Search time also grows linearly with \(d\).</p>
+<p><strong>Matryoshka</strong> models are trained so that the first \(m\) numbers of the vector are a good embedding on their own: during training the contrastive loss is applied to several prefixes (say the first 64, 128, 256, 512 and all dimensions) at once, which pushes the most important information to the front. You can then store, for example, 512 of 1,536 dimensions, a third of the memory, usually for a small loss in recall that you must measure on your golden set.</p>
+<div class="callout warn"><p><strong>Renormalise after truncating.</strong> A unit vector cut to its first part is no longer unit length: a random 1,024-dimension unit vector truncated to 256 dimensions has length about 0.46. If the index assumes dot product equals cosine, scores are now wrong. APIs that accept a "dimensions" parameter renormalise for you; if you truncate yourself, divide by the new length. Truncating a model that was <em>not</em> trained Matryoshka-style throws away information at random.</p></div>
+</section>
+
+<section data-label="Step 8: compressing stored vectors with int8 and binary">
+<p>Independently of dimension, each number can be stored in fewer bits, the same idea as weight quantization in <a href="@@inference/model-compression@@">model compression</a>.</p>
+<ul>
+<li><strong>float16</strong>: half the memory, no measurable recall change for retrieval. A free default.</li>
+<li><strong>int8 scalar</strong>: map each dimension's range onto −127 to 127 with a per-dimension scale. 4 times smaller than float32.</li>
+<li><strong>Binary</strong>: keep only the sign of each number, packed 8 per byte; compare vectors by counting bits that agree (a Hamming distance, which CPUs compute in a few instructions). 32 times smaller.</li>
+</ul>
+<p>To see the quality cost, a synthetic test: 20,000 unit vectors in 384 dimensions arranged in 200 topic clusters, and 200 queries near random documents. Ground truth is the exact float32 top 10. Recall@10 against that truth:</p>
+<table>
+<thead><tr><th>Stored as</th><th>Bytes per vector</th><th>Recall@10</th></tr></thead>
+<tbody>
+<tr><td>float32 (truth)</td><td>1,536</td><td>1.000</td></tr>
+<tr><td>int8</td><td>384</td><td>0.989</td></tr>
+<tr><td>binary</td><td>48</td><td>0.390</td></tr>
+<tr><td>binary shortlist of 100, rescored in float32</td><td>48 in RAM, full vectors on disk</td><td>1.000</td></tr>
+</tbody>
+</table>
+<p>Binary alone is a poor ranker: it cannot tell apart neighbours that are all close. But as a <strong>first pass</strong> it is excellent: the true top 10 are almost always inside its top 100, and rescoring 100 candidates with full vectors is cheap: microseconds of arithmetic, plus well under a millisecond to fetch them if they live on a local SSD rather than in RAM. This "compress for the shortlist, rescore with full precision" pattern is how large indexes get 10 to 30 times cheaper. Real embeddings behave differently from this synthetic set, and some models are trained to quantize well, so measure on your golden set; the shape of the result usually holds.</p>
+</section>
+
+<section data-label="Step 9: when fine-tuning pays">
+<p>Fine-tuning continues the model's contrastive training on your own (query, relevant chunk) pairs, usually with in-batch negatives plus hard negatives mined from your current retriever. It helps most when your domain has vocabulary the base model treats as noise: internal product names, part numbers, legal clause structure, medical abbreviations.</p>
+<p>Reach for it last, after cheaper fixes have been measured:</p>
+<ol>
+<li>Fix the obvious: correct prefixes, chunk sizes within the input limit, normalisation and index metric matching.</li>
+<li>Add keyword search and fuse (<a href="@@rag/hybrid-search@@">hybrid search</a>): it covers identifiers, the most common domain gap.</li>
+<li>Add a <a href="@@rag/reranking@@">reranker</a>: it fixes ordering.</li>
+<li>Then, if recall at your candidate depth is still short on specific slices, fine-tune.</li>
+</ol>
+<p>Data: a few thousand good pairs is a reasonable start; they can come from click logs, from support tickets matched to the article that resolved them, or from an LLM writing questions for each chunk (check a sample, since generated questions tend to copy the chunk's wording). Hold out part of the golden set the training data never touched. The hidden cost: a fine-tuned model is a new model, so the whole corpus must be re-embedded, and you now own a model to host and retrain.</p>
+</section>
+
+<section data-label="Step 10: switching models without breaking search">
+<p>Vectors from two models live in unrelated coordinate systems. A clean way to see it: rotate a set of vectors by a random orthogonal matrix. Within each set, every cosine is preserved exactly (two texts at −0.068 in set A are at −0.068 in set B), yet the same text's vector in A and in B has a cosine of −0.058: noise. Two genuinely different models are at least that unrelated. So a query embedded with the new model, searched against vectors from the old one, returns garbage, with no error.</p>
+<p>A safe migration:</p>
+<ol>
+<li>Store the model name and version on every vector, and keep each model's vectors in its own index or namespace.</li>
+<li>Re-embed the corpus into a new index while the old one serves (9 M tokens here: minutes and cents; for billions of tokens, plan the throughput and cost).</li>
+<li>Dual-write new and changed documents to both indexes during the backfill.</li>
+<li>Evaluate on the golden set, then shadow real traffic: run both, compare result overlap and downstream answer quality.</li>
+<li>Switch the query path and the index together, in one config change, and keep the old index until you are sure.</li>
+</ol>
+<p>Anything else derived from the old model must move too: a semantic cache keyed by query vectors, similarity thresholds tuned on its scores, clustering built on its space.</p>
+</section>
+
+<section data-label="A worked decision for the support assistant">
+<ol>
+<li><strong>Constraints.</strong> No data-residency requirement; 15% Spanish, so multilingual is required. That removes English-only models.</li>
+<li><strong>Shortlist</strong> from the leaderboard's retrieval column: a hosted multilingual model (1,024 dimensions), a hosted large model (3,072), and an open multilingual model (768) as the self-host option.</li>
+<li><strong>Golden set</strong>: 200 real queries from tickets, including 40 Spanish, 30 with identifiers and 20 with no answer.</li>
+<li><strong>Measure</strong> recall@50 (we will rerank 50) and nDCG@10, overall and per slice. Suppose the hosted large model leads overall by 2 points: within noise at 200 queries. On the 40 Spanish queries, suppose the multilingual 1,024-dimension model finds the answer for 8 that the large model misses, and the reverse happens once. A slice of 40 is too small to trust its averages (±12 points each), but the paired count is decisive: 8 against 1 has a sign-test probability of about 0.04 under "equally good". That is a real difference on a slice that matters.</li>
+<li><strong>Cost</strong>: under $5 a month in API fees for any candidate. Memory at 30,000 chunks: under 0.4 GB for any of them. Neither decides.</li>
+<li><strong>Decision</strong>: the hosted multilingual model, float16 storage, version tag on every vector, golden set kept as a regression test for every future change. Revisit int8 or binary storage only if the corpus reaches millions of chunks.</li>
+</ol>
+</section>
+
+<section data-label="In code: an evaluation harness">
+<p>The harness is model-agnostic: it takes ranked chunk IDs per query and the labelled relevant IDs. These numbers reproduce Step 4:</p>
+<pre data-lang="python">import math
+
+def recall_at_k(ranked, relevant, k):
+    return len(set(ranked[:k]) &amp; relevant) / len(relevant)
+
+def reciprocal_rank(ranked, relevant):
+    return next((1 / i for i, c in enumerate(ranked, 1) if c in relevant), 0.0)
+
+def ndcg_at_k(ranked, relevant, k):
+    dcg = sum(1 / math.log2(i + 1) for i, c in enumerate(ranked[:k], 1) if c in relevant)
+    ideal = sum(1 / math.log2(i + 1) for i in range(1, min(len(relevant), k) + 1))
+    return dcg / ideal
+
+def evaluate(results, golden, k=5):
+    """results: {query_id: [chunk ids, best first]}; golden: {query_id: set of relevant ids}"""
+    rows = [(recall_at_k(results[q], rel, k), reciprocal_rank(results[q], rel), ndcg_at_k(results[q], rel, k))
+            for q, rel in golden.items()]
+    n = len(rows)
+    return {name: round(sum(r[i] for r in rows) / n, 3) for i, name in enumerate(["recall", "mrr", "ndcg"])}
+
+golden = {"q1": {"c2"}, "q2": {"c3", "c6"}, "q3": {"c11"}}
+model_a = {"q1": ["c7", "c2", "c9", "c4", "c1"],
+           "q2": ["c5", "c8", "c3", "c6", "c0"],
+           "q3": ["c1", "c4", "c2", "c8", "c9"]}
+print(evaluate(model_a, golden))       # {'recall': 0.667, 'mrr': 0.278, 'ndcg': 0.401}
+
+# paired comparison: where do two models disagree on finding the answer?
+model_b = {"q1": ["c2", "c7", "c9", "c4", "c1"], "q2": ["c5", "c8", "c0", "c1", "c4"],
+           "q3": ["c11", "c4", "c2", "c8", "c9"]}
+hit = lambda res, q: recall_at_k(res[q], golden[q], 5) &gt; 0
+print("A only:", [q for q in golden if hit(model_a, q) and not hit(model_b, q)],
+      "B only:", [q for q in golden if hit(model_b, q) and not hit(model_a, q)])
+</pre>
+<p>The synthetic compression test from Step 8, and the two facts from Steps 7 and 10, in numpy:</p>
+<pre data-lang="python">import numpy as np
+rng = np.random.default_rng(0)
+N, d, k = 20_000, 384, 10
+centers = rng.normal(size=(200, d))                              # 200 topics
+X = centers[rng.integers(0, 200, N)] + rng.normal(size=(N, d))
+X /= np.linalg.norm(X, axis=1, keepdims=True)
+noise = rng.normal(size=(200, d)); noise /= np.linalg.norm(noise, axis=1, keepdims=True)
+Q = X[rng.integers(0, N, 200)] + 0.5 * noise                      # queries near some document
+Q /= np.linalg.norm(Q, axis=1, keepdims=True)
+truth = np.argsort(-(Q @ X.T), axis=1)[:, :k]                    # exact float32 top 10
+recall = lambda found: np.mean([len(set(f) &amp; set(t)) / k for f, t in zip(found, truth)])
+
+scale = np.abs(X).max(0) / 127                                   # int8, one scale per dimension
+X8 = np.round(X / scale).astype(np.int8)
+print("int8   %.3f" % recall(np.argsort(-(Q @ (X8 * scale).T), axis=1)[:, :k]))      # 0.989
+
+Xb, Qb = (X &gt; 0).astype(np.int16), (Q &gt; 0).astype(np.int16)    # sign bits
+agree = Qb @ Xb.T + (1 - Qb) @ (1 - Xb).T                        # matching bits = d - Hamming
+print("binary %.3f" % recall(np.argsort(-agree, axis=1)[:, :k]))                     # 0.390
+cand = np.argsort(-agree, axis=1)[:, :100]                       # shortlist 100, rescore exactly
+print("binary+rescore %.3f" % recall([c[np.argsort(-(X[c] @ q))[:k]] for c, q in zip(cand, Q)]))  # 1.000
+
+v = np.random.default_rng(1).normal(size=1024); v /= np.linalg.norm(v)
+print("length after truncating to 256 dims: %.2f" % np.linalg.norm(v[:256]))        # 0.46
+
+R, _ = np.linalg.qr(np.random.default_rng(1).normal(size=(d, d)))   # a "different model"
+A = X[:2]; B = A @ R
+print("within A %.3f, within B %.3f, same text A vs B %.3f" % (A[0] @ A[1], B[0] @ B[1], A[0] @ B[0]))
+</pre>
+<p>To produce <code>results</code> from a hosted API, the call looks like this (OpenAI Python SDK, documented API; needs a network and key, so it is not run here):</p>
+<pre data-lang="python"># needs: network access and OPENAI_API_KEY (documented OpenAI SDK API, not run here)
+import numpy as np
+from openai import OpenAI
+
+client = OpenAI()
+def embed(texts, dims=None):
+    kw = {"dimensions": dims} if dims else {}
+    resp = client.embeddings.create(model="text-embedding-3-small", input=texts, **kw)
+    return np.array([d.embedding for d in resp.data])      # returned unit-length
+
+chunk_vecs = embed(chunk_texts)                                # batch in groups of a few hundred
+query_vecs = embed(list(queries.values()))
+top = np.argsort(-(query_vecs @ chunk_vecs.T), axis=1)[:, :50]
+results = {qid: [chunk_ids[j] for j in row] for qid, row in zip(queries, top)}
+</pre>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"Pick the top of the leaderboard."</strong> The average mixes tasks you do not run, on domains that are not yours, with gaps smaller than your measurement noise. Shortlist from it; decide on your golden set.</li>
+<li><strong>A golden set written by the engineers.</strong> Invented queries reuse the documents' wording and flatter every model. Sample real queries.</li>
+<li><strong>Judging by the overall average only.</strong> Break results down by slice (language, identifiers, no-answer); the slice that matters to the product may reverse the ranking.</li>
+<li><strong>Optimising API price.</strong> Embedding fees are usually tiny; storage, search latency and migration effort dominate.</li>
+<li><strong>Truncating dimensions without renormalising, or truncating a non-Matryoshka model.</strong> The first breaks cosine scores; the second discards information arbitrarily.</li>
+<li><strong>Using binary quantization as the final ranking.</strong> It is a shortlist method; rescore with full-precision vectors.</li>
+<li><strong>Fine-tuning first.</strong> Prefixes, hybrid search and a reranker are cheaper, and fine-tuning commits you to re-embedding and hosting a model.</li>
+<li><strong>Swapping the model in place.</strong> Old and new vectors are incomparable; migrate with a separate index, dual writes and a single cutover.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>A query has relevant chunks at ranks 1 and 5 of the top 5, and there are exactly two relevant chunks. What are its recall@5, reciprocal rank and nDCG@5?</summary><div class="answer">Recall@5 = 2/2 = 1.0. Reciprocal rank = 1/1 = 1.0. DCG = \(1/\log_2 2 + 1/\log_2 6 = 1 + 0.387 = 1.387\); ideal DCG = \(1 + 0.631 = 1.631\); nDCG@5 = 0.850.</div></details>
+<details><summary>Model A scores recall@50 = 0.83 and model B 0.81 on 100 golden queries. Should you switch from B to A?</summary><div class="answer">Not on that evidence. The standard error at \(n = 100\), \(p \approx 0.82\) is about 0.038, so the 95% interval on each score is roughly ±7.5 points, and on the difference between two independent averages about ±10.6. A 2-point gap is noise. Look at the paired disagreements and the slices, or label more queries; switch only for a real, product-relevant gain that justifies re-embedding.</div></details>
+<details><summary>You must store 50 million chunks with a 1,024-dimension model. How much RAM do float32, int8 and binary vectors need?</summary><div class="answer">float32: \(50{,}000{,}000 \times 1{,}024 \times 4 = 204.8\) GB. int8: 51.2 GB. Binary: \(50{,}000{,}000 \times 128\) bytes = 6.4 GB. A binary in-memory shortlist with float vectors on disk for rescoring is the usual design at this size.</div></details>
+<details><summary>Why does recall at the candidate depth matter more than nDCG@5 for the first-stage retriever in a system with a reranker?</summary><div class="answer">The reranker reorders the candidates it is given but cannot add missing ones. If the answer is not in the top 50, nothing downstream recovers it; if it is at rank 30, the reranker can move it up.</div></details>
+<details><summary>Your company forbids sending customer data to external APIs, and query volume is low. What follows?</summary><div class="answer">Self-host an open-weights model regardless of price: the constraint decides, not cost. Keep the model small enough to serve cheaply (a single GPU or even CPU for low volume), and pin its version.</div></details>
+<details><summary>A teammate truncates 1,536-dimension vectors to 512 by slicing the arrays and sees search quality collapse. Name two possible causes.</summary><div class="answer">The truncated vectors were not renormalised, so dot-product scores no longer equal cosine; or the model was not trained Matryoshka-style, so the first 512 numbers are not a meaningful embedding. Also check that queries were truncated the same way as documents.</div></details>
+<details><summary>What else must change when you migrate to a new embedding model, besides the document index?</summary><div class="answer">Everything built on the old space: the query embedding call, any semantic cache keyed by vectors, similarity thresholds tuned on old scores, and clusters or deduplication computed from old vectors. Version tags make it possible to find them.</div></details>
+</section>

@@ -1,0 +1,247 @@
+<!-- Deep lesson: Semantic caching. Merged into production/semantic-cache by build_ai_learning.py -->
+
+<section data-label="New words">
+<table>
+<tr><td>Exact cache</td><td>A cache keyed on the exact (normalised) request text. Hits only on identical questions.</td></tr>
+<tr><td>Semantic cache</td><td>A cache keyed on the meaning of a question: a new question hits if its embedding is close enough to a stored question's.</td></tr>
+<tr><td>Similarity threshold</td><td>The minimum cosine similarity between the new question and the nearest stored one for the stored answer to be returned.</td></tr>
+<tr><td>Hit rate</td><td>The share of requests answered from the cache.</td></tr>
+<tr><td>False hit</td><td>A cache hit where the stored question meant something different, so the returned answer is wrong for this user.</td></tr>
+<tr><td>Scope</td><td>Everything that must match exactly, besides meaning, for a cached answer to be valid: tenant, permissions, language, model and prompt versions.</td></tr>
+<tr><td>TTL</td><td>Time to live: how long an entry may be served before it expires.</td></tr>
+<tr><td>Invalidation</td><td>Removing or expiring entries because something they depend on changed, such as a cited document.</td></tr>
+<tr><td>Verifier</td><td>A second, more precise check on a candidate hit (a cross-encoder or a small model) that asks "do these two questions have the same answer?".</td></tr>
+<tr><td>Admission policy</td><td>The rule for which answers are allowed into the cache at all.</td></tr>
+<tr><td>Shadow mode</td><td>Running the cache lookup on live traffic without serving its answers, to measure what would have happened.</td></tr>
+</table>
+</section>
+
+<section data-label="The question">
+<p>Support assistants hear the same questions all day, worded differently: "how do I reset my router", "router reset steps", "my wifi box needs a reset, how?". Each one, answered from scratch, pays for retrieval, a long prompt and a full generation, and the user waits seconds. An exact-match cache barely helps, because people rarely type the same string twice. A <strong>semantic cache</strong> matches on meaning instead: embed the new question, find the most similar question already answered, and if they are close enough, return the stored answer in milliseconds.</p>
+<p>The idea is simple. The engineering is entirely in one word, "enough". Set the bar too low and the cache returns confident answers to questions nobody asked; too high and it almost never hits. This lesson is about setting that bar with numbers, and about everything else that must match for a stored answer to be valid.</p>
+<p>The interview questions:</p>
+<ol>
+<li>How does a semantic cache work, and why is an exact cache not enough?</li>
+<li>How do you choose the similarity threshold, and what does a false hit cost?</li>
+<li>What must be part of the cache key, and how do you keep entries fresh?</li>
+<li>When is a semantic cache a bad idea?</li>
+</ol>
+<p>The running example: an internet service provider's support assistant, answering about 60,000 questions a day with RAG. An uncached answer costs about $0.01 (illustrative: retrieval, a 4,000-token prompt, a 250-token answer) and takes about 2.8 seconds. About 45% of daily questions repeat an intent that has already been answered recently, in some wording.</p>
+</section>
+
+<section data-label="Step 1: why exact matching misses most repeats">
+<p>An exact cache hashes the request and looks it up. Normalising first (lower-case, collapse spaces, strip punctuation) catches trivial variants, and it is worth doing because it is nearly free: an in-memory hash lookup in about a millisecond. But for free-text questions, exact repeats are a small slice of traffic. Most repetition is paraphrase: the same need, different words. "How do I reset my router?" and "router reset steps" share no normalised string, so an exact cache treats them as unrelated.</p>
+<p>Embeddings (see <a href="@@rag/embeddings@@">embeddings</a>) map texts with similar meaning to nearby vectors. The two router questions might have a cosine similarity of 0.95; "how do I reset my password?" might score 0.88 against them, because it shares most words and the topic "reset" but needs an entirely different answer. That last example is the whole difficulty in one line: embedding similarity measures how alike two texts are, not whether they have the same answer.</p>
+</section>
+
+<section data-label="Step 2: the mechanism">
+<pre class="ascii-diagram">question --&gt; build scope (tenant, permissions, locale, versions)
+         --&gt; tier 1: exact lookup on normalised text      ~1 ms      hit -&gt; answer
+         --&gt; embed question                               ~10-20 ms
+         --&gt; tier 2: nearest cached question in this scope ~5-10 ms
+               similarity &gt;= threshold ?  (optional verifier)
+                 yes -&gt; return stored answer (+ its citations)
+                 no  -&gt; full RAG pipeline -&gt; answer -&gt; admission check -&gt; store</pre>
+<p>Each stored entry holds the original question, its embedding, the answer, the documents the answer cited, the scope it was produced under, and a timestamp. The nearest-neighbour search runs over stored <em>questions</em>, not documents, using any vector index (an in-memory index, Redis with vector search, or the same database as your RAG chunks in a separate collection).</p>
+<p>A hit costs the embedding call plus one small vector search, tens of milliseconds, against 2.8 seconds for the full path. The query embedding is needed for retrieval on a miss anyway, so a miss costs almost nothing extra.</p>
+</section>
+
+<section data-label="Step 3: the threshold is a classifier, so measure it like one">
+<p>For every incoming question, the cache's decision is a binary classification: "the nearest stored question has the same answer" or not. The threshold trades two errors: missed hits (wasted money) and false hits (wrong answers). You cannot choose it by intuition or by copying "0.95" from a blog post, because similarity distributions depend on the embedding model, the domain and the phrasing of your users.</p>
+<p>Measure it. Take a few thousand logged questions, find each one's nearest neighbour among the others, and have people label 500 of those pairs as "same answer" or "different answer". Plot the two groups' similarity distributions. In our ISP data, suppose the same-answer pairs centre around 0.94 (spread 0.03) and the different-answer nearest neighbours around 0.80 (spread 0.05). They overlap: some different-answer pairs score 0.90 or more, and those are exactly the ones that hurt.</p>
+<p>The dangerous pairs have a recognisable shape, and they belong in your labelled set on purpose:</p>
+<ul>
+<li><strong>Entity swaps</strong>: "cancel my <em>order</em>" versus "cancel my <em>subscription</em>"; "router model X100" versus "X200".</li>
+<li><strong>Negation and direction</strong>: "can I upgrade mid-contract?" versus "can I downgrade mid-contract?".</li>
+<li><strong>Numbers, dates and places</strong>: "outage in Leeds today" versus "outage in Leeds last week".</li>
+<li><strong>Personal state</strong>: "why is my bill higher this month?" has a different true answer for every customer.</li>
+</ul>
+</section>
+
+<section data-label="Step 4: the economics of a false hit">
+<p>Now put a price on each outcome. Per question, the expected cost of running a cache is</p>
+\[ C = c_{\text{lookup}} + (1 - h)\, c_{\text{LLM}} + f\, c_{\text{wrong}} \]
+<p>where \(h\) is the hit rate (as a share of all questions), \(f\) the false-hit rate (also as a share of all questions), \(c_{\text{lookup}}\) the cost of embedding and searching, \(c_{\text{LLM}}\) the cost of the full RAG answer, and \(c_{\text{wrong}}\) the expected cost of serving a wrong answer. Without a cache, \(C = c_{\text{LLM}}\).</p>
+<p>\(c_{\text{wrong}}\) is the term people forget. For the ISP, a wrong answer sometimes leads to a follow-up contact with a human agent, sometimes to a wasted technician visit, sometimes to nothing. Suppose the expected cost works out to $0.20 (illustrative), twenty times an LLM call. With \(c_{\text{lookup}} = \$0.0002\), \(c_{\text{LLM}} = \$0.01\), and 45% of questions having a same-answer entry in cache, the distributions from Step 3 give:</p>
+<table>
+<thead><tr><th>Threshold</th><th>Hit rate</th><th>Hits that are false</th><th>Cost per question</th><th>vs no cache</th></tr></thead>
+<tbody>
+<tr><td>0.86</td><td>51.2%</td><td>12.4%</td><td>$0.0177</td><td>+77%</td></tr>
+<tr><td>0.88</td><td>47.0%</td><td>6.4%</td><td>$0.0115</td><td>+15%</td></tr>
+<tr><td>0.90</td><td>42.1%</td><td>3.0%</td><td>$0.0085</td><td>−15%</td></tr>
+<tr><td>0.92</td><td>34.1%</td><td>1.3%</td><td>$0.0077</td><td>−23%</td></tr>
+<tr><td>0.94</td><td>22.6%</td><td>0.6%</td><td>$0.0082</td><td>−18%</td></tr>
+</tbody>
+</table>
+<p>Read it slowly. At 0.86 the cache has the most impressive hit rate on the dashboard and costs 77% <em>more</em> than having no cache, because one hit in eight is wrong and wrong answers are expensive. The best threshold here is about 0.92, saving 23%. Raise \(c_{\text{wrong}}\) (medical or financial answers) and the optimum moves up; lower it (a recipe bot) and it moves down. The threshold is a business decision expressed as a number, and the hit rate alone is not the metric to optimise.</p>
+<p>Latency gains follow the hit rate. At 34% hits, mean response time falls from 2.8 seconds to about \(0.66 \times 2.8 + 0.34 \times 0.03 \approx 1.9\) seconds, and the hits feel instant.</p>
+</section>
+
+<section data-label="Step 5: a verifier widens the safe zone">
+<p>Similarity from a bi-encoder (two texts embedded separately, then compared) is fast but coarse. A <strong>verifier</strong> looks at the two questions together and asks the precise question: do they have the same answer? It can be a cross-encoder (the same kind of model as a <a href="@@rag/reranking@@">reranker</a>, scoring the pair jointly) or a small LLM with a strict yes/no prompt. It runs only on candidate hits, so its cost is bounded by the hit rate.</p>
+<p>Suppose a verifier costing $0.0003 per check keeps 95% of true hits and rejects 90% of false ones. Re-running the numbers:</p>
+<table>
+<thead><tr><th>Threshold</th><th>Hit rate</th><th>Hits that are false</th><th>Cost per question</th><th>vs no cache</th></tr></thead>
+<tbody>
+<tr><td>0.86 + verifier</td><td>43.2%</td><td>1.5%</td><td>$0.0073</td><td>−27%</td></tr>
+<tr><td>0.88 + verifier</td><td>42.1%</td><td>0.7%</td><td>$0.0067</td><td>−33%</td></tr>
+<tr><td>0.90 + verifier</td><td>39.0%</td><td>0.3%</td><td>$0.0067</td><td>−33%</td></tr>
+</tbody>
+</table>
+<p>The verifier lets you lower the similarity threshold to collect more paraphrases while keeping false hits rare: savings rise from 23% to 33%. The architecture is the same as retrieval: a cheap, wide first stage, then a precise second stage. The verifier's own error rates come from the same labelled pairs.</p>
+</section>
+
+<section data-label="Step 6: scope, everything besides meaning that must match">
+<p>Two questions with identical meaning can still need different answers. Everything that changes the correct answer must be part of the cache key, matched exactly, before similarity is even computed:</p>
+<ul>
+<li><strong>Tenant.</strong> "What is the refund policy?" has a different answer for every business on a multi-tenant platform. Partition the cache by tenant in the lookup itself, never as a filter applied after the nearest-neighbour search.</li>
+<li><strong>Permissions.</strong> If the answer was built from documents only some roles may read, it may only be served to users with the same access. Key on a permission-set identifier (for example a hash of the user's groups), as in the access-control rules of <a href="@@rag/rag-in-production@@">making RAG good</a>.</li>
+<li><strong>Language and locale.</strong> A cached English answer is wrong for a Spanish speaker even if a multilingual embedding says the questions match.</li>
+<li><strong>Versions.</strong> Model, system prompt and retrieval index versions. Changing the prompt to fix a bad behaviour is pointless if the cache keeps serving answers produced by the old prompt.</li>
+<li><strong>Conversation context.</strong> "What about for business accounts?" means nothing alone. Cache only standalone questions: first turns, or follow-ups after a rewrite step has turned them into self-contained questions.</li>
+</ul>
+<p>Then decide what is <strong>cacheable at all</strong>. Answers that depend on the individual user (their bill, their outage, their order) must not be shared, and usually should not be cached. A cheap classifier or a rule on which tools the answer used ("called the billing API" means personal) keeps them out.</p>
+</section>
+
+<section data-label="Step 7: freshness and invalidation">
+<p>A cached answer is a copy of a past computation. It goes stale when the documents behind it change. Three mechanisms, used together:</p>
+<ol>
+<li><strong>Event-driven invalidation.</strong> Store the ids of the documents each answer cited, and keep a reverse map from document id to cache entries. When ingestion updates or deletes document <code>kb-17</code>, expire every entry that cited it. This is the precise mechanism and it covers most staleness in a RAG system.</li>
+<li><strong>Version keys.</strong> Because the index version is part of the scope (Step 6), a full re-index naturally starts a fresh cache without any purge job.</li>
+<li><strong>TTL as a backstop.</strong> Some answers depend on things no document change signals (a temporary outage notice, prices). Set TTLs per category: hours for status-like content, days for stable how-to answers.</li>
+</ol>
+<p>Deletions for privacy are the strict case: if a document is removed for legal reasons, answers quoting it must go too, and the reverse map is what makes that possible.</p>
+</section>
+
+<section data-label="Step 8: what to admit, how big it gets, and stampedes">
+<p><strong>Admission.</strong> Caching a bad answer multiplies it. Store only answers that passed your output checks, cited sources, did not abstain, and were not marked down by the user. Some teams admit only answers whose question has been seen several times, which keeps rare one-offs from filling the cache, or pre-fill the cache with reviewed answers to the top few hundred questions.</p>
+<p><strong>Size.</strong> Each entry holds an embedding (1,536 dimensions × 4 bytes ≈ 6 KB) plus the answer and metadata (about 2 KB). A million entries is about 8 GB, comfortable for one Redis node or a vector database collection. Evict by least-recently-used or least-frequently-used; the tail of one-off questions contributes little.</p>
+<p><strong>Stampedes.</strong> When a popular question first arrives (an outage starts and thousands ask "is the internet down in Leeds?"), every request misses at once and all of them run the full pipeline. Coalesce concurrent misses for the same normalised question so one request computes and the others wait for its result, and pre-warm the cache for known spikes.</p>
+</section>
+
+<section data-label="Step 9: how it relates to the other caches">
+<p>A semantic cache is one of several caches in an LLM application, and they are complementary:</p>
+<ul>
+<li><strong>Prompt (prefix) caching</strong> by the model provider or serving engine reuses the computed attention state for a repeated prompt prefix, such as a long system prompt. It cuts the cost and latency of every call but still generates a fresh answer. It is exact, invisible to correctness, and covered in <a href="@@production/cost-performance@@">cost and latency</a>.</li>
+<li><strong>Embedding cache</strong>: an exact cache from text to its vector, so repeated texts are never embedded twice.</li>
+<li><strong>Retrieval cache</strong>: cache the retrieved chunk ids for a question, then still generate. Safer than caching answers, smaller savings.</li>
+<li><strong>Semantic answer cache</strong>: this lesson. The largest saving and the only one that can return a wrong answer.</li>
+</ul>
+</section>
+
+<section data-label="Rolling it out safely">
+<ol>
+<li><strong>Measure the opportunity.</strong> From logs, estimate how much traffic repeats an intent within your TTL. If it is under about 10 to 15%, the cache will not repay its complexity.</li>
+<li><strong>Label pairs.</strong> 500 or more nearest-neighbour pairs, deliberately including entity swaps, negations and personal questions. Fit the threshold (and verifier) to your cost of a wrong answer, as in Steps 4 and 5.</li>
+<li><strong>Shadow mode.</strong> Run lookups on live traffic for a week without serving them. Log every would-be hit, judge a sample (an LLM judge plus human review) and measure the real false-hit rate.</li>
+<li><strong>Launch narrow.</strong> Serve hits only for scopes and categories where shadow mode looked clean, at a conservative threshold.</li>
+<li><strong>Monitor.</strong> Hit rate, false-hit rate from sampled judging, thumbs-down rate on cached versus fresh answers (if cached answers are disliked more often, the threshold is too low), savings, and cache size. Keep a switch to disable serving instantly.</li>
+</ol>
+</section>
+
+<section data-label="In code: the threshold economics, and a scoped cache">
+<p>The cost model from Steps 4 and 5. The similarity distributions are the illustrative ones from Step 3; in practice you fit them to your labelled pairs.</p>
+<pre data-lang="python">import math
+
+def above(t, mean, sd):                       # P(similarity &gt; t) under a normal distribution
+    return 0.5 * (1 - math.erf((t - mean) / (sd * math.sqrt(2))))
+
+SAME, DIFF, P_SAME = (0.94, 0.03), (0.80, 0.05), 0.45   # fitted on labelled pairs (illustrative)
+C_LLM, C_LOOKUP, C_WRONG, C_VERIFY = 0.010, 0.0002, 0.20, 0.0003
+
+def per_query(t, verify=False):
+    tp, fp = P_SAME * above(t, *SAME), (1 - P_SAME) * above(t, *DIFF)
+    cost = C_LOOKUP
+    if verify:                                  # verifier keeps 95% of true hits, 10% of false ones
+        cost += (tp + fp) * C_VERIFY
+        tp, fp = 0.95 * tp, 0.10 * fp
+    hit = tp + fp
+    cost += (1 - hit) * C_LLM + fp * C_WRONG
+    return hit, fp / hit, cost
+
+for verify in (False, True):
+    print("with verifier" if verify else "threshold only")
+    for t in (0.86, 0.88, 0.90, 0.92, 0.94):
+        hit, false_share, cost = per_query(t, verify)
+        print(f"  t={t:.2f}  hit={hit:5.1%}  false hits={false_share:5.1%}  "
+              f"$/query={cost:.4f} ({cost / C_LLM - 1:+.0%} vs no cache)")
+</pre>
+<p>It prints both tables above. Next, a minimal cache with the two tiers, scope keys, TTL and document-based invalidation. A real one keeps entries in Redis or a vector database and uses an approximate index instead of the loop.</p>
+<pre data-lang="python">import hashlib, time
+import numpy as np
+
+class SemanticCache:
+    """Two tiers (exact hash, then nearest neighbour), scoped keys, TTL, doc-based invalidation."""
+    def __init__(self, threshold=0.92, ttl_s=24 * 3600):
+        self.threshold, self.ttl = threshold, ttl_s
+        self.exact, self.entries, self.by_doc = {}, {}, {}
+
+    @staticmethod
+    def scope(tenant, perm_set, locale, versions):          # what must match exactly
+        return (tenant, perm_set, locale, versions)
+
+    def get(self, scope, text, vec, now=None):
+        now = now or time.time()
+        key = (scope, " ".join(text.lower().split()))       # tier 1: normalised exact match
+        e = self.exact.get(key)
+        if e and now - e["at"] &lt; self.ttl:
+            return e["answer"], "exact", 1.0
+        best, best_sim = None, -1.0                          # tier 2: nearest cached query
+        for e in self.entries.get(scope, []):                # (an ANN index in production)
+            sim = float(vec @ e["vec"])                      # unit vectors: dot = cosine
+            if sim &gt; best_sim and now - e["at"] &lt; self.ttl:
+                best, best_sim = e, sim
+        if best and best_sim &gt;= self.threshold:
+            return best["answer"], "semantic", round(best_sim, 3)
+        return None, "miss", round(best_sim, 3)
+
+    def put(self, scope, text, vec, answer, cited_docs, now=None):
+        e = {"vec": vec, "answer": answer, "at": now or time.time(), "docs": set(cited_docs)}
+        self.exact[(scope, " ".join(text.lower().split()))] = e
+        self.entries.setdefault(scope, []).append(e)
+        for d in cited_docs:
+            self.by_doc.setdefault(d, []).append(e)
+
+    def invalidate_doc(self, doc_id):                        # a cited document changed
+        for e in self.by_doc.pop(doc_id, []):
+            e["at"] = float("-inf")                          # expired everywhere it is referenced
+
+def unit(v):
+    v = np.asarray(v, dtype=float); return v / np.linalg.norm(v)
+
+cache = SemanticCache(threshold=0.92)
+s = SemanticCache.scope("isp-co", "customer", "en", ("gpt-x", "prompt-v7", "index-41"))
+cache.put(s, "How do I reset my router?", unit([1, 0.20, 0]), "Hold the reset button 10 s ...", ["kb-17"])
+
+print(cache.get(s, "how do I reset my  router?", unit([1, 0.20, 0])))       # exact tier
+print(cache.get(s, "Steps to reset the router", unit([1, 0.30, 0.05])))      # paraphrase
+print(cache.get(s, "How do I reset my password?", unit([1, 0.75, 0.30])))    # similar words, other intent
+other = SemanticCache.scope("isp-co", "agent", "en", ("gpt-x", "prompt-v7", "index-41"))
+print(cache.get(other, "How do I reset my router?", unit([1, 0.20, 0])))     # other permission scope
+cache.invalidate_doc("kb-17")
+print(cache.get(s, "Steps to reset the router", unit([1, 0.30, 0.05])))      # source changed
+</pre>
+<p>The output shows an exact hit, a paraphrase hit at 0.994, a miss for "reset my password" at 0.877 (similar words, different intent, below the threshold), a miss for the same question under a different permission scope, and a miss after the cited document <code>kb-17</code> changed.</p>
+</section>
+
+<section data-label="Where people get lost">
+<ul>
+<li><strong>"Use 0.95, that is the standard threshold."</strong> Similarity scales differ by model and domain. Fit the threshold to labelled pairs and to the cost of a wrong answer.</li>
+<li><strong>Optimising hit rate.</strong> A higher hit rate with more false hits can cost more than no cache at all. Optimise expected cost, including wrong answers.</li>
+<li><strong>"Similar embeddings mean the same answer."</strong> Embeddings capture topic and wording; "cancel order" and "cancel subscription" are close and need different answers. Add a verifier for the risky zone.</li>
+<li><strong>Leaving tenant or permissions out of the key.</strong> One user's answer, built from documents they may read, is served to someone who may not. Scope first, then search.</li>
+<li><strong>Caching personal answers.</strong> "Why is my bill higher?" is different for everyone. Mark answers that used personal data or tools as uncacheable.</li>
+<li><strong>No invalidation.</strong> The cache keeps serving last month's policy after the document changed. Store cited document ids and expire on change; use TTL only as a backstop.</li>
+<li><strong>Caching follow-up turns.</strong> "And for business accounts?" is not a standalone question. Cache only first turns or rewritten standalone questions.</li>
+</ul>
+</section>
+
+<section data-label="Check yourself">
+<details><summary>Hit rate is 40%, 2% of all questions get a false hit, lookups cost $0.0002, an LLM answer $0.01, and a wrong answer $0.25. Is the cache saving money?</summary><div class="answer">\(C = 0.0002 + 0.6 \times 0.01 + 0.02 \times 0.25 = 0.0002 + 0.006 + 0.005 = 0.0112\), which is more than $0.01 without a cache. It is losing money: raise the threshold or add a verifier.</div></details>
+<details><summary>A verifier costs $0.0005 per candidate and the threshold produces candidates on 50% of questions. What does verification add per question, and when is it worth it?</summary><div class="answer">\(0.5 \times 0.0005 = \$0.00025\) per question. It pays when the false hits it removes, times the cost of a wrong answer, exceed that: for example removing 1% of questions' false hits at $0.20 each saves $0.002, eight times its cost.</div></details>
+<details><summary>Two tenants on your platform both ask "what is the return window?" with identical wording. What should the cache do?</summary><div class="answer">Treat them as unrelated: tenant is part of the scope, matched exactly before any similarity search. Each tenant gets its own answer from its own documents.</div></details>
+<details><summary>After a prompt change that fixed a tone problem, users still see the old tone on common questions. Why?</summary><div class="answer">Cached answers produced with the old prompt are still being served. Include the prompt (and model and index) version in the cache scope, so a change starts a fresh cache partition.</div></details>
+<details><summary>Your dashboard shows a 55% hit rate and the thumbs-down rate on cached answers is double that on fresh answers. What do you conclude and do?</summary><div class="answer">The threshold is too permissive: many hits are false. Sample and label the disliked cached answers, raise the threshold or add a verifier, and re-fit using the cost model. A lower hit rate with fewer false hits is the better outcome.</div></details>
+<details><summary>How much memory do 2 million entries need with 1,024-dimension embeddings and 1.5 KB of answer and metadata each?</summary><div class="answer">Embedding \(1{,}024 \times 4 = 4{,}096\) bytes plus 1,500 bytes, about 5.6 KB per entry, so about 11.2 GB, plus index overhead.</div></details>
+<details><summary>Which questions should never be served from a semantic cache?</summary><div class="answer">Questions whose answers depend on the individual (account, bill, order status), on real-time state (current outages, live prices) unless the TTL is short and invalidation is reliable, and follow-up turns that are not standalone.</div></details>
+</section>
