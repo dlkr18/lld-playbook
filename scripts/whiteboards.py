@@ -303,6 +303,343 @@ def lint(b):
     return issues
 
 
+# ---------------------------------------------------------------------------
+# phone layout: the same board as one narrow column. The desktop board is 2140
+# wide, so on a 375 px phone its 19 px text shows at about 3 px. This draws it
+# 600 wide (text at about 10 px): rows wrap, long lines wrap, row labels become
+# headings, notes go in one column, and an arrow that would cross a box is
+# routed down a side lane. Served below 640 px through <picture>.
+# ---------------------------------------------------------------------------
+
+WM = 600          # phone board width
+M_PAD = 62        # side margin; up to three lanes run in it
+M_VGAP = 86       # between wrapped rows: room for an arrow and its label
+
+
+def _wrap(text, width, size, bold=False, face="body"):
+    """Greedy wrap at ' · ' first, then at spaces."""
+    def fits(t):
+        return text_w(t, size, bold, face) <= width
+
+    def greedy(parts, sep):
+        lines, cur = [], parts[0]
+        for p in parts[1:]:
+            if fits(cur + sep + p):
+                cur += sep + p
+            else:
+                lines.append(cur)
+                cur = p
+        return lines + [cur]
+    if fits(text):
+        return [text]
+    out = []
+    for line in greedy(text.split(" · "), " · "):
+        out += [line] if fits(line) else greedy(line.split(" "), " ")
+    return out
+
+
+def _hits(x1, y1, x2, y2, boxes, skip):
+    return [o for o in boxes.values() if o["node"]["id"] not in skip and _seg_hits_rect(x1, y1, x2, y2, o)]
+
+
+def _overlap(p, q):
+    return not (p["x"] + p["w"] < q["x"] or q["x"] + q["w"] < p["x"] or p["y"] + p["h"] < q["y"] or q["y"] + q["h"] < p["y"])
+
+
+def _flow_order(b):
+    """Boxes in the order the arrows run: a topological order that finishes one
+    chain before starting the next, so a column of boxes stays together."""
+    nodes = [n for row in b["rows"] for n in row if not n["id"].startswith("_")]
+    pos = {n["id"]: i for i, n in enumerate(nodes)}
+    succ = {i: [] for i in pos}
+    for e in b["edges"]:
+        if e[0] in pos and e[1] in pos:
+            succ[e[0]].append(e[1])
+    for k in succ:
+        succ[k].sort(key=pos.get)
+    back, state = set(), {}
+
+    def dfs(i):                                   # find loop-back edges
+        state[i] = 1
+        for j in succ[i]:
+            if state.get(j) == 1:
+                back.add((i, j))
+            elif j not in state:
+                dfs(j)
+        state[i] = 2
+    for n in nodes:
+        if n["id"] not in state:
+            dfs(n["id"])
+    indeg = {i: 0 for i in pos}
+    for i in succ:
+        for j in succ[i]:
+            if (i, j) not in back:
+                indeg[j] += 1
+    stack = [n["id"] for n in reversed(nodes) if indeg[n["id"]] == 0]
+    order, seen = [], set()
+    while stack:
+        i = stack.pop()
+        if i in seen:
+            continue
+        seen.add(i)
+        order.append(i)
+        for j in reversed(succ[i]):
+            if (i, j) not in back:
+                indeg[j] -= 1
+                if indeg[j] == 0:
+                    stack.append(j)
+    order += [n["id"] for n in nodes if n["id"] not in seen]
+    return [next(n for n in nodes if n["id"] == i) for i in order]
+
+
+def mobile(b):
+    """The phone board: whichever reading order lays out cleaner. (svg, issues)"""
+    best = None
+    for mode in ("rows", "flow"):
+        text, issues, lanes = svg_mobile(b, mode)
+        score = (len(issues), lanes)
+        if best is None or score < best[0]:
+            best = (score, text, issues)
+    return best[1], best[2]
+
+
+def svg_mobile(b, mode="rows"):
+    """Returns (svg text, list of layout issues, lanes used)."""
+    issues, out = [], []
+    maxw = WM - 2 * M_PAD
+    title = _wrap(b["title"], WM - 60, 40, face="title")
+    y = 58 + 48 * (len(title) - 1) + 70
+    boxes, heads, sub = {}, [], 0
+    linked = {(e[0], e[1]) for e in b["edges"]} | {(e[1], e[0]) for e in b["edges"]}
+    if mode == "rows":
+        segs = [(b["row_labels"][r] if r < len(b["row_labels"]) else "",
+                 [n for n in row if not n["id"].startswith("_")]) for r, row in enumerate(b["rows"])]
+    else:                                         # runs of same-row boxes in flow order
+        rowof = {n["id"]: r for r, row in enumerate(b["rows"]) for n in row}
+        segs, shown = [], set()
+        for n in _flow_order(b):
+            r = rowof[n["id"]]
+            if segs and rowof[segs[-1][1][-1]["id"]] == r:
+                segs[-1][1].append(n)
+            else:                                 # a row's label heads its first run only
+                lab = b["row_labels"][r] if r < len(b["row_labels"]) and r not in shown else ""
+                shown.add(r)
+                segs.append((lab, [n]))
+    for lab, row in segs:
+        if lab:
+            heads.append((lab, y + 4))
+            y += 38
+        items = []
+        for n in row:
+            lines = [(t, True) for t in _wrap(n["lines"][0], maxw - 44, 23, True)]
+            for l in n["lines"][1:]:
+                lines += [(t, False) for t in _wrap(l, maxw - 44, 19)]
+            need = max(text_w(t, 23 if hb else 19, hb) for t, hb in lines) + 44
+            if need > maxw:
+                issues.append(f"{n['id']}: an unbreakable word is wider than the phone board")
+            w = maxw if (n["w"] or 0) > 900 else min(maxw, max(180, need))
+            items.append((n, lines, w, 26 + 30 * len(lines)))
+        packs, cur, cw = [], [], 0
+        for it in items:
+            # boxes joined by an arrow never share a line: the arrow and its label need the gap below
+            if cur and (cw + 36 + it[2] > maxw or any((q[0]["id"], it[0]["id"]) in linked for q in cur)):
+                packs.append(cur)
+                cur, cw = [], 0
+            cw += (36 if cur else 0) + it[2]
+            cur.append(it)
+        if cur:
+            packs.append(cur)
+        for p in packs:
+            rh = max(i[3] for i in p)
+            tot = sum(i[2] for i in p)
+            g = min(56, (maxw - tot) / (len(p) - 1)) if len(p) > 1 else 0
+            x = M_PAD + (maxw - tot - g * (len(p) - 1)) / 2
+            for n, lines, w, h in p:
+                boxes[n["id"]] = {"x": x, "y": y + (rh - h) / 2, "w": w, "h": h, "node": n, "lines": lines,
+                                  "row": sub, "rowy": y, "rowh": rh}
+                x += w + g
+            sub += 1
+            y += rh + M_VGAP
+
+    # arrows: straight when clear; same-row skips arc below; otherwise a side lane
+    routes, lanes = [], {"l": 0, "r": 0}
+    for e in b["edges"]:
+        if e[0] not in boxes or e[1] not in boxes:
+            issues.append(f"edge {e[0]}->{e[1]} names a missing box")
+            continue
+        a, c = boxes[e[0]], boxes[e[1]]
+        kind = e[4] if len(e) > 4 else "line"
+        rt = {"a": a, "c": c, "label": e[2] if len(e) > 2 else "", "pen": e[3] if len(e) > 3 else "ink",
+              "dash": kind in ("dash", "curvedash") or (kind.startswith("curve") and a["row"] != c["row"])}
+        acx, acy = a["x"] + a["w"] / 2, a["y"] + a["h"] / 2
+        ccx, ccy = c["x"] + c["w"] / 2, c["y"] + c["h"] / 2
+        skip = {e[0], e[1]}
+        x1, y1 = _edge_point(a, ccx, ccy)
+        x2, y2 = _edge_point(c, acx, acy)
+        if a["row"] == c["row"] and (kind.startswith("curve") or _hits(x1, y1, x2, y2, boxes, skip)):
+            rt.update(kind="arc", p=(acx, a["y"] + a["h"], ccx, c["y"] + c["h"], a["rowy"] + a["rowh"] + 50))
+        elif c["row"] >= a["row"] and not _hits(x1, y1, x2, y2, boxes, skip):   # upward arrows take a lane
+            rt.update(kind="line", p=(x1, y1, x2, y2))
+        else:
+            def legs_clear(side):
+                sx = a["x"] + a["w"] if side == "r" else a["x"]
+                tx = c["x"] + c["w"] if side == "r" else c["x"]
+                ln = WM - 18 if side == "r" else 18
+                return not (_hits(sx, acy, ln, acy, boxes, skip) or _hits(ln, ccy, tx, ccy, boxes, skip))
+            prefer = "r" if c["row"] > a["row"] else "l"
+            side = prefer if legs_clear(prefer) else ("l" if prefer == "r" else "r")
+            if not legs_clear(side):
+                issues.append(f"edge {e[0]}->{e[1]} has no clear lane")
+            # arrows into one box (or out of one box) on the same side share a lane, like a bus
+            share = next((r for r in routes if r["kind"] == "lane" and r["side"] == side and r["pen"] == rt["pen"]
+                          and (r["c"] is c or r["a"] is a)), None)
+            if share:
+                rt.update(kind="lane", side=side, lane=share["lane"])
+            else:
+                k = lanes[side]
+                lanes[side] += 1
+                if k > 2:
+                    issues.append(f"too many lanes on the {side} side")
+                rt.update(kind="lane", side=side, lane=(WM - 18 - 15 * k) if side == "r" else (18 + 15 * k))
+        routes.append(rt)
+
+    # lane ports: arrows sharing a box side leave/arrive at different heights
+    ports = {}
+    for rt in routes:
+        if rt["kind"] == "lane":
+            for end in ("a", "c"):
+                key = (rt[end]["node"]["id"], rt["side"])
+                lst = ports.setdefault(key, [])
+                # a shared bus meets its common box at one point
+                if not any(q is not rt and q.get("lane") == rt["lane"] and q[end] is rt[end] for q, en in lst if en == end):
+                    lst.append((rt, end))
+    for (_, _), lst in ports.items():
+        n = len(lst)
+        for i, (rt, end) in enumerate(lst):
+            bx = rt[end]
+            off = (i - (n - 1) / 2) * min(16, (bx["h"] - 20) / max(1, n - 1)) if n > 1 else 0
+            rt["y" + end] = bx["y"] + bx["h"] / 2 + off
+    for rt in routes:                                   # bus members take their shared end's height
+        if rt["kind"] == "lane":
+            for end in ("a", "c"):
+                if "y" + end not in rt:
+                    rt["y" + end] = next(q["y" + end] for q in routes if q.get("lane") == rt["lane"]
+                                         and q[end] is rt[end] and "y" + end in q)
+    vsegs = [(rt["lane"], min(rt["ya"], rt["yc"]), max(rt["ya"], rt["yc"])) for rt in routes if rt["kind"] == "lane"]
+
+    edge_svg, labels = [], []
+    for rt in routes:
+        a, c, label, pen = rt["a"], rt["c"], rt["label"], rt["pen"]
+        stroke = PEN[pen][0]
+        dash = ' stroke-dasharray="10 8"' if rt["dash"] else ""
+        cands, vertical = [], False
+        if rt["kind"] == "arc":
+            bx1, by1, bx2, by2, low = rt["p"]
+            edge_svg.append(f'<path d="M{bx1},{by1} C{bx1},{low} {bx2},{low} {bx2},{by2 + 8}" stroke="{stroke}" '
+                            f'stroke-width="3" fill="none"{dash} marker-end="url(#ah-{pen})"/>')
+            cands = [((bx1 + bx2) / 2, low - 4)]
+        elif rt["kind"] == "line":
+            x1, y1, x2, y2 = rt["p"]
+            d = math.hypot(x2 - x1, y2 - y1) or 1
+            edge_svg.append(f'<line x1="{x1}" y1="{y1}" x2="{x2 - (x2 - x1) / d * 6}" y2="{y2 - (y2 - y1) / d * 6}" '
+                            f'stroke="{stroke}" stroke-width="3"{dash} marker-end="url(#ah-{pen})"/>')
+            cands = [(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t - 10) for t in (0.5, 0.4, 0.6)]
+        else:
+            side, ln, ya, yc = rt["side"], rt["lane"], rt["ya"], rt["yc"]
+            sx = a["x"] + a["w"] if side == "r" else a["x"]
+            tx = c["x"] + c["w"] if side == "r" else c["x"]
+            tx2 = tx + 8 if side == "r" else tx - 8
+            edge_svg.append(f'<path d="M{sx},{ya} L{ln},{ya} L{ln},{yc} L{tx2},{yc}" stroke="{stroke}" '
+                            f'stroke-width="3" fill="none" stroke-linejoin="round"{dash} marker-end="url(#ah-{pen})"/>')
+            cands, vertical = [(ln, ya + (yc - ya) * t) for t in (0.5, 0.35, 0.65, 0.2, 0.8)], True
+        if not label:
+            continue
+        lw = text_w(label, 19) + 14
+        placed = None
+        for lx, ly in cands:
+            rect = ({"x": lx - 12, "y": ly - lw / 2, "w": 24, "h": lw} if vertical
+                    else {"x": lx - lw / 2, "y": ly - 22, "w": lw, "h": 30})
+            own = rt.get("lane")
+            bad = (any(_overlap(rect, o) for o in boxes.values()) or any(_overlap(rect, q) for q in labels)
+                   or any(x != own and rect["x"] - 2 < x < rect["x"] + rect["w"] + 2 and rect["y"] < y2 and y1 < rect["y"] + rect["h"]
+                          for x, y1, y2 in vsegs)
+                   or rect["x"] < 2 or rect["x"] + rect["w"] > WM - 2)
+            if not bad:
+                placed = (lx, ly, rect)
+                break
+        if placed is None:
+            lx, ly = cands[0]
+            rect = ({"x": lx - 12, "y": ly - lw / 2, "w": 24, "h": lw} if vertical
+                    else {"x": lx - lw / 2, "y": ly - 22, "w": lw, "h": 30})
+            issues.append(f"label '{label}' has no clear spot")
+            placed = (lx, ly, rect)
+        lx, ly, rect = placed
+        labels.append(rect)
+        edge_svg.append(f'<rect x="{rect["x"]}" y="{rect["y"]}" width="{rect["w"]}" height="{rect["h"]}" rx="6" fill="#ffffff"/>')
+        rot = f' dominant-baseline="central" transform="rotate(-90 {lx} {ly})"' if vertical else ""
+        edge_svg.append(f'<text x="{lx}" y="{ly}" font-family="{BODY_FONT}" font-size="19" fill="{stroke}" '
+                        f'text-anchor="middle"{rot}>{escape(label)}</text>')
+
+    notes = [_wrap("• " + n, WM - 2 * M_PAD - 40, 21) for n in b["notes"]]
+    y_end = y - M_VGAP + 40
+    notes_h = (78 + 30 * sum(len(n) for n in notes) + 10 * (len(notes) - 1)) if notes else 0
+    H = int(y_end + notes_h + 30)
+    out.append(f'<svg xmlns="http://www.w3.org/2000/svg" width="{WM}" height="{H}" viewBox="0 0 {WM} {H}">')
+    out.append("<defs>" + "".join(
+        f'<marker id="ah-{k}" markerWidth="12" markerHeight="10" refX="10" refY="5" orient="auto">'
+        f'<path d="M0,0 L11,5 L0,10 z" fill="{s}"/></marker>' for k, (s, _) in PEN.items()) + "</defs>")
+    out.append(f'<rect width="{WM}" height="{H}" fill="#ffffff"/>')
+    for k, t in enumerate(title):
+        out.append(f'<text x="{WM / 2}" y="{58 + 48 * k}" font-family="{TITLE_FONT}" font-size="40" fill="#1e40af" '
+                   f'text-anchor="middle" font-weight="bold">{escape(t)}</text>')
+    tw = min(WM - 60, max(text_w(t, 40, face="title") for t in title) + 30)
+    uy = 58 + 48 * (len(title) - 1) + 18
+    out.append(f'<path d="M{WM / 2 - tw / 2},{uy} Q{WM / 2},{uy + 16} {WM / 2 + tw / 2},{uy - 2}" stroke="#1e40af" '
+               f'stroke-width="3" fill="none" stroke-linecap="round"/>')
+    out += edge_svg
+    segs = []                                           # every drawn arrow as straight pieces
+    for rt in routes:
+        if rt["kind"] == "line":
+            segs.append(rt["p"])
+        elif rt["kind"] == "lane":
+            a, c, ln = rt["a"], rt["c"], rt["lane"]
+            sx = a["x"] + a["w"] if rt["side"] == "r" else a["x"]
+            tx = c["x"] + c["w"] if rt["side"] == "r" else c["x"]
+            segs += [(sx, rt["ya"], ln, rt["ya"]), (ln, rt["ya"], ln, rt["yc"]), (ln, rt["yc"], tx, rt["yc"])]
+    for lab, hy in heads:                               # left if no arrow crosses there, else right
+        hw = text_w(lab, 23, face="title") + 12
+        spots = [{"x": M_PAD - 12, "y": hy - 24, "w": hw, "h": 32}, {"x": WM - M_PAD + 12 - hw, "y": hy - 24, "w": hw, "h": 32}]
+        spot = next((r for r in spots if not any(_seg_hits_rect(*sg, r, pad=0) for sg in segs)), None)
+        if spot is None:
+            issues.append(f"heading '{lab}' is crossed by an arrow")
+            spot = spots[0]
+        out.append(f'<rect x="{spot["x"]}" y="{spot["y"]}" width="{hw}" height="32" rx="6" fill="#ffffff"/>')
+        out.append(f'<text x="{spot["x"] + 6}" y="{hy}" font-family="{TITLE_FONT}" font-size="23" fill="#6b7280" '
+                   f'font-weight="bold">{escape(lab)}</text>')
+    for bx in boxes.values():
+        stroke, fill = PEN[bx["node"]["pen"]]
+        out.append(f'<rect x="{bx["x"]}" y="{bx["y"]}" width="{bx["w"]}" height="{bx["h"]}" rx="14" '
+                   f'fill="{fill}" stroke="{stroke}" stroke-width="3"/>')
+        for k, (t, hb) in enumerate(bx["lines"]):
+            out.append(f'<text x="{bx["x"] + bx["w"] / 2}" y="{bx["y"] + 40 + 30 * k}" font-family="{BODY_FONT}" '
+                       f'font-size="{23 if hb else 19}" fill="{stroke if hb else "#374151"}" text-anchor="middle"'
+                       f'{" font-weight=" + chr(34) + "bold" + chr(34) if hb else ""}>{escape(t)}</text>')
+    if notes:
+        out.append(f'<rect x="{M_PAD - 26}" y="{y_end}" width="{WM - 2 * M_PAD + 52}" height="{notes_h}" rx="16" '
+                   f'fill="#fffbeb" stroke="#d97706" stroke-width="2.5" stroke-dasharray="12 8"/>')
+        out.append(f'<text x="{M_PAD}" y="{y_end + 44}" font-family="{TITLE_FONT}" font-size="25" fill="#b45309" '
+                   f'font-weight="bold">REMEMBER</text>')
+        ny = y_end + 84
+        for n in notes:
+            for k, t in enumerate(n):
+                out.append(f'<text x="{M_PAD + (0 if k == 0 else 15)}" y="{ny}" font-family="{BODY_FONT}" '
+                           f'font-size="21" fill="#374151">{escape(t)}</text>')
+                ny += 30
+            ny += 10
+    out.append("</svg>")
+    return "\n".join(out), issues, lanes["l"] + lanes["r"]
+
+
 def render_all(out_dir):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -314,6 +651,14 @@ def render_all(out_dir):
         if not s.exists() or s.read_text(encoding="utf-8") != text or not p.exists():
             s.write_text(text, encoding="utf-8")
             subprocess.run(["rsvg-convert", "-w", str(W), "-o", str(p), str(s)], check=True)
+        sm, pm = out_dir / f"{b['name']}-m.svg", out_dir / f"{b['name']}-m.png"
+        mtext = mobile(b)[0]
+        if not sm.exists() or sm.read_text(encoding="utf-8") != mtext or not pm.exists():
+            sm.write_text(mtext, encoding="utf-8")
+            subprocess.run(["rsvg-convert", "-w", str(WM * 3 // 2), "-o", str(pm), str(sm)], check=True)
+            from PIL import Image                 # 64 flat colours: same look, a quarter of the bytes
+            Image.open(pm).convert("RGB").quantize(colors=64, method=Image.Quantize.MEDIANCUT,
+                                                   dither=Image.Dither.NONE).save(pm, optimize=True)
         captions[b["name"]] = b["caption"]
     return captions
 
@@ -1787,7 +2132,7 @@ if __name__ == "__main__":
     if "--lint" in sys.argv:
         bad = 0
         for b in BOARDS:
-            for i in lint(b):
+            for i in lint(b) + [f"phone: {i}" for i in mobile(b)[1]]:
                 bad += 1
                 print(f"{b['name']}: {i}")
         print(f"{len(BOARDS)} boards, {bad} issues")
