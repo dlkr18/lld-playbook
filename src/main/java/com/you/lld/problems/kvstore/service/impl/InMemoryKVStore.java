@@ -81,9 +81,10 @@ public final class InMemoryKVStore implements KVStoreService {
     }
 
     private void putInternal(String key, String value, Long ttlSeconds) {
-        wal.appendPut(key, value);
         storeLock.writeLock().lock();
         try {
+            // WAL append under the same lock as the apply, so replay order == apply order.
+            wal.appendPut(key, value);
             KeyValue kv = new KeyValue(key, value);
             if (ttlSeconds != null) {
                 kv.setTtl(ttlSeconds);
@@ -112,6 +113,16 @@ public final class InMemoryKVStore implements KVStoreService {
                 storeLock.readLock().unlock();
                 storeLock.writeLock().lock();
                 try {
+                    // Re-check: a put may have replaced the expired entry while
+                    // no lock was held between the read-unlock and write-lock.
+                    KeyValue current = store.get(key);
+                    if (current == null) {
+                        return null;
+                    }
+                    if (!current.isExpired()) {
+                        evictionPolicy.recordAccess(key);
+                        return current.getValue();
+                    }
                     store.remove(key);
                     evictionPolicy.remove(key);
                     return null;
@@ -129,9 +140,9 @@ public final class InMemoryKVStore implements KVStoreService {
 
     @Override
     public void delete(String key) {
-        wal.appendDelete(key);
         storeLock.writeLock().lock();
         try {
+            wal.appendDelete(key);
             store.remove(key);
             evictionPolicy.remove(key);
         } finally {

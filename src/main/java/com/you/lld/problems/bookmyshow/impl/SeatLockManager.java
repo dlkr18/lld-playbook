@@ -2,6 +2,7 @@ package com.you.lld.problems.bookmyshow.impl;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Fine-grained per-seat locking with automatic expiry.
@@ -55,12 +56,16 @@ public class SeatLockManager {
 
                 cleanExpiredLock(key);
 
+                // The timer must expire *this* lock only, so it gets the LockInfo
+                // once that exists (it can't before: LockInfo holds the timer).
+                final AtomicReference<LockInfo> self = new AtomicReference<>();
                 ScheduledFuture<?> task = scheduler.schedule(
-                    () -> forceUnlock(showId, seatId),
+                    () -> forceUnlock(showId, seatId, self.get()),
                     LOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS
                 );
 
                 LockInfo lock = new LockInfo(userId, expiry, task);
+                self.set(lock);
                 LockInfo existing = seatLocks.putIfAbsent(key, lock);
 
                 if (existing != null) {
@@ -146,11 +151,20 @@ public class SeatLockManager {
         }
     }
 
-    private void forceUnlock(String showId, String seatId) {
-        String key = seatKey(showId, seatId);
-        LockInfo lock = seatLocks.remove(key);
-        if (lock != null) {
-            System.out.println("[SeatLockManager] Lock expired for " + seatId + " (user " + lock.userId + ")");
+    /** Package-private for tests: the current lock on a seat, or null. */
+    LockInfo currentLock(String showId, String seatId) {
+        return seatLocks.get(seatKey(showId, seatId));
+    }
+
+    /**
+     * Expiry timer callback. Removes the seat lock only if it is still the
+     * lock this timer was created for: remove(key, expected), not remove(key).
+     * A timer that fires late must not delete a newer lock another user took.
+     */
+    void forceUnlock(String showId, String seatId, LockInfo expected) {
+        if (expected == null) return;
+        if (seatLocks.remove(seatKey(showId, seatId), expected)) {
+            System.out.println("[SeatLockManager] Lock expired for " + seatId + " (user " + expected.userId + ")");
         }
     }
 }

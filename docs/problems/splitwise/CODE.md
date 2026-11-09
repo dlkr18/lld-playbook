@@ -1,6 +1,6 @@
 # splitwise - Complete Implementation
 
-> Generated from `src/main/java/com/you/lld/problems/splitwise/` on 2026-11-07. Re-run `python3 scripts/generate-code-md.py splitwise`.
+> Generated from `src/main/java/com/you/lld/problems/splitwise/` on 2026-11-09. Re-run `python3 scripts/generate-code-md.py splitwise`.
 
 ## Project Structure (15 files)
 
@@ -723,19 +723,32 @@ public class SplitwiseServiceImpl implements SplitwiseService {
         if (group == null) {
             return Collections.emptyList();
         }
+        // Net position from this group's expenses only. A user's overall balance
+        // also includes other groups, which must not leak into this group's settlement.
         Map<String, BigDecimal> net = new HashMap<String, BigDecimal>();
         for (String memberId : group.getMemberIds()) {
-            net.put(memberId, computeNetBalance(memberId));
+            net.put(memberId, BigDecimal.ZERO);
+        }
+        for (String expenseId : group.getExpenseIds()) {
+            Expense expense = expenses.get(expenseId);
+            if (expense == null) {
+                continue;
+            }
+            String payer = expense.getPaidBy();
+            for (Map.Entry<String, BigDecimal> split : expense.getSplits().entrySet()) {
+                if (split.getKey().equals(payer)) {
+                    continue;
+                }
+                addTo(net, payer, split.getValue());
+                addTo(net, split.getKey(), split.getValue().negate());
+            }
         }
         return BalanceSimplifier.simplifyBalances(net);
     }
 
-    private BigDecimal computeNetBalance(String userId) {
-        BigDecimal net = BigDecimal.ZERO;
-        for (Map.Entry<String, BigDecimal> e : getUserBalances(userId).entrySet()) {
-            net = net.add(e.getValue());
-        }
-        return net;
+    private static void addTo(Map<String, BigDecimal> net, String userId, BigDecimal amount) {
+        BigDecimal current = net.get(userId);
+        net.put(userId, current == null ? amount : current.add(amount));
     }
 
     public User getUser(String userId) {

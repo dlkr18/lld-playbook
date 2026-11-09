@@ -38,12 +38,12 @@
 <!-- HERO -->
 <div class="hero">
   <h1>In-Memory KV Store <span>// Redis</span></h1>
-  <p>SDE3-level low-level design with Strategy, Command, Memento, and Singleton patterns. TTL, WAL persistence, snapshots, transactions, and eviction policies.</p>
+  <p>SDE3-level low-level design with Strategy, Command, Memento, and Facade patterns. TTL, write-ahead log, snapshots, buffered transactions, and LRU eviction.</p>
   <div class="tags">
     <span class="tag">Strategy Pattern</span>
     <span class="tag blue">Command Pattern</span>
     <span class="tag green">Memento Pattern</span>
-    <span class="tag pink">Singleton Pattern</span>
+    <span class="tag pink">Facade Pattern</span>
     <span class="tag purple">ConcurrentHashMap</span>
   </div>
 </div>
@@ -55,11 +55,11 @@
     <h3>Functional</h3>
     <ul>
       <li><strong>Basic Operations</strong> &mdash; <span class="inline-code">put(key, value)</span>, <span class="inline-code">get(key)</span>, <span class="inline-code">delete(key)</span>, <span class="inline-code">exists(key)</span></li>
-      <li><strong>TTL (Time-To-Live)</strong> &mdash; <span class="inline-code">setWithTTL(key, value, ttl)</span>, <span class="inline-code">getTTL(key)</span>, <span class="inline-code">persist(key)</span>, auto-expiration</li>
-      <li><strong>Atomic Operations</strong> &mdash; <span class="inline-code">increment(key)</span>, <span class="inline-code">decrement(key)</span>, <span class="inline-code">compareAndSwap(key, expected, new)</span></li>
-      <li><strong>Transactions</strong> &mdash; <span class="inline-code">begin()</span>, <span class="inline-code">commit()</span>, <span class="inline-code">rollback()</span> with isolation</li>
+      <li><strong>TTL (Time-To-Live)</strong> &mdash; <span class="inline-code">put(key, value, ttlSeconds)</span>, lazy expiry on read + 30s background sweep</li>
+      <li><strong>Atomic Operations</strong> <em>(follow-up, not in src)</em> &mdash; <span class="inline-code">increment(key)</span>, <span class="inline-code">decrement(key)</span>, <span class="inline-code">compareAndSwap(key, expected, new)</span></li>
+      <li><strong>Transactions</strong> &mdash; <span class="inline-code">beginTransaction()</span>, <span class="inline-code">putInTransaction(txnId, key, value)</span>, <span class="inline-code">commitTransaction(txnId)</span>, <span class="inline-code">rollbackTransaction(txnId)</span> &mdash; buffered writes invisible until commit</li>
       <li><strong>Pattern Matching</strong> &mdash; <span class="inline-code">keys(pattern)</span> with wildcard support</li>
-      <li><strong>Persistence</strong> &mdash; Snapshots (periodic full dump), Write-Ahead Log (WAL), load from disk on restart</li>
+      <li><strong>Persistence</strong> &mdash; Snapshots (<span class="inline-code">createSnapshot()</span> / <span class="inline-code">restoreSnapshot(id)</span>), Write-Ahead Log (<span class="inline-code">WriteAheadLog</span>, in-memory); load from disk on restart is a follow-up</li>
     </ul>
   </div>
   <div class="card">
@@ -67,7 +67,7 @@
     <ul>
       <li><strong>Performance</strong> &mdash; O(1) operations, 100K+ QPS</li>
       <li><strong>Thread-Safety</strong> &mdash; concurrent reads/writes via <span class="inline-code">ConcurrentHashMap</span></li>
-      <li><strong>Memory Efficiency</strong> &mdash; eviction policies (LRU, LFU) when memory limit reached</li>
+      <li><strong>Memory Efficiency</strong> &mdash; LRU eviction (<span class="inline-code">LruEvictionPolicy</span>) when <span class="inline-code">maxEntries</span> is exceeded</li>
       <li><strong>Durability</strong> &mdash; WAL + snapshots for crash recovery</li>
       <li><strong>Availability</strong> &mdash; 99.99% uptime target</li>
     </ul>
@@ -88,9 +88,9 @@
         <td>key, value, timestamp, ttl &mdash; <span class="inline-code">isExpired()</span> checks <span class="inline-code">now &gt; timestamp + ttl</span></td>
       </tr>
       <tr>
-        <td><span class="inline-code">Entry</span></td>
-        <td>Value Object</td>
-        <td>value, expiryTime, version &mdash; versioned for CAS / optimistic locking</td>
+        <td><span class="inline-code">WriteAheadLog</span></td>
+        <td>Component</td>
+        <td>entries (synchronized <span class="inline-code">List&lt;String&gt;</span> of <span class="inline-code">PUT|key|value</span> / <span class="inline-code">DELETE|key</span>) &mdash; <span class="inline-code">appendPut</span>, <span class="inline-code">appendDelete</span>, <span class="inline-code">replay()</span>, <span class="inline-code">size()</span></td>
       </tr>
       <tr>
         <td><span class="inline-code">Transaction</span></td>
@@ -105,12 +105,12 @@
       <tr>
         <td><span class="inline-code">CacheStats</span></td>
         <td>Value Object</td>
-        <td>hits, misses, evictions &mdash; <span class="inline-code">getHitRate()</span> = hits / (hits + misses)</td>
+        <td>hits, misses, evictions &mdash; <span class="inline-code">getHitRate()</span> = hits / (hits + misses) (model only; not wired into <span class="inline-code">InMemoryKVStore</span> yet)</td>
       </tr>
       <tr>
-        <td><span class="inline-code">KeyValuePair&lt;K,V&gt;</span></td>
-        <td>Generic VO</td>
-        <td>key, value, timestamp &mdash; generic building block for typed stores</td>
+        <td><span class="inline-code">LruEvictionPolicy</span></td>
+        <td>Strategy Impl</td>
+        <td>maxEntries, access-order <span class="inline-code">LinkedHashMap&lt;String, Boolean&gt;</span> &mdash; eldest key = LRU victim</td>
       </tr>
     </table>
   </div>
@@ -118,10 +118,10 @@
     <h3>Interfaces</h3>
     <table>
       <tr><th>Interface</th><th>Purpose</th></tr>
-      <tr><td><span class="inline-code">KVStore&lt;K,V&gt;</span></td><td>Generic contract: put, get, delete, contains, size</td></tr>
-      <tr><td><span class="inline-code">KVStoreService</span></td><td>Full service: basic ops + TTL + transactions + snapshots + pattern keys</td></tr>
-      <tr><td><span class="inline-code">EvictionPolicy</span></td><td>Strategy: <span class="inline-code">evict()</span> returns key to remove, <span class="inline-code">recordAccess(key)</span> tracks usage</td></tr>
-      <tr><td><span class="inline-code">PersistenceManager</span></td><td>Pluggable persistence: <span class="inline-code">save(data)</span>, <span class="inline-code">load()</span></td></tr>
+      <tr><td><span class="inline-code">KVStore</span></td><td>Facade class (not an interface): wraps a <span class="inline-code">KVStoreService</span>, default <span class="inline-code">new InMemoryKVStore(maxEntries)</span>; exposes <span class="inline-code">service()</span></td></tr>
+      <tr><td><span class="inline-code">KVStoreService</span></td><td>Full service: basic ops + TTL + transactions + snapshots + pattern keys + <span class="inline-code">walSize()</span> / <span class="inline-code">shutdown()</span></td></tr>
+      <tr><td><span class="inline-code">EvictionPolicy</span></td><td>Strategy: <span class="inline-code">evictIfNeeded()</span> returns key to remove (or null), <span class="inline-code">recordAccess(key)</span> / <span class="inline-code">recordInsert(key)</span> / <span class="inline-code">remove(key)</span> track usage</td></tr>
+      <tr><td><span class="inline-code">PersistenceManager</span></td><td>Pluggable persistence: <span class="inline-code">save(data)</span>, <span class="inline-code">load()</span> (interface only; no impl wired in)</td></tr>
     </table>
   </div>
 </section>
@@ -133,23 +133,23 @@
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
     <div class="card highlight">
       <h3 style="color:var(--accent);margin-top:0;">Strategy Pattern</h3>
-      <p><strong>EvictionPolicy</strong> interface with LRU and LFU implementations. Pluggable &mdash; swap eviction algorithms without changing the store. Also used for <strong>PersistenceManager</strong>.</p>
+      <p><strong>EvictionPolicy</strong> interface with an <strong>LruEvictionPolicy</strong> implementation (LFU is a follow-up). Pluggable &mdash; swap eviction algorithms without changing the store. Same seam exists for <strong>PersistenceManager</strong>.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent2);">
       <h3 style="color:var(--accent2);margin-top:0;">Command Pattern</h3>
-      <p>WAL operations (PUT, DELETE, INCREMENT) are replayable <strong>Command objects</strong>. Each mutation is logged before applying. On crash recovery, replay the log to rebuild state.</p>
+      <p>WAL records (<span class="inline-code">PUT|key|value</span>, <span class="inline-code">DELETE|key</span>) are replayable <strong>commands</strong>. Each mutation is logged before applying. On crash recovery, replay the log to rebuild state.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent3);">
       <h3 style="color:var(--accent3);margin-top:0;">Memento Pattern</h3>
       <p><strong>Snapshot</strong> captures a full copy of the store at a point in time. Restore reverts to that saved state. Periodic background snapshots + WAL replay = full durability.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent4);">
-      <h3 style="color:var(--accent4);margin-top:0;">Singleton Pattern</h3>
-      <p>Single <strong>KVStore</strong> instance &mdash; one source of truth. All clients reference the same in-memory data. No inconsistency from multiple store instances.</p>
+      <h3 style="color:var(--accent4);margin-top:0;">Facade Pattern</h3>
+      <p><strong>KVStore</strong> wraps a <strong>KVStoreService</strong> (default <span class="inline-code">InMemoryKVStore</span>) &mdash; one entry point for clients. Inject a different service via <span class="inline-code">new KVStore(service)</span>.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent5);grid-column:span 2;">
-      <h3 style="color:var(--accent5);margin-top:0;">Observer Pattern</h3>
-      <p>Key expiry events trigger notifications to registered listeners. Subscribers react to expiration without polling. Decouples TTL cleanup from business logic.</p>
+      <h3 style="color:var(--accent5);margin-top:0;">Observer Pattern <em>(follow-up)</em></h3>
+      <p>Not in src yet. Key expiry events would trigger notifications to registered listeners. Subscribers react to expiration without polling. Decouples TTL cleanup from business logic.</p>
     </div>
   </div>
 </section>
@@ -173,68 +173,111 @@
 
   <div class="card">
     <h3>put(key, value)</h3>
-<pre><span class="cm">// 1. Write to WAL first (durability before visibility)</span>
-operation = <span class="kw">new</span> <span class="tp">WALEntry</span>(<span class="tp">PUT</span>, key, value)
-wal.<span class="fn">append</span>(operation)
-wal.<span class="fn">sync</span>()  <span class="cm">// force to disk</span>
+<pre>storeLock.<span class="fn">writeLock</span>().<span class="fn">lock</span>()
 
-<span class="cm">// 2. Update in-memory store</span>
-entry = <span class="kw">new</span> <span class="tp">Entry</span>(value, <span class="kw">null</span>, version++)
-data.<span class="fn">put</span>(key, entry)
+<span class="cm">// 1. Write to WAL first (durability before visibility; under the lock so log order == apply order)</span>
+wal.<span class="fn">appendPut</span>(key, value)
 
-<span class="cm">// 3. Trigger async snapshot if threshold reached</span>
-<span class="kw">if</span> operationsSinceSnapshot > <span class="nr">SNAPSHOT_THRESHOLD</span>:
-    <span class="fn">scheduleSnapshot</span>()</pre>
+<span class="cm">// 2. Update in-memory store + LRU order</span>
+kv = <span class="kw">new</span> <span class="tp">KeyValue</span>(key, value)        <span class="cm">// kv.setTtl(ttlSeconds) if given</span>
+store.<span class="fn">put</span>(key, kv)
+evictionPolicy.<span class="fn">recordInsert</span>(key)
+
+<span class="cm">// 3. Evict LRU if over maxEntries (log the eviction too)</span>
+evicted = evictionPolicy.<span class="fn">evictIfNeeded</span>()
+<span class="kw">if</span> evicted != <span class="kw">null</span>:
+    wal.<span class="fn">appendDelete</span>(evicted)
+    store.<span class="fn">remove</span>(evicted)
+
+storeLock.<span class="fn">writeLock</span>().<span class="fn">unlock</span>()</pre>
     <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">Time: O(1) memory + O(1) amortized WAL &nbsp;&middot;&nbsp; Space: O(1)</p>
   </div>
 
   <div class="card">
     <h3>get(key)</h3>
-<pre>entry = data.<span class="fn">get</span>(key)
+<pre>kv = store.<span class="fn">get</span>(key)                 <span class="cm">// under storeLock.readLock()</span>
 
-<span class="kw">if</span> entry == <span class="kw">null</span>:
-    <span class="kw">return null</span>                <span class="cm">// cache miss</span>
+<span class="kw">if</span> kv == <span class="kw">null</span>:
+    <span class="kw">return null</span>                <span class="cm">// miss</span>
 
-<span class="kw">if</span> entry.<span class="fn">isExpired</span>():
-    data.<span class="fn">remove</span>(key)           <span class="cm">// lazy expiration</span>
-    ttlManager.<span class="fn">cancelExpiry</span>(key)
-    <span class="kw">return null</span>
+<span class="kw">if</span> kv.<span class="fn">isExpired</span>():
+    <span class="cm">// lazy expiration: drop read lock, take write lock, re-check</span>
+    store.<span class="fn">remove</span>(key)
+    evictionPolicy.<span class="fn">remove</span>(key)
+    <span class="kw">return null</span>                <span class="cm">// never return an expired value</span>
 
-evictionPolicy.<span class="fn">recordAccess</span>(key)  <span class="cm">// update LRU/LFU tracking</span>
-<span class="kw">return</span> entry.<span class="fn">getValue</span>()</pre>
+evictionPolicy.<span class="fn">recordAccess</span>(key)  <span class="cm">// update LRU tracking</span>
+<span class="kw">return</span> kv.<span class="fn">getValue</span>()</pre>
     <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">Time: O(1) &nbsp;&middot;&nbsp; Space: O(1) &nbsp;&middot;&nbsp; Lazy TTL check on every read</p>
   </div>
 
   <div class="card">
     <h3>delete(key)</h3>
-<pre><span class="cm">// 1. Log deletion to WAL</span>
-wal.<span class="fn">append</span>(<span class="kw">new</span> <span class="tp">WALEntry</span>(<span class="tp">DELETE</span>, key, <span class="kw">null</span>))
-wal.<span class="fn">sync</span>()
+<pre><span class="cm">// under storeLock.writeLock()</span>
+<span class="cm">// 1. Log deletion to WAL</span>
+wal.<span class="fn">appendDelete</span>(key)
 
-<span class="cm">// 2. Remove from memory + cancel any TTL task</span>
-data.<span class="fn">remove</span>(key)
-ttlManager.<span class="fn">cancelExpiry</span>(key)</pre>
+<span class="cm">// 2. Remove from memory + LRU tracking</span>
+store.<span class="fn">remove</span>(key)
+evictionPolicy.<span class="fn">remove</span>(key)</pre>
   </div>
 
   <div class="card">
     <h3>Actual Implementation (InMemoryKVStore)</h3>
-<pre><span class="kw">public void</span> <span class="fn">put</span>(<span class="tp">String</span> key, <span class="tp">String</span> value) {
-    <span class="tp">KeyValue</span> kv = <span class="kw">new</span> <span class="tp">KeyValue</span>(key, value);
-    store.<span class="fn">put</span>(key, kv);
+<pre><span class="cm">// put(key, value) and put(key, value, ttlSeconds) both delegate here</span>
+<span class="kw">private void</span> <span class="fn">putInternal</span>(<span class="tp">String</span> key, <span class="tp">String</span> value, <span class="tp">Long</span> ttlSeconds) {
+    storeLock.<span class="fn">writeLock</span>().<span class="fn">lock</span>();
+    <span class="kw">try</span> {
+        wal.<span class="fn">appendPut</span>(key, value);              <span class="cm">// log before apply</span>
+        <span class="tp">KeyValue</span> kv = <span class="kw">new</span> <span class="tp">KeyValue</span>(key, value);
+        <span class="kw">if</span> (ttlSeconds != <span class="kw">null</span>) kv.<span class="fn">setTtl</span>(ttlSeconds);
+        store.<span class="fn">put</span>(key, kv);
+        evictionPolicy.<span class="fn">recordInsert</span>(key);
+        <span class="tp">String</span> evicted = evictionPolicy.<span class="fn">evictIfNeeded</span>();
+        <span class="kw">if</span> (evicted != <span class="kw">null</span>) {
+            wal.<span class="fn">appendDelete</span>(evicted);
+            store.<span class="fn">remove</span>(evicted);
+        }
+    } <span class="kw">finally</span> {
+        storeLock.<span class="fn">writeLock</span>().<span class="fn">unlock</span>();
+    }
 }
 
 <span class="kw">public</span> <span class="tp">String</span> <span class="fn">get</span>(<span class="tp">String</span> key) {
-    <span class="tp">KeyValue</span> kv = store.<span class="fn">get</span>(key);
-    <span class="kw">if</span> (kv == <span class="kw">null</span>) <span class="kw">return null</span>;
-    <span class="kw">if</span> (kv.<span class="fn">isExpired</span>()) {
-        store.<span class="fn">remove</span>(key);
-        <span class="kw">return null</span>;
+    storeLock.<span class="fn">readLock</span>().<span class="fn">lock</span>();
+    <span class="kw">try</span> {
+        <span class="tp">KeyValue</span> kv = store.<span class="fn">get</span>(key);
+        <span class="kw">if</span> (kv == <span class="kw">null</span>) <span class="kw">return null</span>;
+        <span class="kw">if</span> (!kv.<span class="fn">isExpired</span>()) {
+            evictionPolicy.<span class="fn">recordAccess</span>(key);
+            <span class="kw">return</span> kv.<span class="fn">getValue</span>();
+        }
+    } <span class="kw">finally</span> {
+        storeLock.<span class="fn">readLock</span>().<span class="fn">unlock</span>();
     }
-    <span class="kw">return</span> kv.<span class="fn">getValue</span>();
+    <span class="cm">// Expired. RW locks can't upgrade: re-acquire as writer and re-check</span>
+    storeLock.<span class="fn">writeLock</span>().<span class="fn">lock</span>();
+    <span class="kw">try</span> {
+        <span class="tp">KeyValue</span> kv = store.<span class="fn">get</span>(key);
+        <span class="kw">if</span> (kv != <span class="kw">null</span> && kv.<span class="fn">isExpired</span>()) {
+            store.<span class="fn">remove</span>(key);
+            evictionPolicy.<span class="fn">remove</span>(key);
+        }
+        <span class="kw">return null</span>;
+    } <span class="kw">finally</span> {
+        storeLock.<span class="fn">writeLock</span>().<span class="fn">unlock</span>();
+    }
 }
 
 <span class="kw">public void</span> <span class="fn">delete</span>(<span class="tp">String</span> key) {
-    store.<span class="fn">remove</span>(key);
+    storeLock.<span class="fn">writeLock</span>().<span class="fn">lock</span>();
+    <span class="kw">try</span> {
+        wal.<span class="fn">appendDelete</span>(key);
+        store.<span class="fn">remove</span>(key);
+        evictionPolicy.<span class="fn">remove</span>(key);
+    } <span class="kw">finally</span> {
+        storeLock.<span class="fn">writeLock</span>().<span class="fn">unlock</span>();
+    }
 }</pre>
   </div>
 </section>
@@ -247,23 +290,28 @@ ttlManager.<span class="fn">cancelExpiry</span>(key)</pre>
   </blockquote>
 
   <div class="card highlight">
-    <h3 style="color:var(--accent);margin-top:0;">setWithTTL Algorithm</h3>
-<pre><span class="kw">Algorithm</span>: SetWithTTL(key, value, ttlSeconds)
+    <h3 style="color:var(--accent);margin-top:0;">put(key, value, ttlSeconds) + Background Sweep</h3>
+<pre><span class="cm">// 1. TTL is just metadata on the KeyValue</span>
+<span class="tp">KeyValue</span> kv = <span class="kw">new</span> <span class="tp">KeyValue</span>(key, value);   <span class="cm">// timestamp = now</span>
+kv.<span class="fn">setTtl</span>(ttlSeconds);
+store.<span class="fn">put</span>(key, kv);                        <span class="cm">// via putInternal (WAL + write lock)</span>
 
-<span class="nr">1.</span> expiryTime = <span class="fn">currentTime</span>() + ttlSeconds * <span class="nr">1000</span>
+<span class="cm">// 2. One daemon thread sweeps every 30s (started in the constructor)</span>
+ttlCleanupScheduler.<span class="fn">scheduleAtFixedRate</span>(<span class="kw">new</span> <span class="tp">Runnable</span>() {
+    <span class="kw">public void</span> <span class="fn">run</span>() { <span class="fn">cleanupExpiredKeys</span>(); }
+}, <span class="nr">30</span>, <span class="nr">30</span>, <span class="tp">TimeUnit</span>.SECONDS);
 
-<span class="nr">2.</span> entry = <span class="kw">new</span> <span class="tp">Entry</span>(value, expiryTime, version++)
-<span class="nr">3.</span> data.<span class="fn">put</span>(key, entry)
-
-<span class="nr">4.</span> <span class="cm">// Schedule automatic removal</span>
-   task = scheduler.<span class="fn">schedule</span>(() -> {
-       currentEntry = data.<span class="fn">get</span>(key)
-       <span class="kw">if</span> currentEntry != <span class="kw">null</span> <span class="kw">and</span> currentEntry.expiryTime == expiryTime:
-           data.<span class="fn">remove</span>(key)
-   }, ttlSeconds, <span class="tp">SECONDS</span>)
-
-<span class="nr">5.</span> ttlManager.<span class="fn">scheduleExpiry</span>(key, task)</pre>
-    <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">Time: O(1) + O(log n) scheduler &nbsp;&middot;&nbsp; Space: O(1)</p>
+<span class="kw">private void</span> <span class="fn">cleanupExpiredKeys</span>() {        <span class="cm">// holds storeLock.writeLock()</span>
+    <span class="tp">Iterator</span>&lt;<span class="tp">Map.Entry</span>&lt;<span class="tp">String</span>, <span class="tp">KeyValue</span>&gt;&gt; it = store.<span class="fn">entrySet</span>().<span class="fn">iterator</span>();
+    <span class="kw">while</span> (it.<span class="fn">hasNext</span>()) {
+        <span class="tp">Map.Entry</span>&lt;<span class="tp">String</span>, <span class="tp">KeyValue</span>&gt; e = it.<span class="fn">next</span>();
+        <span class="kw">if</span> (e.<span class="fn">getValue</span>().<span class="fn">isExpired</span>()) {
+            it.<span class="fn">remove</span>();
+            evictionPolicy.<span class="fn">remove</span>(e.<span class="fn">getKey</span>());
+        }
+    }
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">put: O(1) &nbsp;&middot;&nbsp; sweep: O(n) every 30s &nbsp;&middot;&nbsp; <span class="inline-code">shutdown()</span> stops the sweeper</p>
   </div>
 
   <div class="card">
@@ -281,19 +329,19 @@ ttlManager.<span class="fn">cancelExpiry</span>(key)</pre>
       <div class="label">Check on every get()</div>
     </div>
     <div class="fee-item">
-      <div class="state">SCHEDULED</div>
+      <div class="state">PER-KEY TIMER</div>
       <div class="amount mid">O(log n)</div>
-      <div class="label">ScheduledExecutorService</div>
+      <div class="label">Follow-up: schedule() per key</div>
     </div>
     <div class="fee-item">
       <div class="state">BACKGROUND SWEEP</div>
       <div class="amount high">O(n)</div>
-      <div class="label">Periodic full scan</div>
+      <div class="label">cleanupExpiredKeys() every 30s</div>
     </div>
     <div class="fee-item">
-      <div class="state">PERSIST</div>
-      <div class="amount" style="color:var(--accent3);font-size:16px;">remove TTL</div>
-      <div class="label">Key lives forever</div>
+      <div class="state">NO TTL</div>
+      <div class="amount" style="color:var(--accent3);font-size:16px;">ttl == null</div>
+      <div class="label">put(key, value) lives forever</div>
     </div>
   </div>
 </section>
@@ -307,20 +355,32 @@ ttlManager.<span class="fn">cancelExpiry</span>(key)</pre>
 
   <div class="card" style="border-left:3px solid var(--accent2);">
     <h3 style="color:var(--accent2);margin-top:0;">Write-Ahead Log (WAL)</h3>
-    <p>Every mutation is logged <strong>before</strong> being applied to memory. Sequential writes to disk (fast). On crash, replay the log to rebuild state.</p>
-<pre><span class="kw">interface</span> <span class="tp">WAL</span> {
-    <span class="kw">void</span> <span class="fn">append</span>(<span class="tp">Operation</span> op);   <span class="cm">// log before apply</span>
-    <span class="tp">List</span>&lt;<span class="tp">Operation</span>&gt; <span class="fn">replay</span>();  <span class="cm">// crash recovery</span>
-    <span class="kw">void</span> <span class="fn">sync</span>();                <span class="cm">// fsync to disk</span>
-}
+    <p>Every mutation is logged <strong>before</strong> being applied to memory. Here the log is an in-memory list; swapping it for a sequential file append is the durability follow-up. On crash, replay the log to rebuild state.</p>
+<pre><span class="kw">public final class</span> <span class="tp">WriteAheadLog</span> {
+    <span class="cm">// each line: OP|key|value</span>
+    <span class="kw">private final</span> <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; entries =
+        <span class="tp">Collections</span>.<span class="fn">synchronizedList</span>(<span class="kw">new</span> <span class="tp">ArrayList</span>&lt;<span class="tp">String</span>&gt;());
 
-<span class="kw">enum</span> <span class="tp">Operation</span> { <span class="st">PUT</span>, <span class="st">DELETE</span>, <span class="st">INCREMENT</span> }</pre>
+    <span class="kw">public void</span> <span class="fn">appendPut</span>(<span class="tp">String</span> key, <span class="tp">String</span> value) {
+        entries.<span class="fn">add</span>(<span class="st">"PUT|"</span> + key + <span class="st">"|"</span> + value);
+    }
+
+    <span class="kw">public void</span> <span class="fn">appendDelete</span>(<span class="tp">String</span> key) {
+        entries.<span class="fn">add</span>(<span class="st">"DELETE|"</span> + key);
+    }
+
+    <span class="kw">public</span> <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; <span class="fn">replay</span>() {          <span class="cm">// crash recovery: copy in order</span>
+        <span class="kw">synchronized</span> (entries) { <span class="kw">return new</span> <span class="tp">ArrayList</span>&lt;<span class="tp">String</span>&gt;(entries); }
+    }
+
+    <span class="kw">public int</span> <span class="fn">size</span>() { <span class="kw">return</span> entries.<span class="fn">size</span>(); }
+}</pre>
     <table>
       <tr><th>Property</th><th>Detail</th></tr>
-      <tr><td>Write pattern</td><td>Sequential append-only (SSD-friendly)</td></tr>
-      <tr><td>Durability</td><td>fsync after each write (configurable)</td></tr>
-      <tr><td>Recovery</td><td>Replay from last checkpoint</td></tr>
-      <tr><td>Rotation</td><td>Truncate after successful snapshot</td></tr>
+      <tr><td>Write pattern</td><td>Append-only <span class="inline-code">PUT|key|value</span> / <span class="inline-code">DELETE|key</span> lines</td></tr>
+      <tr><td>Durability</td><td>In-memory today; follow-up: file append + fsync (configurable)</td></tr>
+      <tr><td>Recovery</td><td><span class="inline-code">replay()</span> returns entries in order; replay from last checkpoint</td></tr>
+      <tr><td>Rotation</td><td>Follow-up: truncate after successful snapshot</td></tr>
     </table>
   </div>
 
@@ -351,20 +411,32 @@ ttlManager.<span class="fn">cancelExpiry</span>(key)</pre>
   <div class="card">
     <h3>createSnapshot &amp; restoreSnapshot</h3>
 <pre><span class="kw">public</span> <span class="tp">String</span> <span class="fn">createSnapshot</span>() {
-    <span class="tp">String</span> snapshotId = <span class="tp">UUID</span>.<span class="fn">randomUUID</span>().<span class="fn">toString</span>();
-    <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; data = store.<span class="fn">entrySet</span>().<span class="fn">stream</span>()
-        .<span class="fn">collect</span>(<span class="tp">Collectors</span>.<span class="fn">toMap</span>(
-            <span class="tp">Map.Entry</span>::getKey, e -> e.<span class="fn">getValue</span>().<span class="fn">getValue</span>()));
-    snapshots.<span class="fn">put</span>(snapshotId, <span class="kw">new</span> <span class="tp">Snapshot</span>(snapshotId, data));
-    <span class="kw">return</span> snapshotId;
+    storeLock.<span class="fn">readLock</span>().<span class="fn">lock</span>();
+    <span class="kw">try</span> {
+        <span class="tp">String</span> snapshotId = <span class="tp">UUID</span>.<span class="fn">randomUUID</span>().<span class="fn">toString</span>();
+        <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; data = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt;();
+        <span class="kw">for</span> (<span class="tp">Map.Entry</span>&lt;<span class="tp">String</span>, <span class="tp">KeyValue</span>&gt; e : store.<span class="fn">entrySet</span>())
+            <span class="kw">if</span> (!e.<span class="fn">getValue</span>().<span class="fn">isExpired</span>())         <span class="cm">// skip expired keys</span>
+                data.<span class="fn">put</span>(e.<span class="fn">getKey</span>(), e.<span class="fn">getValue</span>().<span class="fn">getValue</span>());
+        snapshots.<span class="fn">put</span>(snapshotId, <span class="kw">new</span> <span class="tp">Snapshot</span>(snapshotId, data));
+        <span class="kw">return</span> snapshotId;
+    } <span class="kw">finally</span> {
+        storeLock.<span class="fn">readLock</span>().<span class="fn">unlock</span>();
+    }
 }
 
 <span class="kw">public void</span> <span class="fn">restoreSnapshot</span>(<span class="tp">String</span> snapshotId) {
     <span class="tp">Snapshot</span> snapshot = snapshots.<span class="fn">get</span>(snapshotId);
-    <span class="kw">if</span> (snapshot != <span class="kw">null</span>) {
+    <span class="kw">if</span> (snapshot == <span class="kw">null</span>) <span class="kw">return</span>;
+    storeLock.<span class="fn">writeLock</span>().<span class="fn">lock</span>();
+    <span class="kw">try</span> {
         store.<span class="fn">clear</span>();
-        <span class="kw">for</span> (<span class="tp">Map.Entry</span>&lt;<span class="tp">String</span>,<span class="tp">String</span>&gt; e : snapshot.<span class="fn">getData</span>().<span class="fn">entrySet</span>())
-            <span class="fn">put</span>(e.<span class="fn">getKey</span>(), e.<span class="fn">getValue</span>());
+        <span class="kw">for</span> (<span class="tp">Map.Entry</span>&lt;<span class="tp">String</span>, <span class="tp">String</span>&gt; e : snapshot.<span class="fn">getData</span>().<span class="fn">entrySet</span>()) {
+            store.<span class="fn">put</span>(e.<span class="fn">getKey</span>(), <span class="kw">new</span> <span class="tp">KeyValue</span>(e.<span class="fn">getKey</span>(), e.<span class="fn">getValue</span>()));
+            evictionPolicy.<span class="fn">recordInsert</span>(e.<span class="fn">getKey</span>());
+        }
+    } <span class="kw">finally</span> {
+        storeLock.<span class="fn">writeLock</span>().<span class="fn">unlock</span>();
     }
 }</pre>
   </div>
@@ -372,42 +444,35 @@ ttlManager.<span class="fn">cancelExpiry</span>(key)</pre>
 
 <!-- 8. ATOMIC OPS & CAS -->
 <section id="atomic">
-  <h2>08 &mdash; Atomic Operations &amp; CAS</h2>
+  <h2>08 &mdash; Atomic Operations &amp; CAS (Follow-up)</h2>
   <blockquote>
-    <strong>Lock-free concurrency.</strong> Versioned entries enable optimistic locking. CAS fails and retries rather than blocking threads.
+    <strong>Hypothetical follow-up &mdash; not in src.</strong> <span class="inline-code">InMemoryKVStore</span> has no CAS, increment, or version field today. The natural extension reuses the existing <span class="inline-code">storeLock</span> write lock so compare + WAL + apply happen as one step.
   </blockquote>
 
   <div class="card highlight">
-    <h3 style="color:var(--accent);margin-top:0;">Compare-And-Swap (CAS)</h3>
-<pre><span class="kw">Algorithm</span>: CompareAndSwap(key, expectedValue, newValue)
-
-<span class="nr">1.</span> entry = data.<span class="fn">get</span>(key)
-
-<span class="nr">2.</span> <span class="kw">if</span> entry == <span class="kw">null</span>:
-       <span class="kw">if</span> expectedValue != <span class="kw">null</span>: <span class="kw">return false</span>
-       entry = <span class="kw">new</span> <span class="tp">Entry</span>(newValue, <span class="kw">null</span>, <span class="nr">1</span>)
-       data.<span class="fn">put</span>(key, entry)
-       <span class="kw">return true</span>
-
-<span class="nr">3.</span> currentValue = entry.<span class="fn">getValue</span>()
-
-<span class="nr">4.</span> <span class="kw">if</span> currentValue != expectedValue:
-       <span class="kw">return false</span>          <span class="cm">// CAS failed -- stale read</span>
-
-<span class="nr">5.</span> <span class="cm">// Atomic update with version increment</span>
-   newEntry = <span class="kw">new</span> <span class="tp">Entry</span>(newValue, entry.expiryTime, entry.version + <span class="nr">1</span>)
-   success = data.<span class="fn">replace</span>(key, entry, newEntry)  <span class="cm">// atomic</span>
-
-<span class="nr">6.</span> <span class="kw">if</span> success:
-       wal.<span class="fn">append</span>(<span class="tp">WALEntry</span>(<span class="tp">PUT</span>, key, newValue))
-
-<span class="nr">7.</span> <span class="kw">return</span> success</pre>
-    <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">Time: O(1) &nbsp;&middot;&nbsp; Space: O(1) &nbsp;&middot;&nbsp; No locks &mdash; retry on conflict</p>
+    <h3 style="color:var(--accent);margin-top:0;">Compare-And-Swap (CAS) &mdash; hypothetical</h3>
+<pre><span class="cm">// HYPOTHETICAL: would be added to InMemoryKVStore</span>
+<span class="kw">public boolean</span> <span class="fn">compareAndSwap</span>(<span class="tp">String</span> key, <span class="tp">String</span> expected, <span class="tp">String</span> newValue) {
+    storeLock.<span class="fn">writeLock</span>().<span class="fn">lock</span>();
+    <span class="kw">try</span> {
+        <span class="tp">KeyValue</span> kv = store.<span class="fn">get</span>(key);
+        <span class="tp">String</span> current = (kv == <span class="kw">null</span> || kv.<span class="fn">isExpired</span>()) ? <span class="kw">null</span> : kv.<span class="fn">getValue</span>();
+        <span class="kw">if</span> (!<span class="tp">Objects</span>.<span class="fn">equals</span>(current, expected))
+            <span class="kw">return false</span>;                      <span class="cm">// CAS failed -- stale read</span>
+        wal.<span class="fn">appendPut</span>(key, newValue);        <span class="cm">// log before apply</span>
+        store.<span class="fn">put</span>(key, <span class="kw">new</span> <span class="tp">KeyValue</span>(key, newValue));
+        evictionPolicy.<span class="fn">recordInsert</span>(key);
+        <span class="kw">return true</span>;
+    } <span class="kw">finally</span> {
+        storeLock.<span class="fn">writeLock</span>().<span class="fn">unlock</span>();
+    }
+}</pre>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">Time: O(1) &nbsp;&middot;&nbsp; Space: O(1) &nbsp;&middot;&nbsp; Lock-free variant needs a version field + <span class="inline-code">ConcurrentHashMap.replace(key, old, new)</span></p>
   </div>
 
   <div class="card">
-    <h3>Increment / Decrement</h3>
-<pre><span class="cm">// Atomic increment using CAS loop</span>
+    <h3>Increment / Decrement &mdash; hypothetical</h3>
+<pre><span class="cm">// HYPOTHETICAL: atomic increment using a CAS loop</span>
 <span class="kw">public long</span> <span class="fn">increment</span>(<span class="tp">String</span> key) {
     <span class="kw">while</span> (<span class="kw">true</span>) {
         <span class="tp">String</span> current = <span class="fn">get</span>(key);
@@ -425,7 +490,7 @@ ttlManager.<span class="fn">cancelExpiry</span>(key)</pre>
 <section id="transactions">
   <h2>09 &mdash; Transactions</h2>
   <blockquote>
-    <strong>Optimistic concurrency.</strong> Buffer writes in a local map. On commit, validate read-set versions, then apply atomically. Rollback = discard the buffer.
+    <strong>Write buffering.</strong> <span class="inline-code">putInTransaction</span> buffers writes in the transaction's <span class="inline-code">changes</span> map. On commit, apply each through <span class="inline-code">put()</span>. Rollback = discard the buffer. Read-set validation (optimistic concurrency) is a follow-up.
   </blockquote>
 
   <div class="card">
@@ -453,26 +518,24 @@ ttlManager.<span class="fn">cancelExpiry</span>(key)</pre>
   </div>
 
   <div class="card">
-    <h3>Commit Algorithm (Optimistic Locking)</h3>
-<pre><span class="kw">Algorithm</span>: CommitTransaction(transaction)
+    <h3>Commit Algorithm (Optimistic Locking) &mdash; hypothetical follow-up</h3>
+<pre><span class="cm">// HYPOTHETICAL: needs a version field on KeyValue and a readSet on Transaction</span>
+<span class="kw">Algorithm</span>: CommitTransaction(txn)
+
+storeLock.<span class="fn">writeLock</span>().<span class="fn">lock</span>()
 
 <span class="cm">// Phase 1: Validate (check versions haven't changed)</span>
-<span class="kw">for each</span> (key, entry) <span class="kw">in</span> transaction.readSet:
-    currentEntry = data.<span class="fn">get</span>(key)
-    <span class="kw">if</span> currentEntry.version != entry.version:
+<span class="kw">for each</span> (key, versionSeen) <span class="kw">in</span> txn.readSet:
+    <span class="kw">if</span> store.<span class="fn">get</span>(key).version != versionSeen:
         <span class="kw">return false</span>  <span class="cm">// read conflict, abort</span>
 
-<span class="cm">// Phase 2: Prepare (log to WAL)</span>
-<span class="kw">for each</span> (key, entry) <span class="kw">in</span> transaction.writeSet:
-    wal.<span class="fn">append</span>(<span class="tp">WALEntry</span>(<span class="tp">PUT</span>, key, entry.value))
-wal.<span class="fn">sync</span>()
+<span class="cm">// Phase 2 + 3: log, then apply (per key)</span>
+<span class="kw">for each</span> (key, value) <span class="kw">in</span> txn.<span class="fn">getChanges</span>():
+    wal.<span class="fn">appendPut</span>(key, value)
+    store.<span class="fn">put</span>(key, <span class="kw">new</span> <span class="tp">KeyValue</span>(key, value))
 
-<span class="cm">// Phase 3: Commit (apply to memory)</span>
-<span class="kw">for each</span> (key, entry) <span class="kw">in</span> transaction.writeSet:
-    newEntry = <span class="kw">new</span> <span class="tp">Entry</span>(entry.value, <span class="kw">null</span>, currentVersion++)
-    data.<span class="fn">put</span>(key, newEntry)
-
-transaction.status = <span class="st">COMMITTED</span>
+txn.<span class="fn">commit</span>()
+storeLock.<span class="fn">writeLock</span>().<span class="fn">unlock</span>()
 <span class="kw">return true</span></pre>
     <p style="font-size:13px;color:var(--text-dim);margin-top:8px;">Time: O(w + r) where w = writes, r = reads &nbsp;&middot;&nbsp; Space: O(w + r)</p>
   </div>
@@ -485,12 +548,20 @@ transaction.status = <span class="st">COMMITTED</span>
     <span class="kw">return</span> txnId;
 }
 
+<span class="kw">public void</span> <span class="fn">putInTransaction</span>(<span class="tp">String</span> txnId, <span class="tp">String</span> key, <span class="tp">String</span> value) {
+    <span class="tp">Transaction</span> txn = transactions.<span class="fn">get</span>(txnId);
+    <span class="kw">if</span> (txn == <span class="kw">null</span>)
+        <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"unknown or already-finished transaction: "</span> + txnId);
+    txn.<span class="fn">put</span>(key, value);                       <span class="cm">// invisible until commit</span>
+}
+
 <span class="kw">public void</span> <span class="fn">commitTransaction</span>(<span class="tp">String</span> txnId) {
     <span class="tp">Transaction</span> txn = transactions.<span class="fn">get</span>(txnId);
     <span class="kw">if</span> (txn != <span class="kw">null</span> && !txn.<span class="fn">isCommitted</span>()) {
         <span class="kw">for</span> (<span class="tp">Map.Entry</span>&lt;<span class="tp">String</span>,<span class="tp">String</span>&gt; e : txn.<span class="fn">getChanges</span>().<span class="fn">entrySet</span>())
-            <span class="fn">put</span>(e.<span class="fn">getKey</span>(), e.<span class="fn">getValue</span>());
+            <span class="fn">put</span>(e.<span class="fn">getKey</span>(), e.<span class="fn">getValue</span>());  <span class="cm">// each key: WAL + write lock</span>
         txn.<span class="fn">commit</span>();
+        transactions.<span class="fn">remove</span>(txnId);
     }
 }
 
@@ -513,24 +584,24 @@ transaction.status = <span class="st">COMMITTED</span>
         <td>Lock-free reads, segment-level write locking. O(1) ops stay O(1) under concurrency.</td>
       </tr>
       <tr>
-        <td><span class="inline-code">Entry.version</span></td>
-        <td>Every entry</td>
-        <td>Optimistic locking for CAS. Detect stale reads without locks.</td>
+        <td><span class="inline-code">ReentrantReadWriteLock storeLock</span></td>
+        <td>InMemoryKVStore</td>
+        <td>Read lock: <span class="inline-code">get</span>, <span class="inline-code">keys</span>, <span class="inline-code">createSnapshot</span>. Write lock: put/delete (WAL append + map + LRU as one step), TTL sweep, <span class="inline-code">restoreSnapshot</span>. No read&rarr;write upgrade: expired <span class="inline-code">get</span> releases, re-acquires as writer, re-checks.</td>
       </tr>
       <tr>
-        <td><span class="inline-code">replace(key, old, new)</span></td>
-        <td>CAS operation</td>
-        <td>ConcurrentHashMap's atomic compare-and-replace. Only succeeds if entry unchanged.</td>
+        <td><span class="inline-code">synchronized</span> methods</td>
+        <td>LruEvictionPolicy</td>
+        <td>Access-order <span class="inline-code">LinkedHashMap</span> mutates on every read; many readers hold the read lock concurrently, so the policy guards itself.</td>
       </tr>
       <tr>
         <td><span class="inline-code">ScheduledExecutorService</span></td>
-        <td>TTL expiry</td>
-        <td>Thread-safe task scheduling. Non-blocking delayed removal of expired keys.</td>
+        <td>TTL sweep</td>
+        <td>Single daemon thread (<span class="inline-code">kvstore-ttl-cleanup</span>) runs <span class="inline-code">cleanupExpiredKeys()</span> every 30s.</td>
       </tr>
       <tr>
-        <td><span class="inline-code">volatile</span></td>
-        <td>PricingStrategy ref</td>
-        <td>Cross-thread visibility for runtime strategy swaps without full lock.</td>
+        <td><span class="inline-code">Collections.synchronizedList</span></td>
+        <td>WriteAheadLog.entries</td>
+        <td>Safe concurrent appends; <span class="inline-code">replay()</span> copies under the list's monitor.</td>
       </tr>
       <tr>
         <td><span class="inline-code">HashMap (defensive copy)</span></td>
@@ -550,7 +621,7 @@ transaction.status = <span class="st">COMMITTED</span>
 <pre><span class="kw">interface</span> <span class="tp">KVStoreService</span> {
     <span class="cm">// Basic CRUD</span>
     <span class="kw">void</span>    <span class="fn">put</span>(<span class="tp">String</span> key, <span class="tp">String</span> value);
-    <span class="kw">void</span>    <span class="fn">put</span>(<span class="tp">String</span> key, <span class="tp">String</span> value, <span class="kw">long</span> ttl);
+    <span class="kw">void</span>    <span class="fn">put</span>(<span class="tp">String</span> key, <span class="tp">String</span> value, <span class="kw">long</span> ttlSeconds);
     <span class="tp">String</span>  <span class="fn">get</span>(<span class="tp">String</span> key);
     <span class="kw">void</span>    <span class="fn">delete</span>(<span class="tp">String</span> key);
     <span class="kw">boolean</span> <span class="fn">exists</span>(<span class="tp">String</span> key);
@@ -560,35 +631,41 @@ transaction.status = <span class="st">COMMITTED</span>
 
     <span class="cm">// Transactions</span>
     <span class="tp">String</span> <span class="fn">beginTransaction</span>();
+    <span class="kw">void</span>   <span class="fn">putInTransaction</span>(<span class="tp">String</span> txnId, <span class="tp">String</span> key, <span class="tp">String</span> value);
     <span class="kw">void</span>   <span class="fn">commitTransaction</span>(<span class="tp">String</span> txnId);
     <span class="kw">void</span>   <span class="fn">rollbackTransaction</span>(<span class="tp">String</span> txnId);
 
     <span class="cm">// Snapshots</span>
     <span class="tp">String</span> <span class="fn">createSnapshot</span>();
     <span class="kw">void</span>   <span class="fn">restoreSnapshot</span>(<span class="tp">String</span> snapshotId);
+
+    <span class="cm">// Ops</span>
+    <span class="kw">int</span>    <span class="fn">walSize</span>();
+    <span class="kw">void</span>   <span class="fn">shutdown</span>();   <span class="cm">// stops the TTL sweeper</span>
 }</pre>
   </div>
 
   <div class="card">
-    <h3>Generic Interface</h3>
-<pre><span class="kw">interface</span> <span class="tp">KVStore</span>&lt;<span class="tp">K</span>, <span class="tp">V</span>&gt; {
-    <span class="kw">void</span>    <span class="fn">put</span>(<span class="tp">K</span> key, <span class="tp">V</span> value);
-    <span class="tp">V</span>       <span class="fn">get</span>(<span class="tp">K</span> key);
-    <span class="kw">void</span>    <span class="fn">delete</span>(<span class="tp">K</span> key);
-    <span class="kw">boolean</span> <span class="fn">contains</span>(<span class="tp">K</span> key);
-    <span class="kw">int</span>     <span class="fn">size</span>();
+    <h3>Facade (KVStore)</h3>
+<pre><span class="kw">public final class</span> <span class="tp">KVStore</span> {
+    <span class="kw">private final</span> <span class="tp">KVStoreService</span> service;
+
+    <span class="kw">public</span> <span class="tp">KVStore</span>()               { <span class="kw">this</span>(<span class="kw">new</span> <span class="tp">InMemoryKVStore</span>()); }  <span class="cm">// 1000 entries</span>
+    <span class="kw">public</span> <span class="tp">KVStore</span>(<span class="kw">int</span> maxEntries) { <span class="kw">this</span>(<span class="kw">new</span> <span class="tp">InMemoryKVStore</span>(maxEntries)); }
+    <span class="kw">public</span> <span class="tp">KVStore</span>(<span class="tp">KVStoreService</span> service) { <span class="kw">this</span>.service = service; }
+
+    <span class="kw">public</span> <span class="tp">KVStoreService</span> <span class="fn">service</span>() { <span class="kw">return</span> service; }
 }</pre>
   </div>
 
   <div class="card">
-    <h3>Extended API (Design-level)</h3>
+    <h3>Extended API (hypothetical follow-ups &mdash; not in src)</h3>
 <pre><span class="cm">// Atomic Operations</span>
 <span class="kw">long</span>    <span class="fn">increment</span>(<span class="tp">String</span> key);
 <span class="kw">long</span>    <span class="fn">decrement</span>(<span class="tp">String</span> key);
 <span class="kw">boolean</span> <span class="fn">compareAndSwap</span>(<span class="tp">String</span> key, <span class="tp">String</span> expected, <span class="tp">String</span> newValue);
 
 <span class="cm">// TTL Management</span>
-<span class="kw">void</span> <span class="fn">setWithTTL</span>(<span class="tp">String</span> key, <span class="tp">String</span> value, <span class="kw">long</span> ttlSeconds);
 <span class="kw">long</span> <span class="fn">getTTL</span>(<span class="tp">String</span> key);
 <span class="kw">void</span> <span class="fn">persist</span>(<span class="tp">String</span> key);  <span class="cm">// remove TTL</span>
 
@@ -606,17 +683,17 @@ transaction.status = <span class="st">COMMITTED</span>
     <div class="step" data-num="1">
       <div class="label">Initialize Store</div>
       store = new InMemoryKVStore()
-      <div class="detail">ConcurrentHashMap created. WAL opened. TTL scheduler started.</div>
+      <div class="detail">ConcurrentHashMap created. WriteAheadLog created. LruEvictionPolicy(1000). 30s TTL sweeper started.</div>
     </div>
     <div class="step" data-num="2">
       <div class="label">Basic Put</div>
       store.put("user:1", "Alice")
-      <div class="detail">WAL.append(PUT, "user:1", "Alice") &rarr; WAL.sync() &rarr; store.put(key, new KeyValue(...))</div>
+      <div class="detail">storeLock.writeLock() &rarr; wal.appendPut("user:1", "Alice") &rarr; store.put(key, new KeyValue(...)) &rarr; evictionPolicy.recordInsert() &rarr; evictIfNeeded()</div>
     </div>
     <div class="step" data-num="3">
       <div class="label">Put with TTL</div>
       store.put("session:abc", "token123", 3600)
-      <div class="detail">KeyValue created with ttl=3600. ScheduledExecutorService queues removal in 1 hour. Lazy check also guards get().</div>
+      <div class="detail">KeyValue created, setTtl(3600). After expiry the 30s sweeper (cleanupExpiredKeys) removes it. Lazy check also guards get().</div>
     </div>
     <div class="step" data-num="4">
       <div class="label">Get (Cache Hit)</div>
@@ -626,29 +703,29 @@ transaction.status = <span class="st">COMMITTED</span>
     <div class="step" data-num="5">
       <div class="label">Get (TTL Expired)</div>
       store.get("session:abc") &rarr; null
-      <div class="detail">isExpired() returns true &rarr; lazy remove from store &rarr; return null. Stats: recordMiss().</div>
+      <div class="detail">isExpired() returns true &rarr; re-acquire write lock, re-check &rarr; remove from store + evictionPolicy &rarr; return null.</div>
     </div>
     <div class="step" data-num="6">
       <div class="label">Transaction</div>
       txnId = store.beginTransaction()<br>
-      txn.put("key1", "val1"); txn.put("key2", "val2")<br>
+      store.putInTransaction(txnId, "key1", "val1"); store.putInTransaction(txnId, "key2", "val2")<br>
       store.commitTransaction(txnId)
-      <div class="detail">Changes buffered in Transaction.changes map. On commit: iterate changes, apply each put() to store. Atomic from caller's perspective.</div>
+      <div class="detail">Changes buffered in Transaction.changes map. On commit: iterate getChanges(), apply each put() (WAL + write lock), then drop the txn. Not atomic across keys.</div>
     </div>
     <div class="step" data-num="7">
       <div class="label">Snapshot</div>
       snapshotId = store.createSnapshot()
-      <div class="detail">Deep copy of all store entries into Snapshot. UUID assigned. Stored in snapshots map.</div>
+      <div class="detail">Under the read lock, copy all non-expired entries into a Snapshot. UUID assigned. Stored in snapshots map.</div>
     </div>
     <div class="step" data-num="8">
       <div class="label">Restore</div>
       store.restoreSnapshot(snapshotId)
-      <div class="detail">store.clear() &rarr; reload all entries from snapshot's defensive copy. State reverted.</div>
+      <div class="detail">Under the write lock: store.clear() &rarr; reload all entries from snapshot's defensive copy (no TTL). State reverted.</div>
     </div>
     <div class="step" data-num="9">
       <div class="label">Pattern Keys</div>
       store.keys("user:*") &rarr; ["user:1", "user:2"]
-      <div class="detail">Stream over keySet(), filter with regex (replace * with .*). O(n) scan.</div>
+      <div class="detail">Loop over keySet() under the read lock, skip expired, match regex (replace * with .*). O(n) scan.</div>
     </div>
   </div>
 </section>
@@ -666,25 +743,24 @@ transaction.status = <span class="st">COMMITTED</span>
 <span class="cm">// Snapshots -- keyed by snapshotId</span>
 <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Snapshot</span>&gt; snapshots = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
 
-<span class="cm">// TTL scheduler</span>
-<span class="tp">ScheduledExecutorService</span> expiryScheduler;
-<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">ScheduledFuture</span>&gt; expiryTasks;  <span class="cm">// cancellable per key</span>
+<span class="cm">// TTL sweeper -- one daemon thread, cleanupExpiredKeys() every 30s</span>
+<span class="tp">ScheduledExecutorService</span> ttlCleanupScheduler;
+
+<span class="cm">// Guards store + WAL + eviction as one unit</span>
+<span class="tp">ReadWriteLock</span> storeLock = <span class="kw">new</span> <span class="tp">ReentrantReadWriteLock</span>();
 
 <span class="cm">// Eviction (Strategy pattern)</span>
-<span class="tp">EvictionPolicy</span> evictionPolicy;  <span class="cm">// LRU or LFU</span>
+<span class="tp">EvictionPolicy</span> evictionPolicy = <span class="kw">new</span> <span class="tp">LruEvictionPolicy</span>(maxEntries);
 
-<span class="cm">// LRU internals</span>
-<span class="tp">LinkedHashMap</span>&lt;<span class="tp">String</span>, <span class="tp">Long</span>&gt; accessOrder;  <span class="cm">// insertion-ordered, eldest = LRU</span>
-
-<span class="cm">// LFU internals</span>
-<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Integer</span>&gt; frequency;  <span class="cm">// access counts per key</span>
+<span class="cm">// LRU internals (inside LruEvictionPolicy)</span>
+<span class="tp">LinkedHashMap</span>&lt;<span class="tp">String</span>, <span class="tp">Boolean</span>&gt; accessOrder =
+    <span class="kw">new</span> <span class="tp">LinkedHashMap</span>&lt;<span class="tp">String</span>, <span class="tp">Boolean</span>&gt;(maxEntries, <span class="nr">0.75f</span>, <span class="kw">true</span>);  <span class="cm">// access-ordered, eldest = LRU</span>
 
 <span class="cm">// Persistence</span>
-<span class="tp">WAL</span> writeAheadLog;               <span class="cm">// sequential append log</span>
-<span class="tp">PersistenceManager</span> persistence;  <span class="cm">// pluggable save/load</span>
+<span class="tp">WriteAheadLog</span> wal = <span class="kw">new</span> <span class="tp">WriteAheadLog</span>();  <span class="cm">// append-only OP|key|value lines</span>
 
-<span class="cm">// Stats</span>
-<span class="tp">CacheStats</span> stats;  <span class="cm">// hits, misses, evictions, hitRate()</span></pre>
+<span class="cm">// Defined but not wired into InMemoryKVStore yet:</span>
+<span class="cm">//   PersistenceManager (save/load), CacheStats (hits, misses, evictions, getHitRate())</span></pre>
   </div>
 </section>
 
@@ -699,12 +775,12 @@ transaction.status = <span class="st">COMMITTED</span>
 
   <details>
     <summary>How does lazy vs active TTL expiration work?</summary>
-    <div class="answer"><strong>Lazy:</strong> Check <span class="inline-code">isExpired()</span> on every <span class="inline-code">get()</span>. Free, always correct, but expired keys linger in memory if never read. <strong>Active:</strong> <span class="inline-code">ScheduledExecutorService</span> fires removal tasks at exact expiry time. Guarantees timely cleanup. Use both: active for memory hygiene, lazy as a safety net.</div>
+    <div class="answer"><strong>Lazy:</strong> Check <span class="inline-code">isExpired()</span> on every <span class="inline-code">get()</span>. Free, always correct, but expired keys linger in memory if never read. <strong>Active:</strong> a <span class="inline-code">ScheduledExecutorService</span> runs <span class="inline-code">cleanupExpiredKeys()</span> every 30s. Bounds how long expired keys linger. Use both: active for memory hygiene, lazy as a safety net.</div>
   </details>
 
   <details>
     <summary>How would you handle memory limits and eviction?</summary>
-    <div class="answer">Set a <span class="inline-code">maxEntries</span> or <span class="inline-code">maxMemoryBytes</span> limit. On every <span class="inline-code">put()</span>, check if over limit. If so, call <span class="inline-code">evictionPolicy.evict()</span> to get the victim key and remove it. <strong>LRU</strong> uses a <span class="inline-code">LinkedHashMap</span> in access order &mdash; the eldest entry is the least-recently-used. <strong>LFU</strong> uses a frequency counter &mdash; evict the key with the lowest access count.</div>
+    <div class="answer">Set a <span class="inline-code">maxEntries</span> limit (<span class="inline-code">maxMemoryBytes</span> is a follow-up). On every <span class="inline-code">put()</span>, call <span class="inline-code">evictionPolicy.evictIfNeeded()</span>; if it returns a victim key, remove it from the store and log <span class="inline-code">wal.appendDelete(victim)</span>. <strong>LRU</strong> uses a <span class="inline-code">LinkedHashMap</span> in access order &mdash; the eldest entry is the least-recently-used. <strong>LFU</strong> (follow-up) would use a frequency counter &mdash; evict the key with the lowest access count.</div>
   </details>
 
   <details>
@@ -719,7 +795,7 @@ transaction.status = <span class="st">COMMITTED</span>
 
   <details>
     <summary>How would you implement LRU eviction?</summary>
-    <div class="answer">Use <span class="inline-code">LinkedHashMap</span> with access-order mode (<span class="inline-code">new LinkedHashMap(16, 0.75f, true)</span>). Every <span class="inline-code">get()</span> moves the key to the tail. The head is always the least-recently-used key. Override <span class="inline-code">removeEldestEntry()</span> or call <span class="inline-code">iterator().next()</span> to find the eviction victim. O(1) for both access and eviction.</div>
+    <div class="answer">Use <span class="inline-code">LinkedHashMap</span> with access-order mode (<span class="inline-code">new LinkedHashMap&lt;&gt;(maxEntries, 0.75f, true)</span>), as <span class="inline-code">LruEvictionPolicy</span> does. Every <span class="inline-code">get()</span> moves the key to the tail. The head is always the least-recently-used key. Override <span class="inline-code">removeEldestEntry()</span> or call <span class="inline-code">iterator().next()</span> to find the eviction victim. O(1) for both access and eviction.</div>
   </details>
 
   <details>
@@ -729,12 +805,12 @@ transaction.status = <span class="st">COMMITTED</span>
 
   <details>
     <summary>How does CAS enable lock-free concurrency?</summary>
-    <div class="answer">Each entry has a version number. <span class="inline-code">compareAndSwap()</span> reads the current version, computes the new value, and atomically replaces only if the version hasn't changed. If another thread modified the entry, CAS fails and the caller retries with the fresh value. No locks needed &mdash; threads never block each other. This is the same approach used by <span class="inline-code">java.util.concurrent.atomic</span> classes.</div>
+    <div class="answer"><em>Follow-up &mdash; not in src.</em> Give each entry a version number. <span class="inline-code">compareAndSwap()</span> reads the current version, computes the new value, and atomically replaces only if the version hasn't changed. If another thread modified the entry, CAS fails and the caller retries with the fresh value. No locks needed &mdash; threads never block each other. This is the same approach used by <span class="inline-code">java.util.concurrent.atomic</span> classes.</div>
   </details>
 
   <details>
     <summary>How would you handle transaction isolation?</summary>
-    <div class="answer">The current design uses <strong>optimistic concurrency control</strong>. Each transaction reads entries with their version numbers (read set). On commit, validate that all read-set versions are unchanged. If any version changed, abort &mdash; another transaction modified the data. This provides <strong>snapshot isolation</strong> without locks. For stricter isolation (serializable), use pessimistic locking with a lock manager.</div>
+    <div class="answer">The current design only <strong>buffers writes</strong> (no read isolation; commit applies keys one by one). The upgrade is <strong>optimistic concurrency control</strong>: each transaction reads entries with their version numbers (read set). On commit, validate that all read-set versions are unchanged. If any version changed, abort &mdash; another transaction modified the data. This provides <strong>snapshot isolation</strong> without locks. For stricter isolation (serializable), use pessimistic locking with a lock manager.</div>
   </details>
 
   <details>
@@ -763,27 +839,24 @@ transaction.status = <span class="st">COMMITTED</span>
   <h2>15 &mdash; Package Structure</h2>
   <div class="card">
 <pre>kvstore/
-├── api/
-│   ├── <span class="tp">KVStore</span>.java                <span class="cm">-- generic interface (K,V)</span>
-│   └── <span class="tp">KVStoreService</span>.java         <span class="cm">-- full service interface</span>
-├── impl/
-│   └── <span class="tp">InMemoryKVStore</span>.java        <span class="cm">-- main implementation</span>
+├── <span class="tp">KVStore</span>.java                    <span class="cm">-- facade over KVStoreService</span>
+├── <span class="tp">KVStoreDemo</span>.java                <span class="cm">-- interview demo</span>
+├── service/
+│   ├── <span class="tp">KVStoreService</span>.java         <span class="cm">-- full service interface</span>
+│   └── impl/
+│       └── <span class="tp">InMemoryKVStore</span>.java    <span class="cm">-- CHM + RW lock + WAL + TTL sweeper</span>
 ├── model/
 │   ├── <span class="tp">KeyValue</span>.java               <span class="cm">-- value + TTL + timestamp</span>
-│   ├── <span class="tp">KeyValuePair</span>&lt;K,V&gt;.java     <span class="cm">-- generic building block</span>
 │   ├── <span class="tp">Transaction</span>.java            <span class="cm">-- buffered write set</span>
 │   └── <span class="tp">CacheStats</span>.java             <span class="cm">-- hits, misses, evictions</span>
 ├── eviction/
 │   ├── <span class="tp">EvictionPolicy</span>.java         <span class="cm">-- strategy interface</span>
-│   ├── <span class="fn">LRUEviction</span>.java            <span class="cm">-- LinkedHashMap access order</span>
-│   └── <span class="fn">LFUEviction</span>.java            <span class="cm">-- frequency counter</span>
+│   └── <span class="tp">LruEvictionPolicy</span>.java      <span class="cm">-- LinkedHashMap access order</span>
 ├── persistence/
-│   └── <span class="tp">PersistenceManager</span>.java     <span class="cm">-- save/load interface</span>
-├── snapshot/
-│   └── <span class="tp">Snapshot</span>.java               <span class="cm">-- memento (defensive copy)</span>
-└── <span class="cm">(design-level)</span>
-    ├── <span class="tp">WAL</span>.java                    <span class="cm">-- write-ahead log</span>
-    └── <span class="tp">TTLManager</span>.java             <span class="cm">-- scheduled expiry tasks</span></pre>
+│   ├── <span class="tp">PersistenceManager</span>.java     <span class="cm">-- save/load interface</span>
+│   └── <span class="tp">WriteAheadLog</span>.java          <span class="cm">-- append-only OP|key|value log</span>
+└── snapshot/
+    └── <span class="tp">Snapshot</span>.java               <span class="cm">-- memento (defensive copy)</span></pre>
   </div>
 </section>
 
@@ -795,12 +868,12 @@ transaction.status = <span class="st">COMMITTED</span>
       <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
       <tr>
         <td><span style="color:var(--accent);">Strategy</span></td>
-        <td>EvictionPolicy &rarr; LRU, LFU</td>
+        <td>EvictionPolicy &rarr; LruEvictionPolicy</td>
         <td>Swap eviction algorithms without changing store</td>
       </tr>
       <tr>
         <td><span style="color:var(--accent2);">Command</span></td>
-        <td>WAL operations (PUT, DELETE, INCREMENT)</td>
+        <td>WriteAheadLog records (PUT, DELETE)</td>
         <td>Replayable mutations for crash recovery</td>
       </tr>
       <tr>
@@ -809,13 +882,13 @@ transaction.status = <span class="st">COMMITTED</span>
         <td>Point-in-time restore with defensive copies</td>
       </tr>
       <tr>
-        <td><span style="color:var(--accent4);">Singleton</span></td>
-        <td>KVStore instance</td>
-        <td>Single source of truth for all clients</td>
+        <td><span style="color:var(--accent4);">Facade</span></td>
+        <td>KVStore &rarr; KVStoreService</td>
+        <td>One entry point; swap the service implementation</td>
       </tr>
       <tr>
         <td><span style="color:var(--accent5);">Observer</span></td>
-        <td>Key expiry events</td>
+        <td>Key expiry events (follow-up)</td>
         <td>Decouple expiration notification from cleanup</td>
       </tr>
       <tr>
@@ -825,12 +898,12 @@ transaction.status = <span class="st">COMMITTED</span>
       </tr>
       <tr>
         <td><span style="color:var(--text);">Value Object</span></td>
-        <td>KeyValue, Entry, KeyValuePair</td>
-        <td>Immutable data carriers with TTL/version</td>
+        <td>KeyValue, Snapshot</td>
+        <td>Data carriers with timestamp + TTL</td>
       </tr>
     </table>
   </div>
-  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">10 files &middot; O(1) everything &middot; ConcurrentHashMap + WAL + Snapshots</p>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">12 files &middot; O(1) everything &middot; ConcurrentHashMap + WAL + Snapshots</p>
 </section>
 
 </div>

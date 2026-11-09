@@ -36,10 +36,10 @@
 <!-- HERO -->
 <div class="hero">
   <h1>Expense Splitting <span>// Splitwise</span></h1>
-  <p>LLD with Strategy pattern for split types, greedy debt simplification, pairwise balance tracking, and thread-safe in-memory service. 9 files, production-ready architecture.</p>
+  <p>LLD with Strategy pattern for split types, greedy debt simplification, pairwise balance tracking, and thread-safe in-memory service. 15 files, production-ready architecture.</p>
   <div class="tags">
     <span class="tag">Strategy Pattern</span>
-    <span class="tag blue">Observer Pattern</span>
+    <span class="tag blue">Factory Pattern</span>
     <span class="tag green">Debt Simplification</span>
     <span class="tag pink">Pairwise Balances</span>
     <span class="tag purple">ConcurrentHashMap</span>
@@ -85,7 +85,7 @@
       <tr>
         <td><span class="inline-code">User</span></td>
         <td>Entity</td>
-        <td>id, name, email, <strong>Map&lt;String, Double&gt; balances</strong> &mdash; pairwise balance with every other user</td>
+        <td>id, name, email, <strong>Map&lt;String, BigDecimal&gt; balances</strong> &mdash; pairwise balance with every other user</td>
       </tr>
       <tr>
         <td><span class="inline-code">Group</span></td>
@@ -95,7 +95,7 @@
       <tr>
         <td><span class="inline-code">Expense</span></td>
         <td>Entity</td>
-        <td>id, description, amount, paidBy, participants, <strong>splitType</strong>, <strong>splits: Map&lt;String, Double&gt;</strong>, createdAt</td>
+        <td>id, description, amount, paidBy, participants, <strong>splitType</strong>, <strong>splits: Map&lt;String, BigDecimal&gt;</strong> (computed by the injected <span class="inline-code">SplitStrategy</span>), createdAt</td>
       </tr>
       <tr>
         <td><span class="inline-code">SplitType</span></td>
@@ -103,12 +103,17 @@
         <td>EQUAL, EXACT, PERCENTAGE &mdash; drives the split calculation strategy</td>
       </tr>
       <tr>
+        <td><span class="inline-code">SplitStrategy</span></td>
+        <td>Interface</td>
+        <td><span class="inline-code">compute(total, participants, details)</span> &rarr; <span class="inline-code">Map&lt;String, BigDecimal&gt;</span>; Equal / Exact / Percentage impls, picked by <span class="inline-code">SplitStrategyFactory.forType()</span></td>
+      </tr>
+      <tr>
         <td><span class="inline-code">Payment</span></td>
         <td>Entity</td>
         <td>id, payerId, payeeId, amount, timestamp &mdash; records a settlement transaction</td>
       </tr>
       <tr>
-        <td><span class="inline-code">Transaction</span></td>
+        <td><span class="inline-code">BalanceSimplifier.Transaction</span></td>
         <td>Value Object</td>
         <td>from, to, amount &mdash; output of the debt simplification algorithm</td>
       </tr>
@@ -134,15 +139,15 @@
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
     <div class="card highlight">
       <h3 style="color:var(--accent);margin-top:0;">Strategy Pattern</h3>
-      <p>Split calculation logic varies by type. Each <span class="inline-code">SplitType</span> drives a different calculation in <span class="inline-code">Expense.calculateSplits()</span>. Adding a new type (SHARE, WEIGHT) = adding a new case. In the advanced version, <span class="inline-code">SplitCalculator</span> encapsulates each strategy as a static method.</p>
+      <p>Split calculation logic varies by type. Each <span class="inline-code">SplitType</span> maps to a <span class="inline-code">SplitStrategy</span> (<span class="inline-code">EqualSplitStrategy</span>, <span class="inline-code">ExactSplitStrategy</span>, <span class="inline-code">PercentageSplitStrategy</span>); the <span class="inline-code">Expense</span> constructor calls <span class="inline-code">strategy.compute()</span>. Adding a new type (SHARE, WEIGHT) = one new strategy class + one factory case.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent2);">
-      <h3 style="color:var(--accent2);margin-top:0;">Observer Pattern</h3>
-      <p>Notify users when expenses are added, balances change, or settlements occur. <span class="inline-code">NotificationService</span> interface decouples delivery (console, push, email) from business logic.</p>
+      <h3 style="color:var(--accent2);margin-top:0;">Factory Pattern</h3>
+      <p><span class="inline-code">SplitStrategyFactory.forType(SplitType)</span> maps the enum to its strategy, so <span class="inline-code">SplitwiseServiceImpl.addExpense()</span> never switches on split type itself.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent4);">
-      <h3 style="color:var(--accent4);margin-top:0;">Builder Pattern</h3>
-      <p><span class="inline-code">Expense.Builder</span> (advanced version) handles complex construction with split type, currency, group assignment, and validation in <span class="inline-code">build()</span>.</p>
+      <h3 style="color:var(--accent4);margin-top:0;">Builder Pattern (follow-up)</h3>
+      <p><em>Hypothetical, not in the code:</em> an <span class="inline-code">Expense.Builder</span> would handle complex construction with split type, currency, group assignment, and validation in <span class="inline-code">build()</span>.</p>
     </div>
     <div class="card" style="border-left:3px solid var(--accent3);">
       <h3 style="color:var(--accent3);margin-top:0;">Repository Pattern</h3>
@@ -155,7 +160,7 @@
 <section id="splits">
   <h2>04 &mdash; Split Types</h2>
   <blockquote>
-    <strong>Core insight:</strong> Every split type must produce a <span class="inline-code">Map&lt;UserId, Double&gt;</span> that sums exactly to the total amount. Rounding errors are assigned to the first/last participant.
+    <strong>Core insight:</strong> Every split type must produce a <span class="inline-code">Map&lt;String, BigDecimal&gt;</span> that sums exactly to the total amount. For EQUAL, the rounding remainder is assigned to the first participant.
   </blockquote>
 
   <div class="split-grid">
@@ -175,7 +180,7 @@
       <div class="example">50%:30%:20% of $200</div>
     </div>
     <div class="split-item">
-      <div class="type">SHARE</div>
+      <div class="type">SHARE (follow-up)</div>
       <div class="formula">total &times; s/&Sigma;s</div>
       <div class="example">2:1:1 of $400 = $200,$100,$100</div>
     </div>
@@ -207,7 +212,7 @@
         <td>Percentages must sum to 100</td>
       </tr>
       <tr>
-        <td><span style="color:var(--accent5);">SHARE</span></td>
+        <td><span style="color:var(--accent5);">SHARE (follow-up)</span></td>
         <td>Map&lt;userId, shares&gt;</td>
         <td><span class="inline-code">amount &times; share / totalShares</span></td>
         <td>2:1:1 &rarr; $150, $75, $75</td>
@@ -217,46 +222,44 @@
   </div>
 
   <div class="card">
-    <h3>Split Calculation (Expense.java)</h3>
-<pre><span class="kw">private void</span> <span class="fn">calculateSplits</span>() {
-    <span class="kw">switch</span> (splitType) {
-        <span class="kw">case</span> EQUAL:
-            <span class="kw">double</span> share = amount / participants.<span class="fn">size</span>();
-            <span class="kw">for</span> (<span class="tp">String</span> userId : participants)
-                splits.<span class="fn">put</span>(userId, share);
-            <span class="kw">break</span>;
+    <h3>Split Calculation (SplitStrategy)</h3>
+<pre><span class="cm">// service/SplitStrategy.java</span>
+<span class="kw">public interface</span> <span class="tp">SplitStrategy</span> {
+    <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">BigDecimal</span>&gt; <span class="fn">compute</span>(<span class="tp">BigDecimal</span> total, <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; participants,
+                                    <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">BigDecimal</span>&gt; details);
+}
 
-        <span class="kw">case</span> EXACT:
-            <span class="kw">double</span> total = <span class="nr">0</span>;
-            <span class="kw">for</span> (<span class="tp">String</span> userId : participants) {
-                <span class="kw">double</span> exactAmt = exactAmounts.<span class="fn">getOrDefault</span>(userId, <span class="nr">0.0</span>);
-                splits.<span class="fn">put</span>(userId, exactAmt);
-                total += exactAmt;
-            }
-            <span class="kw">if</span> (<span class="tp">Math</span>.<span class="fn">abs</span>(total - amount) > <span class="nr">0.01</span>)
-                <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Exact amounts don't add up"</span>);
-            <span class="kw">break</span>;
-
-        <span class="kw">case</span> PERCENTAGE:
-            <span class="kw">double</span> totalPct = <span class="nr">0</span>;
-            <span class="kw">for</span> (<span class="tp">String</span> userId : participants) {
-                <span class="kw">double</span> pct = percentages.<span class="fn">getOrDefault</span>(userId, <span class="nr">0.0</span>);
-                splits.<span class="fn">put</span>(userId, amount * pct / <span class="nr">100.0</span>);
-                totalPct += pct;
-            }
-            <span class="kw">if</span> (<span class="tp">Math</span>.<span class="fn">abs</span>(totalPct - <span class="nr">100.0</span>) > <span class="nr">0.01</span>)
-                <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Percentages don't sum to 100%"</span>);
-            <span class="kw">break</span>;
+<span class="cm">// service/impl/SplitStrategyFactory.java</span>
+<span class="kw">public static</span> <span class="tp">SplitStrategy</span> <span class="fn">forType</span>(<span class="tp">SplitType</span> type) {
+    <span class="kw">switch</span> (type) {
+        <span class="kw">case</span> EQUAL:      <span class="kw">return new</span> <span class="tp">EqualSplitStrategy</span>();
+        <span class="kw">case</span> EXACT:      <span class="kw">return new</span> <span class="tp">ExactSplitStrategy</span>();
+        <span class="kw">case</span> PERCENTAGE: <span class="kw">return new</span> <span class="tp">PercentageSplitStrategy</span>();
+        <span class="kw">default</span>: <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Unsupported split type: "</span> + type);
     }
-}</pre>
+}
+
+<span class="cm">// ExactSplitStrategy.compute &mdash; amounts must sum to total</span>
+<span class="kw">for</span> (<span class="tp">String</span> userId : participants) {
+    <span class="tp">BigDecimal</span> amt = details.<span class="fn">getOrDefault</span>(userId, <span class="tp">BigDecimal</span>.ZERO);
+    splits.<span class="fn">put</span>(userId, amt);
+    sum = sum.<span class="fn">add</span>(amt);
+}
+<span class="kw">if</span> (sum.<span class="fn">compareTo</span>(total) != <span class="nr">0</span>)
+    <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Exact amounts must equal total"</span>);
+
+<span class="cm">// PercentageSplitStrategy.compute &mdash; percentages must sum to 100</span>
+<span class="tp">BigDecimal</span> share = total.<span class="fn">multiply</span>(pct).<span class="fn">divide</span>(<span class="kw">new</span> <span class="tp">BigDecimal</span>(<span class="st">"100"</span>), <span class="nr">2</span>, <span class="tp">RoundingMode</span>.HALF_EVEN);
+<span class="kw">if</span> (pctSum.<span class="fn">compareTo</span>(<span class="kw">new</span> <span class="tp">BigDecimal</span>(<span class="st">"100"</span>)) != <span class="nr">0</span>)
+    <span class="kw">throw new</span> <span class="tp">IllegalArgumentException</span>(<span class="st">"Percentages must sum to 100"</span>);</pre>
   </div>
 
   <div class="card">
-    <h3>Rounding Strategy (Advanced SplitCalculator)</h3>
-<pre><span class="cm">// SCALE=2, HALF_UP rounding &mdash; remainder goes to first participant</span>
-<span class="tp">BigDecimal</span> share = total.<span class="fn">divide</span>(<span class="tp">BigDecimal</span>.<span class="fn">valueOf</span>(count), SCALE, ROUNDING);
-<span class="tp">BigDecimal</span> baseSum = share.<span class="fn">multiply</span>(<span class="tp">BigDecimal</span>.<span class="fn">valueOf</span>(count));
-<span class="tp">BigDecimal</span> remainder = total.<span class="fn">subtract</span>(baseSum);
+    <h3>Rounding (EqualSplitStrategy)</h3>
+<pre><span class="cm">// scale 2, HALF_EVEN rounding &mdash; remainder goes to first participant</span>
+<span class="tp">BigDecimal</span> base = total.<span class="fn">divide</span>(<span class="tp">BigDecimal</span>.<span class="fn">valueOf</span>(n), <span class="nr">2</span>, <span class="tp">RoundingMode</span>.HALF_EVEN);
+<span class="tp">BigDecimal</span> allocated = base.<span class="fn">multiply</span>(<span class="tp">BigDecimal</span>.<span class="fn">valueOf</span>(n));
+<span class="tp">BigDecimal</span> remainder = total.<span class="fn">subtract</span>(allocated);
 
 <span class="cm">// First participant absorbs the penny difference</span>
 <span class="cm">// $100 / 3 = $33.34, $33.33, $33.33 (no money lost)</span></pre>
@@ -278,32 +281,34 @@
   <div class="card highlight">
     <h3 style="color:var(--accent);margin-top:0;">Algorithm: Two-Pointer Greedy Matching</h3>
     <ol>
-      <li><strong>Compute net balances</strong> &mdash; for each user, sum all money owed to them minus all money they owe</li>
+      <li><strong>Compute net balances</strong> &mdash; <span class="inline-code">simplifyGroupBalances(groupId)</span> nets each group member using only that group's expenses</li>
       <li><strong>Sort by net balance</strong> &mdash; most negative (biggest debtor) on left, most positive (biggest creditor) on right</li>
       <li><strong>Two pointers</strong> &mdash; left pointer at biggest debtor, right at biggest creditor</li>
       <li><strong>Match</strong> &mdash; settle <span class="inline-code">min(|debt|, credit)</span>, update balances, advance pointer if settled</li>
       <li><strong>Repeat</strong> until all balances are zero</li>
     </ol>
-<pre><span class="kw">public static</span> <span class="tp">List</span>&lt;<span class="tp">Transaction</span>&gt; <span class="fn">simplifyBalances</span>(<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Double</span>&gt; balances) {
-    <span class="tp">List</span>&lt;<span class="tp">Transaction</span>&gt; transactions = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;();
+<pre><span class="kw">public static</span> <span class="tp">List</span>&lt;<span class="tp">Transaction</span>&gt; <span class="fn">simplifyBalances</span>(<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">BigDecimal</span>&gt; netBalances) {
+    <span class="tp">List</span>&lt;<span class="tp">BalanceEntry</span>&gt; entries = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;<span class="tp">BalanceEntry</span>&gt;();
+    <span class="kw">for</span> (<span class="tp">Map.Entry</span>&lt;<span class="tp">String</span>, <span class="tp">BigDecimal</span>&gt; e : netBalances.<span class="fn">entrySet</span>())
+        <span class="kw">if</span> (e.<span class="fn">getValue</span>().<span class="fn">abs</span>().<span class="fn">compareTo</span>(EPS) >= <span class="nr">0</span>)        <span class="cm">// EPS = 0.01</span>
+            entries.<span class="fn">add</span>(<span class="kw">new</span> <span class="tp">BalanceEntry</span>(e.<span class="fn">getKey</span>(), e.<span class="fn">getValue</span>()));
+    <span class="tp">Collections</span>.<span class="fn">sort</span>(entries, (a, b) -> a.amount.<span class="fn">compareTo</span>(b.amount));  <span class="cm">// debtors left, creditors right</span>
 
-    <span class="tp">List</span>&lt;<span class="tp">Map.Entry</span>&lt;<span class="tp">String</span>, <span class="tp">Double</span>&gt;&gt; sorted = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;&gt;(balances.<span class="fn">entrySet</span>());
-    sorted.<span class="fn">sort</span>(<span class="tp">Map.Entry</span>.<span class="fn">comparingByValue</span>());
-
-    <span class="kw">int</span> left = <span class="nr">0</span>, right = sorted.<span class="fn">size</span>() - <span class="nr">1</span>;
+    <span class="tp">List</span>&lt;<span class="tp">Transaction</span>&gt; transactions = <span class="kw">new</span> <span class="tp">ArrayList</span>&lt;<span class="tp">Transaction</span>&gt;();
+    <span class="kw">int</span> left = <span class="nr">0</span>, right = entries.<span class="fn">size</span>() - <span class="nr">1</span>;
 
     <span class="kw">while</span> (left < right) {
-        <span class="kw">double</span> debtAmount  = -sorted.<span class="fn">get</span>(left).<span class="fn">getValue</span>();   <span class="cm">// negative &rarr; positive</span>
-        <span class="kw">double</span> creditAmount =  sorted.<span class="fn">get</span>(right).<span class="fn">getValue</span>();
+        <span class="tp">BalanceEntry</span> debtor   = entries.<span class="fn">get</span>(left);    <span class="cm">// most negative</span>
+        <span class="tp">BalanceEntry</span> creditor = entries.<span class="fn">get</span>(right);   <span class="cm">// most positive</span>
 
-        <span class="kw">double</span> amount = <span class="tp">Math</span>.<span class="fn">min</span>(debtAmount, creditAmount);
-        transactions.<span class="fn">add</span>(<span class="kw">new</span> <span class="tp">Transaction</span>(debtor, creditor, amount));
+        <span class="tp">BigDecimal</span> amount = debtor.amount.<span class="fn">abs</span>().<span class="fn">min</span>(creditor.amount);
+        transactions.<span class="fn">add</span>(<span class="kw">new</span> <span class="tp">Transaction</span>(debtor.userId, creditor.userId, amount));
 
-        sorted.<span class="fn">get</span>(left).<span class="fn">setValue</span>(sorted.<span class="fn">get</span>(left).<span class="fn">getValue</span>() + amount);
-        sorted.<span class="fn">get</span>(right).<span class="fn">setValue</span>(sorted.<span class="fn">get</span>(right).<span class="fn">getValue</span>() - amount);
+        debtor.amount   = debtor.amount.<span class="fn">add</span>(amount);
+        creditor.amount = creditor.amount.<span class="fn">subtract</span>(amount);
 
-        <span class="kw">if</span> (<span class="tp">Math</span>.<span class="fn">abs</span>(sorted.<span class="fn">get</span>(left).<span class="fn">getValue</span>())  < <span class="nr">0.01</span>) left++;
-        <span class="kw">if</span> (<span class="tp">Math</span>.<span class="fn">abs</span>(sorted.<span class="fn">get</span>(right).<span class="fn">getValue</span>()) < <span class="nr">0.01</span>) right--;
+        <span class="kw">if</span> (debtor.amount.<span class="fn">abs</span>().<span class="fn">compareTo</span>(EPS)   < <span class="nr">0</span>) left++;
+        <span class="kw">if</span> (creditor.amount.<span class="fn">abs</span>().<span class="fn">compareTo</span>(EPS) < <span class="nr">0</span>) right--;
     }
     <span class="kw">return</span> transactions;
 }</pre>
@@ -344,7 +349,7 @@
 <section id="balances">
   <h2>06 &mdash; Balance Tracking</h2>
   <blockquote>
-    <strong>Key data structure:</strong> Each User holds a <span class="inline-code">Map&lt;String, Double&gt; balances</span> where positive = others owe you, negative = you owe others. The map is symmetric: if A's balance with B is +50, B's balance with A is -50.
+    <strong>Key data structure:</strong> Each User holds a <span class="inline-code">Map&lt;String, BigDecimal&gt; balances</span> where positive = others owe you, negative = you owe others. The map is symmetric: if A's balance with B is +50, B's balance with A is -50.
   </blockquote>
 
   <div class="card highlight">
@@ -352,15 +357,17 @@
 <pre><span class="cm">// When Alice pays $300 for dinner split equally among Alice, Bob, Charlie:</span>
 <span class="cm">// Each person's share = $100</span>
 
-<span class="cm">// For Bob (non-payer, share = $100):</span>
-payer.<span class="fn">updateBalance</span>(bob, +<span class="nr">100</span>);    <span class="cm">// Alice: "Bob owes me $100"</span>
-bob.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span>);    <span class="cm">// Bob: "I owe Alice $100"</span>
+<span class="cm">// SplitwiseServiceImpl.applyExpense &mdash; runs once per non-payer split entry</span>
+<span class="kw">for</span> (<span class="tp">Map.Entry</span>&lt;<span class="tp">String</span>, <span class="tp">BigDecimal</span>&gt; entry : expense.<span class="fn">getSplits</span>().<span class="fn">entrySet</span>()) {
+    <span class="tp">String</span> userId = entry.<span class="fn">getKey</span>();
+    <span class="tp">BigDecimal</span> share = entry.<span class="fn">getValue</span>();
+    <span class="kw">if</span> (userId.<span class="fn">equals</span>(expense.<span class="fn">getPaidBy</span>())) <span class="kw">continue</span>;   <span class="cm">// payer's own share is skipped</span>
 
-<span class="cm">// For Charlie (non-payer, share = $100):</span>
-payer.<span class="fn">updateBalance</span>(charlie, +<span class="nr">100</span>); <span class="cm">// Alice: "Charlie owes me $100"</span>
-charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span>); <span class="cm">// Charlie: "I owe Alice $100"</span>
-
-<span class="cm">// Payer's own share is skipped (you don't owe yourself)</span></pre>
+    payer.<span class="fn">updateBalance</span>(userId, share);                      <span class="cm">// Alice: "Bob owes me $100"</span>
+    <span class="tp">User</span> participant = users.<span class="fn">get</span>(userId);
+    <span class="kw">if</span> (participant != <span class="kw">null</span>)
+        participant.<span class="fn">updateBalance</span>(expense.<span class="fn">getPaidBy</span>(), share.<span class="fn">negate</span>()); <span class="cm">// Bob: "I owe Alice $100"</span>
+}</pre>
   </div>
 
   <div class="card">
@@ -385,9 +392,9 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
 
   <div class="card">
     <h3>User.updateBalance()</h3>
-<pre><span class="kw">public void</span> <span class="fn">updateBalance</span>(<span class="tp">String</span> otherUserId, <span class="kw">double</span> amount) {
-    balances.<span class="fn">put</span>(otherUserId,
-        balances.<span class="fn">getOrDefault</span>(otherUserId, <span class="nr">0.0</span>) + amount);
+<pre><span class="kw">public synchronized void</span> <span class="fn">updateBalance</span>(<span class="tp">String</span> otherUserId, <span class="tp">BigDecimal</span> delta) {
+    <span class="tp">BigDecimal</span> current = balances.<span class="fn">getOrDefault</span>(otherUserId, <span class="tp">BigDecimal</span>.ZERO);
+    balances.<span class="fn">put</span>(otherUserId, current.<span class="fn">add</span>(delta));
 }
 
 <span class="cm">// Balances accumulate across multiple expenses</span>
@@ -403,10 +410,10 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
     <h3>1. Add Expense</h3>
     <p><strong>Time:</strong> O(P) where P = number of participants</p>
     <ol>
-      <li>Create Expense with split calculation based on SplitType</li>
-      <li>Validate splits sum to total amount</li>
+      <li><span class="inline-code">SplitStrategyFactory.forType(splitType)</span> picks the strategy; the <span class="inline-code">Expense</span> constructor calls <span class="inline-code">strategy.compute()</span></li>
+      <li>Exact/Percentage strategies validate that splits sum to the total (or 100%)</li>
       <li>Link expense to group</li>
-      <li>For each non-payer participant: update pairwise balances (both directions)</li>
+      <li><span class="inline-code">applyExpense()</span>: for each non-payer participant, update pairwise balances (both directions)</li>
     </ol>
   </div>
 
@@ -417,8 +424,8 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
       <tr><th>Type</th><th>Algorithm</th><th>Edge Case</th></tr>
       <tr><td>EQUAL</td><td><span class="inline-code">amount / count</span></td><td>Remainder penny to first participant</td></tr>
       <tr><td>EXACT</td><td>Use provided amounts</td><td>Must validate sum = total</td></tr>
-      <tr><td>PERCENTAGE</td><td><span class="inline-code">amount * pct / 100</span></td><td>Must validate percentages sum to 100; last participant gets remainder</td></tr>
-      <tr><td>SHARE</td><td><span class="inline-code">amount * share / totalShares</span></td><td>Same remainder handling as percentage</td></tr>
+      <tr><td>PERCENTAGE</td><td><span class="inline-code">amount * pct / 100</span></td><td>Must validate percentages sum to 100; each share rounded HALF_EVEN to 2 dp</td></tr>
+      <tr><td>SHARE (follow-up)</td><td><span class="inline-code">amount * share / totalShares</span></td><td>Same remainder handling as percentage</td></tr>
     </table>
   </div>
 
@@ -426,7 +433,7 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
     <h3>3. Simplify Debts</h3>
     <p><strong>Time:</strong> O(N log N) &nbsp; <strong>Space:</strong> O(N)</p>
     <ol>
-      <li>Aggregate all pairwise balances into a net balance per user</li>
+      <li>Net each group member's balance from that group's expenses only (<span class="inline-code">simplifyGroupBalances</span>)</li>
       <li>Sort users by net balance (debtors first, creditors last)</li>
       <li>Two-pointer greedy: match biggest debtor with biggest creditor</li>
       <li>Output minimized list of <span class="inline-code">Transaction(from, to, amount)</span></li>
@@ -457,7 +464,7 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
       </tr>
       <tr>
         <td><span class="inline-code">synchronized</span></td>
-        <td>updateBalances() method</td>
+        <td><span class="inline-code">SplitwiseServiceImpl.applyExpense()</span>, <span class="inline-code">User.updateBalance()</span> / <span class="inline-code">getBalances()</span></td>
         <td>Atomic balance updates &mdash; two concurrent expenses must not interleave balance writes</td>
       </tr>
       <tr>
@@ -472,7 +479,7 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
       </tr>
     </table>
   </div>
-  <blockquote>"The <strong>synchronized updateBalances()</strong> method ensures that adding two expenses concurrently doesn't corrupt the pairwise balance maps. Each user's balance map is updated atomically for a given expense. In production, I'd use per-user locks or optimistic locking (version field) for finer granularity."</blockquote>
+  <blockquote>"The <strong>synchronized applyExpense()</strong> method ensures that adding two expenses concurrently doesn't corrupt the pairwise balance maps. Each user's balance map is updated atomically for a given expense. In production, I'd use per-user locks or optimistic locking (version field) for finer granularity."</blockquote>
 </section>
 
 <!-- 9. API -->
@@ -489,21 +496,22 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
 
     <span class="cm">// Expense lifecycle</span>
     <span class="tp">String</span> <span class="fn">addExpense</span>(<span class="tp">String</span> groupId, <span class="tp">String</span> description,
-                     <span class="kw">double</span> amount, <span class="tp">String</span> paidBy,
+                     <span class="tp">BigDecimal</span> amount, <span class="tp">String</span> paidBy,
                      <span class="tp">List</span>&lt;<span class="tp">String</span>&gt; participants,
                      <span class="tp">SplitType</span> splitType);
+    <span class="tp">String</span> <span class="fn">addExpense</span>(..., <span class="tp">SplitType</span> splitType,
+                     <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">BigDecimal</span>&gt; splitDetails);  <span class="cm">// EXACT/PERCENTAGE</span>
 
     <span class="cm">// Balance queries</span>
-    <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Double</span>&gt; <span class="fn">getUserBalances</span>(<span class="tp">String</span> userId);
-    <span class="tp">List</span>&lt;<span class="tp">String</span>&gt;        <span class="fn">settleBalances</span>(<span class="tp">String</span> userId);
+    <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">BigDecimal</span>&gt; <span class="fn">getUserBalances</span>(<span class="tp">String</span> userId);
+    <span class="tp">List</span>&lt;<span class="tp">String</span>&gt;            <span class="fn">settleBalances</span>(<span class="tp">String</span> userId);
+    <span class="tp">List</span>&lt;<span class="tp">BalanceSimplifier.Transaction</span>&gt; <span class="fn">simplifyGroupBalances</span>(<span class="tp">String</span> groupId);
 }</pre>
   </div>
   <div class="card">
-    <h3>Extended API (Production)</h3>
+    <h3>Extended API (Production &mdash; hypothetical follow-ups, not in the code)</h3>
 <pre><span class="cm">// Additional methods for a production system:</span>
-<span class="tp">String</span> <span class="fn">addExpense</span>(..., <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Double</span>&gt; splitDetails);  <span class="cm">// EXACT/PERCENTAGE</span>
-<span class="tp">List</span>&lt;<span class="tp">Transaction</span>&gt; <span class="fn">simplifyGroupDebts</span>(<span class="tp">String</span> groupId);  <span class="cm">// debt simplification</span>
-<span class="kw">void</span> <span class="fn">recordPayment</span>(<span class="tp">String</span> payerId, <span class="tp">String</span> payeeId, <span class="kw">double</span> amount);
+<span class="kw">void</span> <span class="fn">recordPayment</span>(<span class="tp">String</span> payerId, <span class="tp">String</span> payeeId, <span class="tp">BigDecimal</span> amount);
 <span class="tp">List</span>&lt;<span class="tp">Expense</span>&gt; <span class="fn">getGroupExpenses</span>(<span class="tp">String</span> groupId);
 <span class="kw">void</span> <span class="fn">deleteExpense</span>(<span class="tp">String</span> expenseId);  <span class="cm">// reverse balance updates</span></pre>
   </div>
@@ -547,11 +555,11 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
     </div>
     <div class="step" data-num="7">
       <div class="label">Simplify Debts</div>
-      simplifyGroupDebts(groupId) &rarr; [Charlie &rarr; Alice: $100, Charlie &rarr; Bob: $20, ...]
+      simplifyGroupBalances(groupId) &rarr; [Charlie pays Alice: $130.00, Charlie pays Bob: $20.00]
       <div class="detail">BalanceSimplifier produces the minimum set of transactions to settle all group debts.</div>
     </div>
     <div class="step" data-num="8">
-      <div class="label">Record Payment</div>
+      <div class="label">Record Payment (follow-up)</div>
       recordPayment(charlie, alice, $100)
       <div class="detail">Charlie's balance with Alice goes to $0. Payment entity created with timestamp for audit.</div>
     </div>
@@ -568,21 +576,18 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
 <span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Expense</span>&gt; expenses = <span class="kw">new</span> <span class="tp">ConcurrentHashMap</span>&lt;&gt;();
 
 <span class="cm">// On each User &mdash; the CORE data structure</span>
-<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Double</span>&gt; balances = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">BigDecimal</span>&gt; balances = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;<span class="tp">String</span>, <span class="tp">BigDecimal</span>&gt;();
 <span class="cm">// key = otherUserId, value = net amount (positive = they owe you)</span>
 
-<span class="cm">// On each Expense &mdash; computed splits</span>
-<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">Double</span>&gt; splits = <span class="kw">new</span> <span class="tp">HashMap</span>&lt;&gt;();
+<span class="cm">// On each Expense &mdash; computed splits (scale 2, HALF_EVEN)</span>
+<span class="tp">Map</span>&lt;<span class="tp">String</span>, <span class="tp">BigDecimal</span>&gt; splits = strategy.<span class="fn">compute</span>(amount, participants, splitDetails);
 <span class="cm">// key = participantId, value = their share of the expense</span>
 
-<span class="cm">// Advanced: BigDecimal version for penny-exact arithmetic</span>
-<span class="tp">Map</span>&lt;<span class="tp">UserId</span>, <span class="tp">BigDecimal</span>&gt; splits;  <span class="cm">// SCALE=2, HALF_UP rounding</span>
-
 <span class="cm">// Debt simplification output</span>
-<span class="tp">List</span>&lt;<span class="tp">Transaction</span>&gt;  <span class="cm">// (from, to, amount) &mdash; minimum settlement set</span></pre>
+<span class="tp">List</span>&lt;<span class="tp">BalanceSimplifier.Transaction</span>&gt;  <span class="cm">// (from, to, amount) &mdash; minimum settlement set</span></pre>
   </div>
   <div class="card">
-    <h3>Why Map&lt;UserId, Double&gt; on User?</h3>
+    <h3>Why Map&lt;String, BigDecimal&gt; on User?</h3>
     <ul>
       <li><strong>O(1) lookup</strong> &mdash; check balance between any two users instantly</li>
       <li><strong>Incremental updates</strong> &mdash; each expense only touches affected pairs</li>
@@ -603,7 +608,7 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
 
   <details>
     <summary>How would you handle multiple currencies?</summary>
-    <div class="answer">Add a <span class="inline-code">currency</span> field to Expense (already in the advanced model). Maintain <strong>separate balance maps per currency</strong>: <span class="inline-code">Map&lt;String, Map&lt;String, Double&gt;&gt;</span> (currency &rarr; userId &rarr; balance). Simplification runs independently per currency. For cross-currency settlement, integrate an exchange rate service and convert at settlement time, not at expense time.</div>
+    <div class="answer">Add a <span class="inline-code">currency</span> field to Expense (not in the current model). Maintain <strong>separate balance maps per currency</strong>: <span class="inline-code">Map&lt;String, Map&lt;String, BigDecimal&gt;&gt;</span> (currency &rarr; userId &rarr; balance). Simplification runs independently per currency. For cross-currency settlement, integrate an exchange rate service and convert at settlement time, not at expense time.</div>
   </details>
 
   <details>
@@ -618,7 +623,7 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
 
   <details>
     <summary>How do you handle partial settlements?</summary>
-    <div class="answer">A partial payment updates balances by the paid amount, not the full owed amount. <span class="inline-code">recordPayment(payerId, payeeId, amount)</span> calls <span class="inline-code">payer.updateBalance(payee, +amount)</span> and <span class="inline-code">payee.updateBalance(payer, -amount)</span>. The remaining balance is naturally preserved. The Payment entity records the partial amount for audit.</div>
+    <div class="answer"><em>Hypothetical follow-up (no payment API in the code yet):</em> a partial payment updates balances by the paid amount, not the full owed amount. <span class="inline-code">recordPayment(payerId, payeeId, amount)</span> calls <span class="inline-code">payer.updateBalance(payee, +amount)</span> and <span class="inline-code">payee.updateBalance(payer, -amount)</span>. The remaining balance is naturally preserved. The Payment entity records the partial amount for audit.</div>
   </details>
 
   <details>
@@ -627,8 +632,8 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
   </details>
 
   <details>
-    <summary>Why BigDecimal in the advanced version instead of double?</summary>
-    <div class="answer"><span class="inline-code">double</span> has floating-point representation errors (e.g., 0.1 + 0.2 ≠ 0.3). For financial calculations, <span class="inline-code">BigDecimal</span> with <span class="inline-code">SCALE=2</span> and <span class="inline-code">HALF_UP</span> rounding guarantees penny-exact arithmetic. The basic version uses <span class="inline-code">double</span> for simplicity with a <span class="inline-code">0.01</span> epsilon tolerance. In production, always use BigDecimal.</div>
+    <summary>Why BigDecimal instead of double?</summary>
+    <div class="answer"><span class="inline-code">double</span> has floating-point representation errors (e.g., 0.1 + 0.2 ≠ 0.3). For financial calculations, <span class="inline-code">BigDecimal</span> with scale 2 and <span class="inline-code">HALF_EVEN</span> rounding (in the split strategies) guarantees penny-exact arithmetic. Every amount, split and balance in the code is a <span class="inline-code">BigDecimal</span>; <span class="inline-code">settleBalances()</span> and <span class="inline-code">BalanceSimplifier</span> treat anything under <span class="inline-code">0.01</span> as settled. Compare with <span class="inline-code">compareTo()</span>, never <span class="inline-code">equals()</span> (which also compares scale).</div>
   </details>
 
   <details>
@@ -643,7 +648,7 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
 
   <details>
     <summary>What if two people add expenses to the same group simultaneously?</summary>
-    <div class="answer">The <span class="inline-code">synchronized updateBalances()</span> method serializes balance updates. Two concurrent <span class="inline-code">addExpense()</span> calls will create their Expense objects concurrently (safe &mdash; ConcurrentHashMap), but balance updates are serialized. In production with a database, use <strong>optimistic locking</strong> (version column on balances) or <strong>SELECT FOR UPDATE</strong> on the affected balance rows.</div>
+    <div class="answer">The <span class="inline-code">synchronized applyExpense()</span> method serializes balance updates. Two concurrent <span class="inline-code">addExpense()</span> calls will create their Expense objects concurrently (safe &mdash; ConcurrentHashMap), but balance updates are serialized. In production with a database, use <strong>optimistic locking</strong> (version column on balances) or <strong>SELECT FOR UPDATE</strong> on the affected balance rows.</div>
   </details>
 </section>
 
@@ -652,22 +657,28 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
   <h2>13 &mdash; Package Structure</h2>
   <div class="card">
 <pre>splitwise/
-├── api/
-│   └── <span class="tp">SplitwiseService</span>.java          <span class="cm">-- service interface (5 methods)</span>
-├── impl/
-│   └── <span class="tp">SplitwiseServiceImpl</span>.java      <span class="cm">-- full implementation + synchronized balances</span>
+├── <span class="tp">Splitwise</span>.java                       <span class="cm">-- facade over SplitwiseService</span>
+├── <span class="fn">SplitwiseDemo</span>.java                   <span class="cm">-- showcases all features</span>
 ├── model/
-│   ├── <span class="tp">User</span>.java                      <span class="cm">-- entity with pairwise balance map</span>
+│   ├── <span class="tp">User</span>.java                      <span class="cm">-- entity with pairwise BigDecimal balance map</span>
 │   ├── <span class="tp">Group</span>.java                     <span class="cm">-- container for members + expenses</span>
-│   ├── <span class="tp">Expense</span>.java                   <span class="cm">-- entity with split calculation logic</span>
+│   ├── <span class="tp">Expense</span>.java                   <span class="cm">-- splits computed by injected SplitStrategy</span>
 │   ├── <span class="tp">SplitType</span>.java                 <span class="cm">-- enum: EQUAL, EXACT, PERCENTAGE</span>
 │   └── <span class="tp">Payment</span>.java                   <span class="cm">-- settlement transaction record</span>
-├── simplifier/
-│   └── <span class="tp">BalanceSimplifier</span>.java         <span class="cm">-- greedy debt simplification algorithm</span>
-│       └── <span class="fn">Transaction</span>                <span class="cm">-- inner class: (from, to, amount)</span>
-└── <span class="fn">SplitwiseDemo</span>.java                <span class="cm">-- showcases all features</span></pre>
+├── service/
+│   ├── <span class="tp">SplitwiseService</span>.java          <span class="cm">-- service interface (7 methods)</span>
+│   ├── <span class="tp">SplitStrategy</span>.java             <span class="cm">-- compute(total, participants, details)</span>
+│   └── impl/
+│       ├── <span class="tp">SplitwiseServiceImpl</span>.java  <span class="cm">-- full implementation + synchronized applyExpense</span>
+│       ├── <span class="tp">SplitStrategyFactory</span>.java  <span class="cm">-- SplitType &rarr; strategy</span>
+│       ├── <span class="tp">EqualSplitStrategy</span>.java
+│       ├── <span class="tp">ExactSplitStrategy</span>.java
+│       └── <span class="tp">PercentageSplitStrategy</span>.java
+└── simplifier/
+    └── <span class="tp">BalanceSimplifier</span>.java         <span class="cm">-- greedy debt simplification algorithm</span>
+        └── <span class="fn">Transaction</span>                <span class="cm">-- inner class: (from, to, amount)</span></pre>
   </div>
-  <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>9 files total.</strong> Clean separation: API &rarr; Implementation &rarr; Model &rarr; Algorithm.</p>
+  <p style="margin-top:8px;font-size:13px;color:var(--text-dim);"><strong>15 files total.</strong> Clean separation: Service &rarr; Implementation &rarr; Model &rarr; Algorithm.</p>
 </section>
 
 <!-- 14. SUMMARY -->
@@ -678,17 +689,17 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
       <tr><th>Pattern</th><th>Where</th><th>Why</th></tr>
       <tr>
         <td><span style="color:var(--accent);">Strategy</span></td>
-        <td>SplitType &rarr; calculateSplits()</td>
+        <td>SplitStrategy &rarr; Equal / Exact / PercentageSplitStrategy</td>
         <td>Different split algorithms without modifying Expense</td>
       </tr>
       <tr>
-        <td><span style="color:var(--accent2);">Observer</span></td>
-        <td>NotificationService interface</td>
-        <td>Decouple notification delivery from business logic</td>
+        <td><span style="color:var(--accent2);">Factory</span></td>
+        <td>SplitStrategyFactory.forType()</td>
+        <td>Map SplitType to its strategy in one place</td>
       </tr>
       <tr>
-        <td><span style="color:var(--accent4);">Builder</span></td>
-        <td>Expense.Builder (advanced)</td>
+        <td><span style="color:var(--accent4);">Builder (follow-up)</span></td>
+        <td>Expense.Builder (hypothetical, not in code)</td>
         <td>Complex construction with validation</td>
       </tr>
       <tr>
@@ -698,7 +709,7 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
       </tr>
       <tr>
         <td><span style="color:var(--accent5);">Value Object</span></td>
-        <td>UserId, ExpenseId, GroupId, Transaction</td>
+        <td>BalanceSimplifier.Transaction</td>
         <td>Immutable, identity-free, thread-safe</td>
       </tr>
       <tr>
@@ -713,7 +724,7 @@ charlie.<span class="fn">updateBalance</span>(payer, -<span class="nr">100</span
       </tr>
     </table>
   </div>
-  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">9 files &middot; 4 split types &middot; O(N log N) debt simplification &middot; penny-exact arithmetic</p>
+  <p style="text-align:center;margin-top:32px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);">15 files &middot; 3 split types &middot; O(N log N) debt simplification &middot; penny-exact arithmetic</p>
 </section>
 
 </div>

@@ -33,6 +33,10 @@ public class Elevator {
     }
     
     public void moveToNextFloor() {
+        // A request for the floor the car is on is served without moving.
+        if (destinationFloors.remove(currentFloor)) {
+            System.out.println("  [Elevator " + id + "] Already at floor " + currentFloor);
+        }
         if (destinationFloors.isEmpty()) {
             status = ElevatorStatus.IDLE;
             direction = Direction.IDLE;
