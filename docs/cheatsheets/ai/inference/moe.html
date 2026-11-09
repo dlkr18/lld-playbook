@@ -24,26 +24,26 @@
   <a href="index.html">&larr; Inference &amp; serving</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
   <a href="#new-words"><span class="num">02</span> New words</a>
-  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
-  <a href="#serving-view-not-a-public-api"><span class="num">05</span> Serving View (Not a Public API)</a>
-  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">07</span> Architecture</a>
-  <a href="#deep-dive-routing-gating"><span class="num">08</span> Deep Dive: Routing &amp; Gating</a>
-  <a href="#deep-dive-training-moe"><span class="num">09</span> Deep Dive: Training MoE</a>
-  <a href="#deep-dive-model-families"><span class="num">10</span> Deep Dive: Model Families</a>
-  <a href="#deep-dive-inference-serving"><span class="num">11</span> Deep Dive: Inference Serving</a>
-  <a href="#the-question"><span class="num">12</span> The question</a>
-  <a href="#step-1-where-a-transformer-s-parameters-live"><span class="num">13</span> Step 1: where a transformer&#x27;s parameters live</a>
-  <a href="#step-2-the-idea-conditional-computation"><span class="num">14</span> Step 2: the idea, conditional computation</a>
-  <a href="#step-3-the-router-worked-for-one-token"><span class="num">15</span> Step 3: the router, worked for one token</a>
-  <a href="#step-4-why-routers-collapse-and-the-balancing-loss"><span class="num">16</span> Step 4: why routers collapse, and the balancing loss</a>
-  <a href="#step-5-capacity-and-what-happens-to-overflow"><span class="num">17</span> Step 5: capacity, and what happens to overflow</a>
-  <a href="#step-6-expert-parallelism-and-the-all-to-all"><span class="num">18</span> Step 6: expert parallelism and the all-to-all</a>
-  <a href="#step-7-serving-an-moe-model"><span class="num">19</span> Step 7: serving an MoE model</a>
-  <a href="#step-8-fine-grained-and-shared-experts"><span class="num">20</span> Step 8: fine-grained and shared experts</a>
-  <a href="#choosing-moe-or-dense"><span class="num">21</span> Choosing MoE or dense</a>
-  <a href="#in-code-a-top-2-moe-layer-you-can-inspect"><span class="num">22</span> In code: a top-2 MoE layer you can inspect</a>
+  <a href="#the-question"><span class="num">03</span> The question</a>
+  <a href="#step-1-where-a-transformer-s-parameters-live"><span class="num">04</span> Step 1: where a transformer&#x27;s parameters live</a>
+  <a href="#step-2-the-idea-conditional-computation"><span class="num">05</span> Step 2: the idea, conditional computation</a>
+  <a href="#step-3-the-router-worked-for-one-token"><span class="num">06</span> Step 3: the router, worked for one token</a>
+  <a href="#step-4-why-routers-collapse-and-the-balancing-loss"><span class="num">07</span> Step 4: why routers collapse, and the balancing loss</a>
+  <a href="#step-5-capacity-and-what-happens-to-overflow"><span class="num">08</span> Step 5: capacity, and what happens to overflow</a>
+  <a href="#step-6-expert-parallelism-and-the-all-to-all"><span class="num">09</span> Step 6: expert parallelism and the all-to-all</a>
+  <a href="#step-7-serving-an-moe-model"><span class="num">10</span> Step 7: serving an MoE model</a>
+  <a href="#step-8-fine-grained-and-shared-experts"><span class="num">11</span> Step 8: fine-grained and shared experts</a>
+  <a href="#choosing-moe-or-dense"><span class="num">12</span> Choosing MoE or dense</a>
+  <a href="#in-code-a-top-2-moe-layer-you-can-inspect"><span class="num">13</span> In code: a top-2 MoE layer you can inspect</a>
+  <a href="#what-why"><span class="num">14</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">15</span> Core Concepts</a>
+  <a href="#serving-view-not-a-public-api"><span class="num">16</span> Serving View (Not a Public API)</a>
+  <a href="#when-to-use-when-not"><span class="num">17</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">18</span> Architecture</a>
+  <a href="#deep-dive-routing-gating"><span class="num">19</span> Deep Dive: Routing &amp; Gating</a>
+  <a href="#deep-dive-training-moe"><span class="num">20</span> Deep Dive: Training MoE</a>
+  <a href="#deep-dive-model-families"><span class="num">21</span> Deep Dive: Model Families</a>
+  <a href="#deep-dive-inference-serving"><span class="num">22</span> Deep Dive: Inference Serving</a>
   <a href="#recap"><span class="num">23</span> Recap</a>
   <a href="#production-ops"><span class="num">24</span> Production &amp; Ops</a>
   <a href="#related-topics"><span class="num">25</span> Related topics</a>
@@ -75,149 +75,9 @@
   <h2>02 &mdash; New words</h2>
 <table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Feed-forward network (FFN)</strong></td><td>The per-token two-layer network inside every transformer block, after attention. It holds most of a dense model's parameters.</td></tr><tr><td><strong>Expert</strong></td><td>One of several independent FFNs that replace the single FFN in an MoE layer. Same shape as a normal FFN.</td></tr><tr><td><strong>Router (gate)</strong></td><td>A small linear layer that scores every expert for each token and decides which experts process it.</td></tr><tr><td><strong>Top-\(k\) routing</strong></td><td>Each token is sent to the \(k\) experts with the highest router scores; their outputs are mixed by the renormalised scores.</td></tr><tr><td><strong>Total parameters</strong></td><td>Every weight in the model, all experts included. Sets the memory needed to hold it.</td></tr><tr><td><strong>Active parameters</strong></td><td>The weights one token actually uses: shared layers plus its \(k\) experts. Sets the compute per token.</td></tr><tr><td><strong>Load balancing loss</strong></td><td>An extra training loss that is smallest when tokens are spread evenly across experts.</td></tr><tr><td><strong>Expert collapse</strong></td><td>The router sending most tokens to a few experts, so the others stop learning.</td></tr><tr><td><strong>Capacity factor</strong></td><td>How many token slots each expert gets per batch, as a multiple of a perfectly even share.</td></tr><tr><td><strong>Token dropping</strong></td><td>Skipping the expert computation for tokens that arrive after their expert is full; they pass through on the residual path.</td></tr><tr><td><strong>Expert parallelism (EP)</strong></td><td>Placing different experts on different GPUs and sending each token to wherever its experts live.</td></tr><tr><td><strong>All-to-all</strong></td><td>A collective operation in which every GPU sends a different chunk of data to every other GPU. EP uses two per MoE layer.</td></tr><tr><td><strong>Shared expert</strong></td><td>An expert that processes every token, alongside the routed ones, to hold common knowledge.</td></tr><tr><td><strong>Routing</strong></td><td>Classifier sends input to a specialized branch/model.</td></tr></tbody></table>
 </section>
-<p class="part-divider">Quick reference</p>
-<section id="what-why">
-  <h2>03 &mdash; What &amp; Why</h2>
-<div class="card">
-<p><strong>Problem:</strong> Scaling dense LLMs hits diminishing returns — every token activates all FFN parameters. MoE increases model capacity (more specialists) without proportional FLOPs per token.</p>
-<h3>Functional</h3>
-<ul>
-<li>Higher quality per inference dollar for open models (Mixtral 8×7B)</li>
-<li>Specialized sub-networks may emerge (code vs math routing)</li>
-<li>Enables 100B+ total params on consumer GPU clusters for active 10–20B</li>
-</ul>
-<h3>Non-Functional</h3>
-<ul>
-<li><strong>Memory:</strong> must store ALL experts on disk/GPU pool even if sparse activate</li>
-<li><strong>Load balance:</strong> router collapse starves some experts</li>
-<li><strong>Communication:</strong> expert parallelism needs all-to-all GPU transfers</li>
-<li><strong>Determinism:</strong> routing adds variance run-to-run at same temperature</li>
-</ul>
-<blockquote><strong>Interview anchor:</strong> MoE trades <strong>parameter count</strong> for <strong>conditional computation</strong> — “47B total, 13B active” is the headline metric interviewers expect you to parse.</blockquote>
-</div>
-</section>
-<section id="core-concepts">
-  <h2>04 &mdash; Core Concepts</h2>
-<div class="card">
-<table>
-<tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
-<tr><td><strong>Expert</strong></td><td>Standalone FFN sub-network in a layer</td><td>Each expert is full-sized (e.g. 7B shard in 8×7B)</td></tr>
-<tr><td><strong>Router / gate</strong></td><td>Linear layer → softmax over experts per token</td><td>Can collapse to always pick same experts</td></tr>
-<tr><td><strong>Top-k routing</strong></td><td>Activate k experts (typically 2) per token</td><td>Output = weighted sum of expert outputs</td></tr>
-<tr><td><strong>Active params</strong></td><td>Params actually used in one forward pass</td><td>≠ total params; drives inference FLOPs</td></tr>
-<tr><td><strong>Total params</strong></td><td>Sum of all experts + shared layers</td><td>VRAM for weights scales with total</td></tr>
-<tr><td><strong>Load balancing loss</strong></td><td>Auxiliary loss encouraging uniform expert usage</td><td>Too strong → hurts quality; too weak → dead experts</td></tr>
-<tr><td><strong>Expert parallelism</strong></td><td>Shard experts across GPUs; route tokens remotely</td><td>All-to-all bandwidth bottleneck</td></tr>
-<tr><td><strong>Shared attention</strong></td><td>Attention layers usually dense, shared</td><td>MoE typically replaces FFN blocks only</td></tr>
-</table>
-</div>
-</section>
-<section id="serving-view-not-a-public-api">
-  <h2>05 &mdash; Serving View (Not a Public API)</h2>
-<div class="card">
-<p>MoE is a <strong>model architecture</strong>, not an API protocol. Consumers see the same chat completion interface; routing is internal.</p>
-<pre># vLLM / TGI serve Mixtral like any model
-python -m vllm.entrypoints.openai.api_server \
-  --model mistralai/Mixtral-8x7B-Instruct-v0.1 \
-  --tensor-parallel-size 4 \
-  --max-model-len 32768
-
-# OpenAI-compatible client — MoE invisible
-client.chat.completions.create(
-    model="mixtral-8x7b",
-    messages=[{"role":"user","content":"Explain sparse MoE routing."}],
-)</pre>
-<p>Serving internals differ: expert placement, all-to-all kernels. See <a href="serving.html">Serving &amp; scaling</a> (catalog) and <a href="../fundamentals/what-is-an-llm.html">What an LLM is</a> for inference basics.</p>
-</div>
-</section>
-<section id="when-to-use-when-not">
-  <h2>06 &mdash; When to Use / When NOT</h2>
-<div class="card">
-<table>
-<tr><th>Scenario</th><th>MoE?</th><th>Alternative</th></tr>
-<tr><td>Self-host best open quality/$ on 4×A100</td><td><strong>Yes</strong></td><td>Mixtral, DeepSeek-MoE</td></tr>
-<tr><td>Minimal VRAM single GPU (24GB)</td><td><strong>Hard</strong></td><td>Dense 7B/8B quantized</td></tr>
-<tr><td>Deterministic compliance outputs</td><td><strong>Careful</strong></td><td>Dense + low temperature; test routing variance</td></tr>
-<tr><td>Training your own from scratch</td><td><strong>Expert only</strong></td><td>Needs huge infra; buy API instead</td></tr>
-<tr><td>Latency-sensitive single-stream</td><td><strong>Maybe worse</strong></td><td>Routing + comm overhead vs dense 8B</td></tr>
-</table>
-</div>
-</section>
-<section id="architecture">
-  <h2>07 &mdash; Architecture</h2>
-<div class="card highlight">
-<pre>  Token x ──► Multi-Head Attention (dense, shared)
-                    │
-                    ▼
-              Router(x) ──► softmax ──► top-k expert indices
-                    │
-        ┌───────────┼───────────┐
-        ▼           ▼           ▼
-     Expert_1    Expert_2    Expert_N   (sparse: only k evaluated)
-        │           │           │
-        └───────────┴───────────┘
-                    │
-              weighted sum ──► next layer</pre>
-</div>
-</section>
-<section id="deep-dive-routing-gating">
-  <h2>08 &mdash; Deep Dive: Routing &amp; Gating</h2>
-<div class="card">
-<pre># Conceptual top-2 routing (PyTorch-style pseudo)
-router_logits = x @ W_gate          # [batch, seq, num_experts]
-probs = softmax(router_logits, dim=-1)
-topk_weights, topk_ids = topk(probs, k=2, dim=-1)
-
-output = 0
-for i in range(k):
-    expert_out = experts[topk_ids[..., i]](x)
-    output += topk_weights[..., i:i+1] * expert_out</pre>
-<h3>Failure modes</h3>
-<ul>
-<li><strong>Expert collapse:</strong> router always picks expert 3 — others untrained</li>
-<li><strong>Token dropping:</strong> some implementations drop overflow tokens under load</li>
-<li><strong>Load imbalance:</strong> hot experts saturate GPU; cold experts idle</li>
-</ul>
-</div>
-</section>
-<section id="deep-dive-training-moe">
-  <h2>09 &mdash; Deep Dive: Training MoE</h2>
-<div class="card">
-<ul>
-<li><strong>Auxiliary loss:</strong> encourage uniform expert utilization (Switch Transformer)</li>
-<li><strong>Capacity factor:</strong> buffer per expert; overflow tokens dropped or rerouted</li>
-<li><strong>Z-loss on router:</strong> stabilize logit magnitudes (ST-MoE)</li>
-<li><strong>Expert count:</strong> more experts → harder load balance, better specialization potential</li>
-</ul>
-<blockquote>Training MoE at frontier scale is cluster-scale engineering — interview as concept, not something most teams run.</blockquote>
-</div>
-</section>
-<section id="deep-dive-model-families">
-  <h2>10 &mdash; Deep Dive: Model Families</h2>
-<div class="card">
-<table>
-<tr><th>Model</th><th>Experts</th><th>Active / Total</th><th>Notes</th></tr>
-<tr><td><strong>Mixtral 8×7B</strong></td><td>8 FFN experts, top-2</td><td>~13B / ~47B</td><td>Apache 2.0; popular self-host</td></tr>
-<tr><td><strong>DeepSeek-MoE</strong></td><td>Fine-grained experts</td><td>High sparsity</td><td>Strong open benchmarks</td></tr>
-<tr><td><strong>Switch Transformer</strong></td><td>top-1 routing</td><td>Research baseline</td><td>Google; capacity factor concept</td></tr>
-<tr><td><strong>GPT-4 (rumored)</strong></td><td>Undisclosed MoE</td><td>—</td><td>Industry assumes MoE at scale</td></tr>
-</table>
-</div>
-</section>
-<section id="deep-dive-inference-serving">
-  <h2>11 &mdash; Deep Dive: Inference Serving</h2>
-<div class="card">
-<ul>
-<li><strong>Expert parallelism:</strong> shard experts across GPUs; dispatch tokens via all-to-all</li>
-<li><strong>Tensor parallelism:</strong> within large expert FFN</li>
-<li><strong>Quantization:</strong> AWQ/GPTQ on experts separately; watch routing accuracy</li>
-<li><strong>Batching:</strong> continuous batching still applies; uneven expert load hurts tail latency</li>
-</ul>
-</div>
-</section>
-<p class="part-divider">The full explanation</p>
+<p class="part-divider">The lesson</p>
 <section id="the-question">
-  <h2>12 &mdash; The question</h2>
+  <h2>03 &mdash; The question</h2>
 <p>Bigger models know more, but in a dense transformer every parameter is used for every token: doubling the parameters doubles the compute per token, in training and at inference. A <strong>mixture of experts</strong> (MoE) breaks that link. It keeps many sets of FFN weights but uses only a few of them for each token, so the model can hold far more parameters than it spends compute on.</p>
 <p>That trade, more memory for less compute, shapes everything about MoE models: how they are trained, why they need special care to stay balanced, and why serving them is easy in one way and hard in another. The interview questions:</p>
 <ol>
@@ -229,7 +89,7 @@ for i in range(k):
 <p><strong>Running example.</strong> A model shaped like Mixtral 8x7B, whose dimensions are public: 32 layers, hidden size 4,096, an FFN inner size of 14,336 using a SwiGLU FFN (three weight matrices), <strong>8 experts per layer with top-2 routing</strong>, grouped-query attention with 8 KV heads, and a 32,000-token vocabulary. We will count its parameters, route a token through it, train its router, and serve it on H100 80 GB GPUs.</p>
 </section>
 <section id="step-1-where-a-transformer-s-parameters-live">
-  <h2>13 &mdash; Step 1: where a transformer&#x27;s parameters live</h2>
+  <h2>04 &mdash; Step 1: where a transformer&#x27;s parameters live</h2>
 <p>Each transformer block has two parts: attention, which mixes information between tokens, and the FFN, which transforms each token's vector on its own (see <a href="../fundamentals/transformers.html">Transformers &amp; attention</a>). Count them for one block of our model:</p>
 <ul>
 <li><strong>Attention:</strong> query and output projections of \(4{,}096 \times 4{,}096\) each, and key and value projections of \(4{,}096 \times 1{,}024\) each (GQA): about <strong>41.9M</strong> parameters.</li>
@@ -238,7 +98,7 @@ for i in range(k):
 <p>The FFN is four times larger than attention. In a dense version of this model (one FFN per layer), FFNs hold about 78% of all parameters. They are also where much of the model's stored knowledge appears to live: probing studies find facts associated with specific FFN neurons. So the FFN is the natural place to add capacity, and the place where making each token use only part of the weights saves the most.</p>
 </section>
 <section id="step-2-the-idea-conditional-computation">
-  <h2>14 &mdash; Step 2: the idea, conditional computation</h2>
+  <h2>05 &mdash; Step 2: the idea, conditional computation</h2>
 <p>An MoE layer replaces the single FFN with \(E\) expert FFNs plus a router. For each token, the router picks \(k\) experts; only those run. The layer's output is the weighted sum of their outputs:</p>
 \[ y = \sum_{i \in \text{top-}k} g_i \, \text{FFN}_i(x) \]
 <p>where \(x\) is the token's vector and \(g_i\) is the router's weight for expert \(i\). Attention, embeddings and normalisation stay dense and shared.</p>
@@ -256,7 +116,7 @@ for i in range(k):
 <p>The consequence is the whole point. A forward pass costs about 2 FLOPs per <em>active</em> parameter per token, so this model computes like a 13B dense model (about 26 GFLOPs per token) while holding the parameters of a 47B one. Published MoE results consistently report that, for the same training compute, sparse models reach a given quality sooner than dense ones; that is why many recent frontier and open models use MoE.</p>
 </section>
 <section id="step-3-the-router-worked-for-one-token">
-  <h2>15 &mdash; Step 3: the router, worked for one token</h2>
+  <h2>06 &mdash; Step 3: the router, worked for one token</h2>
 <p>The router is a single matrix \(W_g\) of size \(4{,}096 \times 8\): it turns a token's vector into 8 scores (logits), one per expert. Suppose a token in a block of Python code gets these logits:</p>
 <table>
 <thead><tr><th>Expert</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th></tr></thead>
@@ -274,7 +134,7 @@ for i in range(k):
 </ul>
 </section>
 <section id="step-4-why-routers-collapse-and-the-balancing-loss">
-  <h2>16 &mdash; Step 4: why routers collapse, and the balancing loss</h2>
+  <h2>07 &mdash; Step 4: why routers collapse, and the balancing loss</h2>
 <p>Start training with a random router. By chance, some experts get slightly more tokens; they learn faster; they become better; the router learns to send them even more tokens. This rich-get-richer loop ends in <strong>expert collapse</strong>: two experts do all the work and six are dead weight. You have paid for 46.7B parameters and are using a fraction of them.</p>
 <p>The standard fix is an auxiliary <strong>load balancing loss</strong> added to the language-model loss. In the Switch Transformer form:</p>
 \[ \mathcal{L}_{\text{aux}} = \alpha \cdot E \sum_{i=1}^{E} f_i \, P_i \]
@@ -283,7 +143,7 @@ for i in range(k):
 <p>The weight \(\alpha\) is a real trade-off: too small and collapse wins, too large and the router is forced toward uniform, random-looking routing that ignores which expert actually suits the token. Later designs add a <strong>router z-loss</strong> that penalises very large router logits (it keeps training numerically stable) and some replace the auxiliary loss with per-expert bias terms adjusted directly from observed load, so balancing no longer competes with the language-model objective.</p>
 </section>
 <section id="step-5-capacity-and-what-happens-to-overflow">
-  <h2>17 &mdash; Step 5: capacity, and what happens to overflow</h2>
+  <h2>08 &mdash; Step 5: capacity, and what happens to overflow</h2>
 <p>Hardware wants fixed-size work. In training, each expert is given a fixed buffer of token slots per batch:</p>
 \[ \text{capacity} = \text{capacity factor} \times \frac{T \times k}{E} \]
 <p>for a batch of \(T\) tokens. With \(T = 4{,}096\), \(k = 2\) and \(E = 8\), a perfectly even split gives each expert 1,024 tokens. A capacity factor of 1.25 gives each 1,280 slots, a 25% margin for imbalance.</p>
@@ -291,7 +151,7 @@ for i in range(k):
 <p>Inference engines generally avoid dropping (dropless MoE), using variable-size grouped matrix multiplications instead of fixed buffers, because silently changing a user's output based on who else is in the batch is unacceptable.</p>
 </section>
 <section id="step-6-expert-parallelism-and-the-all-to-all">
-  <h2>18 &mdash; Step 6: expert parallelism and the all-to-all</h2>
+  <h2>09 &mdash; Step 6: expert parallelism and the all-to-all</h2>
 <p>Our model's experts alone are about 90 GB in BF16 (45.1B parameters × 2 bytes), and frontier MoE models are many times larger. The natural way to spread them is <strong>expert parallelism</strong>: put experts 0 and 1 on GPU 0, 2 and 3 on GPU 1, and so on. Each MoE layer then becomes a communication pattern:</p>
 <pre class="ascii-diagram">every GPU: attention for its own tokens (dense, replicated)
     │  router picks 2 experts per token
@@ -307,7 +167,7 @@ next layer</pre>
 <p>EP combines with the other parallelism axes (data, tensor, pipeline) covered in <a href="gpus-scale.html">GPUs &amp; distributed training</a>.</p>
 </section>
 <section id="step-7-serving-an-moe-model">
-  <h2>19 &mdash; Step 7: serving an MoE model</h2>
+  <h2>10 &mdash; Step 7: serving an MoE model</h2>
 <p>At inference, MoE splits the two resources that a dense model ties together.</p>
 <p><strong>Memory follows total parameters.</strong> All 46.7B parameters must be resident, because any token may pick any expert. In BF16 that is about 93 GB, more than one 80 GB H100. Options: two GPUs (tensor or expert parallel), 8-bit weights (about 47 GB, fits one GPU with room for the KV cache), or 4-bit. For memory planning, an MoE model is as big as its total parameter count says.</p>
 <p><strong>Compute follows active parameters.</strong> Prefill, which is compute-bound, costs about 26 GFLOPs per token, the same as a 13B dense model and about 3.6 times less than a dense 47B model.</p>
@@ -320,12 +180,12 @@ next layer</pre>
 <p>So the honest summary: <strong>an MoE model needs the memory of its total size, runs single-user decode at roughly the speed of its active size, and runs large-batch decode at a bandwidth cost close to its total size but a compute cost of its active size.</strong> It is excellent on a big, well-utilised fleet and awkward on a single small GPU.</p>
 </section>
 <section id="step-8-fine-grained-and-shared-experts">
-  <h2>20 &mdash; Step 8: fine-grained and shared experts</h2>
+  <h2>11 &mdash; Step 8: fine-grained and shared experts</h2>
 <p>Recent MoE designs change the shape of the expert pool. <strong>Fine-grained experts</strong> split each big expert into several smaller ones and route to more of them: instead of 2 of 8, say 6 of 64 experts each an eighth of the size. Compute per token stays similar, but the number of possible expert combinations grows from \(\binom{8}{2} = 28\) to \(\binom{64}{6} \approx 75\) million, letting the model compose more specific mixtures. <strong>Shared experts</strong> process every token in addition to the routed ones, so common knowledge (grammar, frequent patterns) need not be duplicated in every routed expert. DeepSeek's MoE work popularised both ideas.</p>
 <p>The serving cost follows Step 7: more, smaller experts mean more, smaller matrix multiplications and more routing traffic, so efficient grouped kernels and good expert placement matter even more.</p>
 </section>
 <section id="choosing-moe-or-dense">
-  <h2>21 &mdash; Choosing MoE or dense</h2>
+  <h2>12 &mdash; Choosing MoE or dense</h2>
 <table>
 <thead><tr><th>Situation</th><th>Leans toward</th><th>Why</th></tr></thead>
 <tbody>
@@ -339,7 +199,7 @@ next layer</pre>
 <p>When someone quotes an MoE model, translate immediately: total parameters tell you the GPUs needed to hold it; active parameters tell you the cost per token once it is held.</p>
 </section>
 <section id="in-code-a-top-2-moe-layer-you-can-inspect">
-  <h2>22 &mdash; In code: a top-2 MoE layer you can inspect</h2>
+  <h2>13 &mdash; In code: a top-2 MoE layer you can inspect</h2>
 <p>A complete MoE layer in numpy: router, top-2 selection, renormalised gates, per-expert computation on only its tokens, and the balance loss. The second call adds a bias that makes the router collapse onto experts 0 and 3.</p>
 <pre><span class="kw">import</span> numpy <span class="kw">as</span> np
 
@@ -396,6 +256,147 @@ total, active = moe_params()
 </pre>
 <p>It prints 46.7B total and 12.9B active, 93 GB to hold and 26 GB touched per token, and the experts-per-layer row of the table in Step 7.</p>
 </section>
+<p class="part-divider">Quick reference</p>
+<section id="what-why">
+  <h2>14 &mdash; What &amp; Why</h2>
+<div class="card">
+<p><strong>Problem:</strong> Scaling dense LLMs hits diminishing returns — every token activates all FFN parameters. MoE increases model capacity (more specialists) without proportional FLOPs per token.</p>
+<h3>Functional</h3>
+<ul>
+<li>Higher quality per inference dollar for open models (Mixtral 8×7B)</li>
+<li>Specialized sub-networks may emerge (code vs math routing)</li>
+<li>Enables 100B+ total params on consumer GPU clusters for active 10–20B</li>
+</ul>
+<h3>Non-Functional</h3>
+<ul>
+<li><strong>Memory:</strong> must store ALL experts on disk/GPU pool even if sparse activate</li>
+<li><strong>Load balance:</strong> router collapse starves some experts</li>
+<li><strong>Communication:</strong> expert parallelism needs all-to-all GPU transfers</li>
+<li><strong>Determinism:</strong> routing adds variance run-to-run at same temperature</li>
+</ul>
+<blockquote><strong>Interview anchor:</strong> MoE trades <strong>parameter count</strong> for <strong>conditional computation</strong> — “47B total, 13B active” is the headline metric interviewers expect you to parse.</blockquote>
+</div>
+</section>
+<section id="core-concepts">
+  <h2>15 &mdash; Core Concepts</h2>
+<div class="card">
+<table>
+<tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr>
+<tr><td><strong>Expert</strong></td><td>Standalone FFN sub-network in a layer</td><td>Each expert is full-sized (e.g. 7B shard in 8×7B)</td></tr>
+<tr><td><strong>Router / gate</strong></td><td>Linear layer → softmax over experts per token</td><td>Can collapse to always pick same experts</td></tr>
+<tr><td><strong>Top-k routing</strong></td><td>Activate k experts (typically 2) per token</td><td>Output = weighted sum of expert outputs</td></tr>
+<tr><td><strong>Active params</strong></td><td>Params actually used in one forward pass</td><td>≠ total params; drives inference FLOPs</td></tr>
+<tr><td><strong>Total params</strong></td><td>Sum of all experts + shared layers</td><td>VRAM for weights scales with total</td></tr>
+<tr><td><strong>Load balancing loss</strong></td><td>Auxiliary loss encouraging uniform expert usage</td><td>Too strong → hurts quality; too weak → dead experts</td></tr>
+<tr><td><strong>Expert parallelism</strong></td><td>Shard experts across GPUs; route tokens remotely</td><td>All-to-all bandwidth bottleneck</td></tr>
+<tr><td><strong>Shared attention</strong></td><td>Attention layers usually dense, shared</td><td>MoE typically replaces FFN blocks only</td></tr>
+</table>
+</div>
+</section>
+<section id="serving-view-not-a-public-api">
+  <h2>16 &mdash; Serving View (Not a Public API)</h2>
+<div class="card">
+<p>MoE is a <strong>model architecture</strong>, not an API protocol. Consumers see the same chat completion interface; routing is internal.</p>
+<pre># vLLM / TGI serve Mixtral like any model
+python -m vllm.entrypoints.openai.api_server \
+  --model mistralai/Mixtral-8x7B-Instruct-v0.1 \
+  --tensor-parallel-size 4 \
+  --max-model-len 32768
+
+# OpenAI-compatible client — MoE invisible
+client.chat.completions.create(
+    model="mixtral-8x7b",
+    messages=[{"role":"user","content":"Explain sparse MoE routing."}],
+)</pre>
+<p>Serving internals differ: expert placement, all-to-all kernels. See <a href="serving.html">Serving &amp; scaling</a> (catalog) and <a href="../fundamentals/what-is-an-llm.html">What an LLM is</a> for inference basics.</p>
+</div>
+</section>
+<section id="when-to-use-when-not">
+  <h2>17 &mdash; When to Use / When NOT</h2>
+<div class="card">
+<table>
+<tr><th>Scenario</th><th>MoE?</th><th>Alternative</th></tr>
+<tr><td>Self-host best open quality/$ on 4×A100</td><td><strong>Yes</strong></td><td>Mixtral, DeepSeek-MoE</td></tr>
+<tr><td>Minimal VRAM single GPU (24GB)</td><td><strong>Hard</strong></td><td>Dense 7B/8B quantized</td></tr>
+<tr><td>Deterministic compliance outputs</td><td><strong>Careful</strong></td><td>Dense + low temperature; test routing variance</td></tr>
+<tr><td>Training your own from scratch</td><td><strong>Expert only</strong></td><td>Needs huge infra; buy API instead</td></tr>
+<tr><td>Latency-sensitive single-stream</td><td><strong>Maybe worse</strong></td><td>Routing + comm overhead vs dense 8B</td></tr>
+</table>
+</div>
+</section>
+<section id="architecture">
+  <h2>18 &mdash; Architecture</h2>
+<div class="card highlight">
+<pre>  Token x ──► Multi-Head Attention (dense, shared)
+                    │
+                    ▼
+              Router(x) ──► softmax ──► top-k expert indices
+                    │
+        ┌───────────┼───────────┐
+        ▼           ▼           ▼
+     Expert_1    Expert_2    Expert_N   (sparse: only k evaluated)
+        │           │           │
+        └───────────┴───────────┘
+                    │
+              weighted sum ──► next layer</pre>
+</div>
+</section>
+<section id="deep-dive-routing-gating">
+  <h2>19 &mdash; Deep Dive: Routing &amp; Gating</h2>
+<div class="card">
+<pre># Conceptual top-2 routing (PyTorch-style pseudo)
+router_logits = x @ W_gate          # [batch, seq, num_experts]
+probs = softmax(router_logits, dim=-1)
+topk_weights, topk_ids = topk(probs, k=2, dim=-1)
+
+output = 0
+for i in range(k):
+    expert_out = experts[topk_ids[..., i]](x)
+    output += topk_weights[..., i:i+1] * expert_out</pre>
+<h3>Failure modes</h3>
+<ul>
+<li><strong>Expert collapse:</strong> router always picks expert 3 — others untrained</li>
+<li><strong>Token dropping:</strong> some implementations drop overflow tokens under load</li>
+<li><strong>Load imbalance:</strong> hot experts saturate GPU; cold experts idle</li>
+</ul>
+</div>
+</section>
+<section id="deep-dive-training-moe">
+  <h2>20 &mdash; Deep Dive: Training MoE</h2>
+<div class="card">
+<ul>
+<li><strong>Auxiliary loss:</strong> encourage uniform expert utilization (Switch Transformer)</li>
+<li><strong>Capacity factor:</strong> buffer per expert; overflow tokens dropped or rerouted</li>
+<li><strong>Z-loss on router:</strong> stabilize logit magnitudes (ST-MoE)</li>
+<li><strong>Expert count:</strong> more experts → harder load balance, better specialization potential</li>
+</ul>
+<blockquote>Training MoE at frontier scale is cluster-scale engineering — interview as concept, not something most teams run.</blockquote>
+</div>
+</section>
+<section id="deep-dive-model-families">
+  <h2>21 &mdash; Deep Dive: Model Families</h2>
+<div class="card">
+<table>
+<tr><th>Model</th><th>Experts</th><th>Active / Total</th><th>Notes</th></tr>
+<tr><td><strong>Mixtral 8×7B</strong></td><td>8 FFN experts, top-2</td><td>~13B / ~47B</td><td>Apache 2.0; popular self-host</td></tr>
+<tr><td><strong>DeepSeek-MoE</strong></td><td>Fine-grained experts</td><td>High sparsity</td><td>Strong open benchmarks</td></tr>
+<tr><td><strong>Switch Transformer</strong></td><td>top-1 routing</td><td>Research baseline</td><td>Google; capacity factor concept</td></tr>
+<tr><td><strong>GPT-4 (rumored)</strong></td><td>Undisclosed MoE</td><td>—</td><td>Industry assumes MoE at scale</td></tr>
+</table>
+</div>
+</section>
+<section id="deep-dive-inference-serving">
+  <h2>22 &mdash; Deep Dive: Inference Serving</h2>
+<div class="card">
+<ul>
+<li><strong>Expert parallelism:</strong> shard experts across GPUs; dispatch tokens via all-to-all</li>
+<li><strong>Tensor parallelism:</strong> within large expert FFN</li>
+<li><strong>Quantization:</strong> AWQ/GPTQ on experts separately; watch routing accuracy</li>
+<li><strong>Batching:</strong> continuous batching still applies; uneven expert load hurts tail latency</li>
+</ul>
+</div>
+</section>
+<p class="part-divider">More detail</p>
 <section id="recap">
   <h2>23 &mdash; Recap</h2>
 <p>Replace the single FFN with E expert FFNs and a learned router that sends each token to the top-k (often 2, or 8 of 256 in very sparse designs). Total parameters grow (knowledge capacity) while active parameters per token stay small (compute). Mixtral 8×7B: ~47B total, ~13B active. DeepSeek-V3, Qwen-MoE and others push this further.</p>

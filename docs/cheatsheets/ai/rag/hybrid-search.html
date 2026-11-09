@@ -24,27 +24,27 @@
   <a href="index.html">&larr; Knowledge &amp; RAG</a>
   <a href="#at-a-glance"><span class="num">01</span> At a glance</a>
   <a href="#new-words"><span class="num">02</span> New words</a>
-  <a href="#what-why"><span class="num">03</span> What &amp; Why</a>
-  <a href="#core-concepts"><span class="num">04</span> Core Concepts</a>
-  <a href="#api-surface"><span class="num">05</span> API Surface</a>
-  <a href="#when-to-use-when-not"><span class="num">06</span> When to Use / When NOT</a>
-  <a href="#architecture"><span class="num">07</span> Architecture</a>
-  <a href="#deep-dive-rrf"><span class="num">08</span> Deep Dive: RRF</a>
-  <a href="#deep-dive-weighted-fusion"><span class="num">09</span> Deep Dive: Weighted Fusion</a>
-  <a href="#deep-dive-parallel-retrieve"><span class="num">10</span> Deep Dive: Parallel Retrieve</a>
-  <a href="#deep-dive-pre-filter"><span class="num">11</span> Deep Dive: Pre-filter</a>
-  <a href="#deep-dive-query-routing"><span class="num">12</span> Deep Dive: Query Routing</a>
-  <a href="#the-question"><span class="num">13</span> The question</a>
-  <a href="#step-1-each-retriever-fails-on-the-other-s-queries"><span class="num">14</span> Step 1: each retriever fails on the other&#x27;s queries</a>
-  <a href="#step-2-how-bm25-scores-a-document"><span class="num">15</span> Step 2: how BM25 scores a document</a>
-  <a href="#step-3-why-lexical-search-is-fast"><span class="num">16</span> Step 3: why lexical search is fast</a>
-  <a href="#step-4-the-fusion-problem"><span class="num">17</span> Step 4: the fusion problem</a>
-  <a href="#step-5-reciprocal-rank-fusion"><span class="num">18</span> Step 5: reciprocal rank fusion</a>
-  <a href="#step-6-weighted-score-fusion"><span class="num">19</span> Step 6: weighted score fusion</a>
-  <a href="#step-7-fixing-the-query-before-retrieval"><span class="num">20</span> Step 7: fixing the query before retrieval</a>
-  <a href="#step-8-putting-the-retrieval-stage-together"><span class="num">21</span> Step 8: putting the retrieval stage together</a>
-  <a href="#settings-that-work-as-a-starting-point"><span class="num">22</span> Settings that work as a starting point</a>
-  <a href="#in-code-bm25-and-two-kinds-of-fusion-from-scratch"><span class="num">23</span> In code: BM25 and two kinds of fusion from scratch</a>
+  <a href="#the-question"><span class="num">03</span> The question</a>
+  <a href="#step-1-each-retriever-fails-on-the-other-s-queries"><span class="num">04</span> Step 1: each retriever fails on the other&#x27;s queries</a>
+  <a href="#step-2-how-bm25-scores-a-document"><span class="num">05</span> Step 2: how BM25 scores a document</a>
+  <a href="#step-3-why-lexical-search-is-fast"><span class="num">06</span> Step 3: why lexical search is fast</a>
+  <a href="#step-4-the-fusion-problem"><span class="num">07</span> Step 4: the fusion problem</a>
+  <a href="#step-5-reciprocal-rank-fusion"><span class="num">08</span> Step 5: reciprocal rank fusion</a>
+  <a href="#step-6-weighted-score-fusion"><span class="num">09</span> Step 6: weighted score fusion</a>
+  <a href="#step-7-fixing-the-query-before-retrieval"><span class="num">10</span> Step 7: fixing the query before retrieval</a>
+  <a href="#step-8-putting-the-retrieval-stage-together"><span class="num">11</span> Step 8: putting the retrieval stage together</a>
+  <a href="#settings-that-work-as-a-starting-point"><span class="num">12</span> Settings that work as a starting point</a>
+  <a href="#in-code-bm25-and-two-kinds-of-fusion-from-scratch"><span class="num">13</span> In code: BM25 and two kinds of fusion from scratch</a>
+  <a href="#what-why"><span class="num">14</span> What &amp; Why</a>
+  <a href="#core-concepts"><span class="num">15</span> Core Concepts</a>
+  <a href="#api-surface"><span class="num">16</span> API Surface</a>
+  <a href="#when-to-use-when-not"><span class="num">17</span> When to Use / When NOT</a>
+  <a href="#architecture"><span class="num">18</span> Architecture</a>
+  <a href="#deep-dive-rrf"><span class="num">19</span> Deep Dive: RRF</a>
+  <a href="#deep-dive-weighted-fusion"><span class="num">20</span> Deep Dive: Weighted Fusion</a>
+  <a href="#deep-dive-parallel-retrieve"><span class="num">21</span> Deep Dive: Parallel Retrieve</a>
+  <a href="#deep-dive-pre-filter"><span class="num">22</span> Deep Dive: Pre-filter</a>
+  <a href="#deep-dive-query-routing"><span class="num">23</span> Deep Dive: Query Routing</a>
   <a href="#query-understanding"><span class="num">24</span> Query understanding</a>
   <a href="#hybrid-search-and-reciprocal-rank-fusion"><span class="num">25</span> Hybrid search and reciprocal rank fusion</a>
   <a href="#production-ops"><span class="num">26</span> Production &amp; Ops</a>
@@ -69,61 +69,9 @@
   <h2>02 &mdash; New words</h2>
 <table><thead><tr><th>Word</th><th>Meaning</th></tr></thead><tbody><tr><td><strong>Lexical (sparse) retrieval</strong></td><td>Finding documents by the words they contain. "Sparse" because a document is a vector with one slot per vocabulary word, almost all zero.</td></tr><tr><td><strong>Inverted index</strong></td><td>A map from each word to the list of documents containing it (its postings list). It is what makes keyword search fast.</td></tr><tr><td><strong>Term frequency (TF)</strong></td><td>How many times a query word appears in a document.</td></tr><tr><td><strong>Document frequency / IDF</strong></td><td>How many documents contain a word; inverse document frequency turns that into a weight that is high for rare words.</td></tr><tr><td><strong>BM25</strong></td><td>The standard lexical scoring formula: rare query words count most, repeats help with diminishing returns, long documents are discounted.</td></tr><tr><td><strong>\(k_1\), \(b\)</strong></td><td>BM25's two knobs: how fast repeated words saturate, and how strongly document length is normalised.</td></tr><tr><td><strong>Stemming</strong></td><td>Reducing words to a common root ("exporting", "exports" → "export") so variants match.</td></tr><tr><td><strong>Hybrid search</strong></td><td>Running lexical and dense (embedding) retrieval for the same query and merging the results.</td></tr><tr><td><strong>Reciprocal rank fusion (RRF)</strong></td><td>Merging ranked lists by summing \(1/(k + \text{rank})\) for each document across lists. Uses ranks only, never raw scores.</td></tr><tr><td><strong>Score fusion</strong></td><td>Merging by a weighted sum of normalised scores from each retriever.</td></tr><tr><td><strong>Query rewriting</strong></td><td>Using a model to turn the user's message into a better search query, for example a standalone question from a follow-up.</td></tr><tr><td><strong>HyDE</strong></td><td>Hypothetical document embeddings: have a model write a plausible answer, and search with the embedding of that answer instead of the question.</td></tr><tr><td><strong>Learned sparse retrieval</strong></td><td>Models (such as SPLADE) that output a sparse word-weight vector, including related words not in the text, searchable with an inverted index.</td></tr></tbody></table>
 </section>
-<p class="part-divider">Quick reference</p>
-<section id="what-why">
-  <h2>03 &mdash; What &amp; Why</h2>
-<div class="card"><p>Dense finds paraphrases; sparse finds exact tokens (SKUs, error codes). Enterprise RAG needs both.</p><h3>NFR</h3><ul><li>Recall@5 &gt;95% on golden set</li><li>Retrieve stage &lt;50ms p99</li><li>Pre-filter by org_id/ACL before ANN</li></ul></div>
-</section>
-<section id="core-concepts">
-  <h2>04 &mdash; Core Concepts</h2>
-<div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Bi-encoder</td><td>Separate query/doc embeddings</td><td>Fast but shallow</td></tr><tr><td>BM25</td><td>Lexical TF-IDF ranking</td><td>Misses paraphrases</td></tr><tr><td>RRF</td><td>Merge ranks: 1/(k+rank)</td><td>k=60 typical</td></tr><tr><td>Pre-filter</td><td>Metadata filter before ANN</td><td>Post-filter leaks tenants</td></tr></table></div>
-</section>
-<section id="api-surface">
-  <h2>05 &mdash; API Surface</h2>
-<div class="card"><pre>POST /v1/search/hybrid
-  { query, org_id, filters, top_k: 50, fusion: "rrf" }
-  -&gt; { results: [{ chunk_id, dense_rank, sparse_rank, rrf_score }] }
-
-retrieval.hybridSearch(q, filters, top_k=50)
-rerank.scorePairs(q, chunks) -&gt; top 5</pre></div>
-</section>
-<section id="when-to-use-when-not">
-  <h2>06 &mdash; When to Use / When NOT</h2>
-<div class="card"><table><tr><th>Mode</th><th>Use When</th><th>Skip When</th></tr><tr><td>Hybrid</td><td>Enterprise mixed queries</td><td>Pure conversational FAQ</td></tr><tr><td>Dense-only</td><td>Paraphrase-heavy, no SKUs</td><td>Legal codes, product IDs</td></tr><tr><td>Sparse-only</td><td>Exact identifier lookup</td><td>Natural language questions</td></tr></table></div>
-</section>
-<section id="architecture">
-  <h2>07 &mdash; Architecture</h2>
-<div class="card"><pre>Query -&gt; [Embed -&gt; HNSW top-50]  parallel  [BM25 -&gt; ES top-50]
-              -&gt; RRF merge -&gt; Cross-encoder rerank top-5 -&gt; Context</pre></div>
-</section>
-<section id="deep-dive-rrf">
-  <h2>08 &mdash; Deep Dive: RRF</h2>
-<div class="diagram"><img alt="RRF score calculation merging dense and sparse rank lists" src="../systems/img/hybrid-search-rrf-zoom.png"/></div><p class="diagram-caption">RRF score calculation merging dense and sparse rank lists</p><div class="card"><pre>score_rrf(d) = sum 1/(k + rank_L(d))  # k=60
-# doc rank 1 dense + rank 8 sparse -&gt; high fused score</pre></div>
-</section>
-<section id="deep-dive-weighted-fusion">
-  <h2>09 &mdash; Deep Dive: Weighted Fusion</h2>
-<div class="card"><p>score = α·dense + (1-α)·sparse. Tune α on dev set. RRF is more robust when score scales differ.</p></div>
-</section>
-<section id="deep-dive-parallel-retrieve">
-  <h2>10 &mdash; Deep Dive: Parallel Retrieve</h2>
-<div class="card"><p>Fire dense + sparse concurrently (asyncio/gRPC). Merge latency = max(dense, sparse) not sum. Target &lt;40ms combined.</p></div>
-</section>
-<section id="deep-dive-pre-filter">
-  <h2>11 &mdash; Deep Dive: Pre-filter</h2>
-<div class="diagram"><img alt="Metadata pre-filter by org_id and ACL before HNSW ANN search" src="../systems/img/hybrid-search-prefilter-zoom.png"/></div><p class="diagram-caption">Metadata pre-filter by org_id and ACL before HNSW ANN search</p><div class="card"><p>Pinecone namespace, pgvector WHERE, Weaviate tenant filter. Never post-filter after ANN.</p></div>
-</section>
-<section id="deep-dive-query-routing">
-  <h2>12 &mdash; Deep Dive: Query Routing</h2>
-<div class="card"><p>Not every query needs the same blend of keyword and vector search.</p>
-<ul><li>A small classifier or rules spot exact-token queries (SKUs, error codes, IDs) and send them to a sparse-heavy blend (α around 0.3).</li>
-<li>Conversational, paraphrased questions go dense-heavy.</li>
-<li>Routing saves load on whichever index a query does not need, and often improves recall on both kinds.</li>
-<li>Tune the routing threshold on the golden set, like any other knob.</li></ul></div>
-</section>
-<p class="part-divider">The full explanation</p>
+<p class="part-divider">The lesson</p>
 <section id="the-question">
-  <h2>13 &mdash; The question</h2>
+  <h2>03 &mdash; The question</h2>
 <p>Embedding search finds passages that mean the same thing as the query in different words. Keyword search finds passages that contain the exact rare tokens the user typed. Each is blind where the other is strong, and real query traffic contains both kinds of question. Hybrid search runs both and merges the results; query understanding fixes the query itself before either retriever sees it.</p>
 <p>Interviewers ask:</p>
 <ol>
@@ -153,13 +101,13 @@ rerank.scorePairs(q, chunks) -&gt; top 5</pre></div>
 </ul>
 </section>
 <section id="step-1-each-retriever-fails-on-the-other-s-queries">
-  <h2>14 &mdash; Step 1: each retriever fails on the other&#x27;s queries</h2>
+  <h2>04 &mdash; Step 1: each retriever fails on the other&#x27;s queries</h2>
 <p><strong>Dense retrieval on Q1.</strong> An embedding model reads "error E-4012 when exporting invoices" as "some export error about invoices". It has never learned what E-4012 means (the code is specific to this product), so the code contributes almost nothing to the vector. Every passage about export errors is close: d5 ("troubleshooting export errors") is the most typical, so it tends to rank first, with d2, d1 and d8 not far behind. The one passage that answers the question can easily land at rank 3 or 4, behind generic material. Worse, d4 is about <em>a different error code</em>; to an embedding, E-4012 and E-4007 look nearly the same.</p>
 <p><strong>Lexical retrieval on Q2.</strong> After removing stop words, Q2 is "money back". No passage contains either word, so BM25 returns nothing at all. This is the vocabulary mismatch problem from <a href="embeddings.html">embeddings</a>.</p>
 <p>The pattern generalises. Lexical retrieval wins on identifiers (error codes, SKUs, ticket numbers, version strings), names, rare jargon and exact phrases. Dense retrieval wins on paraphrase, vague descriptions, other languages and questions phrased as needs. Support, legal, medical and engineering queries mix both constantly, which is why hybrid search is the default in production RAG rather than an optimisation.</p>
 </section>
 <section id="step-2-how-bm25-scores-a-document">
-  <h2>15 &mdash; Step 2: how BM25 scores a document</h2>
+  <h2>05 &mdash; Step 2: how BM25 scores a document</h2>
 <p>BM25 scores document \(D\) for query \(Q\) by adding up a contribution for each query term \(t\) that appears in \(D\):</p>
 \[ \text{BM25}(D, Q) = \sum_{t \in Q} \text{IDF}(t) \cdot \frac{f(t, D)\,(k_1 + 1)}{f(t, D) + k_1 \left(1 - b + b \,\frac{|D|}{\text{avgdl}}\right)} \]
 <p>where \(f(t, D)\) is how many times \(t\) occurs in \(D\), \(|D|\) is the document's length in tokens, and avgdl is the average length. Three ideas are packed in.</p>
@@ -181,12 +129,12 @@ rerank.scorePairs(q, chunks) -&gt; top 5</pre></div>
 <p>Tokenisation decides what can match. Our tokeniser keeps "e-4012" as one token; one that split on hyphens would produce "e" and "4012", and match any passage containing "4012". Stemming lets "exporting" match "export". These choices are configuration in every search engine, and they matter most for exactly the identifiers that justify lexical search in the first place.</p>
 </section>
 <section id="step-3-why-lexical-search-is-fast">
-  <h2>16 &mdash; Step 3: why lexical search is fast</h2>
+  <h2>06 &mdash; Step 3: why lexical search is fast</h2>
 <p>BM25 does not scan documents. An <strong>inverted index</strong> stores, for every term, the list of documents containing it with their term counts, and the per-document lengths. A query touches only the postings lists of its own terms: for Q1, four lists. Rare terms have short lists, so the most informative terms are also the cheapest to read, and engines skip documents that cannot reach the current top \(k\). Lexical search over millions of documents runs in milliseconds, and the index updates incrementally as documents change.</p>
 <p>This is the same index that powers Elasticsearch, OpenSearch, Lucene-based engines and Postgres full-text search. Many vector databases now include a BM25 index alongside the vector index, so both retrievers can run in one system and one query.</p>
 </section>
 <section id="step-4-the-fusion-problem">
-  <h2>17 &mdash; Step 4: the fusion problem</h2>
+  <h2>07 &mdash; Step 4: the fusion problem</h2>
 <p>Now we have two ranked lists for Q1:</p>
 <ul>
 <li>BM25: d1 (3.275), d5 (2.046), d2 (1.321), d8 (1.050), d7 (0.997)</li>
@@ -195,7 +143,7 @@ rerank.scorePairs(q, chunks) -&gt; top 5</pre></div>
 <p>The scores cannot simply be added. BM25 scores are unbounded and depend on query length and corpus statistics: a four-term query scores higher than a two-term query for no reason related to relevance. Cosine scores sit in a narrow band (here 0.74 to 0.82) whose position depends on the embedding model. Adding them, the BM25 numbers dominate; and neither scale means the same thing from one query to the next. Two solutions are standard: fuse by rank, or normalise scores and weight them.</p>
 </section>
 <section id="step-5-reciprocal-rank-fusion">
-  <h2>18 &mdash; Step 5: reciprocal rank fusion</h2>
+  <h2>08 &mdash; Step 5: reciprocal rank fusion</h2>
 <p>RRF ignores scores and uses only positions. Each document receives, from each list it appears in,</p>
 \[ \text{RRF}(d) = \sum_{\text{lists } L} \frac{1}{k + \text{rank}_L(d)} \]
 <p>with \(k = 60\) by convention. Documents missing from a list get nothing from it. For Q1:</p>
@@ -219,7 +167,7 @@ rerank.scorePairs(q, chunks) -&gt; top 5</pre></div>
 <p>For Q2, BM25 returns nothing, so RRF simply passes through the dense ranking, with d3 first. Fusion never makes the better retriever's list worse when the other has nothing to say.</p>
 </section>
 <section id="step-6-weighted-score-fusion">
-  <h2>19 &mdash; Step 6: weighted score fusion</h2>
+  <h2>09 &mdash; Step 6: weighted score fusion</h2>
 <p>The alternative normalises each list's scores to the range 0 to 1 (min-max scaling within the list) and combines them:</p>
 \[ s(d) = \alpha \cdot \hat s_{\text{dense}}(d) + (1 - \alpha) \cdot \hat s_{\text{sparse}}(d) \]
 <p>With \(\alpha = 0.5\) on Q1, d1 gets \(0.5 \times 0.625 + 0.5 \times 1.0 = 0.813\) (its dense 0.79 is 62.5% of the way from 0.74 to 0.82), d5 gets 0.730, d2 0.446, d8 0.199, d7 0.0. Here the strong BM25 margin of d1 survives, and it comes first.</p>
@@ -227,7 +175,7 @@ rerank.scorePairs(q, chunks) -&gt; top 5</pre></div>
 <p><strong>Learned sparse retrieval</strong> is a third option worth knowing. Models such as SPLADE output a weight per vocabulary word, including words <em>not</em> in the text (a passage about refunds also gets weight on "money" and "reimbursement"). The result is still sparse, so it is served from an inverted index, but it closes part of the vocabulary gap. In a hybrid system it usually takes BM25's slot (or sits beside it), with dense retrieval still running alongside; it costs a model forward pass per document at indexing and per query at search time, which BM25 does not.</p>
 </section>
 <section id="step-7-fixing-the-query-before-retrieval">
-  <h2>20 &mdash; Step 7: fixing the query before retrieval</h2>
+  <h2>10 &mdash; Step 7: fixing the query before retrieval</h2>
 <p>Both retrievers assume the query is a good description of what is needed. Often it is not, and a language model call before retrieval can repair it. Four techniques, each aimed at a specific failure:</p>
 <p><strong>Conversational rewriting.</strong> In a chat, the second message is "what about enterprise?". Embedded alone, it matches nothing useful. A small model rewrites it, using the conversation, into a standalone question: "Can enterprise customers get a refund after 30 days?". This is the one rewrite almost every chat-based RAG system needs.</p>
 <p><strong>Multi-query expansion.</strong> Generate three to five paraphrases of the question, retrieve for each, and fuse all the lists with RRF. It widens recall for vague or oddly worded questions at the cost of several retrievals.</p>
@@ -237,7 +185,7 @@ rerank.scorePairs(q, chunks) -&gt; top 5</pre></div>
 <p>Each technique costs an LLM call before retrieval can start. With a small, fast model, that is on the order of a few hundred milliseconds and a fraction of a cent per query (order of magnitude), often the largest single latency item in the retrieval path. Apply rewriting where needed (follow-up messages, very short queries), not on every query by default, and measure the gain on the golden set.</p>
 </section>
 <section id="step-8-putting-the-retrieval-stage-together">
-  <h2>21 &mdash; Step 8: putting the retrieval stage together</h2>
+  <h2>11 &mdash; Step 8: putting the retrieval stage together</h2>
 <pre class="ascii-diagram">user message (+ conversation)
    -&gt; [optional] rewrite / expand / extract filters      (LLM, ~100s of ms)
    -&gt; BM25 top 50  ||  dense top 50                     (in parallel, ~10-30 ms each)
@@ -252,7 +200,7 @@ rerank.scorePairs(q, chunks) -&gt; top 5</pre></div>
 </ul>
 </section>
 <section id="settings-that-work-as-a-starting-point">
-  <h2>22 &mdash; Settings that work as a starting point</h2>
+  <h2>12 &mdash; Settings that work as a starting point</h2>
 <table>
 <thead><tr><th>Setting</th><th>Start with</th><th>Tune when</th></tr></thead>
 <tbody>
@@ -265,7 +213,7 @@ rerank.scorePairs(q, chunks) -&gt; top 5</pre></div>
 </table>
 </section>
 <section id="in-code-bm25-and-two-kinds-of-fusion-from-scratch">
-  <h2>23 &mdash; In code: BM25 and two kinds of fusion from scratch</h2>
+  <h2>13 &mdash; In code: BM25 and two kinds of fusion from scratch</h2>
 <p>Pure Python; reproduces every number in Steps 2, 5 and 6. The dense list is given, standing in for an embedding model:</p>
 <pre><span class="kw">import</span> math, re
 <span class="kw">from</span> collections <span class="kw">import</span> Counter
@@ -343,6 +291,59 @@ dense = [(<span class="st">"</span><span class="st">d5</span><span class="st">"<
 </pre>
 <p>Expected output: BM25 puts d1 first at 3.275; RRF gives d5 0.0325, d1 0.0323, d2 0.0320; min-max fusion gives d1 0.813, d5 0.730; and BM25 returns an empty list for the money-back query.</p>
 </section>
+<p class="part-divider">Quick reference</p>
+<section id="what-why">
+  <h2>14 &mdash; What &amp; Why</h2>
+<div class="card"><p>Dense finds paraphrases; sparse finds exact tokens (SKUs, error codes). Enterprise RAG needs both.</p><h3>NFR</h3><ul><li>Recall@5 &gt;95% on golden set</li><li>Retrieve stage &lt;50ms p99</li><li>Pre-filter by org_id/ACL before ANN</li></ul></div>
+</section>
+<section id="core-concepts">
+  <h2>15 &mdash; Core Concepts</h2>
+<div class="card"><table><tr><th>Term</th><th>Definition</th><th>Gotcha</th></tr><tr><td>Bi-encoder</td><td>Separate query/doc embeddings</td><td>Fast but shallow</td></tr><tr><td>BM25</td><td>Lexical TF-IDF ranking</td><td>Misses paraphrases</td></tr><tr><td>RRF</td><td>Merge ranks: 1/(k+rank)</td><td>k=60 typical</td></tr><tr><td>Pre-filter</td><td>Metadata filter before ANN</td><td>Post-filter leaks tenants</td></tr></table></div>
+</section>
+<section id="api-surface">
+  <h2>16 &mdash; API Surface</h2>
+<div class="card"><pre>POST /v1/search/hybrid
+  { query, org_id, filters, top_k: 50, fusion: "rrf" }
+  -&gt; { results: [{ chunk_id, dense_rank, sparse_rank, rrf_score }] }
+
+retrieval.hybridSearch(q, filters, top_k=50)
+rerank.scorePairs(q, chunks) -&gt; top 5</pre></div>
+</section>
+<section id="when-to-use-when-not">
+  <h2>17 &mdash; When to Use / When NOT</h2>
+<div class="card"><table><tr><th>Mode</th><th>Use When</th><th>Skip When</th></tr><tr><td>Hybrid</td><td>Enterprise mixed queries</td><td>Pure conversational FAQ</td></tr><tr><td>Dense-only</td><td>Paraphrase-heavy, no SKUs</td><td>Legal codes, product IDs</td></tr><tr><td>Sparse-only</td><td>Exact identifier lookup</td><td>Natural language questions</td></tr></table></div>
+</section>
+<section id="architecture">
+  <h2>18 &mdash; Architecture</h2>
+<div class="card"><pre>Query -&gt; [Embed -&gt; HNSW top-50]  parallel  [BM25 -&gt; ES top-50]
+              -&gt; RRF merge -&gt; Cross-encoder rerank top-5 -&gt; Context</pre></div>
+</section>
+<section id="deep-dive-rrf">
+  <h2>19 &mdash; Deep Dive: RRF</h2>
+<div class="diagram"><img alt="RRF score calculation merging dense and sparse rank lists" src="../systems/img/hybrid-search-rrf-zoom.png"/></div><p class="diagram-caption">RRF score calculation merging dense and sparse rank lists</p><div class="card"><pre>score_rrf(d) = sum 1/(k + rank_L(d))  # k=60
+# doc rank 1 dense + rank 8 sparse -&gt; high fused score</pre></div>
+</section>
+<section id="deep-dive-weighted-fusion">
+  <h2>20 &mdash; Deep Dive: Weighted Fusion</h2>
+<div class="card"><p>score = α·dense + (1-α)·sparse. Tune α on dev set. RRF is more robust when score scales differ.</p></div>
+</section>
+<section id="deep-dive-parallel-retrieve">
+  <h2>21 &mdash; Deep Dive: Parallel Retrieve</h2>
+<div class="card"><p>Fire dense + sparse concurrently (asyncio/gRPC). Merge latency = max(dense, sparse) not sum. Target &lt;40ms combined.</p></div>
+</section>
+<section id="deep-dive-pre-filter">
+  <h2>22 &mdash; Deep Dive: Pre-filter</h2>
+<div class="diagram"><img alt="Metadata pre-filter by org_id and ACL before HNSW ANN search" src="../systems/img/hybrid-search-prefilter-zoom.png"/></div><p class="diagram-caption">Metadata pre-filter by org_id and ACL before HNSW ANN search</p><div class="card"><p>Pinecone namespace, pgvector WHERE, Weaviate tenant filter. Never post-filter after ANN.</p></div>
+</section>
+<section id="deep-dive-query-routing">
+  <h2>23 &mdash; Deep Dive: Query Routing</h2>
+<div class="card"><p>Not every query needs the same blend of keyword and vector search.</p>
+<ul><li>A small classifier or rules spot exact-token queries (SKUs, error codes, IDs) and send them to a sparse-heavy blend (α around 0.3).</li>
+<li>Conversational, paraphrased questions go dense-heavy.</li>
+<li>Routing saves load on whichever index a query does not need, and often improves recall on both kinds.</li>
+<li>Tune the routing threshold on the golden set, like any other knob.</li></ul></div>
+</section>
+<p class="part-divider">More detail</p>
 <section id="query-understanding">
   <h2>24 &mdash; Query understanding</h2>
 <ul>
