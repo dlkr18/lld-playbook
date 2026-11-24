@@ -10,7 +10,7 @@
   - [⚡ Machine-Coding Kit](cheatsheets/machine-coding-kit.html ':ignore')
   - [⚡ Concurrency Kit](cheatsheets/concurrency-kit.html ':ignore')
   - [LLD — 54 problems](cheatsheets/lld/index.html ':ignore')
-  - [HLD — 63 topics](cheatsheets/hld/hub.html ':ignore')
+  - [HLD — 64 topics](cheatsheets/hld/hub.html ':ignore')
   - [DSA — 23 topics](cheatsheets/dsa/index.html ':ignore')
   - [AI / LLMs — learning map](cheatsheets/ai/index.html ':ignore')
 
