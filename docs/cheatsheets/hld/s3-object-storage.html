@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S3-like Object Storage -- HLD Cheat Sheet</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../sheet-shell.css">
+  <script src="../sheet-shell.js" defer></script>
+
+  <script>
+    /* light-first: only a stored 'dark' opts in */
+    (function(){try{if(localStorage.getItem("playbook-theme")==="dark")
+      document.documentElement.setAttribute("data-theme","dark");}catch(e){}})();
+  </script>
+</head>
+<body>
+
+<nav class="nav">
+  <h2>S3 Object Storage</h2>
+  <a href="index.html" style="color:var(--accent2);margin-bottom:16px;">&larr; All HLD Sheets</a>
+  <a href="#requirements"><span class="num">01</span> Requirements</a>
+  <a href="#coreentities"><span class="num">01a</span> Core Entities</a>
+  <a href="#api"><span class="num">01b</span> API Design</a>
+  <a href="#estimation"><span class="num">02</span> Estimation</a>
+  <a href="#whyhard"><span class="num">03</span> Why It's Hard</a>
+  <a href="#architecture"><span class="num">04</span> Architecture</a>
+  <a href="#metadata"><span class="num">05</span> Metadata Service</a>
+  <a href="#datastore"><span class="num">06</span> Data Store</a>
+  <a href="#write"><span class="num">07</span> Write &amp; Read Path</a>
+  <a href="#durability"><span class="num">08</span> Durability &amp; EC</a>
+  <a href="#multipart"><span class="num">09</span> Multipart Upload</a>
+  <a href="#versioning"><span class="num">10</span> Versioning &amp; GC</a>
+  <a href="#consistency"><span class="num">11</span> Consistency</a>
+  <a href="#scaling"><span class="num">12</span> Scaling</a>
+  <a href="#edge"><span class="num">13</span> Edge Cases</a>
+  <a href="#realworld"><span class="num">14</span> Real-World</a>
+  <a href="#interview"><span class="num">15</span> Interview Q&amp;A</a>
+</nav>
+
+<div class="main">
+
+<div class="hero">
+  <h1>S3-like Object Storage <span>// HLD</span></h1>
+  <p>Store trillions of immutable blobs behind a flat <span class="inline-code">bucket/key</span> namespace with 11 nines of durability. The design splits a sharded <strong>metadata service</strong> (which key points to which bytes) from a <strong>data store</strong> of append-only files on thousands of disks, erasure-coded across availability zones. Covers Alex Xu Vol 2, chapter 9.</p>
+  <div class="tags">
+    <span class="tag">Metadata / Data Split</span>
+    <span class="tag blue">Erasure Coding</span>
+    <span class="tag green">Append-Only Files</span>
+    <span class="tag pink">Multipart Upload</span>
+    <span class="tag purple">Versioning</span>
+    <span class="tag orange">Strong Read-After-Write</span>
+  </div>
+</div>
+
+<div class="diagram">
+  <img src="img/s3-object-storage-hld.png" alt="S3-like object storage high-level design: client, load balancer, API service, IAM, metadata service and DB, data routing, placement service, data nodes in three AZs, and background garbage collector, scrubber and lifecycle jobs">
+</div>
+<p class="diagram-caption">Whiteboard HLD. A stateless API service authorizes with IAM, then sends <strong>bytes</strong> down the data path (routing &rarr; placement &rarr; data nodes in 3 AZs) and <strong>metadata</strong> down a separate path to a sharded metadata DB. Background jobs compact dead space, scrub and rebuild chunks, and apply lifecycle rules.</p>
+
+<section id="requirements">
+  <h2>01 &mdash; Requirements</h2>
+  <div class="card">
+    <h3>Functional</h3>
+    <ul>
+      <li><strong>Buckets</strong> &mdash; create, delete (only when empty), list; names are globally unique</li>
+      <li><strong>Objects</strong> &mdash; PUT, GET (whole or byte range), DELETE, HEAD; objects are immutable, an overwrite replaces the whole object</li>
+      <li><strong>List</strong> objects in a bucket by prefix, paginated, sorted by key</li>
+      <li><strong>Large uploads</strong> &mdash; multipart upload for objects up to 5 TB</li>
+      <li><strong>Versioning</strong> per bucket, with delete markers</li>
+      <li><strong>Access control</strong> &mdash; per-bucket and per-object policies; presigned URLs for temporary access</li>
+      <li><strong>Lifecycle</strong> &mdash; expire or move objects to colder storage classes by age</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Non-Functional</h3>
+    <ul>
+      <li><strong>Durability 99.999999999%</strong> (11 nines): lose about 1 object in 10 million every 10,000 years</li>
+      <li><strong>Availability 99.99%</strong> for reads and writes in the standard class</li>
+      <li><strong>Strong read-after-write</strong> for PUT, DELETE and LIST (S3 has offered this since December 2020)</li>
+      <li><strong>Scale</strong> &mdash; exabytes of data, trillions of objects, bytes to 5 TB per object</li>
+      <li><strong>Cost</strong> &mdash; storage overhead well under 3&times;; cheap cold tiers</li>
+      <li><strong>Throughput</strong> over latency &mdash; tens of ms for first byte is fine; aggregate bandwidth matters</li>
+    </ul>
+  </div>
+</section>
+
+<section id="coreentities">
+  <h2>01a &mdash; Core Entities</h2>
+  <div class="card">
+    <table>
+      <tr><th>Entity</th><th>Key Fields</th><th>Notes</th></tr>
+      <tr><td><strong>Bucket</strong></td><td>bucket_name, bucket_id, owner_id, region, versioning_enabled, policy</td><td>Globally unique name; few per user, so one small table.</td></tr>
+      <tr><td><strong>Object</strong></td><td>bucket_name, object_key, version_id, object_id, size, etag, content_type, created_at</td><td>The metadata row. Maps a user-facing name to internal bytes. Up to ~2 KB each.</td></tr>
+      <tr><td><strong>Object data</strong></td><td>object_id (UUID), checksum, placement (which nodes / chunks)</td><td>The bytes. Never updated in place.</td></tr>
+      <tr><td><strong>Data file</strong></td><td>file_id, node_id, state (open / sealed), size</td><td>Multi-GB append-only file on a data node that packs many small objects.</td></tr>
+      <tr><td><strong>Object location</strong></td><td>object_id &rarr; file_id, offset, length, checksum</td><td>Local index on each data node (RocksDB / SQLite).</td></tr>
+      <tr><td><strong>Multipart upload</strong></td><td>upload_id, bucket, key, parts[part_no &rarr; etag, object_id], state</td><td>Lives until complete or abort.</td></tr>
+      <tr><td><strong>Delete marker</strong></td><td>bucket, key, version_id, is_delete_marker</td><td>A DELETE on a versioned bucket inserts one instead of removing data.</td></tr>
+      <tr><td><strong>Cluster map</strong></td><td>region &rarr; AZ &rarr; rack &rarr; node &rarr; disk, health, capacity</td><td>Owned by the placement service; used to pick failure-independent nodes.</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="api">
+  <h2>01b &mdash; API Design</h2>
+  <div class="card">
+    <h3>Object hot path</h3>
+    <pre>PUT    /{bucket}/{key}            body = bytes, Content-MD5, x-amz-meta-*
+       -&gt; 200 ETag: "&lt;md5&gt;"  x-amz-version-id: &lt;id&gt;
+GET    /{bucket}/{key}            Range: bytes=0-1048575   ?versionId=
+       -&gt; 200 / 206 bytes
+HEAD   /{bucket}/{key}            -&gt; size, ETag, metadata, no body
+DELETE /{bucket}/{key}            -&gt; 204 (delete marker if versioned)
+GET    /{bucket}?list-type=2&amp;prefix=photos/2026/&amp;delimiter=/&amp;max-keys=1000&amp;continuation-token=...</pre>
+
+    <h3>Multipart upload</h3>
+    <pre>POST   /{bucket}/{key}?uploads                          -&gt; { UploadId }
+PUT    /{bucket}/{key}?partNumber=7&amp;uploadId=...       -&gt; ETag of part 7
+POST   /{bucket}/{key}?uploadId=...    body: [{PartNumber, ETag}, ...]  -&gt; final ETag
+DELETE /{bucket}/{key}?uploadId=...                     -&gt; abort, parts freed</pre>
+
+    <h3>Buckets</h3>
+    <pre>PUT    /{bucket}                  create
+DELETE /{bucket}                  only if empty
+GET    /                          list my buckets</pre>
+
+    <blockquote>The non-obvious contract: PUT is idempotent by key (last writer wins), the ETag is the MD5 of the bytes for single-part uploads but <em>MD5-of-part-MD5s + "-N"</em> for multipart, and LIST is paginated by an opaque continuation token, not an offset.</blockquote>
+  </div>
+</section>
+
+<section id="estimation">
+  <h2>02 &mdash; Estimation</h2>
+  <div class="card"><pre>Raw capacity:           100 PB, 40% used        -&gt; 40 PB of user data
+Object sizes:           20% &lt; 1 MB (~0.5 MB), 60% 1-64 MB (~32 MB), 20% &gt; 64 MB (~200 MB)
+Average object:         0.2*0.5 + 0.6*32 + 0.2*200 ~= 59 MB
+Object count:           40 PB / 59 MB             ~= 0.68 billion objects
+Metadata:               ~1 KB per object          ~= 0.7 TB -&gt; a modest sharded DB
+
+Physical bytes:         EC 8+4 = 1.5x             -&gt; 60 PB on disk (3x replication: 120 PB)
+Disks:                  60 PB / 20 TB per HDD      ~= 3,000 disks, ~125 servers of 24 disks
+Disk failures:          ~1% annual failure rate   -&gt; ~30 dead disks a year: repair is always running
+
+Traffic (assumed):      1,000 PUT/s, 5,000 GET/s at peak
+Ingress:                1,000 * 59 MB              ~= 60 GB/s
+Egress:                 5,000 * 59 MB              ~= 300 GB/s -&gt; ~2.4 GB/s per server (25 GbE NICs)
+Metadata QPS:           ~6,000/s + LIST           -&gt; trivially shardable</pre></div>
+  <blockquote>The numbers say: metadata is small and hot, data is huge and cold. That is why they live in two separate systems with different storage engines.</blockquote>
+</section>
+
+<section id="whyhard">
+  <h2>03 &mdash; Why It's Hard</h2>
+  <div class="card">
+    <p>With thousands of disks, something is always broken, yet no byte may be lost: 11 nines needs redundancy spread across failure domains plus <strong>repair faster than the next failure</strong>. Full copies cost 3&times; the bytes, so you need erasure coding without hurting reads. Billions of objects range from 1 KB to 5 TB. Filesystems choke on billions of tiny files, so small objects have to be packed. Clients expect <strong>strong read-after-write</strong> on a namespace sharded across many machines, while uploads can crash halfway. Deletes cannot reclaim space in place in immutable, packed files, so you need garbage collection and compaction. LIST by prefix has to work on a hash-sharded table.</p>
+  </div>
+</section>
+
+<section id="architecture">
+  <h2>04 &mdash; Architecture</h2>
+  <div class="card"><pre>Client --&gt; LB --&gt; API service (stateless) --&gt; IAM            (authN / authZ, cached)
+                         |
+          +--------------+----------------------+
+          | metadata                            | bytes
+          v                                     v
+  Metadata service                      Data routing service --&gt; Placement service
+  (bucket + object tables)               (stateless)              (Raft, cluster map,
+          |                                     |                   heartbeats)
+          v                                     v
+  Metadata DB                           Data nodes in AZ-a / AZ-b / AZ-c
+  sharded by hash(bucket, key)          append-only files + local object index
+
+Background: garbage collector / compactor, scrubber + repair, lifecycle (tiering, expiry)</pre></div>
+  <div class="tile-grid">
+    <div class="tile"><h3>API service</h3><p>Stateless. Authenticates (SigV4), authorizes via IAM, validates, then orchestrates: bytes first, metadata commit last.</p></div>
+    <div class="tile"><h3>Metadata service</h3><p>The source of truth for "which version of this key is current and where are its bytes". Sharded, replicated, strongly consistent per key.</p></div>
+    <div class="tile"><h3>Data routing</h3><p>Stateless. Asks placement which nodes to use, streams bytes, returns an object_id plus checksum.</p></div>
+    <div class="tile"><h3>Placement service</h3><p>5&ndash;7 node Raft group holding the cluster map. Picks nodes in different AZs and racks, tracks health from heartbeats.</p></div>
+    <div class="tile"><h3>Data nodes</h3><p>Disks full of multi-GB append-only files, plus a local index object_id &rarr; (file, offset, length).</p></div>
+    <div class="tile"><h3>Background jobs</h3><p>Compaction reclaims deleted space, the scrubber verifies checksums and rebuilds lost chunks, lifecycle moves cold data to cheaper tiers.</p></div>
+  </div>
+</section>
+
+<section id="metadata">
+  <h2>05 &mdash; Metadata Service</h2>
+  <div class="card">
+    <h3>Two tables</h3>
+    <table>
+      <tr><th>Table</th><th>Shard key</th><th>Why</th></tr>
+      <tr><td><strong>bucket</strong></td><td>none (small, replicated everywhere)</td><td>Millions of rows at most; read on every request, so cache it.</td></tr>
+      <tr><td><strong>object</strong></td><td><span class="inline-code">hash(bucket_name, object_key)</span></td><td>Billions of rows; spreads one hot bucket over all shards.</td></tr>
+    </table>
+    <h3>The LIST problem</h3>
+    <p>Hashing by (bucket, key) spreads one bucket's keys over every shard, so <span class="inline-code">LIST prefix=photos/</span> becomes a scatter-gather: ask every shard, merge-sort, return 1,000. Two fixes:</p>
+    <ul>
+      <li><strong>Range-partition by (bucket, key)</strong> instead of hashing. A prefix becomes a contiguous key range, so LIST is a range scan. Hot prefixes are handled by splitting ranges, which is what S3 does: about 3,500 writes/s and 5,500 reads/s <em>per prefix partition</em>, split automatically as load grows.</li>
+      <li><strong>Denormalized listing table</strong> sharded by bucket, updated asynchronously or in the same transaction. This trades write cost for fast lists.</li>
+    </ul>
+    <blockquote>Interview answer: start with hash sharding for even load, call out that LIST breaks, then move to range partitioning with automatic splits. That's the real S3 design.</blockquote>
+    <h3>Storage engine</h3>
+    <p>Any strongly consistent, sharded, replicated KV or SQL store works: a per-shard Raft group (TiKV, FoundationDB, CockroachDB style), or DynamoDB-style with conditional writes. The metadata write for a key must be linearizable; that is what gives read-after-write.</p>
+  </div>
+</section>
+
+<section id="datastore">
+  <h2>06 &mdash; Data Store</h2>
+  <div class="card">
+    <h3>Why not one file per object?</h3>
+    <p>A billion small objects would mean a billion inodes and directory entries. Each tiny file also wastes most of a 4 KB block, and metadata lookups thrash the disk. Instead, each data node keeps a few <strong>open append-only files</strong>. New objects are appended; when a file reaches a few GB it is <strong>sealed</strong> (read-only) and a new one opens. This is the same idea as Facebook's Haystack "needles" in big volume files.</p>
+    <pre>Local index on each data node (RocksDB / SQLite)
+object_id     file_id     offset         length     crc32c
+7f3a...       f_0912      1,048,576      524,288    9e1c...
+8b21...       f_0912      1,572,864      12,034     44d0...</pre>
+    <ul>
+      <li>Writes are sequential appends: the best case for HDDs</li>
+      <li>Reads are one index lookup plus one seek</li>
+      <li>Large objects skip packing: split into stripes, each stripe erasure-coded</li>
+    </ul>
+    <h3>Placement service</h3>
+    <ul>
+      <li>Holds the <strong>cluster map</strong>: region &rarr; AZ &rarr; rack &rarr; node &rarr; disk, with health and free space</li>
+      <li>Data nodes heartbeat every few seconds; missed heartbeats mark a node suspect, then dead, and its chunks get queued for repair</li>
+      <li>Chooses where the 12 chunks of a stripe go so no two share a disk, and no AZ holds more than 4</li>
+      <li>Runs as a 5&ndash;7 node Raft group; it is small, critical and rarely on the hot path because routing caches the map</li>
+    </ul>
+  </div>
+</section>
+
+<section id="write">
+  <h2>07 &mdash; Write &amp; Read Path</h2>
+  <div class="diagram">
+    <img src="img/s3-object-storage-put-zoom.png" alt="PUT path: client to API service, IAM check, data routing asks placement for nodes, streams to primary data node which erasure-codes to 11 more nodes, then API commits the metadata row">
+  </div>
+  <p class="diagram-caption">Zoom on PUT. Bytes become durable on 12 nodes across 3 AZs <strong>before</strong> the metadata row is committed. The commit in step 7 is what makes the object visible. A crash before it leaves orphan bytes that GC removes, never a half-visible object.</p>
+  <div class="flow">
+    <div class="step" data-num="1"><span class="label">Authenticate</span><span class="detail">API verifies the signature (SigV4) and asks IAM whether this principal may PUT into this bucket.</span></div>
+    <div class="step" data-num="2"><span class="label">Store bytes</span><span class="detail">Routing gets 12 target nodes from placement, streams the object; the primary appends, encodes 8+4, fans chunks out. Ack after all 12 (or a write quorum such as 10, with the rest repaired later).</span></div>
+    <div class="step" data-num="3"><span class="label">Verify</span><span class="detail">Compare the checksum of received bytes to Content-MD5; reject on mismatch so corrupted uploads never commit.</span></div>
+    <div class="step" data-num="4"><span class="label">Commit metadata</span><span class="detail">Write (bucket, key, version_id) &rarr; object_id. This single linearizable write is the moment the object exists.</span></div>
+    <div class="step" data-num="5"><span class="label">Respond</span><span class="detail">200 with ETag and version id. The old version's bytes become garbage (or stay, if versioning is on).</span></div>
+  </div>
+  <div class="card">
+    <h3>GET</h3>
+    <ol>
+      <li>Metadata lookup: (bucket, key) &rarr; latest version &rarr; object_id, size, placement</li>
+      <li>Routing reads the 8 data chunks directly; parity is only read if a data chunk is slow or missing</li>
+      <li>Each node does index lookup &rarr; one seek &rarr; verify crc &rarr; stream</li>
+      <li>Range GETs read only the stripes that cover the range</li>
+    </ol>
+    <blockquote>To cut tail latency, read 9 or 10 chunks and use the first 8 that arrive (hedged reads). It costs a little bandwidth and removes slow-disk stalls.</blockquote>
+  </div>
+</section>
+
+<section id="durability">
+  <h2>08 &mdash; Durability: Replication vs Erasure Coding</h2>
+  <div class="diagram">
+    <img src="img/s3-object-storage-ec-zoom.png" alt="Erasure coding 8+4: an object stripe split into 8 data and 4 parity chunks, spread 4 per AZ across 3 AZs, compared with 3x replication">
+  </div>
+  <p class="diagram-caption">Zoom on erasure coding. Reed-Solomon 8+4 turns 8 data chunks into 12; any 8 rebuild the object. Four chunks per AZ means losing a whole AZ still leaves 8. Overhead is +50% bytes instead of +200% for 3 copies.</p>
+  <div class="card">
+    <table>
+      <tr><th></th><th>3&times; replication</th><th>Erasure coding 8+4</th></tr>
+      <tr><td>Storage overhead</td><td>200% (3.0&times;)</td><td>50% (1.5&times;)</td></tr>
+      <tr><td>Losses tolerated</td><td>any 2 copies</td><td>any 4 chunks</td></tr>
+      <tr><td>Read cost</td><td>1 node</td><td>8 nodes (more tail latency)</td></tr>
+      <tr><td>Repair cost</td><td>copy 1 replica</td><td>read 8 chunks to rebuild 1</td></tr>
+      <tr><td>Write cost</td><td>3 network copies</td><td>encode CPU + 12 chunks</td></tr>
+      <tr><td>Durability (Xu's estimate)</td><td>~6 nines</td><td>~11 nines</td></tr>
+      <tr><td>Use for</td><td>hot, small objects; metadata</td><td>everything large and cold</td></tr>
+    </table>
+    <h3>Where durability comes from</h3>
+    <ul>
+      <li><strong>Independent failure domains</strong> &mdash; chunks on different disks, racks and AZs, so one event can't take out more than k</li>
+      <li><strong>Fast repair</strong> &mdash; durability is the chance of losing more than 4 chunks <em>inside one repair window</em>. Cutting repair from days to hours adds nines. Parallel repair across thousands of disks is the trick.</li>
+      <li><strong>Checksums everywhere</strong> &mdash; per object at upload, per chunk on disk, re-verified by a background scrubber to catch silent bit rot</li>
+      <li><strong>No single point of deletion</strong> &mdash; versioning, delete protection, and deferred GC, so bugs and operators can't instantly destroy data</li>
+    </ul>
+    <blockquote>Durability (no data lost) is not availability (data reachable now). An AZ outage hurts availability; with 4 chunks per AZ it does not hurt durability.</blockquote>
+  </div>
+</section>
+
+<section id="multipart">
+  <h2>09 &mdash; Multipart Upload</h2>
+  <div class="card">
+    <div class="flow">
+      <div class="step" data-num="1"><span class="label">Initiate</span><span class="detail"><span class="inline-code">POST ?uploads</span> creates an upload record and returns an UploadId.</span></div>
+      <div class="step" data-num="2"><span class="label">Upload parts in parallel</span><span class="detail">Parts of 5 MB&ndash;5 GB (last part can be smaller), up to 10,000 parts. Each part is stored as its own object and returns an ETag. A failed part is retried alone.</span></div>
+      <div class="step" data-num="3"><span class="label">Complete</span><span class="detail">Client sends the ordered (part number, ETag) list. The service checks every part and writes one metadata row listing the part object_ids. <strong>No bytes are copied.</strong></span></div>
+      <div class="step" data-num="4"><span class="label">Abort or expire</span><span class="detail">Abort frees the parts. A lifecycle rule should delete incomplete uploads after N days, or orphan parts are billed forever.</span></div>
+    </div>
+    <ul>
+      <li>Max object size 5 TB; a single PUT is capped at 5 GB</li>
+      <li>Final ETag = MD5 of the concatenated part MD5s, plus "-N" for N parts, so it is not the MD5 of the file</li>
+      <li>Resumable: the client can list uploaded parts and send only the missing ones</li>
+      <li>Browsers upload straight to storage with <strong>presigned URLs</strong> per part, so your app servers never touch the bytes</li>
+    </ul>
+  </div>
+</section>
+
+<section id="versioning">
+  <h2>10 &mdash; Versioning, Deletes &amp; Garbage Collection</h2>
+  <div class="card">
+    <h3>Versioning</h3>
+    <ul>
+      <li>Every PUT writes a new row with a new <span class="inline-code">version_id</span> (time-ordered, e.g. a TIMEUUID); GET without a version returns the newest</li>
+      <li>DELETE without a version inserts a <strong>delete marker</strong>; GET then returns 404 but older versions remain</li>
+      <li>DELETE with a version id removes that version permanently</li>
+      <li>Unversioned bucket: overwrite or delete just orphans the old object_id</li>
+    </ul>
+    <h3>Garbage collection</h3>
+    <p>Bytes inside sealed append-only files can't be freed in place, so deletion is two-phase:</p>
+    <ol>
+      <li><strong>Mark</strong> &mdash; metadata drops the reference; the object_id goes onto a "to delete" list (after a safety delay)</li>
+      <li><strong>Compact</strong> &mdash; when a sealed file is, say, 30%+ garbage, copy its live objects into a new file, update the local index, then delete the old file</li>
+      <li><strong>Orphans</strong> &mdash; bytes written by PUTs that crashed before the metadata commit are found by reconciling data-node object_ids against metadata, and deleted</li>
+    </ol>
+    <blockquote>With erasure coding, compaction works on whole stripes across 12 nodes, so it's batched and throttled to avoid stealing disk bandwidth from user traffic.</blockquote>
+  </div>
+</section>
+
+<section id="consistency">
+  <h2>11 &mdash; Consistency</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Read-after-write</strong> comes from the metadata layer: the commit is a linearizable write on the key's shard, and every GET reads that shard's current value (no stale replica or cache in between)</li>
+      <li>Bytes are immutable and addressed by a fresh object_id, so data replicas can never disagree about the <em>contents</em> of an object_id; only "which object_id is current" needs consensus</li>
+      <li>Caches in front of metadata must be invalidated or versioned on write; S3's 2020 change to strong consistency was largely about this cache layer</li>
+      <li>LIST is consistent too if it reads the same range-partitioned index</li>
+      <li><strong>Concurrent PUTs</strong> to one key: last writer wins by commit order. For safe read-modify-write, use conditional writes: <span class="inline-code">If-Match: &lt;etag&gt;</span> or <span class="inline-code">If-None-Match: *</span></li>
+      <li><strong>Cross-region replication</strong> is asynchronous, so the replica region is eventually consistent (minutes)</li>
+    </ul>
+  </div>
+</section>
+
+<section id="scaling">
+  <h2>12 &mdash; Scaling</h2>
+  <div class="card">
+    <table>
+      <tr><th>Stage</th><th>What changes</th></tr>
+      <tr><td><strong>1&times;</strong> (one region, PBs)</td><td>Metadata on a few range-partitioned shards; data nodes in 3 AZs; EC 8+4; one placement group.</td></tr>
+      <tr><td><strong>10&times;</strong></td><td>Auto-split hot key ranges; add data nodes and let placement steer new writes to empty disks; cache bucket policies and hot metadata; hedged reads.</td></tr>
+      <tr><td><strong>100&times;</strong> (exabytes)</td><td>Many independent "cells" per region, each with its own metadata shards and placement; buckets map to cells. Storage tiers: Standard &rarr; Infrequent Access &rarr; Glacier-style archive on dense HDD or tape. Wider codes for cold data (e.g. 17+3).</td></tr>
+      <tr><td><strong>Global</strong></td><td>Bucket lives in one home region; optional async cross-region replication; a global bucket-name registry keeps names unique.</td></tr>
+    </table>
+    <ul>
+      <li>Bandwidth scales with data nodes because the API and routing tiers are stateless and only stream bytes</li>
+      <li>Rebalance by moving sealed files, never rewriting objects</li>
+      <li>Hot objects (one viral file) are served from a CDN or a replicated hot-object cache, not by stretching EC reads</li>
+    </ul>
+  </div>
+</section>
+
+<section id="edge">
+  <h2>13 &mdash; Edge Cases</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Crash between bytes and metadata</strong> &mdash; object invisible; orphan bytes reclaimed by reconciliation. Never the reverse order, or you get metadata pointing at nothing.</li>
+      <li><strong>Correlated failures</strong> &mdash; a bad disk batch or firmware bug kills many disks at once. Mix disk vendors and batches, and throttle rollouts per AZ.</li>
+      <li><strong>Silent corruption</strong> &mdash; bit rot or a bad RAM write. Checksums on write, on read, and in background scrubbing; rebuild from parity on mismatch.</li>
+      <li><strong>Repair storms</strong> &mdash; an AZ comes back after hours and everything wants repairing. Rate-limit repair, prioritise stripes with the fewest surviving chunks.</li>
+      <li><strong>Hot prefix</strong> &mdash; sequential keys (timestamps) all hit one range. Auto-split, or have clients add a hash prefix to keys.</li>
+      <li><strong>Huge LIST</strong> &mdash; a bucket with billions of keys. Pagination tokens only; an inventory report (a daily dump to a file) for full scans.</li>
+      <li><strong>Incomplete multipart uploads</strong> &mdash; parts pile up unseen; lifecycle rule to abort after N days.</li>
+      <li><strong>Accidental delete</strong> &mdash; versioning, MFA-delete, object lock (WORM) for compliance.</li>
+      <li><strong>Clock skew in version ids</strong> &mdash; order versions by the metadata shard's commit sequence, not client time.</li>
+      <li><strong>Placement service down</strong> &mdash; routing keeps using its cached cluster map for writes to healthy nodes; reads don't need placement at all.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="realworld">
+  <h2>14 &mdash; Real-World Equivalents</h2>
+  <div class="card"><table>
+    <tr><th>System</th><th>Notes</th></tr>
+    <tr><td><strong>Amazon S3</strong></td><td>11 nines design target, strong consistency since 2020, prefix-partitioned index with auto-split. Storage nodes run ShardStore, a Rust key-value store (SOSP 2021 paper).</td></tr>
+    <tr><td><strong>Google Cloud Storage</strong></td><td>Built on Colossus (the GFS successor) with erasure-coded chunks; metadata in Spanner-like storage, strongly consistent.</td></tr>
+    <tr><td><strong>Azure Blob Storage</strong></td><td>Stream layer + partition layer; Local Reconstruction Codes (LRC), so most repairs read fewer chunks than plain Reed-Solomon. LRS / ZRS / GRS redundancy options.</td></tr>
+    <tr><td><strong>Facebook Haystack / f4</strong></td><td>Haystack packs photos as "needles" in large volume files (the small-object trick here); f4 moves warm blobs to Reed-Solomon (10,4) storage.</td></tr>
+    <tr><td><strong>Ceph RADOS / RGW</strong></td><td>Open source; CRUSH computes placement from a cluster map instead of a lookup service; RGW exposes the S3 API.</td></tr>
+    <tr><td><strong>MinIO</strong></td><td>S3-compatible, erasure-codes each object across a set of drives; common on-prem S3.</td></tr>
+    <tr><td><strong>Backblaze B2</strong></td><td>"Vaults" of 20 servers with Reed-Solomon 17+3 shards.</td></tr>
+  </table></div>
+</section>
+
+<section id="interview">
+  <h2>15 &mdash; Interview Q&amp;A</h2>
+
+  <details><summary>Why separate metadata from data?</summary>
+  <div class="answer">They have opposite shapes. Metadata is small (~1 KB per object), hot, needs strong consistency and range scans for LIST. Data is huge, written once, read sequentially, and needs cheap durable bytes. One engine can't be good at both. Splitting them also keeps the API tier stateless: bytes stream to data nodes while a single metadata write decides visibility.</div></details>
+
+  <details><summary>How do you get 11 nines of durability?</summary>
+  <div class="answer">Erasure-code each stripe (8+4), put at most 4 chunks per AZ and never two on one disk, checksum every chunk and scrub continuously, and repair fast. Losing data needs 5 of 12 chunks gone inside one repair window, which becomes astronomically unlikely when windows are hours and failures are independent. Then add process protection: versioning, delayed GC and staged rollouts, because software bugs and operators lose more data than disks do.</div></details>
+
+  <details><summary>Replication or erasure coding?</summary>
+  <div class="answer">EC 8+4 stores 1.5&times; the bytes vs 3&times; and survives 4 losses vs 2, so for exabytes it saves half the fleet. The costs: reads touch 8 nodes (tail latency), repair reads 8 chunks to rebuild 1, and encoding costs CPU. Use replication for small hot objects and metadata, EC for everything large or cold, and wider codes (17+3) for archive tiers.</div></details>
+
+  <details><summary>Why not store each object as a file on the data node's filesystem?</summary>
+  <div class="answer">Billions of small files exhaust inodes, waste a 4 KB block per tiny object, and make metadata operations dominate disk time. Packing objects into multi-GB append-only files turns writes into sequential appends, and a local RocksDB index (object_id &rarr; file, offset, length) gives one-seek reads. Haystack did exactly this for Facebook photos.</div></details>
+
+  <details><summary>How is strong read-after-write achieved?</summary>
+  <div class="answer">Bytes go to fresh, immutable object_ids, so they never conflict. The only mutable thing is the (bucket, key) &rarr; object_id pointer, written with a linearizable commit on the key's metadata shard (Raft or a conditional write). GETs and LISTs read that shard's current state, and any metadata cache is invalidated or versioned on commit, so the next read after a successful PUT sees it.</div></details>
+
+  <details><summary>How do you shard the object metadata, and what breaks LIST?</summary>
+  <div class="answer">Hashing (bucket, key) spreads load evenly but scatters a prefix across all shards, so LIST must query every shard and merge. Range-partitioning by (bucket, key) makes a prefix a contiguous range, which turns LIST into a range scan; hot ranges are split automatically. S3 does the latter, with roughly 3,500 writes and 5,500 reads per second per partition before it splits.</div></details>
+
+  <details><summary>Walk me through multipart upload.</summary>
+  <div class="answer">Initiate returns an UploadId; parts of 5 MB&ndash;5 GB (up to 10,000) upload in parallel, each stored as its own object with an ETag; Complete sends the ordered (part, ETag) list and the service writes one metadata row that references the parts, with no byte copying. Failed parts retry alone, uploads resume, and a lifecycle rule aborts stale uploads. Final ETag = MD5 of part MD5s + "-N".</div></details>
+
+  <details><summary>How are deletes and overwrites handled when files are append-only?</summary>
+  <div class="answer">Logically first: metadata drops the pointer (or adds a delete marker if versioned). Physically later: a compactor rewrites sealed files that are mostly garbage, copying live objects to a new file and updating the local index. Orphans from crashed PUTs are found by reconciling data-node object_ids against metadata. A safety delay before physical deletion protects against bugs.</div></details>
+
+  <details><summary>A whole AZ goes down. What happens?</summary>
+  <div class="answer">With 4 of 12 chunks per AZ, every stripe still has 8 chunks, so reads continue (reconstructing from parity for missing data chunks, at higher cost). Writes go to the 2 healthy AZs with a temporary placement, or to a degraded quorum, and are re-spread when the AZ returns. Metadata shards are replicated across AZs with quorum, so they keep serving. Durability is unaffected; only cost and latency rise.</div></details>
+
+  <details><summary>How do you handle a hot object or a hot prefix?</summary>
+  <div class="answer">A hot object (viral video) belongs behind a CDN or a replicated hot cache, not on 8-node EC reads. A hot prefix (timestamped keys) overloads one metadata range, so auto-split ranges by load, and advise clients to add a hash prefix to high-rate keys. Data nodes are rarely the bottleneck because chunks are spread widely.</div></details>
+
+  <details><summary>How would you add storage classes and lifecycle rules?</summary>
+  <div class="answer">Storage class is a metadata field plus a placement policy: Standard (EC 8+4 on fast disks), Infrequent Access (same bytes, different price, retrieval fee), Archive (wide codes on dense HDD or tape, with hours to restore). A lifecycle worker scans metadata by age and prefix and either rewrites bytes to the new tier and flips the pointer, or deletes them. It's a batch job, throttled, and resumable.</div></details>
+
+  <details><summary>How do presigned URLs work and why use them?</summary>
+  <div class="answer">The server signs (method, bucket, key, expiry, headers) with its secret key; anyone holding the URL can perform exactly that request until it expires, and the storage service verifies the signature. Clients upload or download directly to storage, so app servers never proxy gigabytes and the bucket stays private.</div></details>
+</section>
+
+</div>
+
+<!-- markup only; sheet-shell.js wires the behaviour -->
+<div id="lightbox" role="dialog" aria-hidden="true">
+  <span class="lb-close" aria-label="Close">&times;</span>
+  <img alt="">
+  <div class="lb-cap"></div>
+</div>
+
+</body>
+</html>

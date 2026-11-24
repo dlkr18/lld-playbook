@@ -21,7 +21,7 @@
     <a href="cheatsheets/hld/hub.html" class="pb-home-row">
       <span class="pb-home-row-title">System design</span>
       <span class="pb-home-row-desc">Full designs plus the concepts and tech under them: Kafka, sharding, CAP, fan-out.</span>
-      <span class="pb-home-row-count">63 sheets</span>
+      <span class="pb-home-row-count">64 sheets</span>
     </a>
     <a href="cheatsheets/dsa/index.html" class="pb-home-row">
       <span class="pb-home-row-title">DSA patterns</span>
